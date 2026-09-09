@@ -59,7 +59,10 @@ jobs:
       # with hardened runtime, submits to notarytool and staples the ticket.
       # The APPLE_* and CSC_* variables are empty on Linux and Windows.
       - name: Package
-        run: pnpm dist ${{ matrix.args }}
+        # --publish never: electron-builder otherwise tries to upload to GitHub
+        # itself whenever it detects CI, and fails without GH_TOKEN. The release
+        # job below does the upload.
+        run: pnpm dist ${{ matrix.args }} --publish never
         env:
           CSC_LINK: ${{ matrix.os == 'macos-latest' && secrets.CSC_LINK || '' }}
           CSC_KEY_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.CSC_KEY_PASSWORD || '' }}
