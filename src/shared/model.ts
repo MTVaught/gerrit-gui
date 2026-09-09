@@ -261,6 +261,27 @@ export function sortByBranch(views: ChangeView[]): ChangeView[] {
     )
 }
 
+/**
+ * Urgency of a state, most urgent first. The same for the owner and for a
+ * reviewer: a negative outcome needs a fix, an open request needs a look, a
+ * change being iterated may need attention soon, an approved change only
+ * waits for the owner to mark it, and a ready change waits on the merger.
+ * Used to decide which branch of a family leads the card.
+ */
+export const URGENCY: readonly ReviewState[] = [
+  'needs-changes',
+  'needs-review',
+  'in-progress',
+  'approved',
+  'ready-to-merge',
+  'merged',
+  'abandoned',
+]
+
+export function urgency(state: ReviewState): number {
+  return URGENCY.indexOf(state)
+}
+
 /** Short form of a Change-Id for labels: "I3f2a91c…". */
 export function shortChangeId(key: string): string {
   return key.length > 9 ? key.slice(0, 8) + '\u2026' : key

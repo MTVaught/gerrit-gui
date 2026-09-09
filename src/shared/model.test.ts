@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { actionCounts, classify, classifyAll, describeActions, glyphTitle, groupByChangeId, shortChangeId, sortByBranch, sortViews } from './model.ts'
+import { actionCounts, classify, classifyAll, describeActions, glyphTitle, groupByChangeId, shortChangeId, sortByBranch, sortViews, urgency } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo } from './types.ts'
 
@@ -239,4 +239,12 @@ test('sortByBranch: project, then branch, then number; input untouched', () => {
 test('shortChangeId trims long ids only', () => {
   assert.equal(shortChangeId('I3f2a91c0deadbeef'), 'I3f2a91c\u2026')
   assert.equal(shortChangeId('demo~4'), 'demo~4')
+})
+
+test('urgency: fix first, then look, then iterate, then mark, then wait on the merger', () => {
+  const states = ['ready-to-merge', 'approved', 'merged', 'in-progress', 'needs-review', 'needs-changes'] as const
+  assert.deepEqual(
+    [...states].sort((a, b) => urgency(a) - urgency(b)),
+    ['needs-changes', 'needs-review', 'in-progress', 'approved', 'ready-to-merge', 'merged'],
+  )
 })

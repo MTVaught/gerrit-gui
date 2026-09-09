@@ -98,10 +98,11 @@ Change-Id of the original commit. The application shows the changes that
 have the same Change-Id as one card with a table. Each branch is a row in the
 table.
 
-- The card is in the section of the most urgent open branch. The order of
-  the sections on a tab is the order of urgency: the changes that wait on you
-  come first. On "My changes" that order is Needs changes, Approved, Ready to
-  merge, Out for review, In progress.
+- The card is in the section of its most urgent branch. The order of
+  urgency is the same for the owner and for a reviewer: Needs changes, Needs
+  review, In progress, Approved, Ready to merge. If two branches have the
+  same state, the card goes to the earlier section. Thus, on "Reviewing", a
+  branch that waits on you comes before a branch that you reviewed.
 - Each row shows the branch, the state, the WIP or Active badge, the change
   number, the patch set, the reviewers with their votes, the size of the
   diff, the time of the last update and the buttons of that change. Each

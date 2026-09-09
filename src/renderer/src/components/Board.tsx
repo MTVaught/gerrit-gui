@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, familyKey, groupByChangeId, sortByBranch, sortViews, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, displayName, familyKey, groupByChangeId, sortByBranch, sortViews, urgency, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ChangeRow, FamilyCard } from './ChangeRow.tsx'
 
 export type { TabId }
@@ -139,19 +139,28 @@ export function Board(props: {
   }, [props.views])
   if (props.loading || !props.self) return <div className="panel muted">Loading...</div>
   const groups = groupsFor(props.tab, props.views)
-  // A family is one card. It goes in the first section of this tab that has a
-  // member: section order is urgency order, the things that need my action
-  // first. The count of a section still counts the changes in that state.
-  const placed = new Set<string>()
-  const sections = groups.map((g) => ({
+  // A family is one card, led by its most urgent branch on this tab (see
+  // URGENCY). It sits in that branch's section, at that branch's sort
+  // position. A tie goes to the earliest section, so on Reviewing a branch
+  // waiting on you beats one you already reviewed. Section counts still count
+  // the changes in that state.
+  const sorted = groups.map((g) => sortViews(g.items, props.sort))
+  const lead = new Map<string, { section: number; view: ChangeView }>()
+  sorted.forEach((items, section) => {
+    for (const view of items) {
+      const key = familyKey(view.change)
+      if ((families.get(key)?.members.length ?? 1) === 1) continue
+      const cur = lead.get(key)
+      if (!cur || urgency(view.state) < urgency(cur.view.state)) lead.set(key, { section, view })
+    }
+  })
+  const sections = groups.map((g, section) => ({
     ...g,
-    rows: sortViews(g.items, props.sort).flatMap((v): Row[] => {
+    rows: sorted[section]!.flatMap((v): Row[] => {
       const key = familyKey(v.change)
       const f = families.get(key)
       if (!f || f.members.length === 1) return [{ view: v, family: null }]
-      if (placed.has(key)) return []
-      placed.add(key)
-      return [{ view: v, family: f }]
+      return lead.get(key)?.view === v ? [{ view: v, family: f }] : []
     }),
   }))
   if (groups.length === 0) {
