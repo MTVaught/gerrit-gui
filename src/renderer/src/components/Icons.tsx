@@ -30,6 +30,17 @@ export const GearIcon = () => (
   </svg>
 )
 
+/** Git branch glyph for changes that exist on several branches. */
+export const ForkIcon = () => (
+  <svg {...common} width={14} height={14}>
+    <circle cx="6" cy="4" r="2.5" />
+    <circle cx="6" cy="20" r="2.5" />
+    <circle cx="18" cy="8" r="2.5" />
+    <path d="M6 6.5v11" />
+    <path d="M18 10.5c0 4-12 2-12 7" />
+  </svg>
+)
+
 export const DownloadIcon = () => (
   <svg {...common}>
     <path d="M12 3v13" />

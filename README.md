@@ -97,6 +97,38 @@ These rules have these effects:
   scope in "Settings" to keep this scan small. If Gerrit truncates a result,
   the application shows a warning.
 
+## One change on several branches
+
+A cherry-pick to another branch is a separate change in Gerrit. It keeps the
+Change-Id of the original commit. The application shows the changes that
+have the same Change-Id as one card with a table. Each branch is a row in the
+table.
+
+- The card is in the section of its most urgent branch. The order of
+  urgency is the same for the owner and for a reviewer: Needs changes, Needs
+  review, In progress, Approved, Ready to merge. If two branches have the
+  same state, the card goes to the earlier section. Thus, on "Reviewing", a
+  branch that waits on you comes before a branch that you reviewed.
+- Each row shows the branch, the state, the WIP or Active badge, the change
+  number, the patch set, the reviewers with their votes, the size of the
+  diff, the time of the last update and the buttons of that change. Each
+  branch is reviewed on its own. A vote on the master change does not count
+  for the release change.
+- A merged branch stays in the table. The row is grey, shows when the change
+  was merged and has no buttons. Thus, while you work on a release branch,
+  you can see that the change is already in on master. On the "Recently
+  merged" tab, the merged branch leads the card and the open branches are
+  below it.
+- The counts on the tabs and on the sections count changes, not cards. A
+  section counts only the changes that are in that state.
+- In compact mode the table hides the change number, the diff and the time
+  columns.
+
+![Changes grouped by Change-Id](docs/screenshots/change-id-groups.png)
+
+`docs/mockups/change-id-groups/` has five mockups of ways to show a group.
+The application uses mockup 3.
+
 ## Teams
 
 Reviewers from other teams often vote on a change without being part of the
