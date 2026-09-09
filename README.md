@@ -11,10 +11,11 @@ The application shows three things:
 - The changes that you review
 - The status of your changes
 
-All users get the same five tabs. There are no settings for each user. A
-sort control in the top bar orders the rows on every tab, either by the most
-recent update (default) or by overall review age, oldest change first. The
-application remembers the choice.
+All users get the same five tabs. A sixth tab, "External reviews", appears
+when you set a team in the settings (refer to "Teams" below). A sort control
+in the top bar orders the rows on every tab, either by the most recent update
+(default) or by overall review age, oldest change first. The application
+remembers the choice.
 
 | Tab | Contents |
 | --- | --- |
@@ -23,6 +24,7 @@ application remembers the choice.
 | My changes | Your open changes, in groups by state, with the actions of the owner. |
 | Ready to merge | Approved changes that the author marked for the person who has merge authority. |
 | Recently merged | Changes that Gerrit merged in the last 14 days. |
+| External reviews | Open changes with a reviewer or an owner outside your team. Only with a team. |
 
 ![Needs my review](docs/screenshots/needs-my-review.png)
 
@@ -84,12 +86,46 @@ These rules have these effects:
   values. Thus, a reviewer cannot request a review for a different user.
 - The application does not use the attention set.
 - Bots and the owner do not count as reviewers. Bots are the members of the
-  Gerrit "Service Users" group.
+  Gerrit "Service Users" group. Reviewers outside the team set in "Settings"
+  do not count either (refer to "Teams").
 - The Gerrit `reviewer:` search operator does not find WIP changes. Thus,
   the application also scans the open WIP changes of other owners and keeps
   the changes on which you are a reviewer. On a large server, set a project
   scope in "Settings" to keep this scan small. If Gerrit truncates a result,
   the application shows a warning.
+
+## Teams
+
+Reviewers from other teams often vote on a change without being part of the
+review that your team waits for. In "Settings", under "Team", add the people
+whose votes decide. Enter a username or an email address, or start to type and
+select an account from the server. The comparison ignores case. You are always
+on the team, so you do not need to add yourself.
+
+When the team list has one or more entries:
+
+- Only reviewers on the team count for "Needs review by", "Needs changes"
+  and "Approved". The last team member decides. A vote from anyone else does
+  not change the state.
+- The application shows reviewers who are not on the team on the change, in
+  a separate "Outside the team" row with a dashed outline. Their votes are
+  visible there and in the tooltip, and the owner can remove them.
+- The "External reviews" tab lists every open change that has a reviewer
+  outside the team, in groups: an external reviewer voted against, external
+  reviewers have not voted, and approved by every external reviewer. A change
+  that someone outside the team owns and asked you to review is in a fourth
+  group. That change is also on "Needs my review" and "Reviewing" as usual.
+- A change with only external reviewers stays in "Needs review". Add a team
+  member to get it approved.
+
+When the team list is empty, every reviewer counts and the tab is hidden.
+The team is a setting of your computer. Each team member enters the same
+list. The state you see is calculated from your list only. Thus, two users
+with different lists can see different states for the same change.
+
+![External reviews](docs/screenshots/external-reviews.png)
+
+![Team in Settings](docs/screenshots/settings-team.png)
 
 ## The tray icon
 
@@ -244,7 +280,7 @@ mode do not operate in a browser. All other functions operate.
 ```sh
 pnpm test                                # unit tests of the classifier
 docker run -d --name gerrit-test -p 8080:8080 gerritcodereview/gerrit:3.11.2
-./test/seed-gerrit.sh                    # users alice/bob/carol/dave and changes in each state
+./test/seed-gerrit.sh                    # users alice/bob/carol/dave, erin from another team, and changes in each state
 node --test test/integration.test.ts     # runs the real REST client through the full workflow
 ```
 

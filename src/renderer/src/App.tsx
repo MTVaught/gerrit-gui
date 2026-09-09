@@ -3,7 +3,7 @@ import type { ChangeAction, ChangeView, DashboardData, SettingsStatus } from '..
 import { DEFAULT_SORT, SORT_OPTIONS, actionCounts, classifyAll, totalActions, type SortId } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
-import { Board, type TabId, TABS } from './components/Board.tsx'
+import { Board, type TabId, TABS, isExternalReview, visibleTabs } from './components/Board.tsx'
 import { ago } from './time.ts'
 import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
 import { ExpandIcon, GearIcon, PinIcon, RefreshIcon } from './components/Icons.tsx'
@@ -12,7 +12,7 @@ import { UpdateBanner, UpdatePill, useUpdateState } from './components/Update.ts
 
 export function App() {
   const [settings, setSettings] = useState<SettingsStatus | null>(null)
-  const [showSettings, setShowSettings] = useState(false)
+  const [showSettings, setShowSettings] = useState(initialSettingsOpen)
   const [data, setData] = useState<DashboardData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -69,10 +69,16 @@ export function App() {
     }
   }, [configured, refresh])
 
+  const team = settings?.team ?? NO_TEAM
   const views = useMemo<ChangeView[]>(
-    () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id) : []),
-    [data],
+    () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id, team) : []),
+    [data, team],
   )
+  const tabs = useMemo(() => visibleTabs(team.length > 0), [team])
+  // Clearing the team hides the External reviews tab; fall back if it was selected.
+  useEffect(() => {
+    if (!tabs.some((t) => t.id === tab)) setTab('needs-my-review')
+  }, [tabs, tab])
 
   const act = useCallback(
     async (action: ChangeAction) => {
@@ -96,9 +102,11 @@ export function App() {
       mine: 0,
       'ready-to-merge': 0,
       merged: 0,
+      'external-reviews': 0,
     }
     for (const v of views) {
       if (v.change.status === 'MERGED') c.merged++
+      if (isExternalReview(v)) c['external-reviews']++
       if (v.needsMyReview) c['needs-my-review']++
       if (v.iAmReviewer && !v.isMine && v.change.status === 'NEW') c.reviewing++
       if (v.isMine && v.change.status === 'NEW') c.mine++
@@ -133,7 +141,7 @@ export function App() {
     <div className={'app' + (compact ? ' compact' : '')}>
       <header className="topbar">
         <nav className="tabs" role="tablist">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.id}
               role="tab"
@@ -233,6 +241,8 @@ export function App() {
 }
 
 const SORT_KEY = 'gerrit-gui.sort'
+/** Stable empty list so the memo keyed on the team does not rerun every render before settings load. */
+const NO_TEAM: string[] = []
 
 function initialSort(): SortId {
   try {
@@ -247,6 +257,11 @@ function initialTab(): TabId {
   const m = /tab=([a-z-]+)/.exec(window.location.hash)
   const id = m?.[1] as TabId | undefined
   return id && TABS.some((t) => t.id === id) ? id : 'needs-my-review'
+}
+
+/** GERRIT_GUI_TAB=settings opens the settings panel instead of a board tab (screenshot hook). */
+function initialSettingsOpen(): boolean {
+  return /tab=settings\b/.test(window.location.hash)
 }
 
 function notifyNewReviews(d: DashboardData, seen: React.RefObject<Set<number> | null>) {

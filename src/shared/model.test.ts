@@ -1,13 +1,16 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { actionCounts, classify, classifyAll, describeActions, glyphTitle, sortViews } from './model.ts'
+import { actionCounts, classify, classifyAll, describeActions, glyphTitle, normalizeTeam, sortViews } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo } from './types.ts'
 
-const alice: AccountInfo = { _account_id: 1, name: 'Alice' }
-const bob: AccountInfo = { _account_id: 2, name: 'Bob' }
-const carol: AccountInfo = { _account_id: 3, name: 'Carol' }
+const alice: AccountInfo = { _account_id: 1, name: 'Alice', username: 'alice', email: 'alice@example.com' }
+const bob: AccountInfo = { _account_id: 2, name: 'Bob', username: 'bob', email: 'bob@example.com' }
+const carol: AccountInfo = { _account_id: 3, name: 'Carol', username: 'carol', email: 'carol@example.com' }
 const bot: AccountInfo = { _account_id: 9, name: 'CI', tags: ['SERVICE_USER'] }
+/** Outside the team in the team tests below. */
+const erin: AccountInfo = { _account_id: 5, name: 'Erin', username: 'erin', email: 'erin@other.example' }
+const TEAM = ['bob', 'Carol@Example.com']
 
 function change(opts: {
   reviewers?: AccountInfo[]
@@ -145,6 +148,68 @@ test('garbage in the marker is ignored', () => {
   const c = change({ reviewers: [bob] })
   c.custom_keyed_values = { [REVIEW_REQUESTED_KEY]: 'nope' }
   assert.equal(classify(c, 1).requestedPatchSet, null)
+})
+
+test('team: only team votes decide; an external -1 does not block approval', () => {
+  const c = change({ reviewers: [bob, erin], votes: { 2: 1, 5: -1 }, requested: 3 })
+  assert.equal(classify(c, 1).state, 'needs-changes', 'without a team every reviewer counts')
+  const v = classify(c, 1, TEAM)
+  assert.equal(v.state, 'approved')
+  assert.equal(v.teamScoped, true)
+  assert.deepEqual(v.reviewers.map((r) => r.account._account_id), [2])
+  assert.deepEqual(v.externalReviewers.map((r) => [r.account._account_id, r.vote]), [[5, -1]])
+})
+
+test('team: a pending external reviewer is not waited for', () => {
+  const c = change({ reviewers: [bob, erin], votes: { 2: 1 }, requested: 3 })
+  assert.equal(classify(c, 1).state, 'needs-review')
+  const v = classify(c, 1, TEAM)
+  assert.equal(v.state, 'approved')
+  assert.deepEqual(v.pending, [])
+})
+
+test('team: a change with only external reviewers is never decided', () => {
+  const v = classify(change({ reviewers: [erin], votes: { 5: 1 }, requested: 3 }), 1, TEAM)
+  assert.equal(v.state, 'needs-review')
+  assert.equal(v.reviewers.length, 0)
+  assert.equal(v.externalReviewers.length, 1)
+})
+
+test('team: entries match username or email without regard to case', () => {
+  const v = classify(change({ reviewers: [bob, carol], votes: { 2: 1, 3: 1 }, requested: 3 }), 1, ['BOB', ' carol@EXAMPLE.com '])
+  assert.equal(v.state, 'approved')
+  assert.equal(v.externalReviewers.length, 0)
+})
+
+test('team: the signed-in user is always a member', () => {
+  // Bob reviews without being on the list: his vote and his review request still count.
+  const c = change({ reviewers: [bob, carol], requested: 3 })
+  const v = classify(c, bob._account_id, ['carol'])
+  assert.equal(v.needsMyReview, true)
+  assert.equal(v.iAmReviewer, true)
+  assert.deepEqual(v.reviewers.map((r) => r.account._account_id), [2, 3])
+  c.labels!['Code-Review']!.all = [{ ...bob, value: -1 }, { ...carol, value: 1 }]
+  assert.equal(classify(c, bob._account_id, ['carol']).state, 'needs-changes')
+})
+
+test('team: an external owner is flagged; no team means nobody is external', () => {
+  const c = change({ owner: erin, reviewers: [bob], requested: 3 })
+  assert.equal(classify(c, bob._account_id, TEAM).externalOwner, true)
+  assert.equal(classify(c, bob._account_id, TEAM).needsMyReview, true, 'their request still reaches me')
+  const none = classify(change({ reviewers: [bob, erin], requested: 3 }), 1)
+  assert.equal(none.teamScoped, false)
+  assert.equal(none.externalOwner, false)
+  assert.deepEqual(none.externalReviewers, [])
+})
+
+test('team: bots and the owner are left out of both lists', () => {
+  const v = classify(change({ reviewers: [bob, bot, alice, erin], requested: 3 }), 1, TEAM)
+  assert.deepEqual(v.reviewers.map((r) => r.account._account_id), [2])
+  assert.deepEqual(v.externalReviewers.map((r) => r.account._account_id), [5])
+})
+
+test('normalizeTeam trims, lower-cases and de-duplicates', () => {
+  assert.deepEqual(normalizeTeam([' Bob ', 'bob', '', 'Carol@Example.com', 'carol@example.com']), ['bob', 'carol@example.com'])
 })
 
 test('action counts: one per kind of thing waiting on me', () => {

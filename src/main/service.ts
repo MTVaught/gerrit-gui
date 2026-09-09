@@ -32,6 +32,7 @@ export interface Service {
   fetchDashboard(): Promise<DashboardData>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
+  suggestAccounts(q: string): Promise<AccountInfo[]>
   changeUrl(id: number): Promise<string>
 }
 
@@ -121,6 +122,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
     },
 
     suggestReviewers: async (id, q) => (await client()).suggestReviewers(id, q),
+    suggestAccounts: async (q) => (await client()).suggestAccounts(q),
     changeUrl: async (id) => (await client()).changeUrl(id),
   }
 }

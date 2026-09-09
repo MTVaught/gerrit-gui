@@ -10,7 +10,19 @@ export const TABS: { id: TabId; label: string }[] = [
   { id: 'mine', label: 'My changes' },
   { id: 'ready-to-merge', label: 'Ready to merge' },
   { id: 'merged', label: 'Recently merged' },
+  { id: 'external-reviews', label: 'External reviews' },
 ]
+
+/** The External reviews tab exists only once a team is configured; without one nobody is external. */
+export function visibleTabs(teamConfigured: boolean): { id: TabId; label: string }[] {
+  return TABS.filter((t) => t.id !== 'external-reviews' || teamConfigured)
+}
+
+/** Open changes that involve someone outside the team: an external reviewer, or an external owner asking me. */
+export function isExternalReview(v: ChangeView): boolean {
+  if (v.change.status !== 'NEW') return false
+  return v.externalReviewers.length > 0 || (v.externalOwner && v.iAmReviewer && !v.isMine)
+}
 
 interface Group {
   title: string
@@ -64,6 +76,33 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
     }
     case 'merged':
       return [{ title: 'Merged in the last 14 days', items: views.filter((v) => v.change.status === 'MERGED') }]
+    case 'external-reviews': {
+      const ext = open.filter(isExternalReview)
+      const withReviewers = ext.filter((v) => v.externalReviewers.length > 0)
+      const objected = withReviewers.filter((v) => v.externalReviewers.some((r) => r.vote < 0))
+      const approved = withReviewers.filter((v) => !objected.includes(v) && v.externalReviewers.every((r) => r.vote > 0))
+      const waiting = withReviewers.filter((v) => !objected.includes(v) && !approved.includes(v))
+      return [
+        {
+          title: 'Asked by someone outside the team',
+          hint: 'Changes owned outside the team on which you are a reviewer. They also appear under Needs my review and Reviewing.',
+          items: ext.filter((v) => v.externalOwner && v.iAmReviewer && !v.isMine),
+        },
+        {
+          title: 'An external reviewer voted against',
+          hint: 'These votes do not change the state; the team decides. Look at the comments before you move on.',
+          items: objected,
+        },
+        {
+          title: 'External reviewers have not voted',
+          items: waiting,
+        },
+        {
+          title: 'Approved by every external reviewer',
+          items: approved,
+        },
+      ].filter((g) => g.items.length > 0)
+    }
   }
 }
 
@@ -72,6 +111,7 @@ const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
   mine: 'You have no open changes.',
   'ready-to-merge': 'Nothing is tagged ready-to-merge.',
   merged: 'Nothing merged recently.',
+  'external-reviews': 'No open change has a reviewer or an owner outside the team.',
 }
 
 function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => void }) {
@@ -135,6 +175,12 @@ export function Board(props: {
         <p className="muted small">
           Signed in as {displayName(props.self)}. Push as many patch sets as you like; reviewers are only asked to look
           when you press Request review, and only for that patch set.
+        </p>
+      )}
+      {props.tab === 'external-reviews' && (
+        <p className="muted small">
+          People outside the team you set in Settings. Their votes are shown on each change but only the team decides
+          whether a change is approved or needs changes.
         </p>
       )}
       {groups.map((g) => (

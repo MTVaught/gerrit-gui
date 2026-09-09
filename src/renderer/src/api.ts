@@ -26,6 +26,7 @@ function browserApi(): Api {
     fetchDashboard: () => call('fetchDashboard'),
     act: (action) => call('act', [action]),
     suggestReviewers: (id, q) => call('suggestReviewers', [id, q]),
+    suggestAccounts: (q) => call('suggestAccounts', [q]),
     openChange: async (id) => {
       window.open(await call<string>('changeUrl', [id]), '_blank', 'noopener')
     },

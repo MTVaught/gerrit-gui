@@ -96,10 +96,22 @@ export interface ReviewerStatus {
 export interface ChangeView {
   change: ChangeInfo
   state: ReviewState
-  /** Human reviewers (bots and the owner excluded). */
+  /**
+   * The reviewers whose votes decide the state: humans, not the owner, and
+   * when a team is configured, only its members.
+   */
   reviewers: ReviewerStatus[]
   /** Reviewers who have not voted on the current patch set. */
   pending: AccountInfo[]
+  /**
+   * Human reviewers outside the configured team. Their votes are shown but
+   * never change the state. Empty when no team is configured.
+   */
+  externalReviewers: ReviewerStatus[]
+  /** A team is configured, so `reviewers` is limited to its members. */
+  teamScoped: boolean
+  /** The owner is outside the configured team. */
+  externalOwner: boolean
   /** Gerrit WIP flag. Independent of review state; commonly used to hold CI until review is done. */
   wip: boolean
   /** Patch set the author last requested review on, or null if never. */
@@ -140,6 +152,13 @@ export interface Settings {
    * scan open WIP changes and filter client-side; on a big server, scope it.
    */
   projects: string[]
+  /**
+   * Usernames or email addresses of the people whose votes decide the state
+   * of a change. Empty means every reviewer counts. The signed-in user is
+   * always a member. Reviewers outside the team appear on the
+   * "External reviews" tab and their votes never change the state.
+   */
+  team: string[]
 }
 
 export interface SettingsInput extends Settings {
@@ -166,7 +185,7 @@ export interface UiState {
   compactBounds?: WindowBounds
 }
 
-export type TabId = 'needs-my-review' | 'reviewing' | 'mine' | 'ready-to-merge' | 'merged'
+export type TabId = 'needs-my-review' | 'reviewing' | 'mine' | 'ready-to-merge' | 'merged' | 'external-reviews'
 
 /** Things that wait on the current user, one count per kind of action. */
 export type ActionCategory = 'review' | 'fix' | 'ready' | 'merge'

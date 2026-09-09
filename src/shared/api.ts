@@ -20,6 +20,8 @@ export interface Api {
   fetchDashboard(): Promise<DashboardData>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
+  /** Gerrit accounts matching a name, username or email, for the team list in Settings. */
+  suggestAccounts(q: string): Promise<AccountInfo[]>
   openChange(id: number): Promise<void>
   getUi(): Promise<UiState>
   setCompact(on: boolean): Promise<void>

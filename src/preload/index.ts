@@ -15,6 +15,7 @@ const api: Api = {
   fetchDashboard: () => ipcRenderer.invoke('gerrit:fetchDashboard'),
   act: (action) => ipcRenderer.invoke('gerrit:act', action),
   suggestReviewers: (id, q) => ipcRenderer.invoke('gerrit:suggestReviewers', id, q),
+  suggestAccounts: (q) => ipcRenderer.invoke('gerrit:suggestAccounts', q),
   openChange: (id) => ipcRenderer.invoke('gerrit:openChange', id),
   getUi: () => ipcRenderer.invoke('ui:get'),
   setCompact: (on) => ipcRenderer.invoke('ui:setCompact', on),

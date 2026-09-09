@@ -121,6 +121,13 @@ export class GerritClient {
     return this.req('GET', `/changes/${id}/suggest_reviewers`, undefined, params)
   }
 
+  /** Account search for the team picker in Settings: name, username or email prefix. */
+  suggestAccounts(q: string): Promise<AccountInfo[]> {
+    const params = new URLSearchParams({ q: `is:active ${q}`, n: '8' })
+    params.append('o', 'DETAILS')
+    return this.req('GET', '/accounts/', undefined, params)
+  }
+
   changeUrl(id: number): string {
     return `${this.base}/c/${id}`
   }

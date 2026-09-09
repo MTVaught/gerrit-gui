@@ -4,12 +4,14 @@ import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/
 import { api, isBrowserMode } from '../api.ts'
 import { ago } from '../time.ts'
 import { runUpdateAction, useUpdateState } from './Update.tsx'
+import { TeamEditor } from './TeamEditor.tsx'
 
 export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => void; onClose: () => void }) {
   const [serverUrl, setServerUrl] = useState(props.initial.serverUrl)
   const [username, setUsername] = useState(props.initial.username)
   const [password, setPassword] = useState('')
   const [projects, setProjects] = useState(props.initial.projects.join(', '))
+  const [team, setTeam] = useState<string[]>(props.initial.team)
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(props.initial.badgeStyle)
   const [showZeroCounts, setShowZeroCounts] = useState(props.initial.showZeroCounts)
   const [status, setStatus] = useState<string | null>(null)
@@ -25,6 +27,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         username,
         password: password || undefined,
         projects: projects.split(',').map((p) => p.trim()).filter(Boolean),
+        team,
         badgeStyle,
         showZeroCounts,
       })
@@ -69,6 +72,17 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
       <p className="muted small">
         Gerrit cannot search for WIP changes by reviewer, so the app scans open WIP changes and keeps the ones you are on.
         Leave empty on a small server. Comma-separated; a trailing * matches a prefix.
+      </p>
+      <h2>Team</h2>
+      <p className="muted">
+        With a team, only the votes of its members decide whether a change is approved or needs changes. Anyone else
+        who reviews is shown on the change and on the <b>External reviews</b> tab, and their votes never change the
+        state. Leave the list empty to count every reviewer.
+      </p>
+      <TeamEditor members={team} onChange={setTeam} canSearch={Boolean(canClose)} />
+      <p className="muted small">
+        Usernames or email addresses, matched without regard to case. You are always on the team, so you do not need
+        to add yourself. Start typing to pick from the accounts on the server.
       </p>
       {!isBrowserMode && (
         <>
