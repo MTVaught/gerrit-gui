@@ -1,5 +1,5 @@
 import type { ActionCounts } from '../../shared/types.ts'
-import { ACTION_CATEGORIES } from '../../shared/model.ts'
+import { visibleCategories } from '../../shared/model.ts'
 
 const ICON_BLUE = '#2563eb'
 
@@ -56,13 +56,14 @@ const SCALE = 2
 /**
  * Draws the macOS menu bar item for the color badge style: one colored pill
  * per category that has something pending, in the fixed category order, and
- * no app icon. With showZero, every category gets a pill. Rendered at 2x for
+ * no app icon. With showZero, every category but merge gets a pill even at
+ * zero (see visibleCategories in shared/model.ts). Rendered at 2x for
  * Retina; the main process adds the 1x representation. Returns null when
  * there is nothing to draw, so the tray shows the plain template icon
  * instead.
  */
 export function renderTrayStrip(counts: ActionCounts, showZero = false): { dataUrl: string; width: number; height: number } | null {
-  const active = showZero ? [...ACTION_CATEGORIES] : ACTION_CATEGORIES.filter((k) => counts[k.id] > 0)
+  const active = visibleCategories(counts, showZero)
   if (active.length === 0) return null
 
   const canvas = document.createElement('canvas')

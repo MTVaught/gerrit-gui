@@ -145,8 +145,10 @@ On macOS, the menu bar item shows one colored count per category that is not
 zero. If you cannot tell the colors apart, select "Show glyphs instead of
 colored counts" in the settings. The item then shows the glyph and the count
 as text. The counts take the place of the app icon; the icon shows only when
-nothing waits on you. Select "Always show all four categories, even at zero"
-to keep every count in place. On Windows and Linux, the total is part of
+nothing waits on you. Select "Always show Review, Fix and Mark ready, even at
+zero" to keep those counts in place. The Merge count appears only when you
+have something to merge, because it needs +2 rights and most users never
+have it. On Windows and Linux, the total is part of
 the icon image, because these trays cannot show text. Clear "Show counts on
 the menu bar icon" in the settings to keep the plain icon on every platform.
 The tooltip and the tray menu show the counts by category on all platforms,

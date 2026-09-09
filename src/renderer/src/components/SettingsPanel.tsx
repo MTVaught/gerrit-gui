@@ -125,9 +125,12 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
               disabled={!showTrayCounts}
               onChange={(e) => setShowZeroCounts(e.target.checked)}
             />
-            Always show all four categories, even at zero
+            Always show Review, Fix and Mark ready, even at zero
           </label>
-          <p className="muted small">Keeps every count in the menu bar so its position never changes.</p>
+          <p className="muted small">
+            Keeps those counts in the menu bar so their position never changes. Merge appears only when you have something
+            to merge, since it needs +2 rights.
+          </p>
         </>
       )}
       <div className="row">

@@ -202,12 +202,22 @@ export function describeActions(c: ActionCounts): string {
 }
 
 /**
+ * Categories to draw in the menu bar: those with something pending, plus,
+ * with showZero, the ones a user always has at some point. Merge is left out
+ * at zero even then, because only users with +2 rights ever get a merge
+ * count, and for everyone else the pill would be a permanent zero.
+ */
+export function visibleCategories(c: ActionCounts, showZero = false): ActionCategoryInfo[] {
+  return ACTION_CATEGORIES.filter((k) => c[k.id] > 0 || (showZero && k.id !== 'merge'))
+}
+
+/**
  * Menu bar title for the glyph style, e.g. "◉ 3  ✎ 1". Zero categories are
  * left out, so it is empty when nothing is pending, unless showZero keeps
- * every category in place.
+ * them in place (merge excepted; see visibleCategories).
  */
 export function glyphTitle(c: ActionCounts, showZero = false): string {
-  return ACTION_CATEGORIES.filter((k) => showZero || c[k.id] > 0)
+  return visibleCategories(c, showZero)
     .map((k) => `${k.glyph} ${c[k.id]}`)
     .join('  ')
 }
