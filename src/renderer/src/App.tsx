@@ -8,6 +8,7 @@ import { ago } from './time.ts'
 import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
 import { ExpandIcon, GearIcon, PinIcon, RefreshIcon } from './components/Icons.tsx'
 import { api, isBrowserMode } from './api.ts'
+import { UpdateBanner, UpdatePill, useUpdateState } from './components/Update.tsx'
 
 export function App() {
   const [settings, setSettings] = useState<SettingsStatus | null>(null)
@@ -19,6 +20,7 @@ export function App() {
   const [sort, setSort] = useState<SortId>(initialSort)
   const [compact, setCompact] = useState(false)
   const [, setTick] = useState(0)
+  const update = useUpdateState()
   const seenNeedsReview = useRef<Set<number> | null>(null)
 
   const configured = Boolean(settings?.serverUrl && settings?.username && settings?.hasPassword)
@@ -152,6 +154,7 @@ export function App() {
               {data.self.name ?? data.self.username} · updated {ago(new Date(data.fetchedAt))}
             </span>
           )}
+          <UpdatePill state={update} />
           <select
             className="btn sort"
             value={sort}
@@ -187,6 +190,7 @@ export function App() {
           {error}
         </div>
       )}
+      <UpdateBanner state={update} />
       {isBrowserMode && !data && !error && (
         <div className="banner" role="status">
           Browser mode: the UI is served by Vite and talks to the local API in <code>src/server</code>. Tray, badge and

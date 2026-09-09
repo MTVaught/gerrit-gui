@@ -202,3 +202,23 @@ export type ChangeAction =
   | { type: 'hashtag'; id: number; add?: string[]; remove?: string[] }
   | { type: 'addReviewer'; id: number; reviewer: string }
   | { type: 'removeReviewer'; id: number; accountId: number }
+
+export type UpdateStatus = 'disabled' | 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'downloaded' | 'error'
+
+/** What the updater knows, pushed to the UI and the tray after every change. */
+export interface UpdateState {
+  status: UpdateStatus
+  currentVersion: string
+  /** Newest GitHub release when it is newer than the running version. */
+  availableVersion: string | null
+  /** Version whose installer is on disk, waiting for a restart. */
+  downloadedVersion: string | null
+  /** Release notes as plain text lines, from the GitHub release. */
+  releaseNotes: string | null
+  releaseUrl: string | null
+  downloadPercent: number | null
+  checkedAt: string | null
+  /** Why the last step failed, or why updates are off. */
+  message: string | null
+  errorContext: 'check' | 'download' | 'install' | null
+}

@@ -1,5 +1,6 @@
 # Builds the packaged application for every platform and attaches the
-# installers to a GitHub release.
+# installers to a GitHub release, together with what the in-app updater
+# reads: the latest*.yml manifests, the macOS zip archives and the blockmaps.
 #
 # Runs on every push to main (a merged pull request), on a version tag
 # (v1.2.3), or by hand. A push to main picks the version itself: the version
@@ -162,6 +163,9 @@ jobs:
             dist/*.dmg
             dist/*.AppImage
             dist/*.exe
+            dist/*.zip
+            dist/*.blockmap
+            dist/latest*.yml
 
   release:
     needs: [version, build]

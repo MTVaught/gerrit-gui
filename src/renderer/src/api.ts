@@ -3,6 +3,7 @@
 import type { Api } from '../../shared/api.ts'
 import type { UiState } from '../../shared/types.ts'
 import { totalActions } from '../../shared/model.ts'
+import { RELEASES_URL, initialUpdateState } from '../../shared/update.ts'
 
 async function call<T>(method: string, args: unknown[] = []): Promise<T> {
   const res = await fetch(`/api/${method}`, {
@@ -17,6 +18,7 @@ async function call<T>(method: string, args: unknown[] = []): Promise<T> {
 
 function browserApi(): Api {
   const ui: UiState = { compact: false }
+  const noUpdates = initialUpdateState('dev', 'Updates are for the desktop app; in the browser, pull the repository.')
   return {
     getSettings: () => call('getSettings'),
     saveSettings: (input) => call('saveSettings', [input]),
@@ -37,6 +39,15 @@ function browserApi(): Api {
     onCompactChanged: () => () => undefined,
     onRefreshRequested: () => () => undefined,
     onTabRequested: () => () => undefined,
+    // Nor do updates: the browser serves whatever the checkout contains.
+    getUpdateState: async () => noUpdates,
+    checkForUpdate: async () => noUpdates,
+    downloadUpdate: async () => noUpdates,
+    installUpdate: async () => noUpdates,
+    openReleaseNotes: async () => {
+      window.open(RELEASES_URL, '_blank', 'noopener')
+    },
+    onUpdateState: () => () => undefined,
   }
 }
 

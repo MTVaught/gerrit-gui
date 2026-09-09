@@ -191,6 +191,24 @@ major version, raise the version in `package.json` in the pull request.
 A push of a tag that starts with `v` (for example `v0.2.0`) releases that
 exact version. A manual run of the workflow makes a draft release instead.
 
+### Updates
+
+The desktop application checks the releases of this repository for a newer
+version shortly after it starts and then once an hour. When one exists, a
+banner and a button in the top bar offer to download it. The download runs in
+the background, and the application then asks for a restart to finish the
+install. Nothing is downloaded or installed without a click. Settings has an
+About section with the version, the release notes and a "Check for updates"
+button, and the tray menu has the same action.
+
+The updater reads the files the release workflow attaches next to the
+installers: the `latest*.yml` manifests, the macOS `.zip` archives and the
+`.blockmap` files. A release made by hand needs them too. On macOS the
+application must be signed to update itself; the workflow signs it, a local
+`pnpm run install:mac` build does not, and that build reports an error on
+download instead. Refer to `docs/testing.md` to try the flow from the source
+tree.
+
 The macOS build is signed with a Developer ID certificate and notarized with
 an App Store Connect API key. The workflow reads these from the repository
 secrets `CSC_LINK` (base64 of the `.p12`), `CSC_KEY_PASSWORD`,
