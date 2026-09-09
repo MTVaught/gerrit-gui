@@ -1,5 +1,11 @@
 # Builds the packaged application for every platform and attaches the
-# installers to a GitHub release. Runs on a version tag (v1.2.3) or by hand.
+# installers to a GitHub release.
+#
+# Runs on every push to main (a merged pull request), on a version tag
+# (v1.2.3), or by hand. A push to main picks the version itself: the version
+# in package.json when no tag for it exists yet, otherwise a patch bump of
+# the newest v* tag. The release job creates the tag. Tags created by the
+# workflow token do not start another run, so this does not loop.
 #
 # macOS builds are signed with the Developer ID certificate in CSC_LINK and
 # notarized with the App Store Connect API key in APPLE_API_KEY. Linux and
@@ -8,14 +14,78 @@ name: Release
 
 on:
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 
 permissions:
   contents: write
 
+# Runs on the same ref go one at a time, so two merges close together cannot
+# both compute the same next version. A queued run is replaced by a newer
+# one; the newest commit always gets a release.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pick.outputs.version }}
+      tag: ${{ steps.pick.outputs.tag }}
+      draft: ${{ steps.pick.outputs.draft }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pick version
+        id: pick
+        run: |
+          set -euo pipefail
+          pkg=$(node -p "require('./package.json').version")
+          draft=false
+          case "$GITHUB_REF" in
+            refs/tags/v*)
+              version="${GITHUB_REF_NAME#v}"
+              tag="$GITHUB_REF_NAME"
+              ;;
+            refs/heads/main)
+              # Newest plain X.Y.Z tag; prereleases and odd tags are ignored.
+              latest=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | sort -V | tail -n1 || true)
+              if [ -z "$latest" ]; then
+                version="$pkg"
+              elif [ "$pkg" != "$latest" ] && [ "$(printf '%s\n%s\n' "$latest" "$pkg" | sort -V | tail -n1)" = "$pkg" ]; then
+                # package.json was bumped past the newest tag: honour it.
+                version="$pkg"
+              else
+                IFS=. read -r major minor patch <<<"$latest"
+                version="$major.$minor.$((patch + 1))"
+              fi
+              tag="v$version"
+              ;;
+            *)
+              # Manual run on any branch: draft release so nothing goes public
+              # by accident.
+              version="$pkg"
+              tag="manual-$GITHUB_RUN_NUMBER"
+              draft=true
+              ;;
+          esac
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null && [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            echo "tag $tag already exists" >&2
+            exit 1
+          fi
+          echo "version=$version tag=$tag draft=$draft"
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "draft=$draft"
+          } >> "$GITHUB_OUTPUT"
+
   build:
+    needs: version
     strategy:
       fail-fast: false
       matrix:
@@ -62,7 +132,10 @@ jobs:
         # --publish never: electron-builder otherwise tries to upload to GitHub
         # itself whenever it detects CI, and fails without GH_TOKEN. The release
         # job below does the upload.
-        run: pnpm dist ${{ matrix.args }} --publish never
+        # extraMetadata.version sets the version in the packaged app and the
+        # artifact names without editing package.json, so the build-commit
+        # stamp does not show the tree as dirty.
+        run: pnpm dist ${{ matrix.args }} --publish never -c.extraMetadata.version=${{ needs.version.outputs.version }}
         env:
           CSC_LINK: ${{ matrix.os == 'macos-latest' && secrets.CSC_LINK || '' }}
           CSC_KEY_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.CSC_KEY_PASSWORD || '' }}
@@ -91,7 +164,7 @@ jobs:
             dist/*.exe
 
   release:
-    needs: build
+    needs: [version, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -102,8 +175,10 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
-          # The tag ref for a tag push; a manual run publishes a draft on the
-          # branch that was run so nothing goes public by accident.
-          draft: ${{ github.event_name == 'workflow_dispatch' }}
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_number) || github.ref_name }}
+          tag_name: ${{ needs.version.outputs.tag }}
+          # Creates the tag at this commit when it does not exist yet (push
+          # to main). For a tag push the tag already points here.
+          target_commitish: ${{ github.sha }}
+          name: ${{ needs.version.outputs.tag }}
+          draft: ${{ needs.version.outputs.draft == 'true' }}
           generate_release_notes: true

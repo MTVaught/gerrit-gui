@@ -180,12 +180,16 @@ To see if the network stack of the application trusts a server, run
 
 ## Releases
 
-A push of a tag that starts with `v` (for example `v0.2.0`) runs the
-"Release" workflow in GitHub Actions. The workflow builds the AppImage, the
-macOS DMG for Intel and Apple silicon, and the Windows installer, and attaches
-them to a GitHub release for that tag. Set the version in `package.json` to
-the same number before you tag. A manual run of the workflow makes a draft
-release instead.
+Every push to `main` (a merged pull request) runs the "Release" workflow in
+GitHub Actions. The workflow builds the AppImage, the macOS DMG for Intel and
+Apple silicon, and the Windows installer, creates a `v` tag at that commit
+and attaches the installers to a GitHub release for it. The version is the
+one in `package.json` when no tag for it exists yet; otherwise the workflow
+bumps the patch number of the newest `vX.Y.Z` tag. To release a new minor or
+major version, raise the version in `package.json` in the pull request.
+
+A push of a tag that starts with `v` (for example `v0.2.0`) releases that
+exact version. A manual run of the workflow makes a draft release instead.
 
 The macOS build is signed with a Developer ID certificate and notarized with
 an App Store Connect API key. The workflow reads these from the repository
