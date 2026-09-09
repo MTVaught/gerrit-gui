@@ -1,0 +1,7 @@
+# Packages whose install scripts may run. pnpm blocks all others.
+# electron has no install script since v44; the dev/build/start/dist scripts
+# download its binary via scripts/ensure-electron.mjs.
+allowBuilds:
+  electron: true
+  esbuild: true
+  electron-winstaller: true

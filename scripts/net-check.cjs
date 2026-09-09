@@ -1,5 +1,5 @@
 // Manual check of TLS trust from inside Electron's network stack.
-// Usage: npx electron scripts/net-check.cjs https://your-gerrit/gerrit1
+// Usage: pnpm exec electron scripts/net-check.cjs https://your-gerrit/gerrit1
 const { app, net } = require('electron')
 app.whenReady().then(async () => {
   const given = process.argv.slice(1).filter((a) => /^https?:/.test(a))

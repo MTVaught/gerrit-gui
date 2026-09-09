@@ -2,21 +2,19 @@
   "name": "gerrit-gui",
   "version": "0.1.0",
   "description": "Request-and-respond code review board for Gerrit",
+  "desktopName": "gerrit-review-board.desktop",
   "main": "./out/main/index.js",
   "private": true,
   "scripts": {
-    "predev": "node scripts/ensure-electron.mjs",
-    "dev": "electron-vite dev",
+    "dev": "node scripts/ensure-electron.mjs && electron-vite dev",
     "web": "node scripts/web.mjs",
     "icons": "node scripts/gen-icons.mjs",
-    "prebuild": "node scripts/ensure-electron.mjs",
-    "build": "electron-vite build",
-    "prestart": "node scripts/ensure-electron.mjs",
-    "start": "electron-vite preview",
+    "build": "node scripts/ensure-electron.mjs && electron-vite build",
+    "start": "node scripts/ensure-electron.mjs && electron-vite preview",
     "test": "node --test src/shared/*.test.ts",
     "test:integration": "node --test test/integration.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "dist": "electron-vite build && electron-builder"
+    "dist": "node scripts/ensure-electron.mjs && electron-vite build && electron-builder"
   },
   "build": {
     "appId": "dev.gerrit-review-board.app",
@@ -30,7 +28,6 @@
         "AppImage"
       ],
       "category": "Development",
-      "desktopName": "gerrit-review-board.desktop",
       "syncDesktopName": true
     },
     "mac": {
@@ -60,9 +57,5 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
-  "allowScripts": {
-    "electron": true,
-    "esbuild": true,
-    "electron-winstaller": true
-  }
+  "packageManager": "pnpm@12.3.4+sha512.961aa41fb077da3a04a441d9f8e15ebc0c96da8ef710b2eb67bf9ee7cb0610eabd48f1fd85f51cffe73846785fa0f87c56a3a872a1d893f8446741b5cce45457"
 }

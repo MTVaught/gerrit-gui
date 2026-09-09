@@ -1,5 +1,5 @@
 // The UI talks to `api`, which is the Electron preload bridge when present and
-// an HTTP client to src/server when running in a plain browser (npm run web).
+// an HTTP client to src/server when running in a plain browser (pnpm web).
 import type { Api } from '../../shared/api.ts'
 import type { UiState } from '../../shared/types.ts'
 

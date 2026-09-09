@@ -110,19 +110,22 @@ shows the window that is already open.
 
 ## Start the application
 
-You must have Node 22 or a newer version.
+You must have Node 22 or a newer version and pnpm. The `packageManager`
+field in `package.json` gives the pnpm version. To get that version, run
+`corepack enable` one time.
 
 ```sh
-npm install
-npm run dev        # development build with hot reload
-npm run build && npm start
-npm run dist       # packaged application in dist/ (AppImage, dmg, nsis)
+pnpm install
+pnpm dev           # development build with hot reload
+pnpm build && pnpm start
+pnpm dist          # packaged application in dist/ (AppImage, dmg, nsis)
 ```
 
-The `predev`, `prebuild` and `prestart` hooks download the Electron binary
-if npm blocked the package install scripts. On Ubuntu 24.04 and newer
-versions, the kernel does not permit unprivileged user namespaces. The same
-hooks then show a one-time root command that corrects the Electron sandbox.
+The `electron` package does not download the Electron binary at install time.
+The `dev`, `build`, `start` and `dist` scripts download the binary first if it
+is not present. On Ubuntu 24.04 and newer versions, the kernel does not permit
+unprivileged user namespaces. The same scripts then show a one-time root
+command that corrects the Electron sandbox.
 
 The packaged AppImage has the same requirement on these systems. The usual
 correction there is `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`.
@@ -147,7 +150,7 @@ Chromium reads:
 | Linux | The NSS user database, not the OpenSSL bundle: `certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "Private CA" -i ca.crt` (package `libnss3-tools`). |
 
 To see if the network stack of the application trusts a server, run
-`npx electron scripts/net-check.cjs https://your-gerrit/`.
+`pnpm exec electron scripts/net-check.cjs https://your-gerrit/`.
 
 ## Browser mode
 
@@ -155,7 +158,7 @@ Electron needs a display. On a machine without a display, for example with VS
 Code Remote SSH, you can use the same UI in a browser. Run:
 
 ```sh
-npm run web
+pnpm web
 ```
 
 This command starts two servers. The local API server is at 127.0.0.1:5174.
@@ -170,7 +173,7 @@ mode do not operate in a browser. All other functions operate.
 ## Tests
 
 ```sh
-npm test                                 # unit tests of the classifier
+pnpm test                                # unit tests of the classifier
 docker run -d --name gerrit-test -p 8080:8080 gerritcodereview/gerrit:3.11.2
 ./test/seed-gerrit.sh                    # users alice/bob/carol/dave and changes in each state
 node --test test/integration.test.ts     # runs the real REST client through the full workflow

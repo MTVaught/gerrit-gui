@@ -1,4 +1,4 @@
-// Browser mode (npm run web): serve the renderer with plain Vite, no Electron.
+// Browser mode (pnpm web): serve the renderer with plain Vite, no Electron.
 // The UI calls /api/*, proxied to the local API server in src/server.
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
