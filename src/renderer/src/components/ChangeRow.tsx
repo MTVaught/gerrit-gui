@@ -4,7 +4,7 @@ import { STATE_LABEL, displayName, shortChangeId, type ChangeFamily } from '../.
 import { ForkIcon } from './Icons.tsx'
 import { READY_TO_MERGE_TAG } from '../../../shared/constants.ts'
 import { ago } from '../time.ts'
-import { VoteDialog } from './VoteDialog.tsx'
+import { ReviewButton } from './ReviewButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
 import { api } from '../api.ts'
 
@@ -24,7 +24,7 @@ export function ChangeRow(props: RowProps) {
     <li className={`change state-${v.state}`}>
       <div className="change-main">
         <div className="change-title">
-          <button className="link subject" onClick={() => void api.openChange(id)} title="Open in Gerrit">
+          <button className="link subject" onClick={() => void api.openChange({ id, project: c.project })} title="Open in Gerrit">
             {c.subject}
           </button>
           <span className={`badge ${v.state}`}>{STATE_LABEL[v.state]}</span>
@@ -74,7 +74,7 @@ export function FamilyCard(props: { family: ChangeFamily; lead: ChangeView; self
     <li className={`change family state-${lead.state}`}>
       <div className="change-main">
         <div className="change-title">
-          <button className="link subject" onClick={() => void api.openChange(c._number)} title={`Open #${c._number} in Gerrit`}>
+          <button className="link subject" onClick={() => void api.openChange({ id: c._number, project: c.project })} title={`Open #${c._number} in Gerrit`}>
             {c.subject}
           </button>
           <span className="badge branch" title={`Change-Id ${f.key}`}>
@@ -137,7 +137,7 @@ function BranchRow(props: RowProps) {
         )}
       </td>
       <td className="col-num">
-        <button className="link" onClick={() => void api.openChange(c._number)} title="Open in Gerrit">
+        <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title="Open in Gerrit">
           #{c._number}
         </button>
       </td>
@@ -283,85 +283,65 @@ function Actions(props: RowProps & { inline?: boolean }) {
   const id = c._number
   const open = c.status === 'NEW'
   const owner = open && v.isMine
-  const [voting, setVoting] = useState(false)
   const merger = v.canMerge && (v.state === 'ready-to-merge' || v.staleReadyToMerge)
   const requestLabel =
     v.requestedPatchSet !== null && v.requestedPatchSet < v.patchSet
       ? `Re-request review (PS ${v.patchSet})`
       : `Request review (PS ${v.patchSet})`
   return (
-    <>
-      <div className={props.inline ? 'actions inline' : 'actions'}>
-        {owner && !v.reviewRequested && v.state !== 'approved' && v.state !== 'ready-to-merge' && (
-          <button
-            className="btn primary"
-            disabled={v.reviewers.length === 0 && v.externalReviewers.length === 0}
-            title={
-              v.reviewers.length === 0 && v.externalReviewers.length === 0
-                ? 'Add a reviewer first'
-                : v.reviewers.length === 0
-                  ? 'Only external reviewers are on this change; it cannot be approved until a team member is added'
-                  : 'Ask every reviewer to look at this patch set'
-            }
-            onClick={() => void props.onAct({ type: 'requestReview', id, patchSet: v.patchSet })}
-          >
-            {requestLabel}
-          </button>
-        )}
-        {owner && v.reviewRequested && v.state === 'needs-review' && (
-          <button className="btn" onClick={() => void props.onAct({ type: 'withdrawReview', id })}>
-            Withdraw request
-          </button>
-        )}
-        {owner && v.state === 'approved' && (
-          <button className="btn primary" onClick={() => void props.onAct({ type: 'hashtag', id, add: [READY_TO_MERGE_TAG] })}>
-            Ready to merge
-          </button>
-        )}
-        {v.canMerge && v.state === 'ready-to-merge' && (
-          <button
-            className="btn primary"
-            disabled={v.wip}
-            title={v.wip ? 'Still WIP, so CI has not run. Mark it active first.' : 'Vote +2 on this patch set and submit it'}
-            onClick={() => void props.onAct({ type: 'merge', id })}
-          >
-            +2 and submit
-          </button>
-        )}
-        {open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && (v.isMine || merger) && (
-          <button className="btn" onClick={() => void props.onAct({ type: 'hashtag', id, remove: [READY_TO_MERGE_TAG] })}>
-            Clear ready-to-merge
-          </button>
-        )}
-        {(owner || (merger && v.wip)) && (
-          <button
-            className="btn subtle"
-            title={v.wip ? 'Clear WIP so CI runs on this change' : 'Mark WIP so CI stops running on this change'}
-            onClick={() => void props.onAct({ type: 'setWip', id, wip: !v.wip })}
-          >
-            {v.wip ? 'Mark active (runs CI)' : 'Mark WIP'}
-          </button>
-        )}
-        {open && v.iAmReviewer && !v.isMine && (
-          <button className={'btn' + (v.needsMyReview ? ' primary' : '')} onClick={() => setVoting(true)}>
-            {v.myVote === 0 ? 'Review' : `Change vote (${fmtVote(v.myVote)})`}
-          </button>
-        )}
-      </div>
-
-      {voting && (
-        <VoteDialog
-          subject={c.subject}
-          range={v.canVote}
-          current={v.myVote}
-          onCancel={() => setVoting(false)}
-          onVote={async (value, message) => {
-            setVoting(false)
-            await props.onAct({ type: 'vote', id, value, message })
-          }}
-        />
+    <div className={props.inline ? 'actions inline' : 'actions'}>
+      {owner && !v.reviewRequested && v.state !== 'approved' && v.state !== 'ready-to-merge' && (
+        <button
+          className="btn primary"
+          disabled={v.reviewers.length === 0 && v.externalReviewers.length === 0}
+          title={
+            v.reviewers.length === 0 && v.externalReviewers.length === 0
+              ? 'Add a reviewer first'
+              : v.reviewers.length === 0
+                ? 'Only external reviewers are on this change; it cannot be approved until a team member is added'
+                : 'Ask every reviewer to look at this patch set'
+          }
+          onClick={() => void props.onAct({ type: 'requestReview', id, patchSet: v.patchSet })}
+        >
+          {requestLabel}
+        </button>
       )}
-    </>
+      {owner && v.reviewRequested && v.state === 'needs-review' && (
+        <button className="btn" onClick={() => void props.onAct({ type: 'withdrawReview', id })}>
+          Withdraw request
+        </button>
+      )}
+      {owner && v.state === 'approved' && (
+        <button className="btn primary" onClick={() => void props.onAct({ type: 'hashtag', id, add: [READY_TO_MERGE_TAG] })}>
+          Ready to merge
+        </button>
+      )}
+      {v.canMerge && v.state === 'ready-to-merge' && (
+        <button
+          className="btn primary"
+          disabled={v.wip}
+          title={v.wip ? 'Still WIP, so CI has not run. Mark it active first.' : 'Vote +2 on this patch set and submit it'}
+          onClick={() => void props.onAct({ type: 'merge', id })}
+        >
+          +2 and submit
+        </button>
+      )}
+      {open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && (v.isMine || merger) && (
+        <button className="btn" onClick={() => void props.onAct({ type: 'hashtag', id, remove: [READY_TO_MERGE_TAG] })}>
+          Clear ready-to-merge
+        </button>
+      )}
+      {(owner || (merger && v.wip)) && (
+        <button
+          className="btn subtle"
+          title={v.wip ? 'Clear WIP so CI runs on this change' : 'Mark WIP so CI stops running on this change'}
+          onClick={() => void props.onAct({ type: 'setWip', id, wip: !v.wip })}
+        >
+          {v.wip ? 'Mark active (runs CI)' : 'Mark WIP'}
+        </button>
+      )}
+      {open && v.iAmReviewer && !v.isMine && <ReviewButton view={v} />}
+    </div>
   )
 }
 

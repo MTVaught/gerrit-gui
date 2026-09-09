@@ -35,9 +35,11 @@ remembers the choice.
    reviewer to look at the change yet.
 2. When the patch set is ready, the author pushes the "Request review" button.
    All reviewers then see the change on the "Needs my review" tab.
-3. Each reviewer votes +1 or -1 on that patch set. After a reviewer votes, the
-   application removes the change from the "Needs my review" tab of that
-   reviewer.
+3. Each reviewer pushes the "Review" button. It opens the change in Gerrit,
+   showing the diff from the last patch set that reviewer looked at to the
+   current one (or the whole change on a first look). The reviewer votes +1
+   or -1 in Gerrit. After a reviewer votes, the application removes the change
+   from the "Needs my review" tab of that reviewer.
 4. After the last reviewer votes, the change gets the "Approved" state (all
    votes are +1) or the "Needs changes" state (one or more votes are -1).
    Votes that come before the last vote do not change the state.
@@ -65,6 +67,7 @@ the same votes, hashtags and WIP flags.
 | Request review | The application writes the number of the current patch set to the custom keyed value `review-requested-ps` of the change. |
 | Needs review by X | The number in `review-requested-ps` is the same as the number of the current patch set. X is a reviewer. X has no Code-Review vote on the current patch set. |
 | Reviewer finished | X has a Code-Review vote (+1 or -1) on the current patch set. |
+| Review button | Opens Gerrit at `/c/<project>/+/<change>/<last>..<current>`, where `<last>` is the highest patch set with a vote or reply from you in the change messages. Without one, it opens the current patch set against base. The caret offers the other diffs and the change page. |
 | Needs changes | All reviewers voted on the current patch set. One or more reviewers voted -1. |
 | Approved | All reviewers voted +1 on the current patch set. |
 | Ready to merge | The state is Approved, and the change has the hashtag `ready-to-merge`. |

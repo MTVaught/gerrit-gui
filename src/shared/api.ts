@@ -4,6 +4,7 @@ import type {
   AccountInfo,
   BadgePayload,
   ChangeAction,
+  ChangeLink,
   DashboardData,
   SettingsInput,
   SettingsStatus,
@@ -22,7 +23,10 @@ export interface Api {
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
   /** Gerrit accounts matching a name, username or email, for the team list in Settings. */
   suggestAccounts(q: string): Promise<AccountInfo[]>
-  openChange(id: number): Promise<void>
+  /** Open the change, a patch set, or a patch-set diff in the browser. */
+  openChange(link: ChangeLink): Promise<void>
+  /** The same URL as a string, for copying. */
+  changeUrl(link: ChangeLink): Promise<string>
   getUi(): Promise<UiState>
   setCompact(on: boolean): Promise<void>
   /** Tray/dock badge: what waits on me, by category, plus pre-rendered images for the trays that need them. */
