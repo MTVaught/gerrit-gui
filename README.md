@@ -180,6 +180,12 @@ To see if the network stack of the application trusts a server, run
 
 ## Releases
 
+Every pull request runs the "CI" workflow in GitHub Actions. It runs the
+typecheck, the unit tests and the build, then the integration test against a
+Gerrit 3.11 container, and last an unsigned packaging on Linux, macOS and
+Windows. The workflow uses no secrets, so it also runs on pull requests from
+forks.
+
 Every push to `main` (a merged pull request) runs the "Release" workflow in
 GitHub Actions. The workflow builds the AppImage, the macOS DMG for Intel and
 Apple silicon, and the Windows installer, creates a `v` tag at that commit

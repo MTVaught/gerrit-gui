@@ -7,8 +7,16 @@ G=${GERRIT_URL:-http://localhost:8080}
 JAR=$(mktemp)
 until curl -sf -o /dev/null "$G/config/server/version"; do echo "waiting for gerrit..."; sleep 5; done
 # Become the bootstrap admin (account 1000000 is created by the ootb plugin).
-curl -s -L -c "$JAR" -b "$JAR" -o /dev/null "$G/login/%23%2F?account_id=1000000"
-XSRF=$(grep XSRF_TOKEN "$JAR" | awk '{print $7}')
+# The plugin runs shortly after the server starts to answer, so a login right
+# after the version check can come back without a session. Retry until the
+# XSRF cookie is there instead of failing on an empty token.
+login() {
+  : > "$JAR"
+  curl -s -L -c "$JAR" -b "$JAR" -o /dev/null "$G/login/%23%2F?account_id=1000000"
+  XSRF=$(grep XSRF_TOKEN "$JAR" | awk '{print $7}' || true)
+  [ -n "$XSRF" ]
+}
+until login; do echo "waiting for the admin account..."; sleep 5; done
 admin() { # METHOD PATH [JSON]
   curl -s -b "$JAR" -H "X-Gerrit-Auth: $XSRF" -H 'Content-Type: application/json' -X "$1" "$G$2" ${3:+--data "$3"} | sed '1{/^)\]}'"'"'$/d}'
 }
