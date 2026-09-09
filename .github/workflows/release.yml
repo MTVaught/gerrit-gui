@@ -97,6 +97,11 @@ jobs:
           - os: windows-latest
             args: --win
     runs-on: ${{ matrix.os }}
+    # Git Bash on Windows too. PowerShell splits an argument such as
+    # -c.extraMetadata.version=1.2.3 at the dot, which broke the Package step.
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -135,7 +140,7 @@ jobs:
         # extraMetadata.version sets the version in the packaged app and the
         # artifact names without editing package.json, so the build-commit
         # stamp does not show the tree as dirty.
-        run: pnpm dist ${{ matrix.args }} --publish never -c.extraMetadata.version=${{ needs.version.outputs.version }}
+        run: pnpm dist ${{ matrix.args }} --publish never --config.extraMetadata.version=${{ needs.version.outputs.version }}
         env:
           CSC_LINK: ${{ matrix.os == 'macos-latest' && secrets.CSC_LINK || '' }}
           CSC_KEY_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.CSC_KEY_PASSWORD || '' }}
