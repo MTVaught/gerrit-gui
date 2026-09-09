@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { classify } from './model.ts'
+import { actionCounts, classify, classifyAll, describeActions, glyphTitle } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo } from './types.ts'
 
@@ -17,16 +17,20 @@ function change(opts: {
   status?: ChangeInfo['status']
   patchSet?: number
   requested?: number
+  owner?: AccountInfo
+  number?: number
+  /** Highest Code-Review vote the caller may cast. */
+  maxVote?: number
 }): ChangeInfo {
   const reviewers = opts.reviewers ?? []
   return {
     id: 'demo~master~I1',
-    _number: 1,
+    _number: opts.number ?? 1,
     project: 'demo',
     branch: 'master',
     subject: 's',
     status: opts.status ?? 'NEW',
-    owner: alice,
+    owner: opts.owner ?? alice,
     work_in_progress: opts.wip,
     hashtags: opts.hashtags ?? [],
     custom_keyed_values: opts.requested ? { [REVIEW_REQUESTED_KEY]: String(opts.requested) } : {},
@@ -38,7 +42,7 @@ function change(opts: {
         all: reviewers.map((r) => ({ ...r, value: opts.votes?.[r._account_id] ?? 0 })),
       },
     },
-    permitted_labels: { 'Code-Review': ['-1', ' 0', '+1'] },
+    permitted_labels: { 'Code-Review': opts.maxVote === 2 ? ['-2', '-1', ' 0', '+1', '+2'] : ['-1', ' 0', '+1'] },
     current_revision: 'abc',
     revisions: { abc: { _number: opts.patchSet ?? 3, created: '' } },
   }
@@ -139,4 +143,34 @@ test('garbage in the marker is ignored', () => {
   const c = change({ reviewers: [bob] })
   c.custom_keyed_values = { [REVIEW_REQUESTED_KEY]: 'nope' }
   assert.equal(classify(c, 1).requestedPatchSet, null)
+})
+
+test('action counts: one per kind of thing waiting on me', () => {
+  const me = bob
+  const changes = [
+    // Alice asked me to review: review
+    change({ number: 1, reviewers: [me], requested: 3 }),
+    // I already voted: nothing
+    change({ number: 2, reviewers: [me], requested: 3, votes: { 2: 1 } }),
+    // My change, Carol voted -1: fix
+    change({ number: 3, owner: me, reviewers: [carol], requested: 3, votes: { 3: -1 } }),
+    // My change, approved, not yet tagged: mark ready
+    change({ number: 4, owner: me, reviewers: [carol], requested: 3, votes: { 3: 1 } }),
+    // Alice's change, tagged, I may +2: merge
+    change({ number: 5, reviewers: [carol], requested: 3, votes: { 3: 1 }, hashtags: ['ready-to-merge'], maxVote: 2 }),
+    // Same but I may only +1: nothing
+    change({ number: 6, reviewers: [carol], requested: 3, votes: { 3: 1 }, hashtags: ['ready-to-merge'] }),
+    // Merged already: nothing, even though it looks approved
+    change({ number: 7, owner: me, reviewers: [carol], requested: 3, votes: { 3: 1 }, status: 'MERGED' }),
+  ]
+  const c = actionCounts(classifyAll(changes, me._account_id))
+  assert.deepEqual(c, { review: 1, fix: 1, ready: 1, merge: 1 })
+  assert.equal(describeActions(c), 'Review 1, Fix 1, Mark ready 1, Merge 1')
+})
+
+test('summaries skip empty categories', () => {
+  assert.equal(describeActions({ review: 0, fix: 0, ready: 0, merge: 0 }), 'Nothing waits on you')
+  assert.equal(describeActions({ review: 3, fix: 0, ready: 0, merge: 2 }), 'Review 3, Merge 2')
+  assert.equal(glyphTitle({ review: 3, fix: 0, ready: 0, merge: 2 }), '\u25c9 3  \u21e7 2')
+  assert.equal(glyphTitle({ review: 0, fix: 0, ready: 0, merge: 0 }), '')
 })

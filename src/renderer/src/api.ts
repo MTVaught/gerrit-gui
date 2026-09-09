@@ -2,6 +2,7 @@
 // an HTTP client to src/server when running in a plain browser (pnpm web).
 import type { Api } from '../../shared/api.ts'
 import type { UiState } from '../../shared/types.ts'
+import { totalActions } from '../../shared/model.ts'
 
 async function call<T>(method: string, args: unknown[] = []): Promise<T> {
   const res = await fetch(`/api/${method}`, {
@@ -29,11 +30,13 @@ function browserApi(): Api {
     // Window/tray features have no browser equivalent.
     getUi: async () => ui,
     setCompact: async () => undefined,
-    setBadge: (count) => {
-      document.title = (count > 0 ? `(${count}) ` : '') + 'Gerrit Review Board'
+    setBadge: ({ counts }) => {
+      const total = totalActions(counts)
+      document.title = (total > 0 ? `(${total}) ` : '') + 'Gerrit Review Board'
     },
     onCompactChanged: () => () => undefined,
     onRefreshRequested: () => () => undefined,
+    onTabRequested: () => () => undefined,
   }
 }
 

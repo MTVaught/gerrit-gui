@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import type { SettingsStatus } from '../../../shared/types.ts'
-import { api } from '../api.ts'
+import type { BadgeStyle, SettingsStatus } from '../../../shared/types.ts'
+import { api, isBrowserMode } from '../api.ts'
 
 export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => void; onClose: () => void }) {
   const [serverUrl, setServerUrl] = useState(props.initial.serverUrl)
   const [username, setUsername] = useState(props.initial.username)
   const [password, setPassword] = useState('')
   const [projects, setProjects] = useState(props.initial.projects.join(', '))
+  const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(props.initial.badgeStyle)
   const [status, setStatus] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const canClose = props.initial.serverUrl && props.initial.username && props.initial.hasPassword
@@ -20,6 +21,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         username,
         password: password || undefined,
         projects: projects.split(',').map((p) => p.trim()).filter(Boolean),
+        badgeStyle,
       })
       const me = await api.testConnection()
       setStatus(`Connected as ${me.name ?? me.username} (${me.email ?? 'no email'})`)
@@ -63,6 +65,23 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         Gerrit cannot search for WIP changes by reviewer, so the app scans open WIP changes and keeps the ones you are on.
         Leave empty on a small server. Comma-separated; a trailing * matches a prefix.
       </p>
+      {!isBrowserMode && (
+        <>
+          <h2>Menu bar</h2>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={badgeStyle === 'glyph'}
+              onChange={(e) => setBadgeStyle(e.target.checked ? 'glyph' : 'color')}
+            />
+            Show glyphs instead of colored counts
+          </label>
+          <p className="muted small">
+            The menu bar shows what waits on you as one colored count per category: Review, Fix, Mark ready, Merge. Glyphs
+            (◉ ✎ ◆ ⇧) replace the colors if you cannot tell them apart. The tray menu names each category with its count.
+          </p>
+        </>
+      )}
       <div className="row">
         <button className="btn primary" onClick={() => void save()} disabled={saving || !serverUrl || !username}>
           {saving ? 'Testing...' : 'Save and test'}

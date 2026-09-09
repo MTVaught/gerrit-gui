@@ -2,11 +2,13 @@
 // (IPC to the main process) and by renderer/src/api.ts in browser mode (HTTP).
 import type {
   AccountInfo,
+  BadgePayload,
   ChangeAction,
   DashboardData,
   SettingsInput,
   SettingsStatus,
   SuggestedReviewerInfo,
+  TabId,
   UiState,
 } from './types.ts'
 
@@ -20,8 +22,10 @@ export interface Api {
   openChange(id: number): Promise<void>
   getUi(): Promise<UiState>
   setCompact(on: boolean): Promise<void>
-  /** Tray/dock badge: how many changes need my review, plus a pre-rendered icon for platforms without text badges. */
-  setBadge(count: number, iconDataUrl: string): void
+  /** Tray/dock badge: what waits on me, by category, plus pre-rendered images for the trays that need them. */
+  setBadge(payload: BadgePayload): void
   onCompactChanged(cb: (on: boolean) => void): () => void
   onRefreshRequested(cb: () => void): () => void
+  /** The tray menu asked for a specific board tab. */
+  onTabRequested(cb: (tab: TabId) => void): () => void
 }

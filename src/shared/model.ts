@@ -1,4 +1,13 @@
-import type { AccountInfo, ChangeInfo, ChangeView, ReviewState, ReviewerStatus } from './types.ts'
+import type {
+  AccountInfo,
+  ActionCategory,
+  ActionCounts,
+  ChangeInfo,
+  ChangeView,
+  ReviewState,
+  ReviewerStatus,
+  TabId,
+} from './types.ts'
 import { CODE_REVIEW, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from './constants.ts'
 
 export function isBot(a: AccountInfo): boolean {
@@ -107,6 +116,62 @@ export function classify(change: ChangeInfo, selfId: number): ChangeView {
 
 export function classifyAll(changes: ChangeInfo[], selfId: number): ChangeView[] {
   return changes.map((c) => classify(c, selfId))
+}
+
+export interface ActionCategoryInfo {
+  id: ActionCategory
+  /** Short name for the tray menu and tooltip. */
+  label: string
+  /** Menu bar pill color; white text passes 4.5:1 on each. */
+  color: string
+  /** Monochrome stand-in for the color, for the glyph badge style. */
+  glyph: string
+  /** Board tab that lists these changes. */
+  tab: TabId
+}
+
+/** Fixed order everywhere the counts appear, so position carries meaning as well as color. */
+export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
+  { id: 'review', label: 'Review', color: '#2563eb', glyph: '\u25c9', tab: 'needs-my-review' },
+  { id: 'fix', label: 'Fix', color: '#dc2626', glyph: '\u270e', tab: 'mine' },
+  { id: 'ready', label: 'Mark ready', color: '#15803d', glyph: '\u25c6', tab: 'mine' },
+  { id: 'merge', label: 'Merge', color: '#7c3aed', glyph: '\u21e7', tab: 'ready-to-merge' },
+]
+
+/**
+ * How many changes wait on this user, by the action they need to take:
+ *  review  someone asked me to review the current patch set
+ *  fix     my change got a negative outcome; push corrections
+ *  ready   my change is approved; mark it ready to merge
+ *  merge   tagged ready-to-merge and I may +2
+ */
+export function actionCounts(views: ChangeView[]): ActionCounts {
+  const c: ActionCounts = { review: 0, fix: 0, ready: 0, merge: 0 }
+  for (const v of views) {
+    if (v.change.status !== 'NEW') continue
+    if (v.needsMyReview) c.review++
+    if (v.isMine && v.state === 'needs-changes') c.fix++
+    if (v.isMine && v.state === 'approved') c.ready++
+    if (v.canMerge && v.state === 'ready-to-merge') c.merge++
+  }
+  return c
+}
+
+export function totalActions(c: ActionCounts): number {
+  return c.review + c.fix + c.ready + c.merge
+}
+
+/** "Review 3, Fix 1" style summary; zero categories are left out. */
+export function describeActions(c: ActionCounts): string {
+  const parts = ACTION_CATEGORIES.filter((k) => c[k.id] > 0).map((k) => `${k.label} ${c[k.id]}`)
+  return parts.length ? parts.join(', ') : 'Nothing waits on you'
+}
+
+/** Menu bar title for the glyph style, e.g. "◉ 3  ✎ 1". Empty when nothing is pending. */
+export function glyphTitle(c: ActionCounts): string {
+  return ACTION_CATEGORIES.filter((k) => c[k.id] > 0)
+    .map((k) => `${k.glyph} ${c[k.id]}`)
+    .join('  ')
 }
 
 export const STATE_LABEL: Record<ReviewState, string> = {

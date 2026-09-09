@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsStatus } from '../../shared/types.ts'
-import { classifyAll } from '../../shared/model.ts'
+import { actionCounts, classifyAll, totalActions } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, type TabId, TABS } from './components/Board.tsx'
 import { ago } from './time.ts'
-import { renderBadgeIcon } from './badge.ts'
+import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
 import { ExpandIcon, GearIcon, PinIcon, RefreshIcon } from './components/Icons.tsx'
 import { api, isBrowserMode } from './api.ts'
 
@@ -44,9 +44,11 @@ export function App() {
     void api.getUi().then((u) => setCompact(u.compact))
     const offCompact = api.onCompactChanged(setCompact)
     const offRefresh = api.onRefreshRequested(() => void refresh())
+    const offTab = api.onTabRequested(setTab)
     return () => {
       offCompact()
       offRefresh()
+      offTab()
     }
   }, [refresh])
 
@@ -102,11 +104,17 @@ export function App() {
     return c
   }, [views])
 
-  const needsMe = counts['needs-my-review']
+  const actions = useMemo(() => actionCounts(views), [views])
+  const badgeStyle = settings?.badgeStyle ?? 'color'
   useEffect(() => {
     if (!data) return
-    api.setBadge(needsMe, renderBadgeIcon(needsMe))
-  }, [needsMe, data])
+    api.setBadge({
+      counts: actions,
+      style: badgeStyle,
+      iconDataUrl: renderBadgeIcon(totalActions(actions)),
+      strip: badgeStyle === 'color' ? renderTrayStrip(actions) : null,
+    })
+  }, [actions, badgeStyle, data])
 
   return (
     <div className={'app' + (compact ? ' compact' : '')}>
