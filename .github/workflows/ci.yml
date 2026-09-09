@@ -8,6 +8,9 @@
 #              test against a real Gerrit 3.11 in a service container.
 #   package  - electron-builder on Linux, macOS and Windows, unsigned, so a
 #              change that breaks packaging fails here and not in the release.
+#
+# GitHub does not run this workflow on a pull request with a merge conflict;
+# merge-check.yml reports that case as a failure.
 name: CI
 
 on:
