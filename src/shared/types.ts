@@ -121,9 +121,14 @@ export interface ChangeView {
   canVote: { min: number; max: number }
 }
 
+/** How the macOS menu bar item shows the per-category action counts. */
+export type BadgeStyle = 'color' | 'glyph'
+
 export interface Settings {
   serverUrl: string
   username: string
+  /** Colored pills, or monochrome glyphs for people who cannot tell the colors apart. */
+  badgeStyle: BadgeStyle
   /**
    * Optional project scope for the WIP scan (exact names, or a prefix ending
    * in "*"). Gerrit's reviewer: operator hides WIP changes, so the app has to
@@ -154,6 +159,22 @@ export interface UiState {
   compact: boolean
   bounds?: WindowBounds
   compactBounds?: WindowBounds
+}
+
+export type TabId = 'needs-my-review' | 'reviewing' | 'mine' | 'ready-to-merge' | 'merged'
+
+/** Things that wait on the current user, one count per kind of action. */
+export type ActionCategory = 'review' | 'fix' | 'ready' | 'merge'
+export type ActionCounts = Record<ActionCategory, number>
+
+/** What the renderer hands the tray after each refresh. */
+export interface BadgePayload {
+  counts: ActionCounts
+  style: BadgeStyle
+  /** Square icon with the total baked in: Windows overlay, Linux tray. */
+  iconDataUrl: string
+  /** macOS menu bar strip (icon plus colored pills) at 2x, or null when not needed. */
+  strip: { dataUrl: string; width: number; height: number } | null
 }
 
 export interface DashboardData {

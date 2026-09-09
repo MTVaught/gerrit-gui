@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { Api } from '../shared/api.ts'
+import type { TabId } from '../shared/types.ts'
 
 function subscribe<T extends unknown[]>(channel: string, cb: (...args: T) => void): () => void {
   const listener = (_e: Electron.IpcRendererEvent, ...args: unknown[]) => cb(...(args as T))
@@ -17,9 +18,10 @@ const api: Api = {
   openChange: (id) => ipcRenderer.invoke('gerrit:openChange', id),
   getUi: () => ipcRenderer.invoke('ui:get'),
   setCompact: (on) => ipcRenderer.invoke('ui:setCompact', on),
-  setBadge: (count, iconDataUrl) => ipcRenderer.send('ui:badge', count, iconDataUrl),
+  setBadge: (payload) => ipcRenderer.send('ui:badge', payload),
   onCompactChanged: (cb) => subscribe<[boolean]>('app:compact', cb),
   onRefreshRequested: (cb) => subscribe<[]>('app:refresh', cb),
+  onTabRequested: (cb) => subscribe<[TabId]>('app:tab', cb),
 }
 
 contextBridge.exposeInMainWorld('api', api)

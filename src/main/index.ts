@@ -4,7 +4,7 @@ import { promises as fs } from 'node:fs'
 import * as settings from './settings.ts'
 import { createService } from './service.ts'
 import { TrayController } from './tray.ts'
-import type { ChangeAction, SettingsInput, UiState, WindowBounds } from '../shared/types.ts'
+import type { BadgePayload, ChangeAction, SettingsInput, TabId, UiState, WindowBounds } from '../shared/types.ts'
 import appIconPath from '../../resources/icon.png?asset'
 
 const COMPACT_DEFAULT: WindowBounds = { x: 0, y: 0, width: 460, height: 720 }
@@ -26,6 +26,16 @@ function showWindow(): void {
   if (mainWindow.isMinimized()) mainWindow.restore()
   mainWindow.show()
   mainWindow.focus()
+}
+
+/** Raise the window on the given board tab (from the tray menu). */
+function showTab(tab: TabId): void {
+  showWindow()
+  const wc = mainWindow?.webContents
+  if (!wc) return
+  const send = () => wc.send('app:tab', tab)
+  if (wc.isLoading()) wc.once('did-finish-load', send)
+  else send()
 }
 
 function currentBounds(): WindowBounds | undefined {
@@ -83,8 +93,8 @@ function registerIpc(): void {
 
   ipcMain.handle('ui:get', (): UiState => ui)
   ipcMain.handle('ui:setCompact', (_e, on: boolean) => setCompact(on))
-  ipcMain.on('ui:badge', (_e, count: number, iconDataUrl: string) => {
-    tray?.setBadge(count, iconDataUrl, mainWindow)
+  ipcMain.on('ui:badge', (_e, payload: BadgePayload) => {
+    tray?.setBadge(payload, mainWindow)
   })
 }
 
@@ -147,6 +157,7 @@ if (!app.requestSingleInstanceLock()) {
     tray = new TrayController(
       {
         show: showWindow,
+        showTab,
         refresh: () => mainWindow?.webContents.send('app:refresh'),
         setCompact: (on) => void setCompact(on),
         quit: () => {

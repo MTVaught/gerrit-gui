@@ -1,8 +1,8 @@
-import type { AccountInfo, ChangeAction, ChangeView, ReviewState } from '../../../shared/types.ts'
+import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName } from '../../../shared/model.ts'
 import { ChangeRow } from './ChangeRow.tsx'
 
-export type TabId = 'needs-my-review' | 'reviewing' | 'mine' | 'ready-to-merge' | 'merged'
+export type { TabId }
 
 export const TABS: { id: TabId; label: string }[] = [
   { id: 'needs-my-review', label: 'Needs my review' },

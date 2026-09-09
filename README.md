@@ -92,11 +92,25 @@ These rules have these effects:
 
 The application stays open. It is independent of the browser.
 
-The tray icon shows the "Needs my review" count. On macOS, the icon is a
-template icon, and the count is text next to the icon. On Windows and Linux,
-the count is part of the icon image, because these trays cannot show text.
-The tray menu has these items: Open, Refresh, Compact and Quit. The same count
-goes to the macOS dock, the Linux launcher and the Windows taskbar overlay.
+The tray icon shows what waits on you, in four categories and always in this
+order:
+
+| Category | Color | Glyph | Meaning |
+| --- | --- | --- | --- |
+| Review | Blue | ◉ | The author asked you to review the current patch set. |
+| Fix | Red | ✎ | Your change has the "Needs changes" state. |
+| Mark ready | Green | ◆ | Your change is approved. Push "Ready to merge". |
+| Merge | Purple | ⇧ | The change is ready to merge, and you can vote +2. |
+
+On macOS, the menu bar item shows one colored count per category that is not
+zero. If you cannot tell the colors apart, select "Show glyphs instead of
+colored counts" in the settings. The item then shows the glyph and the count
+as text next to the template icon. On Windows and Linux, the total is part of
+the icon image, because these trays cannot show text. The tooltip and the
+tray menu show the counts by category on all platforms; a category in the
+tray menu opens the tab that lists those changes. The tray menu also has
+Open, Refresh, Compact and Quit. The total goes to the macOS dock, the Linux
+launcher and the Windows taskbar overlay.
 
 Compact mode is a narrow window that stays on top of the other windows and
 moves with you to each workspace. Start compact mode with the pin button or
