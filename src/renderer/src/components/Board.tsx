@@ -1,5 +1,5 @@
 import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName } from '../../../shared/model.ts'
+import { STATE_LABEL, displayName, sortViews, type SortId } from '../../../shared/model.ts'
 import { ChangeRow } from './ChangeRow.tsx'
 
 export type { TabId }
@@ -117,6 +117,7 @@ function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => 
 export function Board(props: {
   tab: TabId
   views: ChangeView[]
+  sort: SortId
   self: AccountInfo | null
   loading: boolean
   onAct: (a: ChangeAction) => Promise<void>
@@ -143,12 +144,9 @@ export function Board(props: {
           </h3>
           {g.hint && <p className="muted small">{g.hint}</p>}
           <ul className="changes">
-            {g.items
-              .slice()
-              .sort((a, b) => (a.change.updated < b.change.updated ? 1 : -1))
-              .map((v) => (
-                <ChangeRow key={v.change.id} view={v} self={props.self!} onAct={props.onAct} />
-              ))}
+            {sortViews(g.items, props.sort).map((v) => (
+              <ChangeRow key={v.change.id} view={v} self={props.self!} onAct={props.onAct} />
+            ))}
           </ul>
         </section>
       ))}

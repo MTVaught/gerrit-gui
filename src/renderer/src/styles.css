@@ -51,6 +51,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .btn:hover:not(:disabled) { border-color: var(--muted); }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn.icon { padding: 6px 8px; display: inline-flex; align-items: center; }
+.btn.sort { padding: 5px 8px; font-size: 13px; }
 .btn.spinning svg { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .btn.active { border-color: var(--accent); color: var(--accent); }

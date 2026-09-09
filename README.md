@@ -11,7 +11,10 @@ The application shows three things:
 - The changes that you review
 - The status of your changes
 
-All users get the same five tabs. There are no settings for each user.
+All users get the same five tabs. There are no settings for each user. A
+sort control in the top bar orders the rows on every tab, either by the most
+recent update (default) or by overall review age, oldest change first. The
+application remembers the choice.
 
 | Tab | Contents |
 | --- | --- |

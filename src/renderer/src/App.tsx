@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsStatus } from '../../shared/types.ts'
-import { actionCounts, classifyAll, totalActions } from '../../shared/model.ts'
+import { DEFAULT_SORT, SORT_OPTIONS, actionCounts, classifyAll, totalActions, type SortId } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, type TabId, TABS } from './components/Board.tsx'
@@ -16,6 +16,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState<TabId>(initialTab)
+  const [sort, setSort] = useState<SortId>(initialSort)
   const [compact, setCompact] = useState(false)
   const [, setTick] = useState(0)
   const seenNeedsReview = useRef<Set<number> | null>(null)
@@ -104,6 +105,14 @@ export function App() {
     return c
   }, [views])
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(SORT_KEY, sort)
+    } catch {
+      // Storage may be unavailable; the choice then lasts for this session only.
+    }
+  }, [sort])
+
   const actions = useMemo(() => actionCounts(views), [views])
   const badgeStyle = settings?.badgeStyle ?? 'color'
   const showZeroCounts = settings?.showZeroCounts ?? false
@@ -143,6 +152,19 @@ export function App() {
               {data.self.name ?? data.self.username} · updated {ago(new Date(data.fetchedAt))}
             </span>
           )}
+          <select
+            className="btn sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortId)}
+            title="Sort order for every tab"
+            aria-label="Sort order"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.id} value={o.id} title={o.title}>
+                {o.label}
+              </option>
+            ))}
+          </select>
           <button className={'btn icon' + (busy ? ' spinning' : '')} onClick={() => void refresh()} disabled={busy || !configured} title="Refresh" aria-label="Refresh">
             <RefreshIcon />
           </button>
@@ -192,10 +214,29 @@ export function App() {
           />
         )
       ) : (
-        <Board tab={tab} views={views} self={data?.self ?? null} loading={!data && busy} onAct={act} onGoTo={setTab} />
+        <Board
+          tab={tab}
+          views={views}
+          sort={sort}
+          self={data?.self ?? null}
+          loading={!data && busy}
+          onAct={act}
+          onGoTo={setTab}
+        />
       )}
     </div>
   )
+}
+
+const SORT_KEY = 'gerrit-gui.sort'
+
+function initialSort(): SortId {
+  try {
+    const s = localStorage.getItem(SORT_KEY)
+    return SORT_OPTIONS.some((o) => o.id === s) ? (s as SortId) : DEFAULT_SORT
+  } catch {
+    return DEFAULT_SORT
+  }
 }
 
 function initialTab(): TabId {
