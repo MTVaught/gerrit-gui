@@ -44,6 +44,11 @@ export interface SubmitRequirementResultInfo {
 
 export interface ChangeInfo {
   id: string
+  /**
+   * The Change-Id from the commit message. A cherry-pick to another branch is
+   * a separate change with the same Change-Id, so the board groups on it.
+   */
+  change_id?: string
   _number: number
   project: string
   branch: string

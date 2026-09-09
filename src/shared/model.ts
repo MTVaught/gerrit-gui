@@ -250,6 +250,77 @@ export function isReviewer(change: ChangeInfo, accountId: number): boolean {
   return (change.reviewers?.REVIEWER ?? []).some((r) => r._account_id === accountId)
 }
 
+/**
+ * Changes that share one Change-Id. Gerrit makes a separate change for each
+ * branch (or project) a commit is cherry-picked to, and all of them keep the
+ * Change-Id of the original commit.
+ */
+export interface ChangeFamily {
+  /** The shared Change-Id, or the change's own id when Gerrit did not send one. */
+  key: string
+  /** In the order the caller gave; the first member leads the family. */
+  members: ChangeView[]
+}
+
+export function familyKey(change: ChangeInfo): string {
+  return change.change_id || change.id
+}
+
+/**
+ * Bucket views by Change-Id without changing their order: a family sits where
+ * its first member sits, and members keep their relative order. A change with
+ * no cherry-picks is a family of one. Merged members stay in the family, so a
+ * card can say that the change is already in on another branch.
+ */
+export function groupByChangeId(views: ChangeView[]): ChangeFamily[] {
+  const families = new Map<string, ChangeFamily>()
+  for (const v of views) {
+    const key = familyKey(v.change)
+    const f = families.get(key)
+    if (f) f.members.push(v)
+    else families.set(key, { key, members: [v] })
+  }
+  return [...families.values()]
+}
+
+/** Copy sorted by project, then branch, then change number: the row order inside a family card. */
+export function sortByBranch(views: ChangeView[]): ChangeView[] {
+  return views
+    .slice()
+    .sort(
+      (a, b) =>
+        a.change.project.localeCompare(b.change.project) ||
+        a.change.branch.localeCompare(b.change.branch) ||
+        a.change._number - b.change._number,
+    )
+}
+
+/**
+ * Urgency of a state, most urgent first. The same for the owner and for a
+ * reviewer: a negative outcome needs a fix, an open request needs a look, a
+ * change being iterated may need attention soon, an approved change only
+ * waits for the owner to mark it, and a ready change waits on the merger.
+ * Used to decide which branch of a family leads the card.
+ */
+export const URGENCY: readonly ReviewState[] = [
+  'needs-changes',
+  'needs-review',
+  'in-progress',
+  'approved',
+  'ready-to-merge',
+  'merged',
+  'abandoned',
+]
+
+export function urgency(state: ReviewState): number {
+  return URGENCY.indexOf(state)
+}
+
+/** Short form of a Change-Id for labels: "I3f2a91c…". */
+export function shortChangeId(key: string): string {
+  return key.length > 9 ? key.slice(0, 8) + '\u2026' : key
+}
+
 /** Row order inside each group. Applies to every tab. */
 export type SortId = 'updated' | 'age'
 

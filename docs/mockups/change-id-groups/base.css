@@ -38,9 +38,8 @@
 body { margin: 0; font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--fg); }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
 .app { display: flex; flex-direction: column; min-height: 100vh; }
-.topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 5; }
-/* Six tabs plus the controls do not fit a 1200px window; the controls then drop to a second row, still right-aligned. */
-.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 5; }
+.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .topbar-right .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 .tabs { display: flex; gap: 4px; }
 .tab { white-space: nowrap; background: none; border: none; color: var(--muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font: inherit; display: flex; gap: 6px; align-items: center; }
@@ -107,18 +106,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .chip.neg { background: var(--neg-bg); color: var(--neg); border-color: transparent; }
 .chip.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
 .chip.add { background: none; cursor: pointer; color: var(--muted); font: inherit; font-size: 12px; }
-/* Reviewers outside the team: dashed outline, and only a tint for a vote, so they read as advisory. */
-.reviewers.external { margin-top: 4px; }
-.chip.ext { border: 1px dashed var(--muted); color: var(--muted); background: none; }
-.chip.ext.pos { color: var(--pos); border-color: var(--pos); }
-.chip.ext.neg { color: var(--neg); border-color: var(--neg); }
-/* Team list in Settings. */
-.team-editor { margin-top: 8px; }
-.team-members { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 24px; }
-.chip.member { background: var(--panel); font-size: 13px; padding: 3px 10px; }
-.team-add { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; }
-.team-add .add-reviewer { flex: 1; margin-top: 0; max-width: none; }
-.settings .team-add input { margin-top: 0; }
 .chip.add:hover { color: var(--fg); }
 .chip-x { background: none; border: none; cursor: pointer; color: inherit; padding: 0 0 0 2px; font-size: 13px; line-height: 1; opacity: 0.6; }
 .chip-x:hover { opacity: 1; }
@@ -136,33 +123,16 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .vote-option.selected { border-color: var(--accent); background: var(--panel); }
 .modal textarea { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); resize: vertical; }
 
-/* A Change-Id on several branches: one card, a table row per branch. */
-.change.family { flex-direction: column; gap: 4px; }
-.badge.branch { display: inline-flex; gap: 4px; align-items: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
-.change-title code { font-size: 12px; }
-.branches { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 12.5px; }
-.branches th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 10px 4px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
-.branches td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
-.branches tr:last-child td { border-bottom: none; }
-.branches tr.closed td { color: var(--muted); }
-.branches td.branch code { font-weight: 600; }
-.branches tr.closed td.branch code { font-weight: 500; }
-.branches td.cell-reviewers { white-space: normal; width: 100%; }
-.branches td.cell-actions { width: 1%; }
-.branches .req { font-size: 11px; color: var(--pending); margin-left: 4px; }
-.branches .req.stale { color: var(--muted); }
-.reviewers.bare { margin-top: 0; position: relative; }
-.reviewers.bare .chip { font-size: 11.5px; padding: 1px 7px; }
-.branches .add-reviewer { margin-top: 4px; }
-.actions.inline { flex-direction: row; justify-content: flex-end; min-width: 0; }
-.actions.inline .btn { padding: 3px 8px; font-size: 12px; }
-.branches-wrap { min-width: 0; }
-/* Compact: drop the number, diff and time columns; what is left scrolls sideways instead of clipping. */
-.compact .branches-wrap { overflow-x: auto; }
-.compact .branches .col-diff, .compact .branches .col-updated, .compact .branches .col-num { display: none; }
-.compact .branches td.cell-reviewers { white-space: nowrap; width: auto; }
-.compact .branches .reviewers.bare { flex-wrap: nowrap; }
-.compact .actions.inline .btn { padding: 3px 6px; font-size: 12px; }
+/* A Change-Id on several branches: members nest under one header, others get a pointer. */
+.family { border-top: 1px solid var(--border); padding: 8px 14px 10px; background: var(--panel); }
+.family:first-child { border-top: none; }
+.family-head { display: flex; gap: 6px; align-items: center; font-size: 12px; margin-bottom: 6px; }
+.family-head code { font-size: 11px; }
+.changes.nested { background: var(--bg); }
+.badge.branch { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
+.family-elsewhere { margin: 6px 0 0; }
+.family-elsewhere .link { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.compact .family { padding: 6px 8px 8px; }
 
 /* Compact mode: narrow always-on-top window. Tabs wrap, meta trims, actions drop below. */
 .compact .topbar { flex-wrap: wrap; padding: 6px 8px; }
@@ -185,19 +155,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .compact .empty-explain { padding: 12px; }
 .empty-explain .link { color: var(--accent); text-decoration: underline; }
 
-/* Updates: top bar button while one is available, downloading or ready; the banner is the prompt. */
-.btn.update { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 13px; border-color: var(--accent); color: var(--accent); }
-.btn.update.ready { background: var(--accent); color: var(--accent-fg); }
-.btn.update:disabled { opacity: 1; }
-.btn.update .ring { transform: rotate(-90deg); }
-.btn.update .ring circle:last-child { transition: stroke-dashoffset 0.3s ease-out; }
-.compact .btn.update span { display: none; }
-.banner.update { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--pending-bg); color: var(--pending); }
-.banner.update.ready { background: var(--pos-bg); color: var(--pos); }
-.banner.update .banner-text { flex: 1; min-width: 200px; }
-.banner.update .banner-actions { display: flex; gap: 6px; }
-.banner.update .btn { color: var(--fg); }
-.banner.update .btn.primary { color: var(--accent-fg); }
-.banner.update progress { width: 120px; accent-color: var(--accent); }
-.btn.small { padding: 4px 10px; font-size: 13px; }
-.release-notes { margin: 8px 0 0; padding: 10px 12px; max-height: 240px; overflow: auto; white-space: pre-wrap; font: inherit; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }
+/* Mockup only: static stand-ins for the live top bar. */
+.topbar-right .btn.sort { color: var(--fg); }
+.mock-note { max-width: 1400px; margin: 10px auto 0; padding: 0 16px; font-size: 12px; color: var(--muted); }

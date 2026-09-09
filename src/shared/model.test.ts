@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { actionCounts, classify, classifyAll, describeActions, glyphTitle, normalizeTeam, sortViews } from './model.ts'
+import { actionCounts, classify, classifyAll, describeActions, glyphTitle, groupByChangeId, normalizeTeam, shortChangeId, sortByBranch, sortViews, urgency } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo } from './types.ts'
 
@@ -26,13 +26,17 @@ function change(opts: {
   maxVote?: number
   created?: string
   updated?: string
+  branch?: string
+  /** Change-Id shared by cherry-picks; left out to mimic a server that does not send it. */
+  changeId?: string
 }): ChangeInfo {
   const reviewers = opts.reviewers ?? []
   return {
-    id: 'demo~master~I1',
+    id: `demo~${opts.number ?? 1}`,
+    change_id: opts.changeId,
     _number: opts.number ?? 1,
     project: 'demo',
-    branch: 'master',
+    branch: opts.branch ?? 'master',
     subject: 's',
     status: opts.status ?? 'NEW',
     owner: opts.owner ?? alice,
@@ -263,4 +267,49 @@ test('sortViews: ties fall back to change number', () => {
   )
   assert.deepEqual(sortViews(views, 'age').map((v) => v.change._number), [4, 5])
   assert.deepEqual(sortViews(views, 'updated').map((v) => v.change._number), [5, 4])
+})
+
+test('groupByChangeId: cherry-picks share a family, in the order given', () => {
+  const views = [
+    change({ number: 1, changeId: 'Iaaa', branch: 'master' }),
+    change({ number: 2, changeId: 'Ibbb' }),
+    change({ number: 3, changeId: 'Iaaa', branch: 'release-1.0' }),
+    change({ number: 4 }),
+    change({ number: 5, changeId: 'Iaaa', branch: 'release-2.0' }),
+  ].map((c) => classify(c, alice._account_id))
+  const families = groupByChangeId(views)
+  assert.deepEqual(
+    families.map((f) => [f.key, f.members.map((v) => v.change._number)]),
+    [
+      ['Iaaa', [1, 3, 5]],
+      ['Ibbb', [2]],
+      ['demo~4', [4]],
+    ],
+  )
+  // Input is not mutated.
+  assert.deepEqual(views.map((v) => v.change._number), [1, 2, 3, 4, 5])
+})
+
+test('sortByBranch: project, then branch, then number; input untouched', () => {
+  const views = [
+    change({ number: 1, changeId: 'Iaaa', branch: 'release-2.0' }),
+    change({ number: 3, changeId: 'Iaaa', branch: 'master', status: 'MERGED' }),
+    change({ number: 4, changeId: 'Iaaa', branch: 'release-1.0' }),
+    change({ number: 2, changeId: 'Iaaa', branch: 'release-1.0' }),
+  ].map((c) => classify(c, alice._account_id))
+  assert.deepEqual(sortByBranch(views).map((v) => v.change._number), [3, 2, 4, 1])
+  assert.deepEqual(views.map((v) => v.change._number), [1, 3, 4, 2])
+})
+
+test('shortChangeId trims long ids only', () => {
+  assert.equal(shortChangeId('I3f2a91c0deadbeef'), 'I3f2a91c\u2026')
+  assert.equal(shortChangeId('demo~4'), 'demo~4')
+})
+
+test('urgency: fix first, then look, then iterate, then mark, then wait on the merger', () => {
+  const states = ['ready-to-merge', 'approved', 'merged', 'in-progress', 'needs-review', 'needs-changes'] as const
+  assert.deepEqual(
+    [...states].sort((a, b) => urgency(a) - urgency(b)),
+    ['needs-changes', 'needs-review', 'in-progress', 'approved', 'ready-to-merge', 'merged'],
+  )
 })
