@@ -144,16 +144,19 @@ order:
 On macOS, the menu bar item shows one colored count per category that is not
 zero. If you cannot tell the colors apart, select "Show glyphs instead of
 colored counts" in the settings. The item then shows the glyph and the count
-as text next to the template icon. Select "Always show all four categories,
-even at zero" to keep every count in place; with colored counts the item is
-then the pills alone, without the icon. On Windows and Linux, the total is part of
-the icon image, because these trays cannot show text. The tooltip and the
-tray menu show the counts by category on all platforms; a category in the
-tray menu opens the tab that lists those changes. The tray menu also has
+as text. The counts take the place of the app icon; the icon shows only when
+nothing waits on you. Select "Always show all four categories, even at zero"
+to keep every count in place. On Windows and Linux, the total is part of
+the icon image, because these trays cannot show text. Clear "Show counts on
+the menu bar icon" in the settings to keep the plain icon on every platform.
+The tooltip and the tray menu show the counts by category on all platforms,
+also with the counts off; a category in the tray menu opens the tab that
+lists those changes. The tray menu also has
 Open, Refresh, Compact and Quit, and a disabled row with the version and the
 short git commit the build was made from (a trailing `+` means the working
 tree had uncommitted changes). The total goes to the macOS dock, the Linux
-launcher and the Windows taskbar overlay.
+launcher and the Windows taskbar overlay. Clear "Show the total as a badge
+on the app icon" in the settings to turn that badge off.
 
 Compact mode is a narrow window that stays on top of the other windows and
 moves with you to each workspace. Start compact mode with the pin button or

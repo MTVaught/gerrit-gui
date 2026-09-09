@@ -141,11 +141,19 @@ export interface Settings {
   username: string
   /** Colored pills, or monochrome glyphs for people who cannot tell the colors apart. */
   badgeStyle: BadgeStyle
-  /**
-   * Show every category in the menu bar even when its count is zero. With the
-   * color style the strip is then pills only, without the app icon.
-   */
+  /** Show every category in the menu bar even when its count is zero. */
   showZeroCounts: boolean
+  /**
+   * Badge with the total on the app icon: macOS Dock, Linux launcher,
+   * Windows taskbar overlay.
+   */
+  showAppBadge: boolean
+  /**
+   * Counts on the menu bar / tray icon (pills, glyphs, or the number in the
+   * icon). Off, the tray keeps the plain icon; the tooltip and menu still
+   * list the counts.
+   */
+  showTrayCounts: boolean
   /**
    * Optional project scope for the WIP scan (exact names, or a prefix ending
    * in "*"). Gerrit's reviewer: operator hides WIP changes, so the app has to
@@ -196,9 +204,11 @@ export interface BadgePayload {
   counts: ActionCounts
   style: BadgeStyle
   showZeroCounts: boolean
+  showAppBadge: boolean
+  showTrayCounts: boolean
   /** Square icon with the total baked in: Windows overlay, Linux tray. */
   iconDataUrl: string
-  /** macOS menu bar strip (colored pills, with the icon unless showZeroCounts) at 2x, or null when not needed. */
+  /** macOS menu bar strip of colored pills at 2x, or null when there is nothing to draw. */
   strip: { dataUrl: string; width: number; height: number } | null
 }
 

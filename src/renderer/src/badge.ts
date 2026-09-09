@@ -48,20 +48,18 @@ export function renderBadgeIcon(count: number, size = 32): string {
 
 // macOS menu bar strip geometry, in points.
 const STRIP_H = 22
-const STRIP_ICON = 16
 const PILL_H = 16
 const PILL_MIN_W = 22
 const GAP = 4
 const SCALE = 2
 
 /**
- * Draws the macOS menu bar item for the color badge style: the app icon
- * followed by one colored pill per category that has something pending, in
- * the fixed category order. With showZero, every category gets a pill and
- * the icon is left out, so the item is pills only. Rendered at 2x for
+ * Draws the macOS menu bar item for the color badge style: one colored pill
+ * per category that has something pending, in the fixed category order, and
+ * no app icon. With showZero, every category gets a pill. Rendered at 2x for
  * Retina; the main process adds the 1x representation. Returns null when
- * there is nothing to draw, so the tray can fall back to the plain template
- * icon.
+ * there is nothing to draw, so the tray shows the plain template icon
+ * instead.
  */
 export function renderTrayStrip(counts: ActionCounts, showZero = false): { dataUrl: string; width: number; height: number } | null {
   const active = showZero ? [...ACTION_CATEGORIES] : ACTION_CATEGORIES.filter((k) => counts[k.id] > 0)
@@ -75,18 +73,17 @@ export function renderTrayStrip(counts: ActionCounts, showZero = false): { dataU
     const text = counts[k.id] > 99 ? '99+' : String(counts[k.id])
     return { color: k.color, text, w: Math.max(PILL_MIN_W, Math.ceil(ctx.measureText(text).width) + 12) }
   })
-  // Without the icon the pills start at the left edge, with only the gaps between them.
-  const width = (showZero ? -GAP : STRIP_ICON) + pills.reduce((sum, p) => sum + GAP + p.w, 0)
+  // The pills start at the left edge, with only the gaps between them.
+  const width = pills.reduce((sum, p) => sum + p.w, 0) + GAP * (pills.length - 1)
 
   canvas.width = width * SCALE
   canvas.height = STRIP_H * SCALE
   ctx.scale(SCALE, SCALE) // resizing reset the context; draw in points from here on
-  if (!showZero) drawIcon(ctx, 0, (STRIP_H - STRIP_ICON) / 2, STRIP_ICON)
 
   ctx.font = font
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  let x = showZero ? -GAP : STRIP_ICON
+  let x = -GAP
   for (const p of pills) {
     x += GAP
     ctx.fillStyle = p.color
