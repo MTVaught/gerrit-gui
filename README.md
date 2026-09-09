@@ -121,6 +121,11 @@ pnpm build && pnpm start
 pnpm dist          # packaged application in dist/ (AppImage, dmg, nsis)
 ```
 
+On macOS, `pnpm run install:mac` builds the application and copies it to
+`/Applications`. If a copy of the application runs, the script stops it
+first. To install in a different folder, set `INSTALL_DIR`. For example, set
+`INSTALL_DIR=~/Applications` if you are not an administrator.
+
 The `electron` package does not download the Electron binary at install time.
 The `dev`, `build`, `start` and `dist` scripts download the binary first if it
 is not present. On Ubuntu 24.04 and newer versions, the kernel does not permit

@@ -14,7 +14,8 @@
     "test": "node --test src/shared/*.test.ts",
     "test:integration": "node --test test/integration.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "dist": "node scripts/ensure-electron.mjs && electron-vite build && electron-builder"
+    "dist": "node scripts/ensure-electron.mjs && electron-vite build && electron-builder",
+    "install:mac": "node scripts/ensure-electron.mjs && electron-vite build && electron-builder --mac dir && node scripts/install-mac.mjs"
   },
   "build": {
     "appId": "dev.gerrit-review-board.app",
