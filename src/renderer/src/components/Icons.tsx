@@ -40,3 +40,20 @@ export const ForkIcon = () => (
     <path d="M18 10.5c0 4-12 2-12 7" />
   </svg>
 )
+
+export const DownloadIcon = () => (
+  <svg {...common}>
+    <path d="M12 3v13" />
+    <path d="m7 11 5 5 5-5" />
+    <path d="M4 21h16" />
+  </svg>
+)
+
+/** Circular arrow with a check: the update is on disk, a restart applies it. */
+export const RestartIcon = () => (
+  <svg {...common}>
+    <path d="M21 12a9 9 0 1 1-3-6.7" />
+    <path d="M21 3v6h-6" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+)

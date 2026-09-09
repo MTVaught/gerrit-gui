@@ -193,7 +193,11 @@ function Reviewers(props: RowProps & { bare?: boolean }) {
                   : 'Reviewed by everyone'}
             </span>
           )}
-          {v.reviewers.length === 0 && open && <span className="chip warn">no reviewers</span>}
+          {v.reviewers.length === 0 && open && (
+            <span className="chip warn" title={v.teamScoped && v.externalReviewers.length > 0 ? 'Only team votes decide the state, and nobody on the team is a reviewer' : undefined}>
+              {v.teamScoped && v.externalReviewers.length > 0 ? 'no team reviewers' : 'no reviewers'}
+            </span>
+          )}
           {[...v.reviewers]
             .sort((a, b) => Number(b.vote === 0) - Number(a.vote === 0))
             .map((r) => (
@@ -227,6 +231,38 @@ function Reviewers(props: RowProps & { bare?: boolean }) {
             </button>
           )}
         </div>
+        {v.externalReviewers.length > 0 && (
+          <div className="reviewers external">
+            <span className="reviewers-label not-asked" title="Reviewers outside your team. Their votes do not change the state.">
+              Outside the team
+            </span>
+            {[...v.externalReviewers]
+              .sort((a, b) => Number(b.vote === 0) - Number(a.vote === 0))
+              .map((r) => (
+                <span
+                  key={r.account._account_id}
+                  className={'chip ext ' + (r.vote > 0 ? 'pos' : r.vote < 0 ? 'neg' : '')}
+                  title={
+                    r.vote !== 0
+                      ? `outside the team, voted ${fmtVote(r.vote)} on patch set ${v.patchSet}; this vote does not change the state`
+                      : 'outside the team, has not voted; not waited for'
+                  }
+                >
+                  {displayName(r.account)}
+                  {r.vote !== 0 && <b> {fmtVote(r.vote)}</b>}
+                  {owner && (
+                    <button
+                      className="chip-x"
+                      title="Remove reviewer"
+                      onClick={() => void props.onAct({ type: 'removeReviewer', id, accountId: r.account._account_id })}
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              ))}
+          </div>
+        )}
         {adding && (
           <AddReviewer
             changeId={id}
@@ -259,8 +295,14 @@ function Actions(props: RowProps & { inline?: boolean }) {
         {owner && !v.reviewRequested && v.state !== 'approved' && v.state !== 'ready-to-merge' && (
           <button
             className="btn primary"
-            disabled={v.reviewers.length === 0}
-            title={v.reviewers.length === 0 ? 'Add a reviewer first' : 'Ask every reviewer to look at this patch set'}
+            disabled={v.reviewers.length === 0 && v.externalReviewers.length === 0}
+            title={
+              v.reviewers.length === 0 && v.externalReviewers.length === 0
+                ? 'Add a reviewer first'
+                : v.reviewers.length === 0
+                  ? 'Only external reviewers are on this change; it cannot be approved until a team member is added'
+                  : 'Ask every reviewer to look at this patch set'
+            }
             onClick={() => void props.onAct({ type: 'requestReview', id, patchSet: v.patchSet })}
           >
             {requestLabel}
