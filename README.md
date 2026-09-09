@@ -178,6 +178,21 @@ Chromium reads:
 To see if the network stack of the application trusts a server, run
 `pnpm exec electron scripts/net-check.cjs https://your-gerrit/`.
 
+## Releases
+
+A push of a tag that starts with `v` (for example `v0.2.0`) runs the
+"Release" workflow in GitHub Actions. The workflow builds the AppImage, the
+macOS DMG for Intel and Apple silicon, and the Windows installer, and attaches
+them to a GitHub release for that tag. Set the version in `package.json` to
+the same number before you tag. A manual run of the workflow makes a draft
+release instead.
+
+The macOS build is signed with a Developer ID certificate and notarized with
+an App Store Connect API key. The workflow reads these from the repository
+secrets `CSC_LINK` (base64 of the `.p12`), `CSC_KEY_PASSWORD`,
+`APPLE_API_KEY` (the text of the `.p8`), `APPLE_API_KEY_ID` and
+`APPLE_API_ISSUER`. Linux and Windows builds are not signed.
+
 ## Browser mode
 
 Electron needs a display. On a machine without a display, for example with VS
