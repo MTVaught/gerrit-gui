@@ -49,7 +49,13 @@ function applyWindowMode(): void {
   if (!mainWindow) return
   const target = ui.compact ? (ui.compactBounds ?? COMPACT_DEFAULT) : (ui.bounds ?? NORMAL_DEFAULT)
   mainWindow.setAlwaysOnTop(ui.compact, 'floating')
-  mainWindow.setVisibleOnAllWorkspaces(ui.compact, { visibleOnFullScreen: true })
+  // skipTransformProcessType: without it Electron turns the process into a
+  // macOS accessory app (no Dock icon) whenever visibleOnFullScreen is set,
+  // even when `visible` is false. We always want the Dock icon and its badge.
+  mainWindow.setVisibleOnAllWorkspaces(ui.compact, {
+    visibleOnFullScreen: ui.compact,
+    skipTransformProcessType: true,
+  })
   mainWindow.setMinimumSize(ui.compact ? 320 : 800, 400)
   mainWindow.setSize(target.width, target.height)
   if (target.x || target.y) mainWindow.setPosition(target.x, target.y)
