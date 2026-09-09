@@ -222,6 +222,12 @@ Gerrit 3.11 container, and last an unsigned packaging on Linux, macOS and
 Windows. The workflow uses no secrets, so it also runs on pull requests from
 forks.
 
+GitHub runs no CI on a pull request that has a merge conflict; the checks
+just do not appear. The "Merge check" workflow runs on every push to a
+branch other than `main`, finds the open pull request for that branch and
+fails with a message when the pull request cannot be merged. Rebase the
+branch, resolve the conflict and push again; the CI workflow then runs.
+
 Every push to `main` (a merged pull request) runs the "Release" workflow in
 GitHub Actions. The workflow builds the AppImage, the macOS DMG for Intel and
 Apple silicon, and the Windows installer, creates a `v` tag at that commit

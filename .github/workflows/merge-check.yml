@@ -1,0 +1,55 @@
+# Turns a silent skip into a visible failure. GitHub runs no pull_request
+# workflow on a pull request that has a merge conflict, so the CI workflow
+# just does not appear and the pull request looks untested rather than
+# broken. This workflow runs on the push instead, which GitHub does deliver,
+# looks up the open pull request for the branch and fails with an
+# annotation when the pull request cannot be merged into its base.
+#
+# It only sees a conflict once the branch is pushed. A pull request that
+# becomes conflicted because main moved is caught on its next push.
+name: Merge check
+
+on:
+  push:
+    branches-ignore: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: merge-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conflict:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if the pull request has a merge conflict
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          numbers=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&head=$GITHUB_REPOSITORY_OWNER:$GITHUB_REF_NAME" --jq '.[].number')
+          if [ -z "$numbers" ]; then
+            echo "No open pull request for $GITHUB_REF_NAME; nothing to check."
+            exit 0
+          fi
+          status=0
+          for n in $numbers; do
+            # GitHub computes mergeability in the background after a push and
+            # reports null until it is done, so poll for up to a minute.
+            for _ in $(seq 1 12); do
+              read -r mergeable base < <(gh api "repos/$GITHUB_REPOSITORY/pulls/$n" --jq '"\(.mergeable) \(.base.ref)"')
+              [ "$mergeable" != null ] && break
+              sleep 5
+            done
+            case "$mergeable" in
+              true) echo "Pull request #$n merges cleanly into $base." ;;
+              false)
+                echo "::error::Pull request #$n has a merge conflict with $base. GitHub runs no CI on a conflicted pull request. Rebase onto $base (or merge it in), resolve the conflict and push again."
+                status=1 ;;
+              *) echo "::warning::GitHub had not computed mergeability for pull request #$n after a minute; check it by hand." ;;
+            esac
+          done
+          exit $status
