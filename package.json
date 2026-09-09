@@ -1,0 +1,68 @@
+{
+  "name": "gerrit-gui",
+  "version": "0.1.0",
+  "description": "Request-and-respond code review board for Gerrit",
+  "main": "./out/main/index.js",
+  "private": true,
+  "scripts": {
+    "predev": "node scripts/ensure-electron.mjs",
+    "dev": "electron-vite dev",
+    "web": "node scripts/web.mjs",
+    "icons": "node scripts/gen-icons.mjs",
+    "prebuild": "node scripts/ensure-electron.mjs",
+    "build": "electron-vite build",
+    "prestart": "node scripts/ensure-electron.mjs",
+    "start": "electron-vite preview",
+    "test": "node --test src/shared/*.test.ts",
+    "test:integration": "node --test test/integration.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "dist": "electron-vite build && electron-builder"
+  },
+  "build": {
+    "appId": "dev.gerrit-review-board.app",
+    "productName": "Gerrit Review Board",
+    "files": [
+      "out/**",
+      "resources/**"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development",
+      "desktopName": "gerrit-review-board.desktop",
+      "syncDesktopName": true
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "icon": "resources/icon.png"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^44.2.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^7.3.6"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "allowScripts": {
+    "electron": true,
+    "esbuild": true,
+    "electron-winstaller": true
+  }
+}

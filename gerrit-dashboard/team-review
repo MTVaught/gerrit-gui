@@ -1,0 +1,22 @@
+# Gerrit project dashboard replicating the team review workflow.
+# Install once in All-Projects under refs/meta/dashboards/team and every user
+# gets it, with `self` resolved to whoever is looking. See README.md.
+[dashboard]
+	title = Team review
+	description = What needs your attention, the way the team actually reviews
+	foreach = is:open
+
+[section "Needs my review (no vote from me on the current patch set)"]
+	query = reviewer:self -owner:self -label:Code-Review=ANY,user=self
+
+[section "Reviewed by me, waiting on others"]
+	query = reviewer:self -owner:self label:Code-Review=ANY,user=self -label:Code-Review<=-1
+
+[section "My changes needing changes"]
+	query = owner:self label:Code-Review<=-1
+
+[section "My other open changes"]
+	query = owner:self -label:Code-Review<=-1 -hashtag:ready-to-merge
+
+[section "Ready to merge"]
+	query = hashtag:ready-to-merge
