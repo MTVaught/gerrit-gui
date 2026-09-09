@@ -115,20 +115,24 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .suggestions { position: absolute; left: 0; right: 0; list-style: none; margin: 2px 0 0; padding: 4px 0; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; z-index: 10; box-shadow: 0 4px 16px #0003; }
 .suggestions li button { display: block; width: 100%; padding: 6px 10px; }
 .suggestions li button:hover { background: var(--panel); text-decoration: none; }
-/* Reviewer's split button: main part opens the diff since their last review, caret lists other views. */
-.split { display: inline-flex; width: 100%; }
-.btn.split-main { flex: 1; border-radius: 6px 0 0 6px; text-align: left; }
-.btn.split-caret { border-radius: 0 6px 6px 0; border-left: none; padding: 6px 8px; font-size: 12px; }
-.btn.split-caret.primary { border-left: 1px solid #ffffff55; }
-.btn.split-main:hover:not(:disabled) + .btn.split-caret:not(.primary) { border-left: none; }
-.ext { font-size: 12px; opacity: 0.75; margin-left: 4px; }
-.menu { position: fixed; z-index: 30; width: 300px; padding: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px #0003; }
-.menu hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
-.menu-item { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 6px 10px 6px 24px; border: none; border-radius: 5px; background: none; color: var(--fg); font: inherit; text-align: left; cursor: pointer; position: relative; }
-.menu-item span { white-space: nowrap; }
-.menu-item:hover { background: var(--panel); }
-.menu-item.selected { font-weight: 600; }
-.menu-item.selected::before { content: '\2713'; position: absolute; left: 8px; color: var(--accent); }
+.modal-backdrop { position: fixed; inset: 0; background: #0006; display: flex; align-items: center; justify-content: center; z-index: 20; }
+.modal { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; width: 520px; max-width: 95vw; }
+.modal h3 { margin: 0 0 8px; }
+.vote-options { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; }
+.vote-option { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; display: flex; gap: 8px; align-items: center; }
+.vote-option.selected { border-color: var(--accent); background: var(--panel); }
+.modal textarea { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); resize: vertical; }
+
+/* A Change-Id on several branches: members nest under one header, others get a pointer. */
+.family { border-top: 1px solid var(--border); padding: 8px 14px 10px; background: var(--panel); }
+.family:first-child { border-top: none; }
+.family-head { display: flex; gap: 6px; align-items: center; font-size: 12px; margin-bottom: 6px; }
+.family-head code { font-size: 11px; }
+.changes.nested { background: var(--bg); }
+.badge.branch { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
+.family-elsewhere { margin: 6px 0 0; }
+.family-elsewhere .link { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.compact .family { padding: 6px 8px 8px; }
 
 /* Compact mode: narrow always-on-top window. Tabs wrap, meta trims, actions drop below. */
 .compact .topbar { flex-wrap: wrap; padding: 6px 8px; }
@@ -142,7 +146,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .compact .change-meta > span:nth-child(2), .compact .change-meta > span:nth-child(3) { display: none; }
 .compact .actions { flex-direction: row; flex-wrap: wrap; min-width: 0; }
 .compact .actions .btn { padding: 4px 10px; font-size: 13px; }
-.compact .split { width: auto; }
 .compact .panel { padding: 12px; margin: 12px auto; }
 .status { white-space: pre-wrap; word-break: break-word; }
 .empty-explain { color: var(--fg); line-height: 1.55; }
@@ -151,3 +154,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .empty-explain li { margin: 4px 0; }
 .compact .empty-explain { padding: 12px; }
 .empty-explain .link { color: var(--accent); text-decoration: underline; }
+
+/* ---- mockup-only additions ---- */
+:root { color-scheme: light; }
+.mock-note { margin: 12px 0 0; padding: 10px 14px; border: 1px dashed var(--border); border-radius: 8px; font-size: 12px; color: var(--muted); max-width: 1400px; margin-left: auto; margin-right: auto; }
+.mock-note b { color: var(--fg); }
+.ext { font-size: 12px; opacity: .75; margin-left: 4px; }
+.btn.primary .ext { opacity: .9; }
+.change-meta .you-ps { color: var(--pos); font-weight: 600; }
+html { overflow: hidden; }

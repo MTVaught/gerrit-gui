@@ -3,14 +3,13 @@ import type { AccountInfo, ChangeAction, ChangeView } from '../../../shared/type
 import { STATE_LABEL, displayName } from '../../../shared/model.ts'
 import { READY_TO_MERGE_TAG } from '../../../shared/constants.ts'
 import { ago } from '../time.ts'
-import { VoteDialog } from './VoteDialog.tsx'
+import { ReviewButton } from './ReviewButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
 import { api } from '../api.ts'
 
 export function ChangeRow(props: { view: ChangeView; self: AccountInfo; onAct: (a: ChangeAction) => Promise<void> }) {
   const { view: v, self } = props
   const c = v.change
-  const [voting, setVoting] = useState(false)
   const [adding, setAdding] = useState(false)
   const id = c._number
   const open = c.status === 'NEW'
@@ -26,7 +25,7 @@ export function ChangeRow(props: { view: ChangeView; self: AccountInfo; onAct: (
     <li className={`change state-${v.state}`}>
       <div className="change-main">
         <div className="change-title">
-          <button className="link subject" onClick={() => void api.openChange(id)} title="Open in Gerrit">
+          <button className="link subject" onClick={() => void api.openChange({ id, project: c.project })} title="Open in Gerrit">
             {c.subject}
           </button>
           <span className={`badge ${v.state}`}>{STATE_LABEL[v.state]}</span>
@@ -155,25 +154,8 @@ export function ChangeRow(props: { view: ChangeView; self: AccountInfo; onAct: (
             {v.wip ? 'Mark active (runs CI)' : 'Mark WIP'}
           </button>
         )}
-        {open && v.iAmReviewer && !v.isMine && (
-          <button className={'btn' + (v.needsMyReview ? ' primary' : '')} onClick={() => setVoting(true)}>
-            {v.myVote === 0 ? 'Review' : `Change vote (${fmtVote(v.myVote)})`}
-          </button>
-        )}
+        {open && v.iAmReviewer && !v.isMine && <ReviewButton view={v} />}
       </div>
-
-      {voting && (
-        <VoteDialog
-          subject={c.subject}
-          range={v.canVote}
-          current={v.myVote}
-          onCancel={() => setVoting(false)}
-          onVote={async (value, message) => {
-            setVoting(false)
-            await props.onAct({ type: 'vote', id, value, message })
-          }}
-        />
-      )}
     </li>
   )
 }

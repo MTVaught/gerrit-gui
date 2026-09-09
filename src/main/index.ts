@@ -4,7 +4,7 @@ import { promises as fs } from 'node:fs'
 import * as settings from './settings.ts'
 import { createService } from './service.ts'
 import { TrayController } from './tray.ts'
-import type { BadgePayload, ChangeAction, SettingsInput, TabId, UiState, WindowBounds } from '../shared/types.ts'
+import type { BadgePayload, ChangeAction, ChangeLink, SettingsInput, TabId, UiState, WindowBounds } from '../shared/types.ts'
 import appIconPath from '../../resources/icon.png?asset'
 
 const COMPACT_DEFAULT: WindowBounds = { x: 0, y: 0, width: 460, height: 720 }
@@ -87,9 +87,10 @@ function registerIpc(): void {
   ipcMain.handle('gerrit:fetchDashboard', () => service.fetchDashboard())
   ipcMain.handle('gerrit:act', (_e, action: ChangeAction) => service.act(action))
   ipcMain.handle('gerrit:suggestReviewers', (_e, id: number, q: string) => service.suggestReviewers(id, q))
-  ipcMain.handle('gerrit:openChange', async (_e, id: number) => {
-    await shell.openExternal(await service.changeUrl(id))
+  ipcMain.handle('gerrit:openChange', async (_e, link: ChangeLink) => {
+    await shell.openExternal(await service.changeUrl(link))
   })
+  ipcMain.handle('gerrit:changeUrl', (_e, link: ChangeLink) => service.changeUrl(link))
 
   ipcMain.handle('ui:get', (): UiState => ui)
   ipcMain.handle('ui:setCompact', (_e, on: boolean) => setCompact(on))

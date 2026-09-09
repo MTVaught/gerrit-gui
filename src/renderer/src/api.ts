@@ -24,9 +24,10 @@ function browserApi(): Api {
     fetchDashboard: () => call('fetchDashboard'),
     act: (action) => call('act', [action]),
     suggestReviewers: (id, q) => call('suggestReviewers', [id, q]),
-    openChange: async (id) => {
-      window.open(await call<string>('changeUrl', [id]), '_blank', 'noopener')
+    openChange: async (link) => {
+      window.open(await call<string>('changeUrl', [link]), '_blank', 'noopener')
     },
+    changeUrl: (link) => call('changeUrl', [link]),
     // Window/tray features have no browser equivalent.
     getUi: async () => ui,
     setCompact: async () => undefined,
