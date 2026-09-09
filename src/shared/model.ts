@@ -215,3 +215,24 @@ export function dashboardQueries(projects: string[] = []): { direct: string; wip
 export function isReviewer(change: ChangeInfo, accountId: number): boolean {
   return (change.reviewers?.REVIEWER ?? []).some((r) => r._account_id === accountId)
 }
+
+/** Row order inside each group. Applies to every tab. */
+export type SortId = 'updated' | 'age'
+
+export const SORT_OPTIONS: { id: SortId; label: string; title: string }[] = [
+  { id: 'updated', label: 'Most recent update', title: 'Changes with the newest activity first' },
+  { id: 'age', label: 'Overall review age', title: 'Oldest changes first, by the date the change was created' },
+]
+
+export const DEFAULT_SORT: SortId = 'updated'
+
+/** Return a sorted copy. Gerrit timestamps are zero-padded UTC strings, so string order is time order. */
+export function sortViews(views: ChangeView[], sort: SortId): ChangeView[] {
+  const byNumber = (a: ChangeView, b: ChangeView) => a.change._number - b.change._number
+  return views.slice().sort((a, b) => {
+    if (sort === 'age') {
+      return a.change.created.localeCompare(b.change.created) || byNumber(a, b)
+    }
+    return b.change.updated.localeCompare(a.change.updated) || byNumber(b, a)
+  })
+}

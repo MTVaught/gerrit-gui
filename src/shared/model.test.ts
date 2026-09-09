@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { actionCounts, classify, classifyAll, describeActions, glyphTitle } from './model.ts'
+import { actionCounts, classify, classifyAll, describeActions, glyphTitle, sortViews } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo } from './types.ts'
 
@@ -21,6 +21,8 @@ function change(opts: {
   number?: number
   /** Highest Code-Review vote the caller may cast. */
   maxVote?: number
+  created?: string
+  updated?: string
 }): ChangeInfo {
   const reviewers = opts.reviewers ?? []
   return {
@@ -34,8 +36,8 @@ function change(opts: {
     work_in_progress: opts.wip,
     hashtags: opts.hashtags ?? [],
     custom_keyed_values: opts.requested ? { [REVIEW_REQUESTED_KEY]: String(opts.requested) } : {},
-    created: '',
-    updated: '',
+    created: opts.created ?? '',
+    updated: opts.updated ?? '',
     reviewers: { REVIEWER: reviewers },
     labels: {
       'Code-Review': {
@@ -175,4 +177,25 @@ test('summaries skip empty categories', () => {
   assert.equal(glyphTitle({ review: 0, fix: 0, ready: 0, merge: 0 }), '')
   assert.equal(glyphTitle({ review: 3, fix: 0, ready: 0, merge: 2 }, true), '\u25c9 3  \u270e 0  \u25c6 0  \u21e7 2')
   assert.equal(glyphTitle({ review: 0, fix: 0, ready: 0, merge: 0 }, true), '\u25c9 0  \u270e 0  \u25c6 0  \u21e7 0')
+})
+
+test('sortViews: most recent update first, then oldest review first', () => {
+  const views = [
+    change({ number: 1, created: '2026-09-01 10:00:00.000', updated: '2026-09-05 10:00:00.000' }),
+    change({ number: 2, created: '2026-08-20 10:00:00.000', updated: '2026-09-07 10:00:00.000' }),
+    change({ number: 3, created: '2026-09-03 10:00:00.000', updated: '2026-09-06 10:00:00.000' }),
+  ].map((c) => classify(c, alice._account_id))
+  assert.deepEqual(sortViews(views, 'updated').map((v) => v.change._number), [2, 3, 1])
+  assert.deepEqual(sortViews(views, 'age').map((v) => v.change._number), [2, 1, 3])
+  // Input is not mutated.
+  assert.deepEqual(views.map((v) => v.change._number), [1, 2, 3])
+})
+
+test('sortViews: ties fall back to change number', () => {
+  const same = { created: '2026-09-01 10:00:00.000', updated: '2026-09-01 10:00:00.000' }
+  const views = [change({ number: 5, ...same }), change({ number: 4, ...same })].map((c) =>
+    classify(c, alice._account_id),
+  )
+  assert.deepEqual(sortViews(views, 'age').map((v) => v.change._number), [4, 5])
+  assert.deepEqual(sortViews(views, 'updated').map((v) => v.change._number), [5, 4])
 })
