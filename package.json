@@ -21,6 +21,11 @@
   "build": {
     "appId": "dev.gerrit-review-board.app",
     "productName": "Gerrit Review Board",
+    "publish": {
+      "provider": "github",
+      "owner": "MTVaught",
+      "repo": "gerrit-gui"
+    },
     "files": [
       "out/**",
       "resources/**"
@@ -40,6 +45,13 @@
             "x64",
             "arm64"
           ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "category": "public.app-category.developer-tools",
@@ -53,7 +65,7 @@
       ]
     },
     "icon": "resources/icon.png",
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+    "artifactName": "gerrit-review-board-${version}-${os}-${arch}.${ext}"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",
@@ -67,6 +79,7 @@
     "vite": "^7.3.6"
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

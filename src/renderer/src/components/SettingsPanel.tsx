@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import type { BadgeStyle, SettingsStatus } from '../../../shared/types.ts'
+import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
+import { ago } from '../time.ts'
+import { runUpdateAction, useUpdateState } from './Update.tsx'
 
 export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => void; onClose: () => void }) {
   const [serverUrl, setServerUrl] = useState(props.initial.serverUrl)
@@ -103,6 +106,47 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         )}
       </div>
       {status && <p className={'status ' + (status.startsWith('Connected') ? 'ok' : 'error')}>{status}</p>}
+      {!isBrowserMode && <AboutSection />}
     </div>
+  )
+}
+
+/** Version, update status and the manual check; the same steps as the top bar button and the tray. */
+function AboutSection() {
+  const state = useUpdateState()
+  const [pending, setPending] = useState(false)
+  if (!state) return null
+  const action = updateAction(state)
+  return (
+    <>
+      <h2>About</h2>
+      <p>
+        Gerrit Review Board {state.currentVersion}.{' '}
+        <span className="muted">
+          {updateSummary(state)}
+          {state.checkedAt && ` · Last checked ${ago(new Date(state.checkedAt))}`}
+        </span>
+      </p>
+      <div className="row">
+        <button
+          className="btn"
+          disabled={action === 'none' || pending}
+          onClick={async () => {
+            setPending(true)
+            try {
+              await runUpdateAction(state, true)
+            } finally {
+              setPending(false)
+            }
+          }}
+        >
+          {updateButtonLabel(state)}
+        </button>
+        <button className="btn" onClick={() => void api.openReleaseNotes()}>
+          Release notes
+        </button>
+      </div>
+      {state.releaseNotes && <pre className="release-notes">{state.releaseNotes}</pre>}
+    </>
   )
 }

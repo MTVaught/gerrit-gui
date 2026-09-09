@@ -1,0 +1,5 @@
+# Read by electron-updater when GERRIT_GUI_DEV_UPDATE=1 is set for `pnpm dev`,
+# in place of the metadata a packaged app carries. See docs/testing.md.
+provider: github
+owner: MTVaught
+repo: gerrit-gui
