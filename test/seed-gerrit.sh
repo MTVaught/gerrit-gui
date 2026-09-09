@@ -57,4 +57,19 @@ C9=$(mk alice "C9 bot is a reviewer, bob pending"); reviewers alice $C9 bob; rev
 C10=$(mk alice "C10 reviewers added but review not requested yet"); reviewers alice $C10 bob; reviewers alice $C10 carol; echo "C10=$C10"
 B1=$(mk bob "B1 bob's change, alice+carol requested"); reviewers bob $B1 alice; reviewers bob $B1 carol; request bob $B1 1; echo "B1=$B1"
 B2=$(mk bob "B2 bob's change, alice already +1"); reviewers bob $B2 alice; request bob $B2 1; vote alice $B2 1 "fine"; echo "B2=$B2"
+
+# Cherry-picks keep the Change-Id of the original, so each one is a separate
+# change that the board groups with its siblings.
+echo "== cherry-picks (same Change-Id on release branches)"
+admin PUT "/projects/demo/branches/release-1.0" '{"revision":"master"}' >/dev/null
+admin PUT "/projects/demo/branches/release-2.0" '{"revision":"master"}' >/dev/null
+cp() { # owner change branch -> new change number
+  as "$1" POST "/changes/$2/revisions/current/cherrypick" "{\"destination\":\"$3\",\"allow_empty\":true,\"notify\":\"NONE\"}" | grep -o '"_number": *[0-9]*' | grep -o '[0-9]*'
+}
+P1=$(cp alice $C5 release-2.0); reviewers alice $P1 bob; reviewers alice $P1 carol; request alice $P1 1; vote bob $P1 1 "ok"; vote carol $P1 1 "ok"; echo "C5->release-2.0=$P1 (approved)"
+P2=$(cp alice $C5 release-1.0); reviewers alice $P2 bob; reviewers alice $P2 carol; request alice $P2 1; echo "C5->release-1.0=$P2 (out for review)"
+P3=$(cp alice $C4 release-2.0); reviewers alice $P3 bob; reviewers alice $P3 carol; request alice $P3 1; vote bob $P3 1 "ok"; vote carol $P3 -1 "same rename here"; echo "C4->release-2.0=$P3 (needs changes)"
+P4=$(cp alice $C2 release-2.0); echo "C2->release-2.0=$P4 (in progress)"
+P5=$(cp alice $C6 release-1.0); reviewers alice $P5 bob; request alice $P5 1; vote bob $P5 1 "ok"; as alice POST "/changes/$P5/hashtags" '{"add":["ready-to-merge"]}' >/dev/null; as alice POST "/changes/$P5/ready" '{}' >/dev/null; echo "C6->release-1.0=$P5 (ready to merge)"
+vote dave $C6 2 "merging"; as dave POST "/changes/$C6/submit" '{}' >/dev/null; echo "C6 merged on master"
 echo "== done"

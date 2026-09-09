@@ -91,6 +91,37 @@ These rules have these effects:
   scope in "Settings" to keep this scan small. If Gerrit truncates a result,
   the application shows a warning.
 
+## One change on several branches
+
+A cherry-pick to another branch is a separate change in Gerrit. It keeps the
+Change-Id of the original commit. The application shows the changes that
+have the same Change-Id as one card with a table. Each branch is a row in the
+table.
+
+- The card is in the section of the most urgent open branch. The order of
+  the sections on a tab is the order of urgency: the changes that wait on you
+  come first. On "My changes" that order is Needs changes, Approved, Ready to
+  merge, Out for review, In progress.
+- Each row shows the branch, the state, the WIP or Active badge, the change
+  number, the patch set, the reviewers with their votes, the size of the
+  diff, the time of the last update and the buttons of that change. Each
+  branch is reviewed on its own. A vote on the master change does not count
+  for the release change.
+- A merged branch stays in the table. The row is grey, shows when the change
+  was merged and has no buttons. Thus, while you work on a release branch,
+  you can see that the change is already in on master. On the "Recently
+  merged" tab, the merged branch leads the card and the open branches are
+  below it.
+- The counts on the tabs and on the sections count changes, not cards. A
+  section counts only the changes that are in that state.
+- In compact mode the table hides the change number, the diff and the time
+  columns.
+
+![Changes grouped by Change-Id](docs/screenshots/change-id-groups.png)
+
+`docs/mockups/change-id-groups/` has five mockups of ways to show a group.
+The application uses mockup 3.
+
 ## The tray icon
 
 The application stays open. It is independent of the browser.

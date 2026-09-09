@@ -1,6 +1,7 @@
+import { useMemo } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, sortViews, type SortId } from '../../../shared/model.ts'
-import { ChangeRow } from './ChangeRow.tsx'
+import { STATE_LABEL, displayName, familyKey, groupByChangeId, sortByBranch, sortViews, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { ChangeRow, FamilyCard } from './ChangeRow.tsx'
 
 export type { TabId }
 
@@ -16,6 +17,12 @@ interface Group {
   title: string
   hint?: string
   items: ChangeView[]
+}
+
+/** One list entry: a single change, or the lead of a family card. */
+interface Row {
+  view: ChangeView
+  family: ChangeFamily | null
 }
 
 function byState(items: ChangeView[], order: ReviewState[], titles?: Partial<Record<ReviewState, string>>): Group[] {
@@ -123,8 +130,30 @@ export function Board(props: {
   onAct: (a: ChangeAction) => Promise<void>
   onGoTo: (tab: TabId) => void
 }) {
+  // Every Change-Id family in the whole data set, merged members included,
+  // so a card lists all branches no matter which tab it is on.
+  const families = useMemo(() => {
+    const m = new Map<string, ChangeFamily>()
+    for (const f of groupByChangeId(props.views)) m.set(f.key, { key: f.key, members: sortByBranch(f.members) })
+    return m
+  }, [props.views])
   if (props.loading || !props.self) return <div className="panel muted">Loading...</div>
   const groups = groupsFor(props.tab, props.views)
+  // A family is one card. It goes in the first section of this tab that has a
+  // member: section order is urgency order, the things that need my action
+  // first. The count of a section still counts the changes in that state.
+  const placed = new Set<string>()
+  const sections = groups.map((g) => ({
+    ...g,
+    rows: sortViews(g.items, props.sort).flatMap((v): Row[] => {
+      const key = familyKey(v.change)
+      const f = families.get(key)
+      if (!f || f.members.length === 1) return [{ view: v, family: null }]
+      if (placed.has(key)) return []
+      placed.add(key)
+      return [{ view: v, family: f }]
+    }),
+  }))
   if (groups.length === 0) {
     if (props.tab === 'needs-my-review') return <NeedsReviewEmpty views={props.views} onGoTo={props.onGoTo} />
     return <div className="panel empty">{EMPTY[props.tab]}</div>
@@ -137,16 +166,20 @@ export function Board(props: {
           when you press Request review, and only for that patch set.
         </p>
       )}
-      {groups.map((g) => (
+      {sections.map((g) => (
         <section key={g.title} className="group">
           <h3>
             {g.title} <span className="count">{g.items.length}</span>
           </h3>
           {g.hint && <p className="muted small">{g.hint}</p>}
           <ul className="changes">
-            {sortViews(g.items, props.sort).map((v) => (
-              <ChangeRow key={v.change.id} view={v} self={props.self!} onAct={props.onAct} />
-            ))}
+            {g.rows.map((r) =>
+              r.family ? (
+                <FamilyCard key={r.family.key} family={r.family} lead={r.view} self={props.self!} onAct={props.onAct} />
+              ) : (
+                <ChangeRow key={r.view.change.id} view={r.view} self={props.self!} onAct={props.onAct} />
+              ),
+            )}
           </ul>
         </section>
       ))}
