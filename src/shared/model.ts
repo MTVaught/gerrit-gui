@@ -167,9 +167,13 @@ export function describeActions(c: ActionCounts): string {
   return parts.length ? parts.join(', ') : 'Nothing waits on you'
 }
 
-/** Menu bar title for the glyph style, e.g. "◉ 3  ✎ 1". Empty when nothing is pending. */
-export function glyphTitle(c: ActionCounts): string {
-  return ACTION_CATEGORIES.filter((k) => c[k.id] > 0)
+/**
+ * Menu bar title for the glyph style, e.g. "◉ 3  ✎ 1". Zero categories are
+ * left out, so it is empty when nothing is pending, unless showZero keeps
+ * every category in place.
+ */
+export function glyphTitle(c: ActionCounts, showZero = false): string {
+  return ACTION_CATEGORIES.filter((k) => showZero || c[k.id] > 0)
     .map((k) => `${k.glyph} ${c[k.id]}`)
     .join('  ')
 }

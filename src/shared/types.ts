@@ -130,6 +130,11 @@ export interface Settings {
   /** Colored pills, or monochrome glyphs for people who cannot tell the colors apart. */
   badgeStyle: BadgeStyle
   /**
+   * Show every category in the menu bar even when its count is zero. With the
+   * color style the strip is then pills only, without the app icon.
+   */
+  showZeroCounts: boolean
+  /**
    * Optional project scope for the WIP scan (exact names, or a prefix ending
    * in "*"). Gerrit's reviewer: operator hides WIP changes, so the app has to
    * scan open WIP changes and filter client-side; on a big server, scope it.
@@ -171,9 +176,10 @@ export type ActionCounts = Record<ActionCategory, number>
 export interface BadgePayload {
   counts: ActionCounts
   style: BadgeStyle
+  showZeroCounts: boolean
   /** Square icon with the total baked in: Windows overlay, Linux tray. */
   iconDataUrl: string
-  /** macOS menu bar strip (icon plus colored pills) at 2x, or null when not needed. */
+  /** macOS menu bar strip (colored pills, with the icon unless showZeroCounts) at 2x, or null when not needed. */
   strip: { dataUrl: string; width: number; height: number } | null
 }
 
