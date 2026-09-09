@@ -1,14 +1,17 @@
 import { app, BrowserWindow, Menu, Tray, nativeImage } from 'electron'
 import trayTemplatePath from '../../resources/trayTemplate.png?asset'
 import trayPath from '../../resources/tray.png?asset'
-import type { ActionCounts, BadgePayload, BadgeStyle, TabId } from '../shared/types.ts'
+import type { ActionCounts, BadgePayload, BadgeStyle, TabId, UpdateState } from '../shared/types.ts'
 import { ACTION_CATEGORIES, describeActions, glyphTitle, totalActions } from '../shared/model.ts'
+import { updateAction, updateMenuLabel } from '../shared/update.ts'
 
 export interface TrayHandlers {
   show(): void
   showTab(tab: TabId): void
   refresh(): void
   setCompact(on: boolean): void
+  /** The next update step: check, download, or restart to install. */
+  update(): void
   quit(): void
 }
 
@@ -28,6 +31,7 @@ export class TrayController {
   private compact: boolean
   private counts: ActionCounts = NO_ACTIONS
   private style: BadgeStyle = 'color'
+  private updateRow: { label: string; enabled: boolean } | null = null
   private readonly base: Electron.NativeImage
   private readonly handlers: TrayHandlers
 
@@ -53,6 +57,14 @@ export class TrayController {
 
   setCompact(on: boolean): void {
     this.compact = on
+    this.rebuildMenu()
+  }
+
+  /** Show the updater in the menu. Rebuilds only when the row changes, not on every progress tick. */
+  setUpdate(state: UpdateState): void {
+    const row = state.status === 'disabled' ? null : { label: updateMenuLabel(state), enabled: updateAction(state) !== 'none' }
+    if (row?.label === this.updateRow?.label && row?.enabled === this.updateRow?.enabled) return
+    this.updateRow = row
     this.rebuildMenu()
   }
 
@@ -107,6 +119,9 @@ export class TrayController {
         { type: 'separator' },
         // Which build is running, so an installed copy can be checked against the repo.
         { label: `Version ${app.getVersion()}, build ${__BUILD_COMMIT__}`, enabled: false },
+        ...(this.updateRow
+          ? [{ label: this.updateRow.label, enabled: this.updateRow.enabled, click: () => this.handlers.update() }]
+          : []),
         { label: 'Quit', click: () => this.handlers.quit() },
       ]),
     )

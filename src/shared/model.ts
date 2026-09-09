@@ -35,6 +35,27 @@ export function humanReviewers(change: ChangeInfo): AccountInfo[] {
   )
 }
 
+/** Trim, lower-case and de-duplicate a team list as typed in Settings. */
+export function normalizeTeam(team: string[]): string[] {
+  const out: string[] = []
+  for (const raw of team) {
+    const t = raw.trim().toLowerCase()
+    if (t && !out.includes(t)) out.push(t)
+  }
+  return out
+}
+
+/**
+ * Team entries are usernames or email addresses, compared case-insensitively.
+ * The signed-in user is always a member, so a forgotten entry never hides
+ * their own vote or their review requests.
+ */
+export function isTeamMember(a: AccountInfo, team: string[], selfId: number): boolean {
+  if (a._account_id === selfId) return true
+  const keys = [a.username, a.email].filter((k): k is string => Boolean(k)).map((k) => k.toLowerCase())
+  return team.some((t) => keys.includes(t))
+}
+
 export function hasTag(change: ChangeInfo, tag: string): boolean {
   return change.hashtags?.includes(tag) ?? false
 }
@@ -94,13 +115,22 @@ export function reviewLink(view: ChangeView): ChangeLink {
  * the WIP flag left to control when CI runs. Gerrit clears votes on a
  * new patch set, so a follow-up push the author did not re-request review for
  * drops back to in-progress instead of pinging everyone again.
+ *
+ * `team` (usernames or emails from Settings) limits "every reviewer" to the
+ * team; an empty list means all human reviewers count.
  */
-export function classify(change: ChangeInfo, selfId: number): ChangeView {
+export function classify(change: ChangeInfo, selfId: number, team: string[] = []): ChangeView {
   const votes = currentVotes(change)
-  const reviewers: ReviewerStatus[] = humanReviewers(change).map((account) => ({
+  const everyone: ReviewerStatus[] = humanReviewers(change).map((account) => ({
     account,
     vote: votes.get(account._account_id) ?? 0,
   }))
+  // With a team, only its members decide the outcome. Everyone else is shown
+  // on the change and on the External reviews tab, but their votes are inert.
+  const members = normalizeTeam(team)
+  const teamScoped = members.length > 0
+  const reviewers = teamScoped ? everyone.filter((r) => isTeamMember(r.account, members, selfId)) : everyone
+  const externalReviewers = teamScoped ? everyone.filter((r) => !isTeamMember(r.account, members, selfId)) : []
   const pending = reviewers.filter((r) => r.vote === 0).map((r) => r.account)
   const negatives = reviewers.filter((r) => r.vote < 0)
   const isMine = change.owner._account_id === selfId
@@ -129,6 +159,9 @@ export function classify(change: ChangeInfo, selfId: number): ChangeView {
     state,
     reviewers,
     pending,
+    externalReviewers,
+    teamScoped,
+    externalOwner: teamScoped && !isTeamMember(change.owner, members, selfId),
     wip: change.work_in_progress === true,
     requestedPatchSet: requested,
     reviewRequested,
@@ -143,9 +176,10 @@ export function classify(change: ChangeInfo, selfId: number): ChangeView {
   }
 }
 
-export function classifyAll(changes: ChangeInfo[], selfId: number): ChangeView[] {
-  return changes.map((c) => classify(c, selfId))
+export function classifyAll(changes: ChangeInfo[], selfId: number, team: string[] = []): ChangeView[] {
+  return changes.map((c) => classify(c, selfId, team))
 }
+
 
 export interface ActionCategoryInfo {
   id: ActionCategory

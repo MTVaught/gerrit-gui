@@ -11,6 +11,7 @@ import type {
   SuggestedReviewerInfo,
   TabId,
   UiState,
+  UpdateState,
 } from './types.ts'
 
 export interface Api {
@@ -20,6 +21,8 @@ export interface Api {
   fetchDashboard(): Promise<DashboardData>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
+  /** Gerrit accounts matching a name, username or email, for the team list in Settings. */
+  suggestAccounts(q: string): Promise<AccountInfo[]>
   /** Open the change, a patch set, or a patch-set diff in the browser. */
   openChange(link: ChangeLink): Promise<void>
   /** The same URL as a string, for copying. */
@@ -32,4 +35,15 @@ export interface Api {
   onRefreshRequested(cb: () => void): () => void
   /** The tray menu asked for a specific board tab. */
   onTabRequested(cb: (tab: TabId) => void): () => void
+
+  // Application updates from GitHub releases. Each call resolves with the
+  // state once the step has run; progress arrives through onUpdateState.
+  getUpdateState(): Promise<UpdateState>
+  checkForUpdate(): Promise<UpdateState>
+  downloadUpdate(): Promise<UpdateState>
+  /** Quit and install the downloaded update; with confirm, a native dialog asks first. */
+  installUpdate(confirm: boolean): Promise<UpdateState>
+  /** Open the GitHub release page of the offered version, or the releases list. */
+  openReleaseNotes(): Promise<void>
+  onUpdateState(cb: (state: UpdateState) => void): () => void
 }

@@ -6,6 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import type { BadgeStyle, SettingsInput, SettingsStatus } from '../shared/types.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
+import { normalizeTeam } from '../shared/model.ts'
 import type { Credentials, SettingsStore } from '../main/service.ts'
 
 interface Stored {
@@ -13,6 +14,7 @@ interface Stored {
   username: string
   password?: string
   projects?: string[]
+  team?: string[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
 }
@@ -34,7 +36,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
   return {
     async getStatus(): Promise<SettingsStatus> {
       const s = await read()
-      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, hasPassword: Boolean(s.password), encrypted: false }
+      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], team: s.team ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, hasPassword: Boolean(s.password), encrypted: false }
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
@@ -47,6 +49,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
         username: input.username.trim(),
         password: input.password || prev.password,
         projects: input.projects.map((p) => p.trim()).filter(Boolean),
+        team: normalizeTeam(input.team),
         badgeStyle: input.badgeStyle,
         showZeroCounts: input.showZeroCounts,
       }
