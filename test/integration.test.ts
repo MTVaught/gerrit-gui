@@ -33,11 +33,11 @@ async function pushPatchSet(u: string, id: number, content: string) {
   await raw(u, 'POST', `/changes/${id}/edit:publish`, { notify: 'NONE' })
 }
 
-async function view(u: string, id: number) {
+async function view(u: string, id: number, team: string[] = []) {
   const g = user(u)
   const me = await g.self()
   const [[c]] = await g.queryChanges([`change:${id}`])
-  return classify(c, me._account_id)
+  return classify(c, me._account_id, team)
 }
 
 test('full workflow through the client', { skip: !reachable && 'no local Gerrit at ' + URL }, async () => {
@@ -73,6 +73,12 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
 
   await carol.vote(id, 'Code-Review', -1, 'rename please')
   assert.equal((await view('alice', id)).state, 'needs-changes', 'everyone voted, one negative')
+
+  // The same votes seen with a team that leaves carol out: her -1 is shown but does not decide.
+  v = await view('alice', id, ['bob'])
+  assert.equal(v.state, 'approved', 'only team votes decide')
+  assert.deepEqual(v.externalReviewers.map((r) => [r.account.username, r.vote]), [['carol', -1]])
+  assert.deepEqual(v.reviewers.map((r) => r.account.username), ['bob'])
 
   // Author pushes fixes over two patch sets; nobody is asked to look at either.
   await pushPatchSet('alice', id, 'v2')
