@@ -17,6 +17,8 @@ interface Stored {
   team?: string[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
+  showAppBadge?: boolean
+  showTrayCounts?: boolean
 }
 
 export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-gui', 'web-settings.json')): SettingsStore {
@@ -36,7 +38,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
   return {
     async getStatus(): Promise<SettingsStatus> {
       const s = await read()
-      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], team: s.team ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, hasPassword: Boolean(s.password), encrypted: false }
+      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], team: s.team ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, hasPassword: Boolean(s.password), encrypted: false }
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
@@ -52,6 +54,8 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
         team: normalizeTeam(input.team),
         badgeStyle: input.badgeStyle,
         showZeroCounts: input.showZeroCounts,
+        showAppBadge: input.showAppBadge,
+        showTrayCounts: input.showTrayCounts,
       }
       await fs.mkdir(path.dirname(file), { recursive: true })
       await fs.writeFile(file, JSON.stringify(next, null, 2), { mode: 0o600 })

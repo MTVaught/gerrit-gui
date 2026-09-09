@@ -71,6 +71,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .settings label { display: block; margin: 12px 0 4px; font-weight: 600; }
 .settings label.check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
 .settings label.check input { display: inline; width: auto; margin: 0; }
+.settings label.check:has(input:disabled) { opacity: 0.5; }
 .settings input { display: block; width: 100%; padding: 8px; font: inherit; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); margin-top: 4px; }
 .row { display: flex; gap: 8px; margin-top: 16px; }
 .board { padding: 8px 16px 40px; max-width: 1400px; margin: 0 auto; width: 100%; }

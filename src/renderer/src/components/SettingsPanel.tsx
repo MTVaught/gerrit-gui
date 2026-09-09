@@ -14,6 +14,8 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
   const [team, setTeam] = useState<string[]>(props.initial.team)
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(props.initial.badgeStyle)
   const [showZeroCounts, setShowZeroCounts] = useState(props.initial.showZeroCounts)
+  const [showAppBadge, setShowAppBadge] = useState(props.initial.showAppBadge)
+  const [showTrayCounts, setShowTrayCounts] = useState(props.initial.showTrayCounts)
   const [status, setStatus] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const canClose = props.initial.serverUrl && props.initial.username && props.initial.hasPassword
@@ -30,6 +32,8 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         team,
         badgeStyle,
         showZeroCounts,
+        showAppBadge,
+        showTrayCounts,
       })
       const me = await api.testConnection()
       setStatus(`Connected as ${me.name ?? me.username} (${me.email ?? 'no email'})`)
@@ -86,26 +90,46 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
       </p>
       {!isBrowserMode && (
         <>
+          <h2>App icon</h2>
+          <label className="check">
+            <input type="checkbox" checked={showAppBadge} onChange={(e) => setShowAppBadge(e.target.checked)} />
+            Show the total as a badge on the app icon
+          </label>
+          <p className="muted small">The Dock on macOS, the launcher on Linux and the taskbar on Windows.</p>
           <h2>Menu bar</h2>
+          <label className="check">
+            <input type="checkbox" checked={showTrayCounts} onChange={(e) => setShowTrayCounts(e.target.checked)} />
+            Show counts on the menu bar icon
+          </label>
+          <p className="muted small">
+            Off, the menu bar keeps the plain icon. The tooltip and the menu still list what waits on you.
+          </p>
           <label className="check">
             <input
               type="checkbox"
               checked={badgeStyle === 'glyph'}
+              disabled={!showTrayCounts}
               onChange={(e) => setBadgeStyle(e.target.checked ? 'glyph' : 'color')}
             />
             Show glyphs instead of colored counts
           </label>
           <p className="muted small">
             The menu bar shows what waits on you as one colored count per category: Review, Fix, Mark ready, Merge. Glyphs
-            (◉ ✎ ◆ ⇧) replace the colors if you cannot tell them apart. The tray menu names each category with its count.
+            (◉ ✎ ◆ ⇧) replace the colors if you cannot tell them apart. The counts stand in for the app icon, which
+            shows only when nothing waits on you. The tray menu names each category with its count.
           </p>
           <label className="check">
-            <input type="checkbox" checked={showZeroCounts} onChange={(e) => setShowZeroCounts(e.target.checked)} />
-            Always show all four categories, even at zero
+            <input
+              type="checkbox"
+              checked={showZeroCounts}
+              disabled={!showTrayCounts}
+              onChange={(e) => setShowZeroCounts(e.target.checked)}
+            />
+            Always show Review, Fix and Mark ready, even at zero
           </label>
           <p className="muted small">
-            Keeps every count in the menu bar so its position never changes. With colored counts, the app icon is left out
-            and only the pills show.
+            Keeps those counts in the menu bar so their position never changes. Merge appears only when you have something
+            to merge, since it needs +2 rights.
           </p>
         </>
       )}

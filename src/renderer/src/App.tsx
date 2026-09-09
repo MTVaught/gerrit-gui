@@ -126,16 +126,20 @@ export function App() {
   const actions = useMemo(() => actionCounts(views), [views])
   const badgeStyle = settings?.badgeStyle ?? 'color'
   const showZeroCounts = settings?.showZeroCounts ?? false
+  const showAppBadge = settings?.showAppBadge ?? true
+  const showTrayCounts = settings?.showTrayCounts ?? true
   useEffect(() => {
     if (!data) return
     api.setBadge({
       counts: actions,
       style: badgeStyle,
       showZeroCounts,
+      showAppBadge,
+      showTrayCounts,
       iconDataUrl: renderBadgeIcon(totalActions(actions)),
-      strip: badgeStyle === 'color' ? renderTrayStrip(actions, showZeroCounts) : null,
+      strip: showTrayCounts && badgeStyle === 'color' ? renderTrayStrip(actions, showZeroCounts) : null,
     })
-  }, [actions, badgeStyle, showZeroCounts, data])
+  }, [actions, badgeStyle, showZeroCounts, showAppBadge, showTrayCounts, data])
 
   return (
     <div className={'app' + (compact ? ' compact' : '')}>
