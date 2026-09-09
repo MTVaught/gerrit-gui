@@ -9,6 +9,7 @@ interface StoredSettings {
   username: string
   projects?: string[]
   badgeStyle?: BadgeStyle
+  showZeroCounts?: boolean
   /** base64 of safeStorage ciphertext, or plaintext when no keychain is available. */
   password?: string
   passwordEncrypted?: boolean
@@ -34,6 +35,7 @@ export async function getStatus(): Promise<SettingsStatus> {
     username: s.username,
     projects: s.projects ?? [],
     badgeStyle: s.badgeStyle ?? 'color',
+    showZeroCounts: s.showZeroCounts ?? false,
     hasPassword: Boolean(s.password),
     encrypted: safeStorage.isEncryptionAvailable(),
   }
@@ -55,6 +57,7 @@ export async function save(input: SettingsInput): Promise<void> {
     username: input.username.trim(),
     projects: input.projects.map((p) => p.trim()).filter(Boolean),
     badgeStyle: input.badgeStyle,
+    showZeroCounts: input.showZeroCounts,
     password: prev.password,
     passwordEncrypted: prev.passwordEncrypted,
     ui: prev.ui,

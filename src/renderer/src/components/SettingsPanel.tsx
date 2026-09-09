@@ -8,6 +8,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
   const [password, setPassword] = useState('')
   const [projects, setProjects] = useState(props.initial.projects.join(', '))
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(props.initial.badgeStyle)
+  const [showZeroCounts, setShowZeroCounts] = useState(props.initial.showZeroCounts)
   const [status, setStatus] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const canClose = props.initial.serverUrl && props.initial.username && props.initial.hasPassword
@@ -22,6 +23,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         password: password || undefined,
         projects: projects.split(',').map((p) => p.trim()).filter(Boolean),
         badgeStyle,
+        showZeroCounts,
       })
       const me = await api.testConnection()
       setStatus(`Connected as ${me.name ?? me.username} (${me.email ?? 'no email'})`)
@@ -79,6 +81,14 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
           <p className="muted small">
             The menu bar shows what waits on you as one colored count per category: Review, Fix, Mark ready, Merge. Glyphs
             (◉ ✎ ◆ ⇧) replace the colors if you cannot tell them apart. The tray menu names each category with its count.
+          </p>
+          <label className="check">
+            <input type="checkbox" checked={showZeroCounts} onChange={(e) => setShowZeroCounts(e.target.checked)} />
+            Always show all four categories, even at zero
+          </label>
+          <p className="muted small">
+            Keeps every count in the menu bar so its position never changes. With colored counts, the app icon is left out
+            and only the pills show.
           </p>
         </>
       )}
