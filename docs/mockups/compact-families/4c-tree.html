@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+/* Design 4c: no tint. The header is a heavier line, the members are indented under it with a tree guide, and the family ends with a heavier line. */
+tr.fh td{border-top:2px solid #c9d1de;border-bottom:none;padding:7px 8px 2px 9px}
+tr.fh .t{font-size:13px;display:inline-flex;gap:6px;align-items:center}
+tr.fh .fork{margin-left:6px}
+tr.mem td{border-bottom:none;padding-top:3px;padding-bottom:3px}
+tr.mem td.c{padding-left:6px}
+tr.mem .t{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;display:flex;gap:5px;align-items:center}
+tr.mem .t::before{content:"├";color:#b3b8c4;font-size:13px;margin-left:4px}
+tr.mem.end .t::before{content:"└"}
+tr.mem .s{padding-left:22px}
+tr.mem.end td{border-bottom:2px solid #c9d1de;padding-bottom:6px}
+tr.mem.merged .t{color:var(--muted);font-weight:500}
+.fk{vertical-align:-1px;color:var(--muted)}
+</style></head><body>
+<div class="top">
+  <div class="tabs"><span class="tab">To review <span class="count hot">1</span></span><span class="tab">Reviewing <span class="count">2</span></span><span class="tab active">Mine <span class="count">30</span></span><span class="tab">Ready <span class="count">3</span></span><span class="tab">Merged <span class="count">20</span></span></div>
+  <div class="toolbar"><span class="muted" style="font-size:12px">updated just now</span><span class="spacer"></span><span class="sel">⇅ ▾</span><span class="ibtn">⟳</span><span class="ibtn on">⤢</span><span class="ibtn">⚙</span></div>
+</div>
+<table>
+<colgroup><col><col class="ci"><col class="rv"><col class="ac"></colgroup>
+<tr><th style="padding-left:9px">Change</th><th>CI</th><th>Reviewers</th><th></th></tr>
+<tr class="g"><td colspan="4">Needs changes<span class="count">3</span></td></tr>
+<tr class="fh"><td colspan="4"><span class="t"><svg class="fk" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="4" r="2.5"/><circle cx="6" cy="20" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 6.5v11"/><path d="M18 10.5c0 4-12 2-12 7"/></svg>C4 needs changes (carol -1)</span><span class="fork">2 branches</span></td></tr>
+<tr class="changes mem"><td class="c"><div class="t">master</div><div class="s">#4 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="changes mem end"><td class="c"><div class="t">release-2.0</div><div class="s">#42 · 24h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="changes"><td class="c"><div class="t ell">S4 Needs changes: carol -1</div><div class="s">#21 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+
+<tr class="g"><td colspan="4">Approved<span class="count">5</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">X2 bob and carol +1, erin has not voted</div><div class="s">#36 · 26h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">S5 Approved: everyone positive, still WIP</div><div class="s">#22 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+
+<tr class="g"><td colspan="4">Ready to merge<span class="count">2</span></td></tr>
+<tr class="fh"><td colspan="4"><span class="t"><svg class="fk" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="4" r="2.5"/><circle cx="6" cy="20" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 6.5v11"/><path d="M18 10.5c0 4-12 2-12 7"/></svg>C6 ready-to-merge and active (CI running)</span><span class="fork">2 branches</span></td></tr>
+<tr class="mem merged"><td class="c"><div class="t">master</div><div class="s">#6 · merged 24h ago · PS 1</div></td><td></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+2</span></span><span class="av d">D<span class="v pos">+2</span></span></span></td><td class="a"></td></tr>
+<tr class="rtm mem end"><td class="c"><div class="t">release-1.0</div><div class="s">#44 · 24h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="rtm"><td class="c"><div class="t ell">S6 Ready to merge: approved, tagged, marked active</div><div class="s">#23 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+
+<tr class="g"><td colspan="4">Out for review<span class="count">4</span></td></tr>
+<tr class="fh"><td colspan="4"><span class="t"><svg class="fk" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="4" r="2.5"/><circle cx="6" cy="20" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 6.5v11"/><path d="M18 10.5c0 4-12 2-12 7"/></svg>C5 approved by everyone, still WIP</span><span class="fork">3 branches</span></td></tr>
+<tr class="approved mem"><td class="c"><div class="t">master</div><div class="s">#5 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+<tr class="review mem"><td class="c"><div class="t">release-1.0</div><div class="s">#41 · 24h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pend"></span></span><span class="av c">C<span class="v pend"></span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="approved mem end"><td class="c"><div class="t">release-2.0</div><div class="s">#40 · 24h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+<tr class="fh"><td colspan="4"><span class="t"><svg class="fk" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="4" r="2.5"/><circle cx="6" cy="20" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 6.5v11"/><path d="M18 10.5c0 4-12 2-12 7"/></svg>C2 review requested, nobody has reviewed</span><span class="fork">2 branches</span></td></tr>
+<tr class="review mem"><td class="c"><div class="t">master</div><div class="s">#2 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pend"></span></span><span class="av c">C<span class="v pend"></span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="prog mem end"><td class="c"><div class="t">release-2.0</div><div class="s">#43 · 24h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="muted" style="font-size:11px">none</span></td><td class="a"><span class="btn sm primary">Request</span></td></tr>
+<tr class="review"><td class="c"><div class="t ell">stale tag 1789061640434</div><div class="s">#55 · 5h ago · PS 3 · <span class="ins">+1</span> <span class="del">−1</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+</table>
+<div class="mock-note">Design 4c: no tint. A heavier line opens and closes the family, and the members hang from the header with a tree guide. Each branch is an ordinary ledger line, titled by its branch, with its own rail colour, sub-line, CI, reviewers and action, and it expands like any other line. Single changes are unchanged.</div>
+</body></html>

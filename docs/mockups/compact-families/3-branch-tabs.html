@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+/* Design 3: one line per family with a segmented branch switch in the sub-line. The selected branch drives CI, reviewers and the action. */
+.seg{display:inline-flex;white-space:nowrap;max-width:100%;margin-top:3px;border:1px solid var(--border);border-radius:5px;overflow:hidden;font-size:10px;font-family:ui-monospace,Menlo,monospace}
+.seg span{padding:1px 5px;flex:0 0 auto;border-right:1px solid var(--border);display:inline-flex;gap:4px;align-items:center;color:var(--muted)}
+.seg span:last-child{border-right:none}
+.seg span.on{background:var(--fg);color:#fff}
+.seg .dot{width:6px;height:6px}
+.seg span.on .dot{box-shadow:0 0 0 1px #fff}
+.s.after{margin-top:2px}
+</style></head><body>
+<div class="top">
+  <div class="tabs"><span class="tab">To review <span class="count hot">1</span></span><span class="tab">Reviewing <span class="count">2</span></span><span class="tab active">Mine <span class="count">30</span></span><span class="tab">Ready <span class="count">3</span></span><span class="tab">Merged <span class="count">20</span></span></div>
+  <div class="toolbar"><span class="muted" style="font-size:12px">updated just now</span><span class="spacer"></span><span class="sel">⇅ ▾</span><span class="ibtn">⟳</span><span class="ibtn on">⤢</span><span class="ibtn">⚙</span></div>
+</div>
+<table>
+<colgroup><col><col class="ci"><col class="rv"><col class="ac"></colgroup>
+<tr><th style="padding-left:9px">Change</th><th>CI</th><th>Reviewers</th><th></th></tr>
+<tr class="g"><td colspan="4">Needs changes<span class="count">3</span></td></tr>
+<tr class="changes"><td class="c"><div class="t ell">C4 needs changes (carol -1)</div><div class="seg"><span class="on"><i class="dot changes"></i>master</span><span><i class="dot changes"></i>release-2.0</span></div><div class="s after">#4 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="changes"><td class="c"><div class="t ell">S4 Needs changes: carol -1</div><div class="s">#21 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+
+<tr class="g"><td colspan="4">Approved<span class="count">5</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">X2 bob and carol +1, erin has not voted</div><div class="s">#36 · 26h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">S5 Approved: everyone positive, still WIP</div><div class="s">#22 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+
+<tr class="g"><td colspan="4">Ready to merge<span class="count">2</span></td></tr>
+<tr class="rtm"><td class="c"><div class="t ell">C6 ready-to-merge and active (CI running)</div><div class="seg"><span><i class="dot prog"></i>master ✓</span><span class="on"><i class="dot rtm"></i>release-1.0</span></div><div class="s after">#44 · 24h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="rtm"><td class="c"><div class="t ell">S6 Ready to merge: approved, tagged, marked active</div><div class="s">#23 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+
+<tr class="g"><td colspan="4">Out for review<span class="count">4</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">C5 approved by everyone, still WIP</div><div class="seg"><span><i class="dot approved"></i>master</span><span><i class="dot review"></i>release-1.0</span><span class="on"><i class="dot approved"></i>release-2.0</span></div><div class="s after">#40 · 24h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+<tr class="review"><td class="c"><div class="t ell">C2 review requested, nobody has reviewed</div><div class="seg"><span class="on"><i class="dot review"></i>master</span><span><i class="dot prog"></i>release-2.0</span></div><div class="s after">#2 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pend"></span></span><span class="av c">C<span class="v pend"></span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="review"><td class="c"><div class="t ell">stale tag 1789061640434</div><div class="s">#55 · 5h ago · PS 3 · <span class="ins">+1</span> <span class="del">−1</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+</table>
+<div class="mock-note">Design 3: one line per family with a segmented branch switch. Each segment carries a dot in the colour of that branch's state; the dark segment is the selected branch, whose number, age, CI, reviewers and action the line shows. Here release-2.0 of C5 is selected, so the rail and the button are that branch's. The selection lasts for the session.</div>
+</body></html>
