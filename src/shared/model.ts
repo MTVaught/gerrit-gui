@@ -182,13 +182,106 @@ export function classifyAll(changes: ChangeInfo[], selfId: number, team: string[
 }
 
 /**
- * Open changes owned by someone outside the team: the External Reviews tab.
- * Only the owner decides this. Who reviews does not, because CI and
+ * Internal or external is decided by the owner alone, cross-referenced with
+ * the team list in Settings. Who reviews does not matter, because CI and
  * maintainer lists add reviewers from outside the team to the team's own
- * changes, and those must stay on My Changes and Reviewing.
+ * changes, and those must stay on My Changes and Reviewing. Without a team
+ * everything is internal.
+ *
+ * An internal change is listed on the five regular tabs and never on
+ * External Reviews. An external change is listed on External Reviews only.
  */
+export function isInternal(v: ChangeView): boolean {
+  return !v.externalOwner
+}
+
+/** Open changes owned by someone outside the team: the External Reviews tab, and nowhere else. */
 export function isExternalReview(v: ChangeView): boolean {
   return v.change.status === 'NEW' && v.externalOwner
+}
+
+export interface Group {
+  title: string
+  hint?: string
+  items: ChangeView[]
+}
+
+function byState(items: ChangeView[], order: ReviewState[], titles?: Partial<Record<ReviewState, string>>): Group[] {
+  return order
+    .map((s) => ({ title: titles?.[s] ?? STATE_LABEL[s], items: items.filter((v) => v.state === s) }))
+    .filter((g) => g.items.length > 0)
+}
+
+const REVIEWER_ORDER: ReviewState[] = ['needs-changes', 'approved', 'ready-to-merge', 'in-progress']
+const REVIEWER_TITLES: Partial<Record<ReviewState, string>> = { 'in-progress': 'Author iterating, no review requested' }
+
+/** Sections for the tabs where the user is a reviewer, the same on Reviewing and External Reviews. */
+function reviewerGroups(items: ChangeView[]): Group[] {
+  return [
+    { title: 'Waiting on you', items: items.filter((v) => v.needsMyReview && v.state === 'needs-review') },
+    { title: 'Reviewed, waiting on others', items: items.filter((v) => !v.needsMyReview && v.state === 'needs-review') },
+    ...byState(items, REVIEWER_ORDER, REVIEWER_TITLES),
+  ].filter((g) => g.items.length > 0)
+}
+
+/**
+ * The sections of one tab, before the View filter. Every tab except External
+ * Reviews lists internal changes only (see isInternal); External Reviews
+ * lists the open external ones. No change is on both kinds of tab.
+ */
+export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
+  const internal = views.filter(isInternal)
+  const open = internal.filter((v) => v.change.status === 'NEW')
+  switch (tab) {
+    case 'needs-my-review':
+      return [{ title: 'Waiting on you', items: open.filter((v) => v.needsMyReview) }].filter((g) => g.items.length > 0)
+    case 'reviewing':
+      return reviewerGroups(open.filter((v) => v.iAmReviewer && !v.isMine))
+    case 'mine':
+      return byState(
+        open.filter((v) => v.isMine),
+        ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'in-progress'],
+        { 'needs-review': 'Out for review', 'in-progress': 'In Progress, review not requested' },
+      )
+    case 'ready-to-merge':
+      return [
+        { title: 'Ready to Merge', items: open.filter((v) => v.state === 'ready-to-merge') },
+        {
+          title: 'Tagged ready-to-merge but no longer approved',
+          hint: 'A new patch set reset the votes. The owner should request review again or clear the tag.',
+          items: open.filter((v) => v.staleReadyToMerge),
+        },
+      ].filter((g) => g.items.length > 0)
+    case 'merged':
+      return [{ title: 'Merged in the last 14 days', items: internal.filter((v) => v.change.status === 'MERGED') }]
+    case 'external-reviews':
+      return reviewerGroups(views.filter(isExternalReview))
+  }
+}
+
+/** The number on each tab: how many changes its sections list before the View filter. */
+export function tabCounts(views: ChangeView[]): Record<TabId, number> {
+  const c: Record<TabId, number> = {
+    'needs-my-review': 0,
+    reviewing: 0,
+    mine: 0,
+    'ready-to-merge': 0,
+    merged: 0,
+    'external-reviews': 0,
+  }
+  for (const v of views) {
+    if (!isInternal(v)) {
+      if (isExternalReview(v)) c['external-reviews']++
+      continue
+    }
+    if (v.change.status === 'MERGED') c.merged++
+    if (v.change.status !== 'NEW') continue
+    if (v.needsMyReview) c['needs-my-review']++
+    if (v.iAmReviewer && !v.isMine) c.reviewing++
+    if (v.isMine) c.mine++
+    if (v.state === 'ready-to-merge' || v.staleReadyToMerge) c['ready-to-merge']++
+  }
+  return c
 }
 
 
@@ -214,7 +307,7 @@ export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
 
 /**
  * How many changes wait on this user, by the action they need to take:
- *  review  someone asked me to review the current patch set
+ *  review  someone on the team asked me to review the current patch set
  *  fix     my change got a negative outcome; push corrections
  *  ready   my change is approved; mark it ready to merge
  *  merge   tagged ready-to-merge and I may +2
@@ -222,7 +315,8 @@ export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
 export function actionCounts(views: ChangeView[]): ActionCounts {
   const c: ActionCounts = { review: 0, fix: 0, ready: 0, merge: 0 }
   for (const v of views) {
-    if (v.change.status !== 'NEW') continue
+    // Each category opens a regular tab, and those list internal changes only.
+    if (v.change.status !== 'NEW' || !isInternal(v)) continue
     if (v.needsMyReview) c.review++
     if (v.isMine && v.state === 'needs-changes') c.fix++
     if (v.isMine && v.state === 'approved') c.ready++
@@ -398,16 +492,13 @@ export function sortViews(views: ChangeView[], sort: SortId): ChangeView[] {
 
 /**
  * Owner groups a filter can name without picking accounts: the user's own
- * changes, changes owned inside the team from Settings, and changes owned
- * outside it. The team scopes need a team; without one they match nothing.
+ * changes. Inside or outside the team is not a scope, because the tabs already
+ * split on it (see groupsFor): every row on a regular tab is owned by the
+ * team, and every row on External Reviews by someone else.
  */
-export type AuthorScope = 'me' | 'team' | 'outside'
+export type AuthorScope = 'me'
 
-export const AUTHOR_SCOPES: { id: AuthorScope; label: string; title: string; needsTeam: boolean }[] = [
-  { id: 'me', label: 'Me', title: 'Changes you own', needsTeam: false },
-  { id: 'team', label: 'My team', title: 'Changes owned by a member of the team set in Settings', needsTeam: true },
-  { id: 'outside', label: 'Outside team', title: 'Changes owned by someone outside the team set in Settings', needsTeam: true },
-]
+export const AUTHOR_SCOPES: { id: AuthorScope; label: string; title: string }[] = [{ id: 'me', label: 'Me', title: 'Changes you own' }]
 
 /**
  * What the View menu narrows the rows to. Authors and scopes are one
@@ -431,10 +522,6 @@ function inScope(v: ChangeView, scope: AuthorScope): boolean {
   switch (scope) {
     case 'me':
       return v.isMine
-    case 'team':
-      return v.teamScoped && !v.externalOwner
-    case 'outside':
-      return v.externalOwner
   }
 }
 

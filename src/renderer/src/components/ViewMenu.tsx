@@ -37,8 +37,6 @@ export function ViewMenu(props: {
   onFilter: (f: ViewFilter) => void
   /** The changes on the current tab, before the filter. */
   tabViews: ChangeView[]
-  /** The team scopes need a team from Settings. */
-  teamConfigured: boolean
   compact: boolean
 }) {
   const [open, setOpen] = useState(false)
@@ -126,8 +124,6 @@ export function ViewMenu(props: {
     props.onSort(DEFAULT_SORT)
     setQ('')
   }
-  const scopes = AUTHOR_SCOPES.filter((s) => !s.needsTeam || props.teamConfigured)
-
   return (
     <div className="view" ref={root}>
       <button
@@ -175,7 +171,7 @@ export function ViewMenu(props: {
                 </button>
               </span>
             ))}
-            {scopes.map((s) => (
+            {AUTHOR_SCOPES.map((s) => (
               <button
                 key={s.id}
                 className={'chip tog' + (filter.scopes.includes(s.id) ? ' on' : '')}

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountMatches, actionCounts, classify, classifyAll, describeActions, filterViews, glyphTitle, groupByChangeId, isExternalReview, lastReviewedPatchSet, normalizeTeam, ownersOf, reviewLink, shortChangeId, sortByBranch, sortViews, urgency, type ViewFilter } from './model.ts'
+import { accountMatches, actionCounts, classify, classifyAll, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, lastReviewedPatchSet, normalizeTeam, ownersOf, reviewLink, shortChangeId, sortByBranch, sortViews, tabCounts, urgency, type ViewFilter } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -231,6 +231,81 @@ test('team: only the owner makes a change external, not its reviewers', () => {
   assert.equal(isExternalReview(classify(change({ owner: erin, reviewers: [bob] }), bob._account_id)), false)
 })
 
+test('team: an external change is on the External Reviews tab and on no other', () => {
+  // Bob is signed in. Carol is on the team; Alice and Erin are not.
+  const changes = [
+    // 1: Erin asked Bob to review, and Bob has not voted: external, waiting on Bob.
+    change({ number: 1, owner: erin, reviewers: [bob], requested: 3 }),
+    // 2: Erin's change, Bob voted +1 and it is tagged: external, ready to merge.
+    change({ number: 2, owner: erin, reviewers: [bob], votes: { 2: 1 }, requested: 3, hashtags: ['ready-to-merge'], maxVote: 2 }),
+    // 3: Erin's change that merged: external, so not on Recently Merged.
+    change({ number: 3, owner: erin, reviewers: [bob], status: 'MERGED' }),
+    // 4: Carol asked Bob, with Erin also on it: internal, waiting on Bob.
+    change({ number: 4, owner: carol, reviewers: [bob, erin], requested: 3 }),
+    // 5: Bob's own change, reviewed by Erin only: internal, mine.
+    change({ number: 5, owner: bob, reviewers: [erin], requested: 3 }),
+    // 6: Carol's merged change: internal, on Recently Merged.
+    change({ number: 6, owner: carol, reviewers: [bob], status: 'MERGED' }),
+  ]
+  const views = classifyAll(changes, bob._account_id, TEAM)
+  assert.deepEqual(views.map(isInternal), [false, false, false, true, true, true])
+  const on = (tab: Parameters<typeof groupsFor>[0]) => groupsFor(tab, views).flatMap((g) => g.items.map((v) => v.change._number))
+  assert.deepEqual(on('needs-my-review'), [4])
+  assert.deepEqual(on('reviewing'), [4])
+  assert.deepEqual(on('mine'), [5])
+  assert.deepEqual(on('ready-to-merge'), [])
+  assert.deepEqual(on('merged'), [6])
+  assert.deepEqual(on('external-reviews'), [1, 2])
+  assert.deepEqual(tabCounts(views), { 'needs-my-review': 1, reviewing: 1, mine: 1, 'ready-to-merge': 0, merged: 1, 'external-reviews': 2 })
+  // The tray counts follow the regular tabs, so Erin's request and her ready change are left out.
+  assert.deepEqual(actionCounts(views), { review: 1, fix: 0, ready: 0, merge: 0 })
+  // Without a team the same changes are all internal and the external tab is empty.
+  const none = classifyAll(changes, bob._account_id)
+  assert.equal(none.every(isInternal), true)
+  assert.deepEqual(groupsFor('external-reviews', none), [])
+  assert.deepEqual(groupsFor('needs-my-review', none).flatMap((g) => g.items.map((v) => v.change._number)), [1, 4])
+  assert.deepEqual(groupsFor('merged', none).flatMap((g) => g.items.map((v) => v.change._number)), [3, 6])
+  assert.equal(actionCounts(none).review, 2)
+  assert.equal(actionCounts(none).merge, 1)
+})
+
+test('groupsFor: the tabs are sectioned by state and empty sections are left out', () => {
+  const views = classifyAll(
+    [
+      change({ number: 1, reviewers: [bob], requested: 3 }),
+      change({ number: 2, reviewers: [bob], votes: { 2: -1 }, requested: 3 }),
+      change({ number: 3, reviewers: [bob] }),
+    ],
+    alice._account_id,
+  )
+  assert.deepEqual(
+    groupsFor('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]),
+    [
+      ['Needs Changes', [2]],
+      ['Out for review', [1]],
+      ['In Progress, review not requested', [3]],
+    ],
+  )
+  const asBob = classifyAll(
+    [
+      change({ number: 1, reviewers: [bob], requested: 3 }),
+      change({ number: 2, reviewers: [bob, carol], votes: { 2: 1 }, requested: 3 }),
+      change({ number: 3, reviewers: [bob] }),
+    ],
+    bob._account_id,
+  )
+  assert.deepEqual(
+    groupsFor('reviewing', asBob).map((g) => [g.title, g.items.map((v) => v.change._number)]),
+    [
+      ['Waiting on you', [1]],
+      ['Reviewed, waiting on others', [2]],
+      ['Author iterating, no review requested', [3]],
+    ],
+  )
+  assert.deepEqual(groupsFor('needs-my-review', asBob).map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Waiting on you', [1]]])
+  assert.deepEqual(groupsFor('mine', asBob), [])
+})
+
 test('team: bots and the owner are left out of both lists', () => {
   const v = classify(change({ reviewers: [bob, bot, alice, erin], requested: 3 }), 1, TEAM)
   assert.deepEqual(v.reviewers.map((r) => r.account._account_id), [2])
@@ -337,16 +412,9 @@ test('filterViews: picked authors and scopes are one condition; the search is an
   const nums = (f: Partial<ViewFilter>) => filterViews(views, { ...NONE, ...f }).map((v) => v.change._number)
   assert.deepEqual(nums({ authors: [alice] }), [1])
   assert.deepEqual(nums({ authors: [alice], scopes: ['me'] }), [1, 2])
-  assert.deepEqual(nums({ scopes: ['team'] }), [2, 3])
-  assert.deepEqual(nums({ scopes: ['outside'] }), [1, 4])
-  assert.deepEqual(nums({ scopes: ['team'], search: 'c' }), [3])
-})
-
-test('filterViews: without a team the team scopes match nothing, and me still works', () => {
-  const views = [change({ number: 1, owner: alice }), change({ number: 2, owner: bob })].map((c) => classify(c, bob._account_id))
-  assert.deepEqual(filterViews(views, { ...NONE, scopes: ['team'] }), [])
-  assert.deepEqual(filterViews(views, { ...NONE, scopes: ['outside'] }), [])
-  assert.deepEqual(filterViews(views, { ...NONE, scopes: ['me'] }).map((v) => v.change._number), [2])
+  assert.deepEqual(nums({ scopes: ['me'] }), [2])
+  assert.deepEqual(nums({ scopes: ['me'], search: 'a' }), [])
+  assert.deepEqual(nums({ authors: [carol], search: 'c' }), [3])
 })
 
 test('ownersOf: most changes first, then by name', () => {

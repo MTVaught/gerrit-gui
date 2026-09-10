@@ -129,7 +129,7 @@ export interface ChangeView {
   externalReviewers: ReviewerStatus[]
   /** A team is configured, so `reviewers` is limited to its members. */
   teamScoped: boolean
-  /** The owner is outside the configured team; the change belongs on the External Reviews tab. */
+  /** The owner is outside the configured team; the change is listed on the External Reviews tab and on no other. */
   externalOwner: boolean
   /** Gerrit WIP flag. Independent of review state; commonly used to hold CI until review is done. */
   wip: boolean

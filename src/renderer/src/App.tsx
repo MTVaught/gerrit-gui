@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, actionCounts, classifyAll, totalActions, type SortId, type ViewFilter } from '../../shared/model.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, actionCounts, classifyAll, tabCounts, totalActions, type SortId, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
 import { ViewMenu } from './components/ViewMenu.tsx'
-import { isExternalReview } from '../../shared/model.ts'
 import { ago } from './time.ts'
 import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
 import { ExpandIcon, GearIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
@@ -111,25 +110,7 @@ export function App() {
     [refresh],
   )
 
-  const counts = useMemo(() => {
-    const c: Record<TabId, number> = {
-      'needs-my-review': 0,
-      reviewing: 0,
-      mine: 0,
-      'ready-to-merge': 0,
-      merged: 0,
-      'external-reviews': 0,
-    }
-    for (const v of views) {
-      if (v.change.status === 'MERGED') c.merged++
-      if (isExternalReview(v)) c['external-reviews']++
-      if (v.needsMyReview) c['needs-my-review']++
-      if (v.iAmReviewer && !v.isMine && v.change.status === 'NEW') c.reviewing++
-      if (v.isMine && v.change.status === 'NEW') c.mine++
-      if (v.state === 'ready-to-merge' || v.staleReadyToMerge) c['ready-to-merge']++
-    }
-    return c
-  }, [views])
+  const counts = useMemo(() => tabCounts(views), [views])
 
   useEffect(() => {
     try {
@@ -193,7 +174,6 @@ export function App() {
             filter={filter}
             onFilter={setFilter}
             tabViews={tabViews}
-            teamConfigured={team.length > 0}
             compact={compact}
           />
           <button className={'btn icon' + (busy ? ' spinning' : '')} onClick={() => void refresh()} disabled={busy || !configured} title="Refresh" aria-label="Refresh">

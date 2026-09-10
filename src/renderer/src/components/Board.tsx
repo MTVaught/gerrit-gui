@@ -1,28 +1,30 @@
 import { useMemo } from 'react'
-import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
+import type { AccountInfo, ChangeAction, ChangeView, TabId } from '../../../shared/types.ts'
 import {
   AUTHOR_SCOPES,
   DEFAULT_SORT,
   SORT_OPTIONS,
-  STATE_LABEL,
   displayName,
   familyKey,
   filterViews,
   groupByChangeId,
+  groupsFor,
   isExternalReview,
   isFilterActive,
+  isInternal,
   sortByBranch,
   sortViews,
   urgency,
   type ChangeFamily,
+  type Group,
   type SortId,
   type ViewFilter,
 } from '../../../shared/model.ts'
 import { ChangeRow, FamilyCard } from './ChangeRow.tsx'
 import { Ledger } from './Ledger.tsx'
 
-export type { TabId }
-export { isExternalReview }
+export type { Group, TabId }
+export { groupsFor, isExternalReview }
 
 export interface Tab {
   id: TabId
@@ -45,78 +47,10 @@ export function visibleTabs(teamConfigured: boolean): Tab[] {
   return TABS.filter((t) => t.id !== 'external-reviews' || teamConfigured)
 }
 
-export interface Group {
-  title: string
-  hint?: string
-  items: ChangeView[]
-}
-
 /** One list entry: a single change, or the lead of a family card. */
 interface Row {
   view: ChangeView
   family: ChangeFamily | null
-}
-
-function byState(items: ChangeView[], order: ReviewState[], titles?: Partial<Record<ReviewState, string>>): Group[] {
-  return order
-    .map((s) => ({ title: titles?.[s] ?? STATE_LABEL[s], items: items.filter((v) => v.state === s) }))
-    .filter((g) => g.items.length > 0)
-}
-
-export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
-  const open = views.filter((v) => v.change.status === 'NEW')
-  switch (tab) {
-    case 'needs-my-review': {
-      return [{ title: 'Waiting on you', items: open.filter((v) => v.needsMyReview) }].filter((g) => g.items.length > 0)
-    }
-    case 'reviewing': {
-      const r = open.filter((v) => v.iAmReviewer && !v.isMine)
-      return [
-        { title: 'Waiting on you', items: r.filter((v) => v.needsMyReview && v.state === 'needs-review') },
-        {
-          title: 'Reviewed, waiting on others',
-          items: r.filter((v) => !v.needsMyReview && v.state === 'needs-review'),
-        },
-        ...byState(r, ['needs-changes', 'approved', 'ready-to-merge', 'in-progress'], {
-          'in-progress': 'Author iterating, no review requested',
-        }),
-      ].filter((g) => g.items.length > 0)
-    }
-    case 'mine': {
-      const m = open.filter((v) => v.isMine)
-      return byState(m, ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'in-progress'], {
-        'needs-review': 'Out for review',
-        'in-progress': 'In Progress, review not requested',
-      })
-    }
-    case 'ready-to-merge': {
-      const rtm = open.filter((v) => v.state === 'ready-to-merge')
-      const stale = open.filter((v) => v.staleReadyToMerge)
-      return [
-        { title: 'Ready to Merge', items: rtm },
-        {
-          title: 'Tagged ready-to-merge but no longer approved',
-          hint: 'A new patch set reset the votes. The owner should request review again or clear the tag.',
-          items: stale,
-        },
-      ].filter((g) => g.items.length > 0)
-    }
-    case 'merged':
-      return [{ title: 'Merged in the last 14 days', items: views.filter((v) => v.change.status === 'MERGED') }]
-    case 'external-reviews': {
-      const ext = open.filter(isExternalReview)
-      return [
-        { title: 'Waiting on you', items: ext.filter((v) => v.needsMyReview && v.state === 'needs-review') },
-        {
-          title: 'Reviewed, waiting on others',
-          items: ext.filter((v) => !v.needsMyReview && v.state === 'needs-review'),
-        },
-        ...byState(ext, ['needs-changes', 'approved', 'ready-to-merge', 'in-progress'], {
-          'in-progress': 'Author iterating, no review requested',
-        }),
-      ].filter((g) => g.items.length > 0)
-    }
-  }
 }
 
 const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
@@ -128,7 +62,7 @@ const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
 }
 
 function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => void }) {
-  const reviewing = props.views.filter((v) => v.change.status === 'NEW' && v.iAmReviewer && !v.isMine)
+  const reviewing = props.views.filter((v) => v.change.status === 'NEW' && v.iAmReviewer && !v.isMine && isInternal(v))
   const unrequested = reviewing.filter((v) => v.state === 'in-progress').length
   return (
     <div className="panel empty-explain">
@@ -139,12 +73,12 @@ function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => 
           The author pressed <b>Request review</b> on it, and that request is for the <b>current patch set</b>. A new
           patch set cancels the request until the author asks again.
         </li>
-        <li>You are a reviewer on it (bots and the owner do not count).</li>
+        <li>You are a reviewer on it (bots and the owner do not count), and the owner is on your team.</li>
         <li>You have not voted on that patch set yet. Any vote clears it.</li>
       </ol>
       <p className="muted">
         Being added as a reviewer in Gerrit, a new patch set, or the attention set do not put anything here. WIP status
-        makes no difference.
+        makes no difference. Requests from owners outside the team are under External Reviews.
       </p>
       {reviewing.length > 0 ? (
         <p>
@@ -257,8 +191,8 @@ export function Board(props: {
       )}
       {props.tab === 'external-reviews' && (
         <p className="muted small">
-          Open changes owned by people outside the team you set in Settings. They also appear under Needs Review and
-          Reviewing as usual. Your own changes are never here, whoever reviews them.
+          Open changes owned by people outside the team you set in Settings. They are listed here only, not under
+          Needs Review or Reviewing. Your own changes are never here, whoever reviews them.
         </p>
       )}
       {sections.map((g) => (
