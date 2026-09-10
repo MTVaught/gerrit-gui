@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { actionCounts, classify, classifyAll, describeActions, glyphTitle, groupByChangeId, lastReviewedPatchSet, normalizeTeam, reviewLink, shortChangeId, sortByBranch, sortViews, urgency } from './model.ts'
+import { actionCounts, classify, classifyAll, describeActions, glyphTitle, groupByChangeId, isExternalReview, lastReviewedPatchSet, normalizeTeam, reviewLink, shortChangeId, sortByBranch, sortViews, urgency } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -210,6 +210,22 @@ test('team: an external owner is flagged; no team means nobody is external', () 
   assert.equal(none.teamScoped, false)
   assert.equal(none.externalOwner, false)
   assert.deepEqual(none.externalReviewers, [])
+})
+
+test('team: only the owner makes a change external, not its reviewers', () => {
+  const theirs = classify(change({ owner: erin, reviewers: [bob], requested: 3 }), bob._account_id, TEAM)
+  assert.equal(isExternalReview(theirs), true)
+  // My change with an outside reviewer (CI adds maintainers) stays mine.
+  const mine = classify(change({ reviewers: [bob, erin], requested: 3 }), 1, TEAM)
+  assert.equal(mine.externalReviewers.length, 1)
+  assert.equal(isExternalReview(mine), false)
+  // A team member's change I review, with an outside reviewer, is not external either.
+  const teammates = classify(change({ owner: bob, reviewers: [alice, erin], requested: 3 }), 1, TEAM)
+  assert.equal(isExternalReview(teammates), false)
+  // Closed changes never show, and without a team nobody is external.
+  const merged = classify({ ...change({ owner: erin, reviewers: [bob] }), status: 'MERGED' }, bob._account_id, TEAM)
+  assert.equal(isExternalReview(merged), false)
+  assert.equal(isExternalReview(classify(change({ owner: erin, reviewers: [bob] }), bob._account_id)), false)
 })
 
 test('team: bots and the owner are left out of both lists', () => {

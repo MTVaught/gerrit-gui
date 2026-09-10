@@ -80,8 +80,8 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
       <h2>Team</h2>
       <p className="muted">
         With a team, only the votes of its members decide whether a change is approved or needs changes. Anyone else
-        who reviews is shown on the change and on the <b>External Reviews</b> tab, and their votes never change the
-        state. Leave the list empty to count every reviewer.
+        who reviews is shown on the change, and their votes never change the state. Changes owned by people outside
+        the team are listed on the <b>External Reviews</b> tab. Leave the list empty to count every reviewer.
       </p>
       <TeamEditor members={team} onChange={setTeam} canSearch={Boolean(canClose)} />
       <p className="muted small">

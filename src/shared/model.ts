@@ -180,6 +180,16 @@ export function classifyAll(changes: ChangeInfo[], selfId: number, team: string[
   return changes.map((c) => classify(c, selfId, team))
 }
 
+/**
+ * Open changes owned by someone outside the team: the External Reviews tab.
+ * Only the owner decides this. Who reviews does not, because CI and
+ * maintainer lists add reviewers from outside the team to the team's own
+ * changes, and those must stay on My Changes and Reviewing.
+ */
+export function isExternalReview(v: ChangeView): boolean {
+  return v.change.status === 'NEW' && v.externalOwner
+}
+
 
 export interface ActionCategoryInfo {
   id: ActionCategory
