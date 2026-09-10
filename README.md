@@ -24,7 +24,7 @@ remembers the choice.
 | My changes | Your open changes, in groups by state, with the actions of the owner. |
 | Ready to merge | Approved changes that the author marked for the person who has merge authority. |
 | Recently merged | Changes that Gerrit merged in the last 14 days. |
-| External reviews | Open changes with a reviewer or an owner outside your team. Only with a team. |
+| External reviews | Open changes owned by someone outside your team. Only with a team. |
 
 ![Needs my review](docs/screenshots/needs-my-review.png)
 
@@ -145,11 +145,11 @@ When the team list has one or more entries:
 - The application shows reviewers who are not on the team on the change, in
   a separate "Outside the team" row with a dashed outline. Their votes are
   visible there and in the tooltip, and the owner can remove them.
-- The "External reviews" tab lists every open change that has a reviewer
-  outside the team, in groups: an external reviewer voted against, external
-  reviewers have not voted, and approved by every external reviewer. A change
-  that someone outside the team owns and asked you to review is in a fourth
-  group. That change is also on "Needs my review" and "Reviewing" as usual.
+- The "External reviews" tab lists every open change owned by someone
+  outside the team, in groups by state. Those changes are also on "Needs my
+  review" and "Reviewing" as usual. Only the owner decides this: your own
+  changes stay on "My changes" even when CI or a maintainers list adds
+  reviewers from outside the team.
 - A change with only external reviewers stays in "Needs review". Add a team
   member to get it approved.
 

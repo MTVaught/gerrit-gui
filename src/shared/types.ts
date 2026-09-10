@@ -123,12 +123,13 @@ export interface ChangeView {
   pending: AccountInfo[]
   /**
    * Human reviewers outside the configured team. Their votes are shown but
-   * never change the state. Empty when no team is configured.
+   * never change the state, and they do not make the change external; only
+   * the owner does. Empty when no team is configured.
    */
   externalReviewers: ReviewerStatus[]
   /** A team is configured, so `reviewers` is limited to its members. */
   teamScoped: boolean
-  /** The owner is outside the configured team. */
+  /** The owner is outside the configured team; the change belongs on the External reviews tab. */
   externalOwner: boolean
   /** Gerrit WIP flag. Independent of review state; commonly used to hold CI until review is done. */
   wip: boolean
@@ -197,8 +198,8 @@ export interface Settings {
   /**
    * Usernames or email addresses of the people whose votes decide the state
    * of a change. Empty means every reviewer counts. The signed-in user is
-   * always a member. Reviewers outside the team appear on the
-   * "External reviews" tab and their votes never change the state.
+   * always a member. Votes from reviewers outside the team never change the
+   * state. Changes owned outside the team appear on the "External reviews" tab.
    */
   team: string[]
 }
