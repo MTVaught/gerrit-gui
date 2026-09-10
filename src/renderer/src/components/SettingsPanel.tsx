@@ -81,7 +81,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
       <p className="muted">
         With a team, only the votes of its members decide whether a change is approved or needs changes. Anyone else
         who reviews is shown on the change, and their votes never change the state. Changes owned by people outside
-        the team are listed on the <b>External reviews</b> tab. Leave the list empty to count every reviewer.
+        the team are listed on the <b>External Reviews</b> tab. Leave the list empty to count every reviewer.
       </p>
       <TeamEditor members={team} onChange={setTeam} canSearch={Boolean(canClose)} />
       <p className="muted small">
@@ -114,7 +114,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
             Show glyphs instead of colored counts
           </label>
           <p className="muted small">
-            The menu bar shows what waits on you as one colored count per category: Review, Fix, Mark ready, Merge. Glyphs
+            The menu bar shows what waits on you as one colored count per category: Needs Review, Needs Changes, Approved, Ready to Merge. Glyphs
             (◉ ✎ ◆ ⇧) replace the colors if you cannot tell them apart. The counts stand in for the app icon, which
             shows only when nothing waits on you. The tray menu names each category with its count.
           </p>
@@ -125,10 +125,10 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
               disabled={!showTrayCounts}
               onChange={(e) => setShowZeroCounts(e.target.checked)}
             />
-            Always show Review, Fix and Mark ready, even at zero
+            Always show Needs Review, Needs Changes and Approved, even at zero
           </label>
           <p className="muted small">
-            Keeps those counts in the menu bar so their position never changes. Merge appears only when you have something
+            Keeps those counts in the menu bar so their position never changes. Ready to Merge appears only when you have something
             to merge, since it needs +2 rights.
           </p>
         </>

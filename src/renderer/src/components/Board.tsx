@@ -7,15 +7,15 @@ export type { TabId }
 export { isExternalReview }
 
 export const TABS: { id: TabId; label: string }[] = [
-  { id: 'needs-my-review', label: 'Needs my review' },
+  { id: 'needs-my-review', label: 'Needs Review' },
   { id: 'reviewing', label: 'Reviewing' },
-  { id: 'mine', label: 'My changes' },
-  { id: 'ready-to-merge', label: 'Ready to merge' },
-  { id: 'merged', label: 'Recently merged' },
-  { id: 'external-reviews', label: 'External reviews' },
+  { id: 'mine', label: 'My Changes' },
+  { id: 'ready-to-merge', label: 'Ready to Merge' },
+  { id: 'merged', label: 'Recently Merged' },
+  { id: 'external-reviews', label: 'External Reviews' },
 ]
 
-/** The External reviews tab exists only once a team is configured; without one nobody is external. */
+/** The External Reviews tab exists only once a team is configured; without one nobody is external. */
 export function visibleTabs(teamConfigured: boolean): { id: TabId; label: string }[] {
   return TABS.filter((t) => t.id !== 'external-reviews' || teamConfigured)
 }
@@ -61,14 +61,14 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
       const m = open.filter((v) => v.isMine)
       return byState(m, ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'in-progress'], {
         'needs-review': 'Out for review',
-        'in-progress': 'In progress, review not requested',
+        'in-progress': 'In Progress, review not requested',
       })
     }
     case 'ready-to-merge': {
       const rtm = open.filter((v) => v.state === 'ready-to-merge')
       const stale = open.filter((v) => v.staleReadyToMerge)
       return [
-        { title: 'Ready to merge', items: rtm },
+        { title: 'Ready to Merge', items: rtm },
         {
           title: 'Tagged ready-to-merge but no longer approved',
           hint: 'A new patch set reset the votes. The owner should request review again or clear the tag.',
@@ -198,7 +198,7 @@ export function Board(props: {
       )}
       {props.tab === 'external-reviews' && (
         <p className="muted small">
-          Open changes owned by people outside the team you set in Settings. They also appear under Needs my review and
+          Open changes owned by people outside the team you set in Settings. They also appear under Needs Review and
           Reviewing as usual. Your own changes are never here, whoever reviews them.
         </p>
       )}

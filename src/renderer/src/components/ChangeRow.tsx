@@ -173,7 +173,7 @@ function BranchRow(props: RowProps) {
   )
 }
 
-/** Reviewer chips with votes; `bare` leaves out the "Needs review by" label for table cells. */
+/** Reviewer chips with votes; `bare` leaves out the "Needs Review by" label for table cells. */
 function Reviewers(props: RowProps & { bare?: boolean }) {
   const { view: v, self } = props
   const c = v.change
@@ -189,7 +189,7 @@ function Reviewers(props: RowProps & { bare?: boolean }) {
               {!v.reviewRequested
                 ? 'Review not requested'
                 : v.pending.length > 0
-                  ? 'Needs review by'
+                  ? 'Needs Review by'
                   : 'Reviewed by everyone'}
             </span>
           )}
@@ -313,7 +313,7 @@ function Actions(props: RowProps & { inline?: boolean }) {
       )}
       {owner && v.state === 'approved' && (
         <button className="btn primary" onClick={() => void props.onAct({ type: 'hashtag', id, add: [READY_TO_MERGE_TAG] })}>
-          Ready to merge
+          Ready to Merge
         </button>
       )}
       {v.canMerge && v.state === 'ready-to-merge' && (

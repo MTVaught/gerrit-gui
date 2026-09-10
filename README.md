@@ -11,7 +11,7 @@ The application shows three things:
 - The changes that you review
 - The status of your changes
 
-All users get the same five tabs. A sixth tab, "External reviews", appears
+All users get the same five tabs. A sixth tab, "External Reviews", appears
 when you set a team in the settings (refer to "Teams" below). A sort control
 in the top bar orders the rows on every tab, either by the most recent update
 (default) or by overall review age, oldest change first. The application
@@ -19,14 +19,14 @@ remembers the choice.
 
 | Tab | Contents |
 | --- | --- |
-| Needs my review | The author asked for a review of the current patch set. You are a reviewer. You did not vote on that patch set. The WIP status has no effect. |
+| Needs Review | The author asked for a review of the current patch set. You are a reviewer. You did not vote on that patch set. The WIP status has no effect. |
 | Reviewing | All open changes on which you are a reviewer, in groups by state. |
-| My changes | Your open changes, in groups by state, with the actions of the owner. |
-| Ready to merge | Approved changes that the author marked for the person who has merge authority. |
-| Recently merged | Changes that Gerrit merged in the last 14 days. |
-| External reviews | Open changes owned by someone outside your team. Only with a team. |
+| My Changes | Your open changes, in groups by state, with the actions of the owner. |
+| Ready to Merge | Approved changes that the author marked for the person who has merge authority. |
+| Recently Merged | Changes that Gerrit merged in the last 14 days. |
+| External Reviews | Open changes owned by someone outside your team. Only with a team. |
 
-![Needs my review](docs/screenshots/needs-my-review.png)
+![Needs Review](docs/screenshots/needs-my-review.png)
 
 ## The workflow
 
@@ -34,26 +34,26 @@ remembers the choice.
    patch sets, the state does not change. The application does not ask a
    reviewer to look at the change yet.
 2. When the patch set is ready, the author pushes the "Request review" button.
-   All reviewers then see the change on the "Needs my review" tab.
+   All reviewers then see the change on the "Needs Review" tab.
 3. Each reviewer pushes the "Review" button. It opens the change in Gerrit,
    showing the diff from the last patch set that reviewer looked at to the
    current one (or the whole change on a first look). The reviewer votes +1
    or -1 in Gerrit. After a reviewer votes, the application removes the change
-   from the "Needs my review" tab of that reviewer.
+   from the "Needs Review" tab of that reviewer.
 4. After the last reviewer votes, the change gets the "Approved" state (all
-   votes are +1) or the "Needs changes" state (one or more votes are -1).
+   votes are +1) or the "Needs Changes" state (one or more votes are -1).
    Votes that come before the last vote do not change the state.
-5. If the state is "Needs changes", the author pushes the corrections and
+5. If the state is "Needs Changes", the author pushes the corrections and
    pushes the "Request review" button again. The application asks all
    reviewers again, for the new patch set only.
-6. If the state is "Approved", the author pushes the "Ready to merge" button.
-   The change then goes to the "Ready to merge" tab.
+6. If the state is "Approved", the author pushes the "Ready to Merge" button.
+   The change then goes to the "Ready to Merge" tab.
 7. The person who has merge authority pushes the "+2 and submit" button.
 
 The WIP status is not part of this workflow. A change can go through the full
 workflow with the WIP status. The application shows WIP or Active as a
 separate badge with a separate switch. This is useful if you use WIP to stop
-CI until the review is complete. The "Ready to merge" button does not remove
+CI until the review is complete. The "Ready to Merge" button does not remove
 the WIP status.
 
 ## How the states are related to Gerrit data
@@ -65,12 +65,12 @@ the same votes, hashtags and WIP flags.
 | Workflow item | Gerrit data |
 | --- | --- |
 | Request review | The application writes the number of the current patch set to the custom keyed value `review-requested-ps` of the change. |
-| Needs review by X | The number in `review-requested-ps` is the same as the number of the current patch set. X is a reviewer. X has no Code-Review vote on the current patch set. |
+| Needs Review by X | The number in `review-requested-ps` is the same as the number of the current patch set. X is a reviewer. X has no Code-Review vote on the current patch set. |
 | Reviewer finished | X has a Code-Review vote (+1 or -1) on the current patch set. |
 | Review button | Opens Gerrit at `/c/<project>/+/<change>/<last>..<current>`, where `<last>` is the highest patch set with a vote or reply from you in the change messages. Without one, it opens the current patch set against base. The caret offers the other diffs and the change page. |
-| Needs changes | All reviewers voted on the current patch set. One or more reviewers voted -1. |
+| Needs Changes | All reviewers voted on the current patch set. One or more reviewers voted -1. |
 | Approved | All reviewers voted +1 on the current patch set. |
-| Ready to merge | The state is Approved, and the change has the hashtag `ready-to-merge`. |
+| Ready to Merge | The state is Approved, and the change has the hashtag `ready-to-merge`. |
 | Merge | The application votes +2 on the current patch set and submits the change. |
 
 These rules have these effects:
@@ -78,7 +78,7 @@ These rules have these effects:
 - When a user pushes a new patch set, Gerrit removes the votes that are not
   sticky. The number in `review-requested-ps` is then different from the
   number of the current patch set. Thus, a new push puts the change back in
-  the "In progress" state. The application does not ask a reviewer. A trivial
+  the "In Progress" state. The application does not ask a reviewer. A trivial
   rebase keeps the copied votes. Thus, an approved change stays approved after
   a trivial rebase.
 - A +2 vote does not count for the "Approved" state. The application shows the
@@ -105,8 +105,8 @@ have the same Change-Id as one card with a table. Each branch is a row in the
 table.
 
 - The card is in the section of its most urgent branch. The order of
-  urgency is the same for the owner and for a reviewer: Needs changes, Needs
-  review, In progress, Approved, Ready to merge. If two branches have the
+  urgency is the same for the owner and for a reviewer: Needs Changes, Needs
+  Review, In Progress, Approved, Ready to Merge. If two branches have the
   same state, the card goes to the earlier section. Thus, on "Reviewing", a
   branch that waits on you comes before a branch that you reviewed.
 - Each row shows the branch, the state, the WIP or Active badge, the change
@@ -117,7 +117,7 @@ table.
 - A merged branch stays in the table. The row is grey, shows when the change
   was merged and has no buttons. Thus, while you work on a release branch,
   you can see that the change is already in on master. On the "Recently
-  merged" tab, the merged branch leads the card and the open branches are
+  Merged" tab, the merged branch leads the card and the open branches are
   below it.
 - The counts on the tabs and on the sections count changes, not cards. A
   section counts only the changes that are in that state.
@@ -139,18 +139,18 @@ on the team, so you do not need to add yourself.
 
 When the team list has one or more entries:
 
-- Only reviewers on the team count for "Needs review by", "Needs changes"
+- Only reviewers on the team count for "Needs Review by", "Needs Changes"
   and "Approved". The last team member decides. A vote from anyone else does
   not change the state.
 - The application shows reviewers who are not on the team on the change, in
   a separate "Outside the team" row with a dashed outline. Their votes are
   visible there and in the tooltip, and the owner can remove them.
-- The "External reviews" tab lists every open change owned by someone
-  outside the team, in groups by state. Those changes are also on "Needs my
-  review" and "Reviewing" as usual. Only the owner decides this: your own
-  changes stay on "My changes" even when CI or a maintainers list adds
+- The "External Reviews" tab lists every open change owned by someone
+  outside the team, in groups by state. Those changes are also on "Needs
+  Review" and "Reviewing" as usual. Only the owner decides this: your own
+  changes stay on "My Changes" even when CI or a maintainers list adds
   reviewers from outside the team.
-- A change with only external reviewers stays in "Needs review". Add a team
+- A change with only external reviewers stays in "Needs Review". Add a team
   member to get it approved.
 
 When the team list is empty, every reviewer counts and the tab is hidden.
@@ -158,7 +158,7 @@ The team is a setting of your computer. Each team member enters the same
 list. The state you see is calculated from your list only. Thus, two users
 with different lists can see different states for the same change.
 
-![External reviews](docs/screenshots/external-reviews.png)
+![External Reviews](docs/screenshots/external-reviews.png)
 
 ![Team in Settings](docs/screenshots/settings-team.png)
 
@@ -171,17 +171,17 @@ order:
 
 | Category | Color | Glyph | Meaning |
 | --- | --- | --- | --- |
-| Review | Blue | ◉ | The author asked you to review the current patch set. |
-| Fix | Red | ✎ | Your change has the "Needs changes" state. |
-| Mark ready | Green | ◆ | Your change is approved. Push "Ready to merge". |
-| Merge | Purple | ⇧ | The change is ready to merge, and you can vote +2. |
+| Needs Review | Blue | ◉ | The author asked you to review the current patch set. |
+| Needs Changes | Red | ✎ | Your change has the "Needs Changes" state. |
+| Approved | Green | ◆ | Your change is approved. Push "Ready to Merge". |
+| Ready to Merge | Purple | ⇧ | The change is ready to merge, and you can vote +2. |
 
 On macOS, the menu bar item shows one colored count per category that is not
 zero. If you cannot tell the colors apart, select "Show glyphs instead of
 colored counts" in the settings. The item then shows the glyph and the count
 as text. The counts take the place of the app icon; the icon shows only when
-nothing waits on you. Select "Always show Review, Fix and Mark ready, even at
-zero" to keep those counts in place. The Merge count appears only when you
+nothing waits on you. Select "Always show Needs Review, Needs Changes and Approved, even at
+zero" to keep those counts in place. The Ready to Merge count appears only when you
 have something to merge, because it needs +2 rights and most users never
 have it. On Windows and Linux, the total is part of
 the icon image, because these trays cannot show text. Clear "Show counts on

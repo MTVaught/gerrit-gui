@@ -126,7 +126,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     vote: votes.get(account._account_id) ?? 0,
   }))
   // With a team, only its members decide the outcome. Everyone else is shown
-  // on the change and on the External reviews tab, but their votes are inert.
+  // on the change and on the External Reviews tab, but their votes are inert.
   const members = normalizeTeam(team)
   const teamScoped = members.length > 0
   const reviewers = teamScoped ? everyone.filter((r) => isTeamMember(r.account, members, selfId)) : everyone
@@ -181,10 +181,10 @@ export function classifyAll(changes: ChangeInfo[], selfId: number, team: string[
 }
 
 /**
- * Open changes owned by someone outside the team: the External reviews tab.
+ * Open changes owned by someone outside the team: the External Reviews tab.
  * Only the owner decides this. Who reviews does not, because CI and
  * maintainer lists add reviewers from outside the team to the team's own
- * changes, and those must stay on My changes and Reviewing.
+ * changes, and those must stay on My Changes and Reviewing.
  */
 export function isExternalReview(v: ChangeView): boolean {
   return v.change.status === 'NEW' && v.externalOwner
@@ -205,10 +205,10 @@ export interface ActionCategoryInfo {
 
 /** Fixed order everywhere the counts appear, so position carries meaning as well as color. */
 export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
-  { id: 'review', label: 'Review', color: '#2563eb', glyph: '\u25c9', tab: 'needs-my-review' },
-  { id: 'fix', label: 'Fix', color: '#dc2626', glyph: '\u270e', tab: 'mine' },
-  { id: 'ready', label: 'Mark ready', color: '#15803d', glyph: '\u25c6', tab: 'mine' },
-  { id: 'merge', label: 'Merge', color: '#7c3aed', glyph: '\u21e7', tab: 'ready-to-merge' },
+  { id: 'review', label: 'Needs Review', color: '#2563eb', glyph: '\u25c9', tab: 'needs-my-review' },
+  { id: 'fix', label: 'Needs Changes', color: '#dc2626', glyph: '\u270e', tab: 'mine' },
+  { id: 'ready', label: 'Approved', color: '#15803d', glyph: '\u25c6', tab: 'mine' },
+  { id: 'merge', label: 'Ready to Merge', color: '#7c3aed', glyph: '\u21e7', tab: 'ready-to-merge' },
 ]
 
 /**
@@ -234,7 +234,7 @@ export function totalActions(c: ActionCounts): number {
   return c.review + c.fix + c.ready + c.merge
 }
 
-/** "Review 3, Fix 1" style summary; zero categories are left out. */
+/** "Needs Review 3, Needs Changes 1" style summary; zero categories are left out. */
 export function describeActions(c: ActionCounts): string {
   const parts = ACTION_CATEGORIES.filter((k) => c[k.id] > 0).map((k) => `${k.label} ${c[k.id]}`)
   return parts.length ? parts.join(', ') : 'Nothing waits on you'
@@ -262,11 +262,11 @@ export function glyphTitle(c: ActionCounts, showZero = false): string {
 }
 
 export const STATE_LABEL: Record<ReviewState, string> = {
-  'in-progress': 'In progress',
-  'needs-review': 'Needs review',
-  'needs-changes': 'Needs changes',
+  'in-progress': 'In Progress',
+  'needs-review': 'Needs Review',
+  'needs-changes': 'Needs Changes',
   approved: 'Approved',
-  'ready-to-merge': 'Ready to merge',
+  'ready-to-merge': 'Ready to Merge',
   merged: 'Merged',
   abandoned: 'Abandoned',
 }

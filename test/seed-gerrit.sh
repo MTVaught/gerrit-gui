@@ -67,7 +67,7 @@ C9=$(mk alice "C9 bot is a reviewer, bob pending"); reviewers alice $C9 bob; rev
 C10=$(mk alice "C10 reviewers added but review not requested yet"); reviewers alice $C10 bob; reviewers alice $C10 carol; echo "C10=$C10"
 B1=$(mk bob "B1 bob's change, alice+carol requested"); reviewers bob $B1 alice; reviewers bob $B1 carol; request bob $B1 1; echo "B1=$B1"
 B2=$(mk bob "B2 bob's change, alice already +1"); reviewers bob $B2 alice; request bob $B2 1; vote alice $B2 1 "fine"; echo "B2=$B2"
-# With team alice,bob,carol,dave in Settings erin's votes are inert and E1 is on the External reviews tab; without a team erin counts like anyone else.
+# With team alice,bob,carol,dave in Settings erin's votes are inert and E1 is on the External Reviews tab; without a team erin counts like anyone else.
 X1=$(mk alice "X1 bob +1, erin (outside the team) -1"); reviewers alice $X1 bob; reviewers alice $X1 erin; request alice $X1 1; vote bob $X1 1 "ok"; vote erin $X1 -1 "our side needs a flag"; echo "X1=$X1"
 X2=$(mk alice "X2 bob and carol +1, erin has not voted"); reviewers alice $X2 bob; reviewers alice $X2 carol; reviewers alice $X2 erin; request alice $X2 1; vote bob $X2 1 "ok"; vote carol $X2 1 "ok"; echo "X2=$X2"
 X3=$(mk alice "X3 only erin is a reviewer, erin +1"); reviewers alice $X3 erin; request alice $X3 1; vote erin $X3 1 "fine by us"; echo "X3=$X3"
