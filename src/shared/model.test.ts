@@ -242,12 +242,12 @@ test('action counts: one per kind of thing waiting on me', () => {
   ]
   const c = actionCounts(classifyAll(changes, me._account_id))
   assert.deepEqual(c, { review: 1, fix: 1, ready: 1, merge: 1 })
-  assert.equal(describeActions(c), 'Review 1, Fix 1, Mark ready 1, Merge 1')
+  assert.equal(describeActions(c), 'Needs Review 1, Needs Changes 1, Approved 1, Ready to Merge 1')
 })
 
 test('summaries skip empty categories', () => {
   assert.equal(describeActions({ review: 0, fix: 0, ready: 0, merge: 0 }), 'Nothing waits on you')
-  assert.equal(describeActions({ review: 3, fix: 0, ready: 0, merge: 2 }), 'Review 3, Merge 2')
+  assert.equal(describeActions({ review: 3, fix: 0, ready: 0, merge: 2 }), 'Needs Review 3, Ready to Merge 2')
   assert.equal(glyphTitle({ review: 3, fix: 0, ready: 0, merge: 2 }), '\u25c9 3  \u21e7 2')
   assert.equal(glyphTitle({ review: 0, fix: 0, ready: 0, merge: 0 }), '')
   assert.equal(glyphTitle({ review: 3, fix: 0, ready: 0, merge: 2 }, true), '\u25c9 3  \u270e 0  \u25c6 0  \u21e7 2')

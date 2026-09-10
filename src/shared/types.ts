@@ -198,7 +198,7 @@ export interface Settings {
    * Usernames or email addresses of the people whose votes decide the state
    * of a change. Empty means every reviewer counts. The signed-in user is
    * always a member. Reviewers outside the team appear on the
-   * "External reviews" tab and their votes never change the state.
+   * "External Reviews" tab and their votes never change the state.
    */
   team: string[]
 }

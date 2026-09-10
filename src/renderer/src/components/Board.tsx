@@ -6,15 +6,15 @@ import { ChangeRow, FamilyCard } from './ChangeRow.tsx'
 export type { TabId }
 
 export const TABS: { id: TabId; label: string }[] = [
-  { id: 'needs-my-review', label: 'Needs my review' },
+  { id: 'needs-my-review', label: 'Needs Review' },
   { id: 'reviewing', label: 'Reviewing' },
-  { id: 'mine', label: 'My changes' },
-  { id: 'ready-to-merge', label: 'Ready to merge' },
-  { id: 'merged', label: 'Recently merged' },
-  { id: 'external-reviews', label: 'External reviews' },
+  { id: 'mine', label: 'My Changes' },
+  { id: 'ready-to-merge', label: 'Ready to Merge' },
+  { id: 'merged', label: 'Recently Merged' },
+  { id: 'external-reviews', label: 'External Reviews' },
 ]
 
-/** The External reviews tab exists only once a team is configured; without one nobody is external. */
+/** The External Reviews tab exists only once a team is configured; without one nobody is external. */
 export function visibleTabs(teamConfigured: boolean): { id: TabId; label: string }[] {
   return TABS.filter((t) => t.id !== 'external-reviews' || teamConfigured)
 }
@@ -66,14 +66,14 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
       const m = open.filter((v) => v.isMine)
       return byState(m, ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'in-progress'], {
         'needs-review': 'Out for review',
-        'in-progress': 'In progress, review not requested',
+        'in-progress': 'In Progress, review not requested',
       })
     }
     case 'ready-to-merge': {
       const rtm = open.filter((v) => v.state === 'ready-to-merge')
       const stale = open.filter((v) => v.staleReadyToMerge)
       return [
-        { title: 'Ready to merge', items: rtm },
+        { title: 'Ready to Merge', items: rtm },
         {
           title: 'Tagged ready-to-merge but no longer approved',
           hint: 'A new patch set reset the votes. The owner should request review again or clear the tag.',
@@ -92,7 +92,7 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
       return [
         {
           title: 'Asked by someone outside the team',
-          hint: 'Changes owned outside the team on which you are a reviewer. They also appear under Needs my review and Reviewing.',
+          hint: 'Changes owned outside the team on which you are a reviewer. They also appear under Needs Review and Reviewing.',
           items: ext.filter((v) => v.externalOwner && v.iAmReviewer && !v.isMine),
         },
         {

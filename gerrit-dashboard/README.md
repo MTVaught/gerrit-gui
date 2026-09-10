@@ -14,7 +14,7 @@ It is a fallback, not a substitute. Three things it cannot do:
 - Say "every reviewer has voted". Gerrit's query language has no way to
   express that, so there is no Approved section. You can read approval off
   the Code-Review column.
-- See the per-patch-set review request. "Needs my review" lists every change
+- See the per-patch-set review request. "Needs Review" lists every change
   where you have no vote on the current patch set, including follow-up patch
   sets the author never asked anyone to look at.
 

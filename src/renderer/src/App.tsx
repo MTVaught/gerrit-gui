@@ -75,7 +75,7 @@ export function App() {
     [data, team],
   )
   const tabs = useMemo(() => visibleTabs(team.length > 0), [team])
-  // Clearing the team hides the External reviews tab; fall back if it was selected.
+  // Clearing the team hides the External Reviews tab; fall back if it was selected.
   useEffect(() => {
     if (!tabs.some((t) => t.id === tab)) setTab('needs-my-review')
   }, [tabs, tab])
