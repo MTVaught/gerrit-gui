@@ -3,7 +3,7 @@
 // running the UI in a browser (e.g. over VS Code port forwarding).
 import { GerritClient, GerritError, type FetchLike } from './gerrit.ts'
 import { fetchDashboard } from './dashboard.ts'
-import { REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
+import { READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
 import type {
   AccountInfo,
   ChangeAction,
@@ -87,6 +87,9 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
       const g = await client()
       switch (action.type) {
         case 'requestReview':
+          // A ready-to-merge tag from an earlier patch set has no meaning
+          // once the author restarts the review, so it goes with the request.
+          if (action.clearReadyTag) await g.setHashtags(action.id, undefined, [READY_TO_MERGE_TAG])
           await g.setCustomKeyedValues(action.id, { [REVIEW_REQUESTED_KEY]: String(action.patchSet) })
           return
         case 'withdrawReview':

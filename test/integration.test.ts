@@ -3,6 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { GerritClient } from '../src/main/gerrit.ts'
+import { createService } from '../src/main/service.ts'
 import { fetchDashboard } from '../src/main/dashboard.ts'
 import type { ChangeInfo } from '../src/shared/types.ts'
 import { classify, reviewLink } from '../src/shared/model.ts'
@@ -130,6 +131,46 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   await dave.vote(id, 'Code-Review', 2)
   await dave.submit(id)
   assert.equal((await view('alice', id)).state, 'merged')
+})
+
+test('re-requesting review drops a ready-to-merge tag left over from an earlier patch set', { skip: !reachable && 'no local Gerrit' }, async () => {
+  const alice = user('alice')
+  const service = createService(
+    {
+      getStatus: () => Promise.reject(new Error('unused')),
+      getCredentials: async () => ({ serverUrl: URL, username: 'alice', password: 'alicepw' }),
+      save: () => Promise.reject(new Error('unused')),
+    },
+    (url, init) => fetch(url, init),
+  )
+  const c = await raw('alice', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `stale tag ${Date.now()}`, work_in_progress: true })
+  const id: number = c._number
+  await pushPatchSet('alice', id, 'v1')
+  await alice.addReviewer(id, 'bob')
+  await service.act({ type: 'requestReview', id, patchSet: 1 })
+  await user('bob').vote(id, 'Code-Review', 1, 'ok')
+  await alice.setHashtags(id, [READY_TO_MERGE_TAG])
+  assert.equal((await view('alice', id)).state, 'ready-to-merge')
+
+  // A new patch set resets the votes; the tag stays behind in Gerrit and is now stale.
+  await pushPatchSet('alice', id, 'v2')
+  let v = await view('alice', id)
+  assert.equal(v.state, 'in-progress')
+  assert.equal(v.staleReadyToMerge, true)
+
+  // Without the flag the request leaves the tag alone (it is the user's call, not the app's).
+  await service.act({ type: 'requestReview', id, patchSet: v.patchSet })
+  v = await view('alice', id)
+  assert.equal(v.state, 'needs-review')
+  assert.equal(v.staleReadyToMerge, true)
+  await alice.setCustomKeyedValues(id, {}, [REVIEW_REQUESTED_KEY])
+
+  await service.act({ type: 'requestReview', id, patchSet: v.patchSet, clearReadyTag: true })
+  v = await view('alice', id)
+  assert.equal(v.state, 'needs-review')
+  assert.equal(v.staleReadyToMerge, false, 'the tag went with the request')
+  assert.ok(!v.change.hashtags?.includes(READY_TO_MERGE_TAG))
+  assert.equal(v.requestedPatchSet, v.patchSet)
 })
 
 test('dashboard fetch includes WIP changes the user reviews, which reviewer: cannot find', { skip: !reachable && 'no local Gerrit' }, async () => {

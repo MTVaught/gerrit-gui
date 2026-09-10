@@ -4,7 +4,7 @@ import { STATE_LABEL, displayName, type ChangeFamily, type SortId } from '../../
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
 import { ForkIcon } from './Icons.tsx'
-import { actionClass, changeActions } from './actions.ts'
+import { actionClass, changeActions, type ActionSpec } from './actions.ts'
 import { ago } from '../time.ts'
 import { ReviewButton } from './ReviewButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
@@ -80,7 +80,7 @@ function CardHead(props: { view: ChangeView; family?: ChangeFamily; search: stri
 
 /**
  * The cells of one branch: branch, state, CI, number, patch set, reviewers,
- * diff, age, buttons. The card is a subgrid of its list, so every card in a
+ * diff, age, buttons, WIP toggle. The card is a subgrid of its list, so every card in a
  * section lines these up in the same columns.
  */
 function BranchRow(props: RowProps) {
@@ -143,9 +143,7 @@ function BranchRow(props: RowProps) {
       <span className="cell c-updated muted" title={age.title}>
         {age.text}
       </span>
-      <div className="cell c-actions">
-        <Actions {...props} />
-      </div>
+      <Actions {...props} />
     </div>
   )
 }
@@ -339,19 +337,28 @@ function ChipRow(props: { chips: Chip[]; trailing?: ReactNode; className?: strin
   )
 }
 
-/** The buttons for one change, in a row at the end of its cells. */
+/**
+ * The buttons for one change, as the last two cells of its row. The main
+ * buttons share one column and the subtle WIP toggle has its own, so a
+ * button sits in the same place on every row no matter what the toggle says.
+ */
 function Actions(props: ActProps) {
   const { view: v } = props
   const open = v.change.status === 'NEW'
+  const actions = changeActions(v, props.onAct)
+  const button = (a: ActionSpec) => (
+    <button key={a.key} className={actionClass(a)} disabled={a.disabled} title={a.title} onClick={a.run}>
+      {a.label}
+    </button>
+  )
   return (
-    <div className="actions">
-      {changeActions(v, props.onAct).map((a) => (
-        <button key={a.key} className={actionClass(a)} disabled={a.disabled} title={a.title} onClick={a.run}>
-          {a.label}
-        </button>
-      ))}
-      {open && v.iAmReviewer && !v.isMine && <ReviewButton view={v} />}
-    </div>
+    <>
+      <div className="cell c-actions actions">
+        {actions.filter((a) => !a.subtle).map(button)}
+        {open && v.iAmReviewer && !v.isMine && <ReviewButton view={v} />}
+      </div>
+      <div className="cell c-wip actions">{actions.filter((a) => a.subtle).map(button)}</div>
+    </>
   )
 }
 
