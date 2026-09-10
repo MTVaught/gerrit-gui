@@ -39,9 +39,16 @@ body { margin: 0; font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-seri
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
 .app { display: flex; flex-direction: column; min-height: 100vh; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 5; }
-.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.topbar-right .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
-.tabs { display: flex; gap: 4px; }
+/*
+ * When the window is narrow the status text gives way first (it is a size
+ * container, so it asks for no room of its own and hides once it cannot fit
+ * whole), then the tab strip scrolls.
+ */
+.topbar-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: 1 100 auto; }
+.status-line { container-type: inline-size; flex: 1 1 auto; max-width: 240px; white-space: nowrap; overflow: hidden; text-align: right; }
+@container (max-width: 179px) { .status-text { visibility: hidden; } }
+.tabs { display: flex; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
 .tab { white-space: nowrap; background: none; border: none; color: var(--muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font: inherit; display: flex; gap: 6px; align-items: center; }
 .tab:hover { background: var(--panel); }
 .tab.active { color: var(--fg); background: var(--panel); font-weight: 600; }
@@ -84,6 +91,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .change.state-in-progress { border-left-color: var(--muted); }
 .change-main { flex: 1; min-width: 0; }
 .change-title { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.badges { display: inline-flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
 .subject { font-weight: 600; font-size: 15px; }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--border); white-space: nowrap; }
 .badge.needs-review { background: var(--pending-bg); color: var(--pending); }
@@ -123,23 +131,82 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .vote-option.selected { border-color: var(--accent); background: var(--panel); }
 .modal textarea { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); resize: vertical; }
 
-/* Compact mode: narrow always-on-top window. Tabs wrap, meta trims, actions drop below. */
-.compact .topbar { flex-wrap: wrap; padding: 6px 8px; }
-.compact .tabs { flex-wrap: wrap; gap: 2px; }
-.compact .tab { padding: 4px 8px; font-size: 13px; }
-.compact .topbar-right .muted { display: none; }
-.compact .board { padding: 4px 8px 24px; }
-.compact .group { margin-top: 12px; }
-.compact .change { flex-direction: column; gap: 6px; padding: 8px 10px; }
-.compact .subject { font-size: 14px; }
-.compact .change-meta > span:nth-child(2), .compact .change-meta > span:nth-child(3) { display: none; }
-.compact .actions { flex-direction: row; flex-wrap: wrap; min-width: 0; }
-.compact .actions .btn { padding: 4px 10px; font-size: 13px; }
+/*
+ * Compact mode: a 320-460px window. The header is two fixed rows, a
+ * sideways-scrolling tab strip and the toolbar; the board is the ledger below.
+ */
+.compact .topbar { flex-wrap: wrap; gap: 6px 0; padding: 6px 8px 6px; }
+/* No negative margins here: the strip's outer width must be the full row, or the toolbar joins it on line one. */
+.compact .tabs { flex: 0 0 100%; gap: 0; }
+.compact .tab { flex: 0 0 auto; padding: 4px 6px; font-size: 13px; gap: 4px; border-radius: 0; border-bottom: 2px solid transparent; }
+.compact .tab:hover { background: none; color: var(--fg); }
+.compact .tab.active { background: none; border-bottom-color: var(--accent); }
+.compact .tab .count { padding: 0 5px; }
+.compact .topbar-right { flex: 0 0 100%; gap: 6px; }
+.compact .status-line { max-width: none; font-size: 12px; }
+.compact .status-line .who { display: none; }
+.compact .status-text { visibility: visible; }
+@media (max-width: 399px) { .compact .status-line { display: none; } }
+.compact .btn.sort { padding: 5px 4px; max-width: 150px; }
+.compact .btn.icon { padding: 5px 7px; }
+.compact .board { padding: 0 0 24px; }
+
+/*
+ * Compact ledger: one line per change. Fixed columns so the subject column
+ * absorbs the width; reviewers as avatars carrying their vote; the one
+ * primary action in the last column, everything else in the detail row.
+ */
+.ledger { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12.5px; }
+.ledger col.ci { width: 58px; }
+.ledger col.rv { width: 72px; }
+.ledger col.ac { width: 90px; }
+.ledger th { font-weight: 600; color: var(--muted); text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.ledger th:first-child { padding-left: 9px; }
+.ledger td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.ledger td.c { border-left: 3px solid transparent; padding-left: 6px; overflow: hidden; cursor: pointer; }
+.ledger td.ci, .ledger td.r { cursor: pointer; white-space: nowrap; }
+.ledger tr.state-needs-review td.c { border-left-color: var(--pending); }
+.ledger tr.state-needs-changes td.c { border-left-color: var(--neg); }
+.ledger tr.state-approved td.c, .ledger tr.state-ready-to-merge td.c { border-left-color: var(--pos); }
+.ledger tr.state-in-progress td.c { border-left-color: var(--muted); }
+.ledger .t { display: block; width: 100%; font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ledger .t:hover { text-decoration: none; color: var(--accent); }
+.ledger .s { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ledger .sep { margin: 0 4px; opacity: 0.6; }
+.ledger td.a { text-align: right; white-space: nowrap; padding-right: 6px; }
+.ledger .none { color: var(--warn); font-size: 11px; }
+.ledger tr.g td { padding: 12px 8px 4px; border-bottom: 1px solid var(--border); font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.ledger tr.g .hint { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; margin-top: 2px; white-space: normal; }
+.ledger tr.open td { background: var(--panel); border-bottom: none; }
+.ledger tr.ldetail td { background: var(--panel); padding: 0 8px 8px 9px; }
+.ldet-badges { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11.5px; }
+.ledger .reviewers { margin-top: 6px; gap: 4px; }
+.ledger .reviewers-label { font-size: 11.5px; }
+.ledger .chip { font-size: 11.5px; padding: 1px 7px; }
+.ledger .add-reviewer { max-width: none; }
+.ldet-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.ldet-actions .btn.subtle { order: -1; margin-right: auto; padding-left: 0; }
+.btn.sm { padding: 2px 8px; font-size: 12px; }
+.btn.more { letter-spacing: 1px; color: var(--muted); background: none; border-color: transparent; }
+.btn.more:hover:not(:disabled) { border-color: var(--border); color: var(--fg); }
+
+/* Reviewer avatars: initials, a hue per account, the vote as a corner badge. */
+.stack { display: inline-flex; vertical-align: middle; }
+.av { width: 22px; height: 22px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; position: relative; border: 2px solid var(--bg); margin-right: 1px; flex: 0 0 auto; }
+.av.h0 { background: #2563eb; } .av.h1 { background: #16a34a; } .av.h2 { background: #d97706; }
+.av.h3 { background: #0891b2; } .av.h4 { background: #7c3aed; } .av.h5 { background: #db2777; }
+.av.you { box-shadow: 0 0 0 1.5px var(--accent); }
+.av.extra { background: var(--border); color: var(--fg); }
+.av .v { position: absolute; right: -6px; bottom: -5px; width: 13px; height: 13px; border-radius: 50%; font-size: 8px; font-style: normal; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--bg); }
+.v.pos { background: var(--pos); color: #fff; }
+.v.neg { background: var(--neg); color: #fff; }
+.v.pend { background: #c7d2fe; border-color: var(--pending); }
 .compact .panel { padding: 12px; margin: 12px auto; }
+.compact .banner { padding: 6px 10px; font-size: 12px; }
+.compact .modal { padding: 14px; }
 .status { white-space: pre-wrap; word-break: break-word; }
 .empty-explain { color: var(--fg); line-height: 1.55; }
 .empty-explain h2 { margin: 0 0 8px; font-size: 18px; }
 .empty-explain ol { padding-left: 22px; margin: 8px 0; }
 .empty-explain li { margin: 4px 0; }
-.compact .empty-explain { padding: 12px; }
 .empty-explain .link { color: var(--accent); text-decoration: underline; }

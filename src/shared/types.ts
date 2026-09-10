@@ -140,6 +140,8 @@ export interface Settings {
    * scan open WIP changes and filter client-side; on a big server, scope it.
    */
   projects: string[]
+  /** Keep the compact window above other windows and on every workspace. */
+  compactOnTop: boolean
 }
 
 export interface SettingsInput extends Settings {

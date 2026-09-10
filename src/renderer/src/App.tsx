@@ -6,7 +6,7 @@ import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, type TabId, TABS } from './components/Board.tsx'
 import { ago } from './time.ts'
 import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
-import { ExpandIcon, GearIcon, PinIcon, RefreshIcon } from './components/Icons.tsx'
+import { ExpandIcon, GearIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
 import { api, isBrowserMode } from './api.ts'
 
 export function App() {
@@ -20,6 +20,7 @@ export function App() {
   const [compact, setCompact] = useState(false)
   const [, setTick] = useState(0)
   const seenNeedsReview = useRef<Set<number> | null>(null)
+  const tabsRef = useRef<HTMLElement>(null)
 
   const configured = Boolean(settings?.serverUrl && settings?.username && settings?.hasPassword)
 
@@ -44,14 +45,22 @@ export function App() {
     })
     void api.getUi().then((u) => setCompact(u.compact))
     const offCompact = api.onCompactChanged(setCompact)
+    const offSettings = api.onSettingsChanged(() => void api.getSettings().then(setSettings))
     const offRefresh = api.onRefreshRequested(() => void refresh())
     const offTab = api.onTabRequested(setTab)
     return () => {
       offCompact()
+      offSettings()
       offRefresh()
       offTab()
     }
   }, [refresh])
+
+  // The compact tab strip scrolls sideways; keep the active tab in view.
+  useEffect(() => {
+    if (!compact) return
+    tabsRef.current?.querySelector<HTMLElement>('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [compact, tab])
 
   useEffect(() => {
     if (!configured) return
@@ -130,16 +139,17 @@ export function App() {
   return (
     <div className={'app' + (compact ? ' compact' : '')}>
       <header className="topbar">
-        <nav className="tabs" role="tablist">
+        <nav className="tabs" role="tablist" ref={tabsRef}>
           {TABS.map((t) => (
             <button
               key={t.id}
               role="tab"
               aria-selected={tab === t.id}
+              aria-label={t.label}
               className={'tab' + (tab === t.id ? ' active' : '')}
               onClick={() => setTab(t.id)}
             >
-              {t.label}
+              {compact ? t.short : t.label}
               <span className={'count' + (t.id === 'needs-my-review' && counts[t.id] > 0 ? ' hot' : '')}>
                 {counts[t.id]}
               </span>
@@ -148,8 +158,11 @@ export function App() {
         </nav>
         <div className="topbar-right">
           {data && (
-            <span className="muted" title={data.fetchedAt}>
-              {data.self.name ?? data.self.username} · updated {ago(new Date(data.fetchedAt))}
+            <span className="muted status-line" title={data.fetchedAt}>
+              <span className="status-text">
+                <span className="who">{data.self.name ?? data.self.username} · </span>
+                updated {ago(new Date(data.fetchedAt))}
+              </span>
             </span>
           )}
           <select
@@ -170,11 +183,11 @@ export function App() {
           </button>
           <button
             className={'btn icon' + (compact ? ' active' : '')}
-            aria-label={compact ? 'Expand' : 'Compact mode'}
+            aria-label={compact ? 'Expand' : 'Compact window'}
             onClick={() => void api.setCompact(!compact)}
-            title={compact ? 'Back to the full window' : 'Compact window that stays on top'}
+            title={compact ? 'Back to the full window' : 'Switch to the narrow compact window'}
           >
-            {compact ? <ExpandIcon /> : <PinIcon />}
+            {compact ? <ExpandIcon /> : <ShrinkIcon />}
           </button>
           <button className="btn icon" onClick={() => setShowSettings(true)} title="Settings" aria-label="Settings">
             <GearIcon />
@@ -220,6 +233,7 @@ export function App() {
           sort={sort}
           self={data?.self ?? null}
           loading={!data && busy}
+          compact={compact}
           onAct={act}
           onGoTo={setTab}
         />

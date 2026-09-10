@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+/* Design 1: inbox list. One-row header, two-line rows, avatars carry the votes, actions behind a primary icon + menu. */
+.top{display:flex;align-items:center;gap:6px}
+.tabsel{display:inline-flex;align-items:center;gap:6px;font-weight:600;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--panel)}
+.row{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 6px;border-bottom:1px solid var(--soft);min-height:46px}
+.row .main{flex:1;min-width:0}
+.row .subj{font-weight:600;font-size:13.5px}
+.row .meta{font-size:11.5px;color:var(--muted);margin-top:1px}
+.row .meta b{font-weight:600;color:var(--fg)}
+.row .right{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.more{color:var(--muted);letter-spacing:1px;padding:0 4px}
+.act{padding:3px 9px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid var(--border);background:#fff}
+.act.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.act.pos{background:var(--pos);color:#fff;border-color:var(--pos)}
+.row.selected{background:var(--panel)}
+.drawer{display:flex;gap:6px;padding:0 8px 8px 22px;border-bottom:1px solid var(--soft);background:var(--panel);flex-wrap:wrap;align-items:center}
+</style></head><body>
+<div class="top">
+  <span class="tabsel">Mine <span class="count">27</span> ▾</span>
+  <span class="muted" style="font-size:12px">Fix 4 · Ready 6</span>
+  <span style="flex:1"></span>
+  <span class="ibtn">⟳</span><span class="ibtn on">⤢</span><span class="ibtn">⚙</span>
+</div>
+
+<div class="gh"><span class="dot changes"></span>Needs changes <span class="count">4</span></div>
+<div class="row"><span class="dot changes"></span><div class="main"><div class="subj ell">C4 needs changes (carol -1)</div><div class="meta ell">#42 · PS 1 · <span class="ins">+0</span> <span class="del">−0</span> · WIP · 15h</div></div>
+  <div class="right"><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span><span class="more">···</span></div></div>
+<div class="row"><span class="dot changes"></span><div class="main"><div class="subj ell">X1 bob +1, erin (outside the team) -1</div><div class="meta ell">#35 · PS 1 · <span class="ins">+0</span> <span class="del">−0</span> · WIP · 16h</div></div>
+  <div class="right"><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av e">E<span class="v neg">−1</span></span></span><span class="more">···</span></div></div>
+
+<div class="gh"><span class="dot approved"></span>Approved <span class="count">6</span></div>
+<div class="row"><span class="dot approved"></span><div class="main"><div class="subj ell">C5 approved by everyone, still WIP</div><div class="meta ell">#40 · PS 1 · <span class="ins">+0</span> <span class="del">−0</span> · WIP · 15h</div></div>
+  <div class="right"><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span><span class="act pos">Ready</span><span class="more">···</span></div></div>
+<div class="row selected"><span class="dot approved"></span><div class="main"><div class="subj ell">X3 only erin is a reviewer, erin +1</div><div class="meta ell">#37 · PS 1 · <span class="ins">+12</span> <span class="del">−3</span> · WIP · 16h</div></div>
+  <div class="right"><span class="stack"><span class="av e">E<span class="v pos">+1</span></span></span><span class="act pos">Ready</span><span class="more">···</span></div></div>
+<div class="drawer"><span class="muted" style="font-size:12px;flex:0 0 100%">Reviewed by everyone · <b>Erin (other team) +1</b></span><span class="btn sm">Mark active (runs CI)</span><span class="btn sm">+ reviewer</span><span class="btn sm">Remove Erin</span><span class="btn sm subtle">Open in Gerrit ↗</span></div>
+
+<div class="gh"><span class="dot review"></span>Out for review <span class="count">2</span></div>
+<div class="row"><span class="dot review"></span><div class="main"><div class="subj ell">Add configurable change sorting</div><div class="meta ell">#31 · PS 2 · <span class="ins">+214</span> <span class="del">−37</span> · Active · waiting on <b>Bob, Dana</b> · 18m</div></div>
+  <div class="right"><span class="stack"><span class="av b">B<span class="v pend">·</span></span><span class="av d">D<span class="v pend">·</span></span></span><span class="more">···</span></div></div>
+
+<div class="gh"><span class="dot prog"></span>In progress <span class="count">3</span></div>
+<div class="row"><span class="dot prog"></span><div class="main"><div class="subj ell">Fix tray icon on Linux</div><div class="meta ell">#45 · PS 2 · <span class="ins">+31</span> <span class="del">−4</span> · WIP · 2h</div></div>
+  <div class="right"><span class="stack"><span class="av b">B</span></span><span class="act primary">Request</span><span class="more">···</span></div></div>
+<div class="row"><span class="dot prog"></span><div class="main"><div class="subj ell">Stabilize status pills on macOS and drop the flicker on refresh</div><div class="meta ell">#30 · PS 3 · <span class="ins">+58</span> <span class="del">−12</span> · WIP · no reviewers · 1h</div></div>
+  <div class="right"><span class="act">+ reviewer</span><span class="more">···</span></div></div>
+</body></html>

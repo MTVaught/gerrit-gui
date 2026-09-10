@@ -9,6 +9,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
   const [projects, setProjects] = useState(props.initial.projects.join(', '))
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(props.initial.badgeStyle)
   const [showZeroCounts, setShowZeroCounts] = useState(props.initial.showZeroCounts)
+  const [compactOnTop, setCompactOnTop] = useState(props.initial.compactOnTop)
   const [status, setStatus] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const canClose = props.initial.serverUrl && props.initial.username && props.initial.hasPassword
@@ -24,6 +25,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         projects: projects.split(',').map((p) => p.trim()).filter(Boolean),
         badgeStyle,
         showZeroCounts,
+        compactOnTop,
       })
       const me = await api.testConnection()
       setStatus(`Connected as ${me.name ?? me.username} (${me.email ?? 'no email'})`)
@@ -69,6 +71,15 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
       </p>
       {!isBrowserMode && (
         <>
+          <h2>Window</h2>
+          <label className="check">
+            <input type="checkbox" checked={compactOnTop} onChange={(e) => setCompactOnTop(e.target.checked)} />
+            Compact window stays on top
+          </label>
+          <p className="muted small">
+            The compact window floats above other windows and follows you to every workspace. Turn this off to let it
+            behave like a normal window. The full-size window is never pinned.
+          </p>
           <h2>Menu bar</h2>
           <label className="check">
             <input

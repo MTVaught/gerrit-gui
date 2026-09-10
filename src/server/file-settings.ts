@@ -15,6 +15,7 @@ interface Stored {
   projects?: string[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
+  compactOnTop?: boolean
 }
 
 export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-gui', 'web-settings.json')): SettingsStore {
@@ -34,7 +35,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
   return {
     async getStatus(): Promise<SettingsStatus> {
       const s = await read()
-      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, hasPassword: Boolean(s.password), encrypted: false }
+      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, compactOnTop: s.compactOnTop ?? true, hasPassword: Boolean(s.password), encrypted: false }
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
@@ -49,6 +50,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
         projects: input.projects.map((p) => p.trim()).filter(Boolean),
         badgeStyle: input.badgeStyle,
         showZeroCounts: input.showZeroCounts,
+        compactOnTop: input.compactOnTop,
       }
       await fs.mkdir(path.dirname(file), { recursive: true })
       await fs.writeFile(file, JSON.stringify(next, null, 2), { mode: 0o600 })

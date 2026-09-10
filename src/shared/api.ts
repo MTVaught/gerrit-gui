@@ -25,6 +25,8 @@ export interface Api {
   /** Tray/dock badge: what waits on me, by category, plus pre-rendered images for the trays that need them. */
   setBadge(payload: BadgePayload): void
   onCompactChanged(cb: (on: boolean) => void): () => void
+  /** Settings were changed outside the UI (tray menu); reload them. */
+  onSettingsChanged(cb: () => void): () => void
   onRefreshRequested(cb: () => void): () => void
   /** The tray menu asked for a specific board tab. */
   onTabRequested(cb: (tab: TabId) => void): () => void

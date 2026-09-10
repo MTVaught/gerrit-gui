@@ -9,6 +9,7 @@ export interface TrayHandlers {
   showTab(tab: TabId): void
   refresh(): void
   setCompact(on: boolean): void
+  setCompactOnTop(on: boolean): void
   quit(): void
 }
 
@@ -26,14 +27,16 @@ const NO_ACTIONS: ActionCounts = { review: 0, fix: 0, ready: 0, merge: 0 }
 export class TrayController {
   private tray: Tray | null = null
   private compact: boolean
+  private compactOnTop: boolean
   private counts: ActionCounts = NO_ACTIONS
   private style: BadgeStyle = 'color'
   private readonly base: Electron.NativeImage
   private readonly handlers: TrayHandlers
 
-  constructor(handlers: TrayHandlers, compact: boolean) {
+  constructor(handlers: TrayHandlers, compact: boolean, compactOnTop: boolean) {
     this.handlers = handlers
     this.compact = compact
+    this.compactOnTop = compactOnTop
     this.base = nativeImage.createFromPath(process.platform === 'darwin' ? trayTemplatePath : trayPath)
     try {
       this.tray = new Tray(this.base)
@@ -53,6 +56,11 @@ export class TrayController {
 
   setCompact(on: boolean): void {
     this.compact = on
+    this.rebuildMenu()
+  }
+
+  setCompactOnTop(on: boolean): void {
+    this.compactOnTop = on
     this.rebuildMenu()
   }
 
@@ -99,10 +107,16 @@ export class TrayController {
         { label: 'Open board', click: () => this.handlers.show() },
         { label: 'Refresh now', click: () => this.handlers.refresh() },
         {
-          label: 'Compact, always on top',
+          label: 'Compact window',
           type: 'checkbox',
           checked: this.compact,
           click: (item) => this.handlers.setCompact(item.checked),
+        },
+        {
+          label: 'Compact window stays on top',
+          type: 'checkbox',
+          checked: this.compactOnTop,
+          click: (item) => this.handlers.setCompactOnTop(item.checked),
         },
         { type: 'separator' },
         // Which build is running, so an installed copy can be checked against the repo.

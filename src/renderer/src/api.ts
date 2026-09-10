@@ -35,6 +35,7 @@ function browserApi(): Api {
       document.title = (total > 0 ? `(${total}) ` : '') + 'Gerrit Review Board'
     },
     onCompactChanged: () => () => undefined,
+    onSettingsChanged: () => () => undefined,
     onRefreshRequested: () => () => undefined,
     onTabRequested: () => () => undefined,
   }

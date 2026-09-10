@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+/* Design 3: to-do. The tray's four categories replace the tabs; each card is one job with one big button. */
+.seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg span{flex:1;text-align:center;padding:5px 2px;font-size:12px;color:var(--muted);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:1px}
+.seg span:last-child{border-right:none}
+.seg b{font-size:15px;line-height:1;color:var(--fg)}
+.seg span.on{background:var(--panel);color:var(--fg);font-weight:600}
+.seg .review b{color:var(--accent)}.seg .fix b{color:var(--neg)}.seg .ready b{color:var(--pos)}.seg .merge b{color:var(--purple)}
+.card{margin:8px;border:1px solid var(--border);border-radius:10px;padding:10px 10px 8px;border-left:4px solid var(--border)}
+.card.fix{border-left-color:var(--neg)}.card.ready{border-left-color:var(--pos)}.card.review{border-left-color:var(--accent)}
+.card .subj{font-weight:600;font-size:14px;line-height:1.3}
+.card .why{font-size:12px;color:var(--muted);margin-top:3px}
+.card .why b{color:var(--fg);font-weight:600}
+.card .revs{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.cta{display:block;margin-top:10px;text-align:center;padding:8px;border-radius:8px;font-weight:700;font-size:13.5px;color:#fff;background:var(--accent)}
+.cta.pos{background:var(--pos)}
+.sec{display:flex;gap:14px;justify-content:center;margin-top:6px;font-size:12px;color:var(--muted)}
+.sec span{text-decoration:underline dotted}
+.later{margin:14px 8px 4px;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.mini{display:flex;align-items:center;gap:8px;padding:5px 12px;font-size:12.5px}
+.mini .subj{flex:1;min-width:0}
+.mini .age{color:var(--muted);font-size:11.5px}
+</style></head><body>
+<div class="top">
+  <div class="seg"><span class="review"><b>1</b>Review</span><span class="fix on"><b>4</b>Fix</span><span class="ready"><b>6</b>Mark ready</span><span class="merge"><b>0</b>Merge</span></div>
+  <div class="toolbar"><span class="muted" style="font-size:12px">Alice · updated just now</span><span class="spacer"></span><span class="sel">All of mine ▾</span><span class="ibtn">⟳</span><span class="ibtn on">⤢</span><span class="ibtn">⚙</span></div>
+</div>
+
+<div class="card fix">
+  <div class="subj">C4 needs changes (carol -1)</div>
+  <div class="why"><b>Carol −1</b> on PS 1 · "rename the helper and add a test" · 15h ago</div>
+  <div class="revs"><span class="chip pos">Bob +1</span><span class="chip neg">Carol −1</span><span class="badge wip">WIP</span></div>
+  <span class="cta">Open in Gerrit to fix ↗</span>
+  <div class="sec"><span>Mark active</span><span>+ reviewer</span><span>Request review again</span></div>
+</div>
+<div class="card fix">
+  <div class="subj">X1 bob +1, erin (outside the team) -1</div>
+  <div class="why"><b>Erin −1</b> on PS 1 · 2 unresolved comments · 16h ago</div>
+  <div class="revs"><span class="chip pos">Bob +1</span><span class="chip neg">Erin (other team) −1</span><span class="badge wip">WIP</span></div>
+  <span class="cta">Open in Gerrit to fix ↗</span>
+  <div class="sec"><span>Mark active</span><span>+ reviewer</span><span>Request review again</span></div>
+</div>
+<div class="card ready">
+  <div class="subj">C5 approved by everyone, still WIP</div>
+  <div class="why">Everyone voted +1 on PS 1 · 15h ago</div>
+  <div class="revs"><span class="chip pos">Bob +1</span><span class="chip pos">Carol +1</span><span class="badge wip">WIP</span></div>
+  <span class="cta pos">Mark ready to merge</span>
+  <div class="sec"><span>Mark active first (runs CI)</span><span>Open ↗</span></div>
+</div>
+
+<div class="later">Nothing to do yet · 5</div>
+<div class="mini"><span class="dot review"></span><span class="subj ell">Add configurable change sorting</span><span class="muted">waiting on Bob, Dana</span><span class="age">18m</span></div>
+<div class="mini"><span class="dot review"></span><span class="subj ell">Stabilize status pills on macOS</span><span class="muted">waiting on Carol</span><span class="age">1h</span></div>
+<div class="mini"><span class="dot prog"></span><span class="subj ell">Fix tray icon on Linux</span><span class="btn sm">Request review</span><span class="age">2h</span></div>
+</body></html>

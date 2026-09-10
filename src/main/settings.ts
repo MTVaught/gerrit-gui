@@ -10,6 +10,7 @@ interface StoredSettings {
   projects?: string[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
+  compactOnTop?: boolean
   /** base64 of safeStorage ciphertext, or plaintext when no keychain is available. */
   password?: string
   passwordEncrypted?: boolean
@@ -36,6 +37,7 @@ export async function getStatus(): Promise<SettingsStatus> {
     projects: s.projects ?? [],
     badgeStyle: s.badgeStyle ?? 'color',
     showZeroCounts: s.showZeroCounts ?? false,
+    compactOnTop: s.compactOnTop ?? true,
     hasPassword: Boolean(s.password),
     encrypted: safeStorage.isEncryptionAvailable(),
   }
@@ -58,6 +60,7 @@ export async function save(input: SettingsInput): Promise<void> {
     projects: input.projects.map((p) => p.trim()).filter(Boolean),
     badgeStyle: input.badgeStyle,
     showZeroCounts: input.showZeroCounts,
+    compactOnTop: input.compactOnTop,
     password: prev.password,
     passwordEncrypted: prev.passwordEncrypted,
     ui: prev.ui,

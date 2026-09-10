@@ -7,10 +7,12 @@ export const RefreshIcon = () => (
   </svg>
 )
 
-export const PinIcon = () => (
+export const ShrinkIcon = () => (
   <svg {...common}>
-    <path d="M12 17v5" />
-    <path d="M9 3h6l-1 7 3 3H7l3-3z" />
+    <path d="M4 14h6v6" />
+    <path d="M20 10h-6V4" />
+    <path d="M14 10l7-7" />
+    <path d="M3 21l7-7" />
   </svg>
 )
 

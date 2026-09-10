@@ -1,18 +1,20 @@
 import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName, sortViews, type SortId } from '../../../shared/model.ts'
 import { ChangeRow } from './ChangeRow.tsx'
+import { Ledger } from './Ledger.tsx'
 
 export type { TabId }
 
-export const TABS: { id: TabId; label: string }[] = [
-  { id: 'needs-my-review', label: 'Needs my review' },
-  { id: 'reviewing', label: 'Reviewing' },
-  { id: 'mine', label: 'My changes' },
-  { id: 'ready-to-merge', label: 'Ready to merge' },
-  { id: 'merged', label: 'Recently merged' },
+/** `short` is the compact-window label; it must fit five tabs in about 440px. */
+export const TABS: { id: TabId; label: string; short: string }[] = [
+  { id: 'needs-my-review', label: 'Needs my review', short: 'To review' },
+  { id: 'reviewing', label: 'Reviewing', short: 'Reviewing' },
+  { id: 'mine', label: 'My changes', short: 'Mine' },
+  { id: 'ready-to-merge', label: 'Ready to merge', short: 'Ready' },
+  { id: 'merged', label: 'Recently merged', short: 'Merged' },
 ]
 
-interface Group {
+export interface Group {
   title: string
   hint?: string
   items: ChangeView[]
@@ -120,6 +122,8 @@ export function Board(props: {
   sort: SortId
   self: AccountInfo | null
   loading: boolean
+  /** Narrow window: render the ledger instead of the cards. */
+  compact: boolean
   onAct: (a: ChangeAction) => Promise<void>
   onGoTo: (tab: TabId) => void
 }) {
@@ -129,10 +133,17 @@ export function Board(props: {
     if (props.tab === 'needs-my-review') return <NeedsReviewEmpty views={props.views} onGoTo={props.onGoTo} />
     return <div className="panel empty">{EMPTY[props.tab]}</div>
   }
+  if (props.compact) {
+    return (
+      <main className="board">
+        <Ledger groups={groups} sort={props.sort} self={props.self} onAct={props.onAct} />
+      </main>
+    )
+  }
   return (
     <main className="board">
       {props.tab === 'mine' && (
-        <p className="muted small">
+        <p className="muted small intro">
           Signed in as {displayName(props.self)}. Push as many patch sets as you like; reviewers are only asked to look
           when you press Request review, and only for that patch set.
         </p>
