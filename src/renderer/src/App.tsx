@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, SORT_OPTIONS, actionCounts, classifyAll, totalActions, type SortId } from '../../shared/model.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, actionCounts, classifyAll, totalActions, type SortId, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
-import { Board, type TabId, TABS, visibleTabs } from './components/Board.tsx'
+import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
+import { ViewMenu } from './components/ViewMenu.tsx'
 import { isExternalReview } from '../../shared/model.ts'
 import { ago } from './time.ts'
 import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
@@ -19,6 +20,8 @@ export function App() {
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState<TabId>(initialTab)
   const [sort, setSort] = useState<SortId>(initialSort)
+  // Search and author filter last for the session; the sort is remembered.
+  const [filter, setFilter] = useState<ViewFilter>(EMPTY_FILTER)
   const [compact, setCompact] = useState(false)
   const [, setTick] = useState(0)
   const update = useUpdateState()
@@ -85,6 +88,8 @@ export function App() {
     [data, team],
   )
   const tabs = useMemo(() => visibleTabs(team.length > 0), [team])
+  // What the current tab lists before the filter: the author picker suggests these owners first.
+  const tabViews = useMemo(() => groupsFor(tab, views).flatMap((g) => g.items), [tab, views])
   // Clearing the team hides the External Reviews tab; fall back if it was selected.
   // Not before the settings are in, or an initial External Reviews tab would be lost.
   useEffect(() => {
@@ -182,19 +187,15 @@ export function App() {
             </span>
           )}
           <UpdatePill state={update} />
-          <select
-            className="btn sort"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortId)}
-            title="Sort order for every tab"
-            aria-label="Sort order"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.id} value={o.id} title={o.title}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <ViewMenu
+            sort={sort}
+            onSort={setSort}
+            filter={filter}
+            onFilter={setFilter}
+            tabViews={tabViews}
+            teamConfigured={team.length > 0}
+            compact={compact}
+          />
           <button className={'btn icon' + (busy ? ' spinning' : '')} onClick={() => void refresh()} disabled={busy || !configured} title="Refresh" aria-label="Refresh">
             <RefreshIcon />
           </button>
@@ -249,6 +250,8 @@ export function App() {
           tab={tab}
           views={views}
           sort={sort}
+          filter={filter}
+          onFilter={setFilter}
           self={data?.self ?? null}
           loading={!data && busy}
           compact={compact}

@@ -1,0 +1,85 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><script src="mock.js"></script><style>
+/* Design 5: a facet sidebar in the full window; a bottom sheet in the compact one. */
+.frame-full, .frame-compact { position: relative; }
+.layout { display: flex; align-items: flex-start; }
+.side { width: 230px; flex: 0 0 auto; border-right: 1px solid var(--border); padding: 12px 12px 20px; font-size: 13px; align-self: stretch; background: var(--panel); }
+.side .field { width: 100%; }
+.side h4 { margin: 14px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
+.facet { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
+.facet:hover { background: var(--bg); }
+.facet.sel { background: var(--pending-bg); color: var(--pending); font-weight: 600; }
+.facet .k { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 12px; }
+.facet.sel .k { color: inherit; }
+.facet .rad { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--muted); flex: 0 0 auto; }
+.facet.sel .rad { border-color: var(--accent); background: radial-gradient(var(--accent) 45%, transparent 50%); }
+.facet.sel.rd { background: none; color: var(--fg); }
+.side .reset { margin-top: 14px; font-size: 12.5px; color: var(--accent); }
+.layout .board { flex: 1; min-width: 0; }
+/* compact: bottom sheet */
+.scrim { position: absolute; inset: 0; background: #0005; z-index: 30; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 31; background: var(--bg); border-top: 1px solid var(--border); border-radius: 12px 12px 0 0; padding: 6px 12px 14px; box-shadow: 0 -6px 24px #0003; font-size: 13px; }
+.sheet .handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 8px; }
+.sheet .head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px; }
+.sheet .head .link { color: var(--accent); font-weight: 500; }
+.sheet .field { width: 100%; }
+.sheet h4 { margin: 12px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
+.sheet .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sheet .chip { font-size: 12.5px; padding: 3px 10px; }
+.sheet .chip .k { color: var(--muted); }
+.sheet .chip.filt .k { color: inherit; opacity: .8; }
+.seg { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg span { flex: 1; text-align: center; padding: 5px 4px; font-size: 12px; border-left: 1px solid var(--border); }
+.seg span:first-child { border-left: none; }
+.seg span.on { background: var(--accent); color: #fff; font-weight: 600; }
+i[class^="i-"] { display: inline-flex; }
+</style></head><body>
+
+<div class="cap">Full window · sidebar with author facets and counts; Alice, sorted by last patch set</div>
+<div class="app frame-full">
+  <header class="topbar" id="tf"></header>
+  <div class="layout">
+    <aside class="side">
+      <span class="field"><i class="i-mag ico"></i><span class="ph">Search titles</span></span>
+      <h4>Author</h4>
+      <div class="facet">Anyone<span class="k">25</span></div>
+      <div class="facet sel">Alice<span class="k">5</span></div>
+      <div class="facet">Dave<span class="k">2</span></div>
+      <div class="facet">Erin <span class="muted" style="font-weight:400">(other team)</span><span class="k">1</span></div>
+      <div class="facet">Frank<span class="k">1</span></div>
+      <h4>Sort</h4>
+      <div class="facet rd"><span class="rad"></span>Most recent update</div>
+      <div class="facet rd"><span class="rad"></span>Overall age, oldest first</div>
+      <div class="facet rd sel"><span class="rad"></span>Last patch set, oldest first</div>
+      <div class="reset">Reset · showing 5 of 25</div>
+    </aside>
+    <main class="board" id="full"></main>
+  </div>
+</div>
+
+<div class="cap">Compact window · the sidebar becomes a bottom sheet behind the filter button</div>
+<div class="app compact frame-compact">
+  <header class="topbar" id="tc"></header>
+  <main class="board" id="cmp"></main>
+  <div class="scrim"></div>
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="head">Filter &amp; sort <span class="link">Done</span></div>
+    <span class="field"><i class="i-mag ico"></i><span class="ph">Search titles</span></span>
+    <h4>Author</h4>
+    <div class="chips"><span class="chip">Anyone <span class="k">25</span></span><span class="chip filt">Alice <span class="k">5</span></span><span class="chip">Dave <span class="k">2</span></span><span class="chip">Erin (other team) <span class="k">1</span></span><span class="chip">Frank <span class="k">1</span></span></div>
+    <h4>Sort</h4>
+    <div class="seg"><span>Updated</span><span>Oldest change</span><span class="on">Oldest patch set</span></div>
+  </div>
+</div>
+
+<div class="mock-note"><b>5 · Facet sidebar.</b> The full window gets a left column: a search field, the authors on the current tab as facets with counts, and the sort orders as radios. Selecting a facet filters at once and the other counts update, so the sidebar doubles as a per-author summary of the tab. The sort select leaves the top bar. The sidebar could collapse to an icon rail when the window is narrow.
+<ul><li><b>Compact:</b> no room for a column, so the same content is a bottom sheet behind a filter button in the toolbar (a dot on the button while a filter is on). Authors are chips, the sort is a segmented control, and "Done" closes it. The ledger stays visible behind a scrim.</li>
+<li>Richest overview and the counts make the author list useful on its own. It is also the most layout, and takes 230px from the cards, whose columns are already dense.</li></ul></div>
+
+<script>
+document.getElementById('tf').innerHTML = tabsFull() + `<div class="topbar-right"><span class="muted status-line">Bob · updated just now</span>${ICONS}</div>`
+document.getElementById('tc').innerHTML = tabsCompact() + `<div class="topbar-right"><span class="muted status-line">updated just now</span><button class="btn icon active" style="margin-left:auto" title="Filter and sort"><i class="i-sliders"></i></button>${ICONS_C}</div>`
+renderFull(document.getElementById('full'), { owner: 'Alice', sort: 'ps' })
+renderLedger(document.getElementById('cmp'), { owner: 'Alice', sort: 'ps' })
+icons()
+</script></body></html>

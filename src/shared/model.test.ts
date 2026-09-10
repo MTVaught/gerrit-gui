@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { actionCounts, classify, classifyAll, describeActions, glyphTitle, groupByChangeId, isExternalReview, lastReviewedPatchSet, normalizeTeam, reviewLink, shortChangeId, sortByBranch, sortViews, urgency } from './model.ts'
+import { accountMatches, actionCounts, classify, classifyAll, describeActions, filterViews, glyphTitle, groupByChangeId, isExternalReview, lastReviewedPatchSet, normalizeTeam, ownersOf, reviewLink, shortChangeId, sortByBranch, sortViews, urgency, type ViewFilter } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -26,6 +26,9 @@ function change(opts: {
   maxVote?: number
   created?: string
   updated?: string
+  /** When the current patch set was pushed. */
+  patchSetCreated?: string
+  subject?: string
   messages?: ChangeMessageInfo[]
   branch?: string
   /** Change-Id shared by cherry-picks; left out to mimic a server that does not send it. */
@@ -38,7 +41,7 @@ function change(opts: {
     _number: opts.number ?? 1,
     project: 'demo',
     branch: opts.branch ?? 'master',
-    subject: 's',
+    subject: opts.subject ?? 's',
     status: opts.status ?? 'NEW',
     owner: opts.owner ?? alice,
     work_in_progress: opts.wip,
@@ -54,7 +57,7 @@ function change(opts: {
     },
     permitted_labels: { 'Code-Review': opts.maxVote === 2 ? ['-2', '-1', ' 0', '+1', '+2'] : ['-1', ' 0', '+1'] },
     current_revision: 'abc',
-    revisions: { abc: { _number: opts.patchSet ?? 3, created: '' } },
+    revisions: { abc: { _number: opts.patchSet ?? 3, created: opts.patchSetCreated ?? '' } },
     messages: opts.messages,
   }
 }
@@ -290,6 +293,82 @@ test('sortViews: ties fall back to change number', () => {
   )
   assert.deepEqual(sortViews(views, 'age').map((v) => v.change._number), [4, 5])
   assert.deepEqual(sortViews(views, 'updated').map((v) => v.change._number), [5, 4])
+})
+
+test('sortViews: oldest current patch set first', () => {
+  const views = [
+    change({ number: 1, created: '2026-09-01 10:00:00.000', patchSetCreated: '2026-09-08 10:00:00.000' }),
+    change({ number: 2, created: '2026-08-20 10:00:00.000', patchSetCreated: '2026-09-09 10:00:00.000' }),
+    change({ number: 3, created: '2026-09-03 10:00:00.000', patchSetCreated: '2026-09-04 10:00:00.000' }),
+  ].map((c) => classify(c, alice._account_id))
+  assert.deepEqual(sortViews(views, 'patchset').map((v) => v.change._number), [3, 1, 2])
+  // A change whose only patch set is the first one is as old as the change.
+  assert.equal(views[2]!.patchSetCreated, '2026-09-04 10:00:00.000')
+})
+
+test('the patch set date falls back to the change date when Gerrit sent no revision', () => {
+  const c = { ...change({ created: '2026-09-01 10:00:00.000' }), current_revision: undefined, revisions: undefined }
+  assert.equal(classify(c, alice._account_id).patchSetCreated, '2026-09-01 10:00:00.000')
+})
+
+const NONE: ViewFilter = { search: '', authors: [], scopes: [] }
+
+test('filterViews: the search matches the subject without regard to case, or the change number exactly', () => {
+  const views = [
+    change({ number: 12, subject: 'Fix tray icon on Linux' }),
+    change({ number: 120, subject: 'Rotate CA bundle' }),
+  ].map((c) => classify(c, alice._account_id))
+  const nums = (f: Partial<ViewFilter>) => filterViews(views, { ...NONE, ...f }).map((v) => v.change._number)
+  assert.deepEqual(nums({ search: 'TRAY' }), [12])
+  assert.deepEqual(nums({ search: ' ca ' }), [120])
+  assert.deepEqual(nums({ search: '12' }), [12])
+  assert.deepEqual(nums({ search: 'nothing' }), [])
+  // No filter returns the same list, not a copy.
+  assert.equal(filterViews(views, NONE), views)
+})
+
+test('filterViews: picked authors and scopes are one condition; the search is another', () => {
+  const views = [
+    change({ number: 1, owner: alice, subject: 'a' }),
+    change({ number: 2, owner: bob, subject: 'b' }),
+    change({ number: 3, owner: carol, subject: 'c' }),
+    change({ number: 4, owner: erin, subject: 'd' }),
+  ].map((c) => classify(c, bob._account_id, TEAM))
+  const nums = (f: Partial<ViewFilter>) => filterViews(views, { ...NONE, ...f }).map((v) => v.change._number)
+  assert.deepEqual(nums({ authors: [alice] }), [1])
+  assert.deepEqual(nums({ authors: [alice], scopes: ['me'] }), [1, 2])
+  assert.deepEqual(nums({ scopes: ['team'] }), [2, 3])
+  assert.deepEqual(nums({ scopes: ['outside'] }), [1, 4])
+  assert.deepEqual(nums({ scopes: ['team'], search: 'c' }), [3])
+})
+
+test('filterViews: without a team the team scopes match nothing, and me still works', () => {
+  const views = [change({ number: 1, owner: alice }), change({ number: 2, owner: bob })].map((c) => classify(c, bob._account_id))
+  assert.deepEqual(filterViews(views, { ...NONE, scopes: ['team'] }), [])
+  assert.deepEqual(filterViews(views, { ...NONE, scopes: ['outside'] }), [])
+  assert.deepEqual(filterViews(views, { ...NONE, scopes: ['me'] }).map((v) => v.change._number), [2])
+})
+
+test('ownersOf: most changes first, then by name', () => {
+  const views = [
+    change({ number: 1, owner: carol }),
+    change({ number: 2, owner: alice }),
+    change({ number: 3, owner: bob }),
+    change({ number: 4, owner: bob }),
+  ].map((c) => classify(c, alice._account_id))
+  assert.deepEqual(
+    ownersOf(views).map((o) => [o.account.name, o.count]),
+    [['Bob', 2], ['Alice', 1], ['Carol', 1]],
+  )
+})
+
+test('accountMatches: prefix of any name word, the username or the email', () => {
+  const a: AccountInfo = { _account_id: 7, name: 'Dana Whitfield', username: 'dwhit', email: 'dana@example.com' }
+  assert.ok(accountMatches(a, 'whit'))
+  assert.ok(accountMatches(a, 'DW'))
+  assert.ok(accountMatches(a, 'dana@'))
+  assert.ok(accountMatches(a, ''))
+  assert.ok(!accountMatches(a, 'ana'))
 })
 
 test('last reviewed patch set is the highest one I voted or replied on', () => {

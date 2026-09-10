@@ -12,10 +12,16 @@ The application shows three things:
 - The status of your changes
 
 All users get the same five tabs. A sixth tab, "External Reviews", appears
-when you set a team in the settings (refer to "Teams" below). A sort control
-in the top bar orders the rows on every tab, either by the most recent update
-(default) or by overall review age, oldest change first. The application
-remembers the choice.
+when you set a team in the settings (refer to "Teams" below). The "View"
+button in the top bar (or Ctrl+F) opens the search, filter and sort for every
+tab: a search over the subjects, an author filter, and the row order. The
+author field suggests the owners of the changes on the current tab first,
+then any Gerrit account; "Me", "My team" and "Outside team" pick a group of
+owners without typing. The rows can be ordered by the most recent update
+(default), by overall age with the oldest change first, or by the age of the
+current patch set with the oldest first. The age shown on each row follows
+the chosen order. The application remembers the sort; the search and filter
+last for the session.
 
 | Tab | Contents |
 | --- | --- |
