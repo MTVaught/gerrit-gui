@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><script src="mock.js"></script><style>
+/* Design 2: one query box with Gerrit-style operators. Free words search titles; owner: and sort: are tokens. */
+.frame-full, .frame-compact { position: relative; }
+.q { width: 360px; }
+.q .tok { background: var(--pending-bg); color: var(--pending); border-radius: 4px; padding: 0 4px; }
+.pop.q-help { top: 92px; right: 176px; width: 360px; }
+.pop .hint { padding: 4px 10px 6px; font-size: 12px; color: var(--muted); }
+.pop .hint code { background: var(--panel); padding: 0 4px; border-radius: 3px; }
+.compact .q { flex: 1; width: auto; }
+.compact .topbar-right .status-line { display: none; }
+i[class^="i-"] { display: inline-flex; }
+</style></head><body>
+
+<div class="cap">Full window · query "owner:alice sort:ps", suggestions open</div>
+<div class="app frame-full">
+  <header class="topbar" id="tf"></header>
+  <div class="pop q-help">
+    <div class="hint"><b>5 of 25</b> changes match. Words search the title; <code>owner:</code> and <code>sort:</code> narrow and order.</div>
+    <hr>
+    <h4>Owner</h4>
+    <div class="item sel"><span class="tok">owner:alice</span><span class="k">5</span></div>
+    <div class="item"><span class="tok">owner:dave</span><span class="k">2</span></div>
+    <div class="item"><span class="tok">owner:erin</span><span class="k">1 · other team</span></div>
+    <div class="item"><span class="tok">owner:frank</span><span class="k">1</span></div>
+    <h4>Sort</h4>
+    <div class="item"><span class="tok">sort:updated</span><span class="k">most recent update · default</span></div>
+    <div class="item"><span class="tok">sort:age</span><span class="k">overall age, oldest first</span></div>
+    <div class="item sel"><span class="tok">sort:ps</span><span class="k">last patch set, oldest first</span></div>
+  </div>
+  <main class="board" id="full"></main>
+</div>
+
+<div class="cap">Compact window · query "tray"; the box replaces the status text and the sort select</div>
+<div class="app compact frame-compact">
+  <header class="topbar" id="tc"></header>
+  <div class="summary">1 of 25 · add <code>owner:</code> or <code>sort:</code> to narrow or order</div>
+  <main class="board" id="cmp"></main>
+</div>
+
+<div class="mock-note"><b>2 · Query box.</b> One text field in the top bar, the way Gerrit's own search works. Plain words match the title; <code>owner:&lt;name&gt;</code> filters by author and <code>sort:updated|age|ps</code> orders the rows, so the sort select goes away. Typing opens a suggestion list with the owners on the tab and their counts, so nobody has to remember the tokens. The query is remembered like the sort is today.
+<ul><li><b>Compact:</b> the box takes the whole toolbar row next to the three icons; the "updated just now" text moves into the refresh button's tooltip. No extra row. A one-line summary under the toolbar says how many rows match and hints at the operators.</li>
+<li>Smallest footprint of the five, and keyboard-friendly (Ctrl+F could focus it). Discoverability rests on the suggestion list, and a sort hidden inside a text query is unusual; a caret menu next to the box could keep the sort as a list as well.</li></ul></div>
+
+<script>
+document.getElementById('tf').innerHTML = tabsFull() + `<div class="topbar-right"><span class="muted status-line">Bob · updated just now</span><span class="field focus q"><i class="i-mag ico"></i><span class="tok">owner:alice</span> <span class="tok">sort:ps</span><span class="caret"></span><span class="clr">×</span></span>${ICONS}</div>`
+document.getElementById('tc').innerHTML = tabsCompact() + `<div class="topbar-right"><span class="field q"><i class="i-mag ico"></i>tray<span class="clr">×</span></span>${ICONS_C}</div>`
+renderFull(document.getElementById('full'), { owner: 'Alice', sort: 'ps' })
+renderLedger(document.getElementById('cmp'), { search: 'tray' })
+icons()
+</script></body></html>
