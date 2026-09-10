@@ -97,7 +97,7 @@ export function ReviewButton(props: { view: ChangeView }) {
     <div className="split" ref={wrap}>
       <button className={'btn split-main' + primary} title={title} onClick={() => go(main)}>
         {label}
-        <span className="ext" aria-hidden="true">
+        <span className="arrow" aria-hidden="true">
           ↗
         </span>
       </button>

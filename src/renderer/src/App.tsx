@@ -86,9 +86,10 @@ export function App() {
   )
   const tabs = useMemo(() => visibleTabs(team.length > 0), [team])
   // Clearing the team hides the External Reviews tab; fall back if it was selected.
+  // Not before the settings are in, or an initial External Reviews tab would be lost.
   useEffect(() => {
-    if (!tabs.some((t) => t.id === tab)) setTab('needs-my-review')
-  }, [tabs, tab])
+    if (settings && !tabs.some((t) => t.id === tab)) setTab('needs-my-review')
+  }, [settings, tabs, tab])
 
   const act = useCallback(
     async (action: ChangeAction) => {
