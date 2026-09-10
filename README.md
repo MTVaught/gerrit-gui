@@ -12,16 +12,18 @@ The application shows three things:
 - The status of your changes
 
 All users get the same five tabs. A sixth tab, "External Reviews", appears
-when you set a team in the settings (refer to "Teams" below). The "View"
+when you set a team in the settings (refer to "Teams" below). The owner of a
+change, checked against that team list, decides where it is listed: changes
+owned by the team are on the five tabs, changes owned by anyone else are on
+"External Reviews" only. The "View"
 button in the top bar (or Ctrl+F) opens the search, filter and sort for every
 tab: a search over the subjects, an author filter, and the row order. The
 author field suggests the owners of the changes on the current tab first,
-then any Gerrit account; "Me", "My team" and "Outside team" pick a group of
-owners without typing. The rows can be ordered by the most recent update
-(default), by overall age with the oldest change first, or by the age of the
-current patch set with the oldest first. The age shown on each row follows
-the chosen order. The application remembers the sort; the search and filter
-last for the session.
+then any Gerrit account; "Me" picks your own changes without typing. The
+rows can be ordered by the most recent update (default), by overall age with
+the oldest change first, or by the age of the current patch set with the
+oldest first. The age shown on each row follows the chosen order. The
+application remembers the sort; the search and filter last for the session.
 
 | Tab | Contents |
 | --- | --- |
@@ -30,7 +32,7 @@ last for the session.
 | My Changes | Your open changes, in groups by state, with the actions of the owner. |
 | Ready to Merge | Approved changes that the author marked for the person who has merge authority. |
 | Recently Merged | Changes that Gerrit merged in the last 14 days. |
-| External Reviews | Open changes owned by someone outside your team. Only with a team. |
+| External Reviews | Open changes owned by someone outside your team, in groups by state. Only with a team. These changes are on no other tab. |
 
 ![Needs Review](docs/screenshots/needs-my-review.png)
 
@@ -157,10 +159,11 @@ When the team list has one or more entries:
   under the team, with a dashed outline. Their votes are visible there and in
   the tooltip, and the owner can remove them.
 - The "External Reviews" tab lists every open change owned by someone
-  outside the team, in groups by state. Those changes are also on "Needs
-  Review" and "Reviewing" as usual. Only the owner decides this: your own
-  changes stay on "My Changes" even when CI or a maintainers list adds
-  reviewers from outside the team.
+  outside the team, in groups by state. Those changes are not on "Needs
+  Review", "Reviewing", "Ready to Merge" or "Recently Merged", and the counts
+  on those tabs and in the tray leave them out. Only the owner decides this:
+  your own changes stay on "My Changes" even when CI or a maintainers list
+  adds reviewers from outside the team.
 - A change with only external reviewers stays in "Needs Review". Add a team
   member to get it approved.
 
