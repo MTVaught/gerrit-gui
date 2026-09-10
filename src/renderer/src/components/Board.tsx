@@ -48,10 +48,13 @@ export function visibleTabs(teamConfigured: boolean): Tab[] {
 }
 
 /** One list entry: a single change, or the lead of a family card. */
-interface Row {
+export interface Row {
   view: ChangeView
   family: ChangeFamily | null
 }
+
+/** A section with its entries folded into rows: a family is one row, led by its most urgent member on this tab. */
+export type Section = Group & { rows: Row[] }
 
 const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
   reviewing: 'You are not a reviewer on any open change.',
@@ -142,7 +145,7 @@ export function Board(props: {
       if (!cur || urgency(view.state) < urgency(cur.view.state)) lead.set(key, { section, view })
     }
   })
-  const sections = groups.map((g, section) => ({
+  const sections: Section[] = groups.map((g, section) => ({
     ...g,
     rows: sorted[section]!.flatMap((v): Row[] => {
       const key = familyKey(v.change)
@@ -172,11 +175,11 @@ export function Board(props: {
     )
   }
   if (props.compact) {
-    // Families are not folded here: every branch is its own line, named by branch.
+    // The same rows: a family is a box with a line per branch.
     return (
       <main className="board">
         {summary}
-        <Ledger groups={groups} sort={props.sort} search={props.filter.search} self={props.self} families={families} onAct={props.onAct} />
+        <Ledger sections={sections} sort={props.sort} search={props.filter.search} self={props.self} onAct={props.onAct} />
       </main>
     )
   }

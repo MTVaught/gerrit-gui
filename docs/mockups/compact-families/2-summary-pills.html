@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+/* Design 2: one line per family. The sub-line is a pill per branch coloured by its state. Tapping the line opens a detail row with one line per branch and its action. */
+.pills{display:flex;gap:4px;margin-top:2px;white-space:nowrap;overflow:hidden}
+.pill{font-size:10.5px;padding:0 6px;border-radius:999px;border:1px solid var(--border);font-family:ui-monospace,Menlo,monospace;color:var(--fg);background:var(--panel)}
+.pill.changes{background:var(--neg-bg);color:var(--neg);border-color:transparent}
+.pill.approved,.pill.rtm{background:var(--pos-bg);color:var(--pos);border-color:transparent}
+.pill.review{background:var(--pend-bg);color:var(--pend);border-color:transparent}
+.pill.prog{background:var(--soft);color:var(--muted);border-color:transparent}
+.pill.merged{color:var(--muted);text-decoration:line-through;background:none}
+.members{margin-top:6px;border-top:1px solid var(--border)}
+.mem{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.mem code{font-weight:600;width:84px;flex:0 0 auto}
+.mem .badge{font-size:10px}
+.mem .grow{flex:1;min-width:0;display:flex;gap:6px;align-items:center}
+.mem .stack{margin-left:auto}
+.mem.merged code{color:var(--muted);font-weight:500}
+</style></head><body>
+<div class="top">
+  <div class="tabs"><span class="tab">To review <span class="count hot">1</span></span><span class="tab">Reviewing <span class="count">2</span></span><span class="tab active">Mine <span class="count">30</span></span><span class="tab">Ready <span class="count">3</span></span><span class="tab">Merged <span class="count">20</span></span></div>
+  <div class="toolbar"><span class="muted" style="font-size:12px">updated just now</span><span class="spacer"></span><span class="sel">⇅ ▾</span><span class="ibtn">⟳</span><span class="ibtn on">⤢</span><span class="ibtn">⚙</span></div>
+</div>
+<table>
+<colgroup><col><col class="ci"><col class="rv"><col class="ac"></colgroup>
+<tr><th style="padding-left:9px">Change</th><th>CI</th><th>Reviewers</th><th></th></tr>
+<tr class="g"><td colspan="4">Needs changes<span class="count">3</span></td></tr>
+<tr class="changes"><td class="c"><div class="t ell">C4 needs changes (carol -1)</div><div class="pills"><span class="pill changes">master</span><span class="pill changes">release-2.0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="changes"><td class="c"><div class="t ell">S4 Needs changes: carol -1</div><div class="s">#21 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+
+<tr class="g"><td colspan="4">Approved<span class="count">5</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">X2 bob and carol +1, erin has not voted</div><div class="s">#36 · 26h ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">S5 Approved: everyone positive, still WIP</div><div class="s">#22 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+
+<tr class="g"><td colspan="4">Ready to merge<span class="count">2</span></td></tr>
+<tr class="rtm"><td class="c"><div class="t ell">C6 ready-to-merge and active (CI running)</div><div class="pills"><span class="pill merged">master</span><span class="pill rtm">release-1.0</span></div></td><td><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="rtm"><td class="c"><div class="t ell">S6 Ready to merge: approved, tagged, marked active</div><div class="s">#23 · 2d ago · PS 1 · <span class="ins">+0</span> <span class="del">−0</span></div></td><td><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+
+<tr class="g"><td colspan="4">Out for review<span class="count">4</span></td></tr>
+<tr class="review open"><td class="c"><div class="t ell">C5 approved by everyone, still WIP</div><div class="pills"><span class="pill approved">master</span><span class="pill review">release-1.0</span><span class="pill approved">release-2.0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pend"></span></span><span class="av c">C<span class="v pend"></span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="det"><td colspan="4">
+  <div class="det-badges"><span class="badge review">Out for review</span><span class="muted">demo · 3 branches · leads with release-1.0, the branch that waits</span></div>
+  <div class="members">
+    <div class="mem"><code>master</code><div class="grow"><span class="badge approved">Approved</span><span class="muted">#5 · PS 1</span><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></div><span class="btn sm primary">Ready</span></div>
+    <div class="mem"><code>release-1.0</code><div class="grow"><span class="badge review">Out for review</span><span class="muted">#41 · PS 1</span><span class="stack"><span class="av a">B<span class="v pend"></span></span><span class="av c">C<span class="v pend"></span></span></span></div><span class="btn sm">Open ↗</span></div>
+    <div class="mem"><code>release-2.0</code><div class="grow"><span class="badge approved">Approved</span><span class="muted">#40 · PS 1</span><span class="stack"><span class="av a">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></div><span class="btn sm primary">Ready</span></div>
+  </div>
+</td></tr>
+<tr class="review"><td class="c"><div class="t ell">C2 review requested, nobody has reviewed</div><div class="pills"><span class="pill review">master</span><span class="pill prog">release-2.0</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pend"></span></span><span class="av c">C<span class="v pend"></span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+<tr class="review"><td class="c"><div class="t ell">stale tag 1789061640434</div><div class="s">#55 · 5h ago · PS 3 · <span class="ins">+1</span> <span class="del">−1</span></div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av a">B<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm more">···</span></td></tr>
+</table>
+<div class="mock-note">Design 2: one line per family, in the section of its most urgent branch. The sub-line is a pill per branch in the colour of that branch's state; a merged branch is struck through. CI, reviewers and the action on the line belong to the lead branch. The detail row lists every branch with its own reviewers and action.</div>
+</body></html>

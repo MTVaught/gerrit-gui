@@ -1,12 +1,13 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, familyKey, reviewLink, sortViews, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, displayName, reviewLink, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Reviewers } from './ChangeRow.tsx'
 import { Highlight } from './Highlight.tsx'
+import { ForkIcon } from './Icons.tsx'
 import { ReviewButton } from './ReviewButton.tsx'
 import { actionClass, changeActions } from './actions.ts'
-import type { Group } from './Board.tsx'
+import type { Section } from './Board.tsx'
 import { api } from '../api.ts'
 
 /**
@@ -14,15 +15,16 @@ import { api } from '../api.ts'
  * the subject column absorbs the width; the reviewers column carries the
  * votes as badges on avatars; the last column holds the one primary action.
  * Opening a row shows the state badges, the reviewer chips and the rest.
+ * A Change-Id family is a box: a header line with the subject, then one
+ * line per branch, titled by its branch, each with its own reviewers and
+ * action.
  */
 export function Ledger(props: {
-  groups: Group[]
+  sections: Section[]
   sort: SortId
   /** Search text from the View menu, marked in the subject. */
   search: string
   self: AccountInfo
-  /** Change-Id families; a member of a multi-branch family names its branch on its line. */
-  families: Map<string, ChangeFamily>
   onAct: (a: ChangeAction) => Promise<void>
 }) {
   // Below 400px the CI column goes; WIP still shows in the detail row.
@@ -44,7 +46,7 @@ export function Ledger(props: {
           <th aria-label="Action" />
         </tr>
       </thead>
-      {props.groups.map((g) => (
+      {props.sections.map((g) => (
         <tbody key={g.title}>
           <tr className="g">
             <td colSpan={columns}>
@@ -52,22 +54,49 @@ export function Ledger(props: {
               {g.hint && <span className="hint">{g.hint}</span>}
             </td>
           </tr>
-          {sortViews(g.items, props.sort).map((v) => (
-            <LedgerRow
-              key={v.change.id}
-              view={v}
-              self={props.self}
-              onAct={props.onAct}
-              sort={props.sort}
-              search={props.search}
-              showCi={!narrow}
-              columns={columns}
-              showBranch={(props.families.get(familyKey(v.change))?.members.length ?? 1) > 1}
-            />
-          ))}
+          {g.rows.map((r) => {
+            const line = { self: props.self, onAct: props.onAct, sort: props.sort, search: props.search, showCi: !narrow, columns }
+            if (!r.family) return <LedgerRow key={r.view.change.id} view={r.view} {...line} />
+            return <FamilyBox key={r.family.key} family={r.family} lead={r.view} {...line} />
+          })}
         </tbody>
       ))}
     </table>
+  )
+}
+
+/**
+ * One Change-Id on several branches: an island in the section, as the cards
+ * are on the full window. A spacer, a header line with the subject and the
+ * branch count, one line per branch, and a spacer. Every member is listed,
+ * merged ones included and greyed, so the box says where the change is
+ * still open and where it is already in.
+ */
+function FamilyBox(props: { family: ChangeFamily; lead: ChangeView } & LineProps) {
+  const { family: f, lead, ...line } = props
+  return (
+    <>
+      <tr className="fsp">
+        <td colSpan={line.columns} />
+      </tr>
+      <tr className="fh">
+        <td colSpan={line.columns}>
+          <span className="t" title={`Change-Id ${f.key}`}>
+            <ForkIcon />
+            <span className="txt">
+              <Highlight text={lead.change.subject} term={line.search} />
+            </span>
+          </span>
+          <span className="n muted">{f.members.length} branches</span>
+        </td>
+      </tr>
+      {f.members.map((v, i) => (
+        <LedgerRow key={v.change.id} view={v} {...line} member={{ last: i === f.members.length - 1 }} />
+      ))}
+      <tr className="fsp">
+        <td colSpan={line.columns} />
+      </tr>
+    </>
   )
 }
 
@@ -83,16 +112,23 @@ function useMediaQuery(query: string): boolean {
   return matches
 }
 
-function LedgerRow(props: {
-  view: ChangeView
+/** What every line of the ledger gets from the table. */
+interface LineProps {
   self: AccountInfo
   onAct: (a: ChangeAction) => Promise<void>
   sort: SortId
   search: string
   showCi: boolean
   columns: number
-  showBranch: boolean
-}) {
+}
+
+function LedgerRow(
+  props: LineProps & {
+    view: ChangeView
+    /** A branch line inside a family box: titled by its branch, the subject is on the box's header. */
+    member?: { last: boolean }
+  },
+) {
   const { view: v, self } = props
   const c = v.change
   const id = c._number
@@ -107,7 +143,6 @@ function LedgerRow(props: {
   // The line is clipped at the right, so the age, which carries the sort order, comes early and the diff last.
   const age = ageCell(v, props.sort, true)
   const sub: ReactNode[] = [`#${id}`]
-  if (props.showBranch) sub.push(<code>{c.branch}</code>)
   sub.push(<span title={age.title}>{age.text}</span>)
   if (!v.isMine) sub.push(displayName(c.owner))
   sub.push(`PS ${v.patchSet}`)
@@ -120,9 +155,11 @@ function LedgerRow(props: {
     )
   }
 
+  // In a box, the bottom edge of the box follows the last member's line, or its detail row while open.
+  const mem = props.member ? ` mem${!open ? ' closed' : ''}${props.member.last && !expanded ? ' end' : ''}` : ''
   return (
     <>
-      <tr className={`lrow state-${v.state}${expanded ? ' open' : ''}`}>
+      <tr className={`lrow state-${v.state}${expanded ? ' open' : ''}${mem}`}>
         <td className="c" onClick={toggle}>
           <button
             className="link t"
@@ -132,7 +169,7 @@ function LedgerRow(props: {
               toggle()
             }}
           >
-            <Highlight text={c.subject} term={props.search} />
+            {props.member ? <code>{c.branch}</code> : <Highlight text={c.subject} term={props.search} />}
           </button>
           <div className="s" title={`${c.project} · ${c.branch}`}>
             {sub.map((part, i) => (
@@ -166,7 +203,7 @@ function LedgerRow(props: {
         </td>
       </tr>
       {expanded && (
-        <tr className="ldetail">
+        <tr className={`ldetail${props.member ? ` mem${props.member.last ? ' end' : ''}` : ''}`}>
           <td colSpan={props.columns}>
             <div className="ldet-badges">
               <span className={`badge ${v.state}`}>{STATE_LABEL[v.state]}</span>

@@ -134,8 +134,9 @@ change on one branch is a card with one row, so both read the same way.
   below it.
 - The counts on the tabs and on the sections count changes, not cards. A
   section counts only the changes that are in that state.
-- In compact mode a row wraps: the reviewers and the buttons go below the
-  branch, and the change number and the diff are hidden.
+- In the compact window the card is a box in the section: a header line
+  with the subject and the number of branches, then one line per branch,
+  titled by the branch. Each line opens like any other line of the ledger.
 
 ![Changes grouped by Change-Id](docs/screenshots/change-id-groups.png)
 
