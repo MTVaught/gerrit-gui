@@ -34,6 +34,10 @@ done
 admin PUT "/accounts/ci-bot" '{"name":"CI Bot","email":"ci@example.com","http_password":"ci-botpw","groups":["Service Users"]}' >/dev/null
 # erin is a reviewer from another team: keep her off the team list in Settings.
 admin PUT "/accounts/erin" '{"name":"Erin (other team)","email":"erin@other.example.com","http_password":"erinpw"}' >/dev/null
+# Five more, so one change can have more reviewers than fit on a line.
+for u in frank grace heidi ivan judy; do
+  admin PUT "/accounts/$u" "{\"name\":\"${u^}\",\"email\":\"$u@example.com\",\"http_password\":\"${u}pw\"}" >/dev/null
+done
 admin GET "/accounts/?q=is:active&o=DETAILS" | grep -o '"username": *"[^"]*"' | tr '\n' ' '; echo
 
 echo "== project (reviewers may vote -1..+1; the merger group gets +2 and Submit)"
@@ -72,6 +76,8 @@ X1=$(mk alice "X1 bob +1, erin (outside the team) -1"); reviewers alice $X1 bob;
 X2=$(mk alice "X2 bob and carol +1, erin has not voted"); reviewers alice $X2 bob; reviewers alice $X2 carol; reviewers alice $X2 erin; request alice $X2 1; vote bob $X2 1 "ok"; vote carol $X2 1 "ok"; echo "X2=$X2"
 X3=$(mk alice "X3 only erin is a reviewer, erin +1"); reviewers alice $X3 erin; request alice $X3 1; vote erin $X3 1 "fine by us"; echo "X3=$X3"
 E1=$(mk erin "E1 erin's change, bob and carol asked to review"); reviewers erin $E1 bob; reviewers erin $E1 carol; request erin $E1 1; echo "E1=$E1"
+# Nine reviewers: the board truncates the chips to one line and keeps the votes visible.
+M1=$(mk alice "M1 many reviewers: frank -1, grace +1, five more asked"); for r in bob carol dave frank grace heidi ivan judy erin; do reviewers alice $M1 $r; done; request alice $M1 1; vote frank $M1 -1 "nope"; vote grace $M1 1 "ok"; vote erin $M1 1 "ok"; echo "M1=$M1"
 
 # Cherry-picks keep the Change-Id of the original, so each one is a separate
 # change that the board groups with its siblings.

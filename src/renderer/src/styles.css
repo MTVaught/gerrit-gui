@@ -79,39 +79,60 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .group { margin-top: 20px; }
 .group h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); display: flex; gap: 8px; align-items: center; }
 .changes { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-.change { display: flex; gap: 16px; padding: 10px 14px; border-top: 1px solid var(--border); border-left: 4px solid transparent; position: relative; }
+/*
+ * One grid per section, so every card lines its cells up in the same
+ * columns: branch, state, CI, number, patch set, reviewers, diff, age,
+ * buttons. A card is a subgrid; its rows are `display: contents`, so their
+ * cells sit directly in the columns. Reviewers take what is left.
+ */
+.changes { display: grid; grid-template-columns: max-content max-content max-content max-content max-content minmax(140px, 1fr) max-content max-content max-content; }
+.change { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding: 8px 14px 8px 12px; border-top: 1px solid var(--border); border-left: 4px solid transparent; position: relative; }
 .change:first-child { border-top: none; }
 .change.state-needs-review { border-left-color: var(--pending); }
 .change.state-needs-changes { border-left-color: var(--neg); }
 .change.state-approved, .change.state-ready-to-merge { border-left-color: var(--pos); }
 .change.state-in-progress { border-left-color: var(--muted); }
-.change-main { flex: 1; min-width: 0; }
-.change-title { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.badges { display: inline-flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.change-head { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 2px; }
 .subject { font-weight: 600; font-size: 15px; }
+.origin { white-space: nowrap; }
+.change-row { display: contents; }
+/* Spacing is padding, not a column gap, so the border between rows runs unbroken. */
+.cell { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 12px 4px 0; white-space: nowrap; font-size: 13px; }
+.c-actions { padding-right: 0; }
+.change-row + .change-row > .cell { border-top: 1px solid var(--border); }
+.change-row.closed > .cell { color: var(--muted); }
+.c-branch code { font-weight: 600; }
+.change-row.closed .c-branch code { font-weight: 500; }
+.c-reviewers { flex-direction: column; align-items: stretch; gap: 3px; }
+.c-actions { justify-content: flex-end; }
+.c-diff, .c-updated { font-size: 12.5px; }
+.req { font-size: 11px; color: var(--pending); }
+.req.stale { color: var(--muted); }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--border); white-space: nowrap; }
 .badge.needs-review { background: var(--pending-bg); color: var(--pending); }
 .badge.needs-changes { background: var(--neg-bg); color: var(--neg); }
 .badge.approved, .badge.ready-to-merge, .badge.merged { background: var(--pos-bg); color: var(--pos); }
 .badge.wip { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
 .badge.active { background: var(--warn-bg); color: var(--warn); }
+.badge.stale { background: var(--warn-bg); color: var(--warn); }
+.badge.branch { display: inline-flex; gap: 4px; align-items: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
 .btn.subtle { border-color: transparent; background: none; color: var(--muted); font-size: 12px; }
 .btn.subtle:hover:not(:disabled) { color: var(--fg); border-color: var(--border); }
-.badge.stale { background: var(--warn-bg); color: var(--warn); }
-.change-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; margin-top: 2px; }
 .ins { color: var(--pos); } .del { color: var(--neg); }
-.reviewers { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
-.reviewers-label { font-size: 12px; font-weight: 600; margin-right: 2px; }
-.reviewers-label.asked { color: var(--pending); }
-.reviewers-label.not-asked { color: var(--muted); font-weight: 500; }
-.chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); display: inline-flex; gap: 4px; align-items: center; }
+/* One line of chips. Overflow is clipped until the "+N" chip is in place; "expanded" lets the line wrap. */
+.reviewers { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; align-items: center; min-width: 0; position: relative; }
+.reviewers.expanded { flex-wrap: wrap; overflow: visible; }
+.reviewers .trailing { display: inline-flex; flex-shrink: 0; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); display: inline-flex; gap: 4px; align-items: center; flex-shrink: 0; }
 .chip.pending { background: var(--pending-bg); color: var(--pending); border-color: transparent; }
 .chip.pos { background: var(--pos-bg); color: var(--pos); border-color: transparent; }
 .chip.neg { background: var(--neg-bg); color: var(--neg); border-color: transparent; }
 .chip.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
-.chip.add { background: none; cursor: pointer; color: var(--muted); font: inherit; font-size: 12px; }
+.chip.add, .chip.more { background: none; cursor: pointer; color: var(--muted); font: inherit; font-size: 12px; }
+.chip.add:hover, .chip.more:hover { color: var(--fg); }
+.chip.add { padding: 2px 7px; }
+.chip.ghost { position: absolute; visibility: hidden; pointer-events: none; }
 /* Reviewers outside the team: dashed outline, and only a tint for a vote, so they read as advisory. */
-.reviewers.external { margin-top: 4px; }
 .chip.ext { border: 1px dashed var(--muted); color: var(--muted); background: none; }
 .chip.ext.pos { color: var(--pos); border-color: var(--pos); }
 .chip.ext.neg { color: var(--neg); border-color: var(--neg); }
@@ -123,21 +144,24 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .team-add .add-reviewer { flex: 1; margin-top: 0; max-width: none; }
 .settings .team-add input { margin-top: 0; }
 .chip.add:hover { color: var(--fg); }
-.chip-x { background: none; border: none; cursor: pointer; color: inherit; padding: 0 0 0 2px; font-size: 13px; line-height: 1; opacity: 0.6; }
+.chip-x { background: none; border: none; cursor: pointer; color: inherit; padding: 0 0 0 2px; font-size: 13px; line-height: 1; opacity: 0; }
+.chip:hover .chip-x, .chip-x:focus-visible { opacity: 0.7; }
 .chip-x:hover { opacity: 1; }
-.actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; justify-content: center; min-width: 140px; }
-.add-reviewer { position: relative; margin-top: 6px; max-width: 360px; }
+.actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.actions .btn { padding: 4px 10px; font-size: 13px; }
+.actions .btn.subtle { font-size: 12px; }
+.add-reviewer { position: relative; margin-top: 2px; max-width: 360px; }
 .add-reviewer input { width: 100%; padding: 6px 8px; font: inherit; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
 .suggestions { position: absolute; left: 0; right: 0; list-style: none; margin: 2px 0 0; padding: 4px 0; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; z-index: 10; box-shadow: 0 4px 16px #0003; }
 .suggestions li button { display: block; width: 100%; padding: 6px 10px; }
 .suggestions li button:hover { background: var(--panel); text-decoration: none; }
 /* Reviewer's split button: main part opens the diff since their last review, caret lists other views. */
-.split { display: inline-flex; width: 100%; }
+.split { display: inline-flex; }
 .btn.split-main { flex: 1; border-radius: 6px 0 0 6px; text-align: left; }
-.btn.split-caret { border-radius: 0 6px 6px 0; border-left: none; padding: 6px 8px; font-size: 12px; }
+.btn.split-caret { border-radius: 0 6px 6px 0; border-left: none; padding: 4px 8px; font-size: 12px; }
 .btn.split-caret.primary { border-left: 1px solid #ffffff55; }
 .btn.split-main:hover:not(:disabled) + .btn.split-caret:not(.primary) { border-left: none; }
-.ext { font-size: 12px; opacity: 0.75; margin-left: 4px; }
+.btn .arrow { font-size: 12px; opacity: 0.75; margin-left: 4px; }
 .menu { position: fixed; z-index: 30; width: 300px; padding: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px #0003; }
 .menu hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
 .menu-item { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 6px 10px 6px 24px; border: none; border-radius: 5px; background: none; color: var(--fg); font: inherit; text-align: left; cursor: pointer; position: relative; }
@@ -146,34 +170,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .menu-item.selected { font-weight: 600; }
 .menu-item.selected::before { content: '\2713'; position: absolute; left: 8px; color: var(--accent); }
 
-/* A Change-Id on several branches: one card, a table row per branch. */
-.change.family { flex-direction: column; gap: 4px; }
-.badge.branch { display: inline-flex; gap: 4px; align-items: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
-.change-title code { font-size: 12px; }
-.branches { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 12.5px; }
-.branches th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 10px 4px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
-.branches td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
-.branches tr:last-child td { border-bottom: none; }
-.branches tr.closed td { color: var(--muted); }
-.branches td.branch code { font-weight: 600; }
-.branches tr.closed td.branch code { font-weight: 500; }
-.branches td.cell-reviewers { white-space: normal; width: 100%; }
-.branches td.cell-actions { width: 1%; }
-.branches .req { font-size: 11px; color: var(--pending); margin-left: 4px; }
-.branches .req.stale { color: var(--muted); }
-.reviewers.bare { margin-top: 0; position: relative; }
-.reviewers.bare .chip { font-size: 11.5px; padding: 1px 7px; }
-.branches .add-reviewer { margin-top: 4px; }
-.actions.inline { flex-direction: row; justify-content: flex-end; min-width: 0; }
-.actions.inline .split { width: auto; }
-.actions.inline .btn { padding: 3px 8px; font-size: 12px; }
-.branches-wrap { min-width: 0; }
-/* Compact: drop the number, diff and time columns; what is left scrolls sideways instead of clipping. */
-.compact .branches-wrap { overflow-x: auto; }
-.compact .branches .col-diff, .compact .branches .col-updated, .compact .branches .col-num { display: none; }
-.compact .branches td.cell-reviewers { white-space: nowrap; width: auto; }
-.compact .branches .reviewers.bare { flex-wrap: nowrap; }
-.compact .actions.inline .btn { padding: 3px 6px; font-size: 12px; }
 
 /*
  * Compact mode: a 320-460px window. The header is two fixed rows, a
@@ -225,7 +221,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .ledger tr.ldetail td { background: var(--panel); padding: 0 8px 8px 9px; }
 .ldet-badges { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11.5px; }
 .ledger .reviewers { margin-top: 6px; gap: 4px; }
-.ledger .reviewers-label { font-size: 11.5px; }
 .ledger .chip { font-size: 11.5px; padding: 1px 7px; }
 .ledger .add-reviewer { max-width: none; }
 .ldet-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-top: 8px; }

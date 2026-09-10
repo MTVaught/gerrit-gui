@@ -101,8 +101,8 @@ These rules have these effects:
 
 A cherry-pick to another branch is a separate change in Gerrit. It keeps the
 Change-Id of the original commit. The application shows the changes that
-have the same Change-Id as one card with a table. Each branch is a row in the
-table.
+have the same Change-Id as one card. Each branch is a row in the card. A
+change on one branch is a card with one row, so both read the same way.
 
 - The card is in the section of its most urgent branch. The order of
   urgency is the same for the owner and for a reviewer: Needs Changes, Needs
@@ -111,18 +111,21 @@ table.
   branch that waits on you comes before a branch that you reviewed.
 - Each row shows the branch, the state, the WIP or Active badge, the change
   number, the patch set, the reviewers with their votes, the size of the
-  diff, the time of the last update and the buttons of that change. Each
-  branch is reviewed on its own. A vote on the master change does not count
-  for the release change.
-- A merged branch stays in the table. The row is grey, shows when the change
+  diff, the time of the last update and the buttons of that change. The
+  cards in a section share the same columns. Each branch is reviewed on its
+  own. A vote on the master change does not count for the release change.
+- The reviewers fit on one line. Reviewers who voted come first, a -1 before
+  a +1. If there are too many, the rest are behind a "+N" chip. Point at it
+  to see their names, or click it to show them all.
+- A merged branch stays in the card. The row is grey, shows when the change
   was merged and has no buttons. Thus, while you work on a release branch,
   you can see that the change is already in on master. On the "Recently
   Merged" tab, the merged branch leads the card and the open branches are
   below it.
 - The counts on the tabs and on the sections count changes, not cards. A
   section counts only the changes that are in that state.
-- In compact mode the table hides the change number, the diff and the time
-  columns.
+- In compact mode a row wraps: the reviewers and the buttons go below the
+  branch, and the change number and the diff are hidden.
 
 ![Changes grouped by Change-Id](docs/screenshots/change-id-groups.png)
 
@@ -142,9 +145,9 @@ When the team list has one or more entries:
 - Only reviewers on the team count for "Needs Review by", "Needs Changes"
   and "Approved". The last team member decides. A vote from anyone else does
   not change the state.
-- The application shows reviewers who are not on the team on the change, in
-  a separate "Outside the team" row with a dashed outline. Their votes are
-  visible there and in the tooltip, and the owner can remove them.
+- The application shows reviewers who are not on the team on a second line
+  under the team, with a dashed outline. Their votes are visible there and in
+  the tooltip, and the owner can remove them.
 - The "External Reviews" tab lists every open change owned by someone
   outside the team, in groups by state. Those changes are also on "Needs
   Review" and "Reviewing" as usual. Only the owner decides this: your own
