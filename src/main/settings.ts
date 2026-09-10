@@ -12,6 +12,7 @@ interface StoredSettings {
   team?: string[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
+  compactOnTop?: boolean
   showAppBadge?: boolean
   showTrayCounts?: boolean
   /** base64 of safeStorage ciphertext, or plaintext when no keychain is available. */
@@ -41,6 +42,7 @@ export async function getStatus(): Promise<SettingsStatus> {
     team: s.team ?? [],
     badgeStyle: s.badgeStyle ?? 'color',
     showZeroCounts: s.showZeroCounts ?? false,
+    compactOnTop: s.compactOnTop ?? true,
     showAppBadge: s.showAppBadge ?? true,
     showTrayCounts: s.showTrayCounts ?? true,
     hasPassword: Boolean(s.password),
@@ -66,6 +68,7 @@ export async function save(input: SettingsInput): Promise<void> {
     team: normalizeTeam(input.team),
     badgeStyle: input.badgeStyle,
     showZeroCounts: input.showZeroCounts,
+    compactOnTop: input.compactOnTop,
     showAppBadge: input.showAppBadge,
     showTrayCounts: input.showTrayCounts,
     password: prev.password,

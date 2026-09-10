@@ -22,6 +22,7 @@ const api: Api = {
   setCompact: (on) => ipcRenderer.invoke('ui:setCompact', on),
   setBadge: (payload) => ipcRenderer.send('ui:badge', payload),
   onCompactChanged: (cb) => subscribe<[boolean]>('app:compact', cb),
+  onSettingsChanged: (cb) => subscribe<[]>('app:settings', cb),
   onRefreshRequested: (cb) => subscribe<[]>('app:refresh', cb),
   onTabRequested: (cb) => subscribe<[TabId]>('app:tab', cb),
   getUpdateState: () => ipcRenderer.invoke('update:get'),

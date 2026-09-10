@@ -2,25 +2,33 @@ import { useMemo } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName, familyKey, groupByChangeId, isExternalReview, sortByBranch, sortViews, urgency, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ChangeRow, FamilyCard } from './ChangeRow.tsx'
+import { Ledger } from './Ledger.tsx'
 
 export type { TabId }
 export { isExternalReview }
 
-export const TABS: { id: TabId; label: string }[] = [
-  { id: 'needs-my-review', label: 'Needs Review' },
-  { id: 'reviewing', label: 'Reviewing' },
-  { id: 'mine', label: 'My Changes' },
-  { id: 'ready-to-merge', label: 'Ready to Merge' },
-  { id: 'merged', label: 'Recently Merged' },
-  { id: 'external-reviews', label: 'External Reviews' },
+export interface Tab {
+  id: TabId
+  label: string
+  /** Compact-window label; all of them must fit a strip about 440px wide. */
+  short: string
+}
+
+export const TABS: Tab[] = [
+  { id: 'needs-my-review', label: 'Needs Review', short: 'To review' },
+  { id: 'reviewing', label: 'Reviewing', short: 'Reviewing' },
+  { id: 'mine', label: 'My Changes', short: 'Mine' },
+  { id: 'ready-to-merge', label: 'Ready to Merge', short: 'Ready' },
+  { id: 'merged', label: 'Recently Merged', short: 'Merged' },
+  { id: 'external-reviews', label: 'External Reviews', short: 'External' },
 ]
 
 /** The External Reviews tab exists only once a team is configured; without one nobody is external. */
-export function visibleTabs(teamConfigured: boolean): { id: TabId; label: string }[] {
+export function visibleTabs(teamConfigured: boolean): Tab[] {
   return TABS.filter((t) => t.id !== 'external-reviews' || teamConfigured)
 }
 
-interface Group {
+export interface Group {
   title: string
   hint?: string
   items: ChangeView[]
@@ -148,6 +156,8 @@ export function Board(props: {
   sort: SortId
   self: AccountInfo | null
   loading: boolean
+  /** Narrow window: render the ledger, one line per change, instead of the cards. */
+  compact: boolean
   onAct: (a: ChangeAction) => Promise<void>
   onGoTo: (tab: TabId) => void
 }) {
@@ -187,6 +197,14 @@ export function Board(props: {
   if (groups.length === 0) {
     if (props.tab === 'needs-my-review') return <NeedsReviewEmpty views={props.views} onGoTo={props.onGoTo} />
     return <div className="panel empty">{EMPTY[props.tab]}</div>
+  }
+  if (props.compact) {
+    // Families are not folded here: every branch is its own line, named by branch.
+    return (
+      <main className="board">
+        <Ledger groups={groups} sort={props.sort} self={props.self} families={families} onAct={props.onAct} />
+      </main>
+    )
   }
   return (
     <main className="board">

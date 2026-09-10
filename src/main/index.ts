@@ -15,6 +15,8 @@ const NORMAL_DEFAULT: WindowBounds = { x: 0, y: 0, width: 1200, height: 800 }
 let mainWindow: BrowserWindow | null = null
 let tray: TrayController | null = null
 let ui: UiState = { compact: false }
+/** User setting: the compact window floats above other windows (see Settings, Window). */
+let compactOnTop = true
 let quitting = false
 let updater: Updater | null = null
 
@@ -57,21 +59,41 @@ async function setCompact(on: boolean): Promise<void> {
   mainWindow?.webContents.send('app:compact', on)
 }
 
-/** Compact mode: small, always on top, visible on every workspace. */
+/** Compact mode: a narrow window; optionally pinned on top and visible on every workspace. */
 function applyWindowMode(): void {
   if (!mainWindow) return
   const target = ui.compact ? (ui.compactBounds ?? COMPACT_DEFAULT) : (ui.bounds ?? NORMAL_DEFAULT)
-  mainWindow.setAlwaysOnTop(ui.compact, 'floating')
-  // skipTransformProcessType: without it Electron turns the process into a
-  // macOS accessory app (no Dock icon) whenever visibleOnFullScreen is set,
-  // even when `visible` is false. We always want the Dock icon and its badge.
-  mainWindow.setVisibleOnAllWorkspaces(ui.compact, {
-    visibleOnFullScreen: ui.compact,
-    skipTransformProcessType: true,
-  })
+  applyPinning()
   mainWindow.setMinimumSize(ui.compact ? 320 : 800, 400)
   mainWindow.setSize(target.width, target.height)
   if (target.x || target.y) mainWindow.setPosition(target.x, target.y)
+}
+
+function applyPinning(): void {
+  if (!mainWindow) return
+  const pinned = ui.compact && compactOnTop
+  mainWindow.setAlwaysOnTop(pinned, 'floating')
+  // skipTransformProcessType: without it Electron turns the process into a
+  // macOS accessory app (no Dock icon) whenever visibleOnFullScreen is set,
+  // even when `visible` is false. We always want the Dock icon and its badge.
+  mainWindow.setVisibleOnAllWorkspaces(pinned, {
+    visibleOnFullScreen: pinned,
+    skipTransformProcessType: true,
+  })
+}
+
+async function setCompactOnTop(on: boolean): Promise<void> {
+  const current = await service.getSettings()
+  await service.saveSettings({ ...current, compactOnTop: on })
+  await refreshWindowPrefs()
+  mainWindow?.webContents.send('app:settings')
+}
+
+/** Re-read the window-related user settings and apply them. */
+async function refreshWindowPrefs(): Promise<void> {
+  compactOnTop = (await service.getSettings()).compactOnTop
+  applyPinning()
+  tray?.setCompactOnTop(compactOnTop)
 }
 
 let saveBoundsTimer: NodeJS.Timeout | null = null
@@ -85,7 +107,10 @@ function scheduleSaveBounds(): void {
 
 function registerIpc(): void {
   ipcMain.handle('settings:get', () => service.getSettings())
-  ipcMain.handle('settings:save', (_e, input: SettingsInput) => service.saveSettings(input))
+  ipcMain.handle('settings:save', async (_e, input: SettingsInput) => {
+    await service.saveSettings(input)
+    await refreshWindowPrefs()
+  })
   ipcMain.handle('gerrit:testConnection', () => service.testConnection())
   ipcMain.handle('gerrit:fetchDashboard', () => service.fetchDashboard())
   ipcMain.handle('gerrit:act', (_e, action: ChangeAction) => service.act(action))
@@ -166,6 +191,7 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(async () => {
     ui = await settings.getUi()
+    compactOnTop = (await service.getSettings()).compactOnTop
     registerIpc()
     updater = createUpdater({
       onChange: (state) => {
@@ -183,6 +209,7 @@ if (!app.requestSingleInstanceLock()) {
         showTab,
         refresh: () => mainWindow?.webContents.send('app:refresh'),
         setCompact: (on) => void setCompact(on),
+        setCompactOnTop: (on) => void setCompactOnTop(on),
         update: () => {
           if (!updater) return
           // Progress and the restart prompt are in the window, so raise it for a download.
@@ -195,6 +222,7 @@ if (!app.requestSingleInstanceLock()) {
         },
       },
       ui.compact,
+      compactOnTop,
     )
     tray.setUpdate(updater.getState())
     const win = createWindow()
@@ -203,6 +231,10 @@ if (!app.requestSingleInstanceLock()) {
       const delay = Number(process.env['GERRIT_GUI_SCREENSHOT_DELAY'] ?? 3000)
       win.webContents.once('did-finish-load', () => {
         setTimeout(async () => {
+          // Optional JS to run first, e.g. to open a row or a dialog.
+          const js = process.env['GERRIT_GUI_SCREENSHOT_JS']
+          if (js) await win.webContents.executeJavaScript(js)
+          await new Promise((r) => setTimeout(r, 300))
           const img = await win.webContents.capturePage()
           await fs.writeFile(shot, img.toPNG())
           quitting = true

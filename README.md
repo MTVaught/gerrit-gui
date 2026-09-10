@@ -189,16 +189,26 @@ the menu bar icon" in the settings to keep the plain icon on every platform.
 The tooltip and the tray menu show the counts by category on all platforms,
 also with the counts off; a category in the tray menu opens the tab that
 lists those changes. The tray menu also has
-Open, Refresh, Compact and Quit, and a disabled row with the version and the
+Open, Refresh, Compact window, Compact window stays on top, and Quit, and a
+disabled row with the version and the
 short git commit the build was made from (a trailing `+` means the working
 tree had uncommitted changes). The total goes to the macOS dock, the Linux
 launcher and the Windows taskbar overlay. Clear "Show the total as a badge
 on the app icon" in the settings to turn that badge off.
 
-Compact mode is a narrow window that stays on top of the other windows and
-moves with you to each workspace. Start compact mode with the pin button or
-from the tray menu. The application keeps the position of the normal window
-and the position of the compact window separately.
+Compact mode is a narrow window with a layout made for 320 to 460 pixels.
+The tabs have short names in a strip that scrolls sideways. The board is a
+table with one line per change: the subject, the WIP or Active state, the
+reviewers as initials with their vote, and the one main button for that
+change. Tap a line to open it. The open line shows the state, the reviewer
+chips with add and remove, the other buttons, and a link to the change in
+Gerrit. Start compact mode with the shrink button in the top bar or from the
+tray menu. By default the compact
+window stays on top of the other windows and moves with you to each
+workspace. To turn that off, clear "Compact window stays on top" in
+"Settings" or in the tray menu. The full-size window is never pinned. The
+application keeps the position of the normal window and the position of the
+compact window separately.
 
 If you close the window, the application hides the window in the tray. To
 stop the application, use "Quit" in the tray menu. Only one instance of the

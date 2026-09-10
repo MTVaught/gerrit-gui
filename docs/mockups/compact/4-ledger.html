@@ -1,0 +1,48 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+/* Design 4: ledger. A hairline table like the full-size mockups, cut down to three columns. Tapping a row opens an action row. */
+table{border-collapse:collapse;width:100%;font-size:12.5px;table-layout:fixed}
+col.ci{width:58px}col.rv{width:64px}col.ac{width:74px}
+th{font-weight:600;color:var(--muted);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:5px 8px;border-bottom:1px solid var(--soft);vertical-align:middle}
+td.c{border-left:3px solid transparent;padding-left:6px;overflow:hidden}
+tr.changes td.c{border-left-color:var(--neg)}tr.approved td.c{border-left-color:var(--pos)}tr.review td.c{border-left-color:var(--pend)}tr.prog td.c{border-left-color:#9ca3af}
+.t{font-weight:600;font-size:13px}
+.s{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap}
+td.r{white-space:nowrap;width:1%}
+td.a{white-space:nowrap;width:1%;text-align:right}
+tr.g td{padding:12px 8px 4px;border-bottom:1px solid var(--border);font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+tr.g .count{margin-left:6px}
+tr.open td{background:var(--panel);border-bottom:none}
+tr.acts td{background:var(--panel);padding:2px 8px 8px 8px}
+.bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.bar .subtle{margin-right:auto;padding-left:0}
+.bar .chips{display:flex;gap:4px;flex:0 0 100%;margin-bottom:4px;align-items:center;white-space:nowrap}
+.more{color:var(--muted);letter-spacing:1px}
+</style></head><body>
+<div class="top">
+  <div class="tabs"><span class="tab">To review <span class="count hot">1</span></span><span class="tab">Reviewing <span class="count">2</span></span><span class="tab active">Mine <span class="count">27</span></span><span class="tab">Ready <span class="count">3</span></span><span class="tab">Merged <span class="count">16</span></span></div>
+  <div class="toolbar"><span class="sel">Group: State ▾</span><span class="sel">Sort: Updated ▾</span><span class="spacer"></span><span class="ibtn">⟳</span><span class="ibtn on">⤢</span><span class="ibtn">⚙</span></div>
+</div>
+<table>
+<colgroup><col><col class="ci"><col class="rv"><col class="ac"></colgroup>
+<tr><th style="padding-left:9px">Change</th><th>CI</th><th>Reviewers</th><th></th></tr>
+
+<tr class="g"><td colspan="4">Needs changes<span class="count">4</span></td></tr>
+<tr class="changes"><td class="c"><div class="t ell">C4 needs changes (carol -1)</div><div class="s">#42 · PS 1 · <span class="ins">+0</span> <span class="del">−0</span> · 15h</div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span></td><td class="a"><span class="more">···</span></td></tr>
+<tr class="changes open"><td class="c"><div class="t ell">X1 bob +1, erin (outside the team) -1</div><div class="s">#35 · PS 1 · <span class="ins">+0</span> <span class="del">−0</span> · 16h</div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av e">E<span class="v neg">−1</span></span></span></td><td class="a"><span class="more">···</span></td></tr>
+<tr class="acts"><td colspan="4"><div class="bar"><div class="chips"><span class="muted" style="font-size:11.5px">Everyone voted</span><span class="chip pos">Bob +1 <span class="x">×</span></span><span class="chip neg">Erin (other team) −1 <span class="x">×</span></span><span class="chip add">+ reviewer</span></div><span class="btn sm subtle">Mark active (runs CI)</span><span class="btn sm">Open in Gerrit ↗</span></div></td></tr>
+<tr class="changes"><td class="c"><div class="t ell">S4 Needs changes: carol -1</div><div class="s">#21 · PS 1 · <span class="ins">+0</span> <span class="del">−0</span> · 38h</div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av c">C<span class="v neg">−1</span></span></span></td><td class="a"><span class="more">···</span></td></tr>
+
+<tr class="g"><td colspan="4">Approved<span class="count">6</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">C5 approved by everyone, still WIP</div><div class="s">#40 · PS 1 · <span class="ins">+0</span> <span class="del">−0</span> · 15h</div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">X3 only erin is a reviewer, erin +1</div><div class="s">#37 · PS 1 · <span class="ins">+12</span> <span class="del">−3</span> · 16h</div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av e">E<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+<tr class="approved"><td class="c"><div class="t ell">integration 1788910093526</div><div class="s">#28 · PS 4 · <span class="ins">+12</span> <span class="del">−3</span> · 38h</div></td><td><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pos">+1</span></span></span></td><td class="a"><span class="btn sm primary">Ready</span></td></tr>
+
+<tr class="g"><td colspan="4">Out for review<span class="count">2</span></td></tr>
+<tr class="review"><td class="c"><div class="t ell">Add configurable change sorting</div><div class="s">#31 · PS 2 · <span class="ins">+214</span> <span class="del">−37</span> · 18m</div></td><td><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av b">B<span class="v pend">·</span></span><span class="av d">D<span class="v pend">·</span></span></span></td><td class="a"><span class="more">···</span></td></tr>
+<tr class="review"><td class="c"><div class="t ell">Stabilize status pills on macOS</div><div class="s">#30 · PS 3 · <span class="ins">+58</span> <span class="del">−12</span> · 1h</div></td><td><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pend">·</span></span></span></td><td class="a"><span class="more">···</span></td></tr>
+
+<tr class="g"><td colspan="4">In progress<span class="count">3</span></td></tr>
+<tr class="prog"><td class="c"><div class="t ell">Fix tray icon on Linux</div><div class="s">#45 · PS 2 · <span class="ins">+31</span> <span class="del">−4</span> · 2h</div></td><td><span class="badge wip">WIP</span></td><td class="r"><span class="stack"><span class="av b">B</span></span></td><td class="a"><span class="btn sm primary">Request</span></td></tr>
+</table>
+</body></html>

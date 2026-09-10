@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+/* Design 2: accordion. Collapsed rows are one line; the open row shows meta, reviewers and the action bar. */
+.row{display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--soft)}
+.row .chev{color:#9ca3af;width:10px;font-size:10px;flex:0 0 auto}
+.row .subj{flex:1;min-width:0;font-weight:600;font-size:13.5px}
+.row .age{font-size:11.5px;color:var(--muted);flex:0 0 auto}
+.row.open{background:var(--panel);border-bottom:none}
+.row.open .chev{transform:rotate(90deg)}
+.detail{background:var(--panel);padding:0 8px 10px 24px;border-bottom:1px solid var(--border)}
+.detail .badges{display:flex;gap:4px;margin-bottom:4px}
+.detail .meta{font-size:12px;color:var(--muted)}
+.detail .revs{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.detail .label{font-size:11.5px;font-weight:600;color:var(--pend)}
+.detail .acts{display:flex;gap:6px;justify-content:flex-end;align-items:center;margin-top:8px;flex-wrap:wrap}
+.detail .acts .subtle{margin-right:auto;padding-left:0}
+.detail .link{color:var(--accent);font-size:12px}
+</style></head><body>
+<div class="top">
+  <div class="tabs"><span class="tab">To review <span class="count hot">1</span></span><span class="tab">Reviewing <span class="count">2</span></span><span class="tab active">Mine <span class="count">27</span></span><span class="tab">Ready <span class="count">3</span></span><span class="tab">Merged <span class="count">16</span></span></div>
+  <div class="toolbar"><span class="muted" style="font-size:12px">updated just now</span><span class="spacer"></span><span class="sel">Most recent update ▾</span><span class="ibtn">⟳</span><span class="ibtn on">⤢</span><span class="ibtn">⚙</span></div>
+</div>
+
+<div class="gh"><span class="dot changes"></span>Needs changes <span class="count">4</span></div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">C4 needs changes (carol -1)</span><span class="badge wip">WIP</span><span class="age">15h</span></div>
+<div class="row open"><span class="chev">▶</span><span class="subj ell">X1 bob +1, erin (outside the team) -1</span><span class="badge wip">WIP</span><span class="age">16h</span></div>
+<div class="detail">
+  <div class="badges"><span class="badge changes">Needs changes</span><span class="badge wip">WIP</span></div>
+  <div class="meta ell">#35 · demo · master · you · PS 1 · <span class="ins">+0</span> <span class="del">−0</span> · 2 unresolved</div>
+  <div class="revs"><span class="label">Reviewed by everyone</span><span class="chip pos">Bob +1 <span class="x">×</span></span><span class="chip neg">Erin (other team) −1 <span class="x">×</span></span><span class="chip add">+ reviewer</span></div>
+  <div class="acts"><span class="btn sm subtle">Mark active (runs CI)</span><span class="link">Open in Gerrit ↗</span></div>
+</div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">S4 Needs changes: carol -1</span><span class="badge wip">WIP</span><span class="age">38h</span></div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">C4 needs changes (carol -1)</span><span class="badge wip">WIP</span><span class="age">44h</span></div>
+
+<div class="gh"><span class="dot approved"></span>Approved <span class="count">6</span></div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">C5 approved by everyone, still WIP</span><span class="btn sm primary">Ready to merge</span><span class="age">15h</span></div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">X3 only erin is a reviewer, erin +1</span><span class="btn sm primary">Ready to merge</span><span class="age">16h</span></div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">integration 1788910093526</span><span class="btn sm primary">Ready to merge</span><span class="age">38h</span></div>
+
+<div class="gh"><span class="dot review"></span>Out for review <span class="count">2</span></div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">Add configurable change sorting</span><span class="stack"><span class="av b">B<span class="v pend">·</span></span><span class="av d">D<span class="v pend">·</span></span></span><span class="age">18m</span></div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">Stabilize status pills on macOS</span><span class="stack"><span class="av b">B<span class="v pos">+1</span></span><span class="av c">C<span class="v pend">·</span></span></span><span class="age">1h</span></div>
+
+<div class="gh"><span class="dot prog"></span>In progress <span class="count">3</span></div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">Fix tray icon on Linux</span><span class="btn sm primary">Request review</span><span class="age">2h</span></div>
+<div class="row"><span class="chev">▶</span><span class="subj ell">Group changes by Change-Id across branches</span><span class="btn sm" style="color:var(--muted)">no reviewers</span><span class="age">3h</span></div>
+</body></html>

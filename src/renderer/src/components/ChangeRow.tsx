@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName, shortChangeId, type ChangeFamily } from '../../../shared/model.ts'
 import { ForkIcon } from './Icons.tsx'
-import { READY_TO_MERGE_TAG } from '../../../shared/constants.ts'
+import { actionClass, changeActions } from './actions.ts'
 import { ago } from '../time.ts'
 import { ReviewButton } from './ReviewButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
@@ -174,7 +174,7 @@ function BranchRow(props: RowProps) {
 }
 
 /** Reviewer chips with votes; `bare` leaves out the "Needs Review by" label for table cells. */
-function Reviewers(props: RowProps & { bare?: boolean }) {
+export function Reviewers(props: RowProps & { bare?: boolean }) {
   const { view: v, self } = props
   const c = v.change
   const id = c._number
@@ -277,69 +277,16 @@ function Reviewers(props: RowProps & { bare?: boolean }) {
 }
 
 /** The buttons for one change; `inline` lays them out in a row for table cells. */
-function Actions(props: RowProps & { inline?: boolean }) {
+export function Actions(props: RowProps & { inline?: boolean }) {
   const { view: v } = props
-  const c = v.change
-  const id = c._number
-  const open = c.status === 'NEW'
-  const owner = open && v.isMine
-  const merger = v.canMerge && (v.state === 'ready-to-merge' || v.staleReadyToMerge)
-  const requestLabel =
-    v.requestedPatchSet !== null && v.requestedPatchSet < v.patchSet
-      ? `Re-request review (PS ${v.patchSet})`
-      : `Request review (PS ${v.patchSet})`
+  const open = v.change.status === 'NEW'
   return (
     <div className={props.inline ? 'actions inline' : 'actions'}>
-      {owner && !v.reviewRequested && v.state !== 'approved' && v.state !== 'ready-to-merge' && (
-        <button
-          className="btn primary"
-          disabled={v.reviewers.length === 0 && v.externalReviewers.length === 0}
-          title={
-            v.reviewers.length === 0 && v.externalReviewers.length === 0
-              ? 'Add a reviewer first'
-              : v.reviewers.length === 0
-                ? 'Only external reviewers are on this change; it cannot be approved until a team member is added'
-                : 'Ask every reviewer to look at this patch set'
-          }
-          onClick={() => void props.onAct({ type: 'requestReview', id, patchSet: v.patchSet })}
-        >
-          {requestLabel}
+      {changeActions(v, props.onAct).map((a) => (
+        <button key={a.key} className={actionClass(a)} disabled={a.disabled} title={a.title} onClick={a.run}>
+          {a.label}
         </button>
-      )}
-      {owner && v.reviewRequested && v.state === 'needs-review' && (
-        <button className="btn" onClick={() => void props.onAct({ type: 'withdrawReview', id })}>
-          Withdraw request
-        </button>
-      )}
-      {owner && v.state === 'approved' && (
-        <button className="btn primary" onClick={() => void props.onAct({ type: 'hashtag', id, add: [READY_TO_MERGE_TAG] })}>
-          Ready to Merge
-        </button>
-      )}
-      {v.canMerge && v.state === 'ready-to-merge' && (
-        <button
-          className="btn primary"
-          disabled={v.wip}
-          title={v.wip ? 'Still WIP, so CI has not run. Mark it active first.' : 'Vote +2 on this patch set and submit it'}
-          onClick={() => void props.onAct({ type: 'merge', id })}
-        >
-          +2 and submit
-        </button>
-      )}
-      {open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && (v.isMine || merger) && (
-        <button className="btn" onClick={() => void props.onAct({ type: 'hashtag', id, remove: [READY_TO_MERGE_TAG] })}>
-          Clear ready-to-merge
-        </button>
-      )}
-      {(owner || (merger && v.wip)) && (
-        <button
-          className="btn subtle"
-          title={v.wip ? 'Clear WIP so CI runs on this change' : 'Mark WIP so CI stops running on this change'}
-          onClick={() => void props.onAct({ type: 'setWip', id, wip: !v.wip })}
-        >
-          {v.wip ? 'Mark active (runs CI)' : 'Mark WIP'}
-        </button>
-      )}
+      ))}
       {open && v.iAmReviewer && !v.isMine && <ReviewButton view={v} />}
     </div>
   )

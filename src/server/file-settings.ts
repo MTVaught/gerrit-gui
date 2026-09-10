@@ -17,6 +17,7 @@ interface Stored {
   team?: string[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
+  compactOnTop?: boolean
   showAppBadge?: boolean
   showTrayCounts?: boolean
 }
@@ -38,7 +39,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
   return {
     async getStatus(): Promise<SettingsStatus> {
       const s = await read()
-      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], team: s.team ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, hasPassword: Boolean(s.password), encrypted: false }
+      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], team: s.team ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, compactOnTop: s.compactOnTop ?? true, hasPassword: Boolean(s.password), encrypted: false }
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
@@ -54,6 +55,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
         team: normalizeTeam(input.team),
         badgeStyle: input.badgeStyle,
         showZeroCounts: input.showZeroCounts,
+        compactOnTop: input.compactOnTop,
         showAppBadge: input.showAppBadge,
         showTrayCounts: input.showTrayCounts,
       }

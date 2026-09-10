@@ -202,6 +202,8 @@ export interface Settings {
    * state. Changes owned outside the team appear on the "External Reviews" tab.
    */
   team: string[]
+  /** Keep the compact window above other windows and on every workspace. */
+  compactOnTop: boolean
 }
 
 export interface SettingsInput extends Settings {
