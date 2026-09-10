@@ -38,8 +38,10 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
         ? 'Add a reviewer first'
         : v.reviewers.length === 0
           ? 'Only external reviewers are on this change; it cannot be approved until a team member is added'
-          : 'Ask every reviewer to look at this patch set',
-      run: () => void act({ type: 'requestReview', id, patchSet: v.patchSet }),
+          : v.staleReadyToMerge
+            ? 'Ask every reviewer to look at this patch set. Also clears the ready-to-merge tag, which was for an earlier patch set.'
+            : 'Ask every reviewer to look at this patch set',
+      run: () => void act({ type: 'requestReview', id, patchSet: v.patchSet, clearReadyTag: v.staleReadyToMerge }),
     })
   }
   if (owner && v.reviewRequested && v.state === 'needs-review') {
@@ -66,7 +68,10 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
       run: () => void act({ type: 'merge', id }),
     })
   }
-  if (open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && (v.isMine || merger)) {
+  // The owner does not get a separate "clear" for a stale tag when the request
+  // button is there: re-requesting review clears it, so one button does both.
+  const requesting = out.some((a) => a.key === 'request')
+  if (open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && ((v.isMine && !requesting) || merger)) {
     out.push({ key: 'clear', label: 'Clear ready-to-merge', short: 'Clear tag', run: () => void act({ type: 'hashtag', id, remove: [READY_TO_MERGE_TAG] }) })
   }
   if (owner || (merger && v.wip)) {

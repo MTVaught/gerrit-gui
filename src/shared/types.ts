@@ -259,7 +259,8 @@ export interface DashboardData {
 }
 
 export type ChangeAction =
-  | { type: 'requestReview'; id: number; patchSet: number }
+  /** Owner's action. `clearReadyTag` also drops a ready-to-merge tag left over from an earlier patch set. */
+  | { type: 'requestReview'; id: number; patchSet: number; clearReadyTag?: boolean }
   | { type: 'withdrawReview'; id: number }
   | { type: 'setWip'; id: number; wip: boolean }
   /** Merger's action: vote +2 on the current patch set, then submit. */

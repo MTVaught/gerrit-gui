@@ -45,7 +45,9 @@ remembers the choice.
    Votes that come before the last vote do not change the state.
 5. If the state is "Needs Changes", the author pushes the corrections and
    pushes the "Request review" button again. The application asks all
-   reviewers again, for the new patch set only.
+   reviewers again, for the new patch set only. If the change still has the
+   `ready-to-merge` hashtag from an earlier patch set, the button also removes
+   the hashtag. The application does not remove the hashtag on its own.
 6. If the state is "Approved", the author pushes the "Ready to Merge" button.
    The change then goes to the "Ready to Merge" tab.
 7. The person who has merge authority pushes the "+2 and submit" button.
