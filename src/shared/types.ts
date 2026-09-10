@@ -142,6 +142,8 @@ export interface ChangeView {
   needsMyReview: boolean
   myVote: number
   patchSet: number
+  /** When the current patch set was pushed; the change's own date when Gerrit sent no revision. */
+  patchSetCreated: string
   /**
    * Highest patch set this user voted or replied on, or null if never. A
    * review of the current patch set starts from here, so the reviewer sees

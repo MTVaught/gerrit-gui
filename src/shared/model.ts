@@ -170,6 +170,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     needsMyReview: open && !isMine && iAmReviewer && reviewRequested && myVote === 0,
     myVote,
     patchSet,
+    patchSetCreated: rev?.created ?? change.created,
     lastReviewedPatchSet: lastReviewedPatchSet(change, selfId),
     staleReadyToMerge: open && tagged && state !== 'ready-to-merge',
     canMerge: open && maxPermittedVote(change) >= 2,
@@ -371,11 +372,12 @@ export function shortChangeId(key: string): string {
 }
 
 /** Row order inside each group. Applies to every tab. */
-export type SortId = 'updated' | 'age'
+export type SortId = 'updated' | 'age' | 'patchset'
 
 export const SORT_OPTIONS: { id: SortId; label: string; title: string }[] = [
   { id: 'updated', label: 'Most recent update', title: 'Changes with the newest activity first' },
-  { id: 'age', label: 'Overall review age', title: 'Oldest changes first, by the date the change was created' },
+  { id: 'age', label: 'Overall age, oldest first', title: 'Oldest changes first, by the date the change was created' },
+  { id: 'patchset', label: 'Last patch set, oldest first', title: 'Changes whose current patch set has waited longest first, by the date it was pushed' },
 ]
 
 export const DEFAULT_SORT: SortId = 'updated'
@@ -387,6 +389,88 @@ export function sortViews(views: ChangeView[], sort: SortId): ChangeView[] {
     if (sort === 'age') {
       return a.change.created.localeCompare(b.change.created) || byNumber(a, b)
     }
+    if (sort === 'patchset') {
+      return a.patchSetCreated.localeCompare(b.patchSetCreated) || byNumber(a, b)
+    }
     return b.change.updated.localeCompare(a.change.updated) || byNumber(b, a)
   })
+}
+
+/**
+ * Owner groups a filter can name without picking accounts: the user's own
+ * changes, changes owned inside the team from Settings, and changes owned
+ * outside it. The team scopes need a team; without one they match nothing.
+ */
+export type AuthorScope = 'me' | 'team' | 'outside'
+
+export const AUTHOR_SCOPES: { id: AuthorScope; label: string; title: string; needsTeam: boolean }[] = [
+  { id: 'me', label: 'Me', title: 'Changes you own', needsTeam: false },
+  { id: 'team', label: 'My team', title: 'Changes owned by a member of the team set in Settings', needsTeam: true },
+  { id: 'outside', label: 'Outside team', title: 'Changes owned by someone outside the team set in Settings', needsTeam: true },
+]
+
+/**
+ * What the View menu narrows the rows to. Authors and scopes are one
+ * condition: a change passes if its owner is a picked account or falls in a
+ * picked scope. The search matches the subject, or the change number exactly.
+ * Rows are filtered inside each section, so the sections and their order stay.
+ */
+export interface ViewFilter {
+  search: string
+  authors: AccountInfo[]
+  scopes: AuthorScope[]
+}
+
+export const EMPTY_FILTER: ViewFilter = { search: '', authors: [], scopes: [] }
+
+export function isFilterActive(f: ViewFilter): boolean {
+  return f.search.trim().length > 0 || f.authors.length > 0 || f.scopes.length > 0
+}
+
+function inScope(v: ChangeView, scope: AuthorScope): boolean {
+  switch (scope) {
+    case 'me':
+      return v.isMine
+    case 'team':
+      return v.teamScoped && !v.externalOwner
+    case 'outside':
+      return v.externalOwner
+  }
+}
+
+export function matchesFilter(v: ChangeView, f: ViewFilter): boolean {
+  const q = f.search.trim().toLowerCase()
+  if (q && !v.change.subject.toLowerCase().includes(q) && String(v.change._number) !== q) return false
+  if (f.authors.length === 0 && f.scopes.length === 0) return true
+  const owner = v.change.owner._account_id
+  return f.authors.some((a) => a._account_id === owner) || f.scopes.some((s) => inScope(v, s))
+}
+
+export function filterViews(views: ChangeView[], f: ViewFilter): ChangeView[] {
+  return isFilterActive(f) ? views.filter((v) => matchesFilter(v, f)) : views
+}
+
+export interface OwnerCount {
+  account: AccountInfo
+  count: number
+}
+
+/** The owners of these changes, most changes first, then by name: the first suggestions in the author picker. */
+export function ownersOf(views: ChangeView[]): OwnerCount[] {
+  const m = new Map<number, OwnerCount>()
+  for (const v of views) {
+    const o = v.change.owner
+    const cur = m.get(o._account_id)
+    if (cur) cur.count++
+    else m.set(o._account_id, { account: o, count: 1 })
+  }
+  return [...m.values()].sort((a, b) => b.count - a.count || displayName(a.account).localeCompare(displayName(b.account)))
+}
+
+/** Case-insensitive prefix match on any word of the name, or on the username or email. */
+export function accountMatches(a: AccountInfo, q: string): boolean {
+  const t = q.trim().toLowerCase()
+  if (!t) return true
+  const words = displayName(a).toLowerCase().split(/\s+/)
+  return words.some((w) => w.startsWith(t)) || (a.username?.toLowerCase().startsWith(t) ?? false) || (a.email?.toLowerCase().startsWith(t) ?? false)
 }

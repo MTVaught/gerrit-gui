@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><script src="mock.js"></script><style>
+/* Design 1: a fixed filter bar under the tabs. Search, author and sort are always visible form controls. */
+.filterbar { display: flex; align-items: center; gap: 8px; padding: 6px 16px; border-bottom: 1px solid var(--border); background: var(--panel); }
+.filterbar .spacer { flex: 1; }
+.filterbar .link { color: var(--accent); font-size: 12.5px; }
+.compact .filterbar { padding: 0 8px 6px; border-bottom: 1px solid var(--border); gap: 6px; background: var(--bg); }
+.compact .filterbar .field { flex: 1; }
+.compact .topbar { padding-bottom: 0; border-bottom: none; }
+.compact .topbar-right .status-line { flex: 1; }
+i[class^="i-"] { display: inline-flex; }
+</style></head><body>
+
+<div class="cap">Full window · author filter and patch set sort applied</div>
+<div class="app frame-full">
+  <header class="topbar" id="tf"></header>
+  <div class="filterbar">
+    <span class="field" style="width:280px"><i class="i-mag ico"></i><span class="ph">Search titles</span></span>
+    <button class="btn sel on"><span class="lbl">Author</span> Alice <span class="dn">▾</span></button>
+    <button class="btn sel on"><span class="lbl">Sort</span> Last patch set, oldest first <span class="dn">▾</span></button>
+    <span class="spacer"></span>
+    <span class="muted small" id="nf"></span>
+    <button class="link">Clear filters</button>
+  </div>
+  <main class="board" id="full"></main>
+</div>
+
+<div class="cap">Compact window · a third header row; search "ca" typed</div>
+<div class="app compact frame-compact">
+  <header class="topbar" id="tc"></header>
+  <div class="filterbar">
+    <span class="field focus"><i class="i-mag ico"></i>ca<span class="caret"></span><span class="clr">×</span></span>
+    <button class="btn sel"><span class="lbl">Author</span> Anyone <span class="dn">▾</span></button>
+  </div>
+  <main class="board" id="cmp"></main>
+</div>
+
+<div class="mock-note"><b>1 · Filter bar.</b> A row of plain form controls between the tabs and the board: a search field, an <b>Author</b> select listing the owners of the changes on the current tab, and the <b>Sort</b> select moved out of the top bar. The bar also shows how many changes match, with a "Clear filters" link. Controls with a non-default value get an accent border.
+<ul><li><b>Compact:</b> the sort select stays in the toolbar as today; the search field and author select form a third header row, about 30px. Everything is one tap away, at the cost of a row of vertical space on a window that is short on it.</li>
+<li><b>Sort key in the row:</b> the age cell follows the sort, so "Last patch set" shows "PS 5 pushed 3d ago" in place of "20m ago". All five designs do this.</li>
+<li>Most obvious; nothing is hidden. Also the widest: at 1180px the bar has room, but a narrow full window would wrap it.</li></ul></div>
+
+<script>
+document.getElementById('tf').innerHTML = tabsFull() + `<div class="topbar-right"><span class="muted status-line">Bob · updated just now</span>${ICONS}</div>`
+document.getElementById('tc').innerHTML = tabsCompact() + `<div class="topbar-right"><span class="muted status-line">updated just now</span><button class="btn sel on"><span class="lbl">Sort</span> Oldest patch set <span class="dn">▾</span></button>${ICONS_C}</div>`
+const n = renderFull(document.getElementById('full'), { owner: 'Alice', sort: 'ps' })
+document.getElementById('nf').textContent = `${n} of ${TOTAL} changes`
+renderLedger(document.getElementById('cmp'), { search: 'ca', sort: 'ps' })
+icons()
+</script></body></html>

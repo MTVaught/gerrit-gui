@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, type ChangeFamily } from '../../../shared/model.ts'
+import { STATE_LABEL, displayName, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { ageCell } from '../age.ts'
+import { Highlight } from './Highlight.tsx'
 import { ForkIcon } from './Icons.tsx'
 import { actionClass, changeActions, type ActionSpec } from './actions.ts'
 import { ago } from '../time.ts'
@@ -8,10 +10,18 @@ import { ReviewButton } from './ReviewButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
 import { api } from '../api.ts'
 
-interface RowProps {
+/** What the reviewer chips and the buttons of one change need. */
+interface ActProps {
   view: ChangeView
   self: AccountInfo
   onAct: (a: ChangeAction) => Promise<void>
+}
+
+interface RowProps extends ActProps {
+  /** The age cell shows the date the rows are sorted by. */
+  sort: SortId
+  /** Search text from the View menu, marked in the subject. */
+  search: string
 }
 
 /**
@@ -23,7 +33,7 @@ export function ChangeRow(props: RowProps) {
   const { view: v } = props
   return (
     <li className={`change state-${v.state}`}>
-      <CardHead view={v} />
+      <CardHead view={v} search={props.search} />
       <BranchRow {...props} />
     </li>
   )
@@ -35,26 +45,26 @@ export function ChangeRow(props: RowProps) {
  * the change is still open and where it is already in. Each row keeps its
  * own reviewers and buttons, because Gerrit reviews each branch on its own.
  */
-export function FamilyCard(props: { family: ChangeFamily; lead: ChangeView; self: AccountInfo; onAct: (a: ChangeAction) => Promise<void> }) {
+export function FamilyCard(props: { family: ChangeFamily; lead: ChangeView; self: AccountInfo; onAct: (a: ChangeAction) => Promise<void>; sort: SortId; search: string }) {
   const { family: f, lead } = props
   return (
     <li className={`change family state-${lead.state}`}>
-      <CardHead view={lead} family={f} />
+      <CardHead view={lead} family={f} search={props.search} />
       {f.members.map((v) => (
-        <BranchRow key={v.change.id} view={v} self={props.self} onAct={props.onAct} />
+        <BranchRow key={v.change.id} view={v} self={props.self} onAct={props.onAct} sort={props.sort} search={props.search} />
       ))}
     </li>
   )
 }
 
 /** Subject, branch count for a family, and who owns it where. */
-function CardHead(props: { view: ChangeView; family?: ChangeFamily }) {
+function CardHead(props: { view: ChangeView; family?: ChangeFamily; search: string }) {
   const { view: v, family: f } = props
   const c = v.change
   return (
     <div className="change-head">
       <button className="link subject" onClick={() => void api.openChange({ id: c._number, project: c.project })} title={`Open #${c._number} in Gerrit`}>
-        {c.subject}
+        <Highlight text={c.subject} term={props.search} />
       </button>
       {f && (
         <span className="badge branch" title={`Change-Id ${f.key}`}>
@@ -77,6 +87,7 @@ function BranchRow(props: RowProps) {
   const { view: v } = props
   const c = v.change
   const open = c.status === 'NEW'
+  const age = ageCell(v, props.sort, false)
   return (
     <div className={open ? 'change-row' : 'change-row closed'}>
       <span className="cell c-branch" title={c.project}>
@@ -129,8 +140,8 @@ function BranchRow(props: RowProps) {
         )}
         {(c.unresolved_comment_count ?? 0) > 0 && <span className="muted">{c.unresolved_comment_count} unresolved</span>}
       </span>
-      <span className="cell c-updated muted" title={c.updated}>
-        {ago(c.updated)}
+      <span className="cell c-updated muted" title={age.title}>
+        {age.text}
       </span>
       <Actions {...props} />
     </div>
@@ -148,7 +159,7 @@ function byVote(rs: ReviewerStatus[]): ReviewerStatus[] {
  * the team on a second one (dashed, since their votes do not change the
  * state). Each line is one row of chips; what does not fit is behind "+N".
  */
-export function Reviewers(props: RowProps) {
+export function Reviewers(props: ActProps) {
   const { view: v, self } = props
   const c = v.change
   const id = c._number
@@ -331,7 +342,7 @@ function ChipRow(props: { chips: Chip[]; trailing?: ReactNode; className?: strin
  * buttons share one column and the subtle WIP toggle has its own, so a
  * button sits in the same place on every row no matter what the toggle says.
  */
-function Actions(props: RowProps) {
+function Actions(props: ActProps) {
   const { view: v } = props
   const open = v.change.status === 'NEW'
   const actions = changeActions(v, props.onAct)

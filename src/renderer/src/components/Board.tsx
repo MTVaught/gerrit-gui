@@ -1,6 +1,23 @@
 import { useMemo } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, familyKey, groupByChangeId, isExternalReview, sortByBranch, sortViews, urgency, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import {
+  AUTHOR_SCOPES,
+  DEFAULT_SORT,
+  SORT_OPTIONS,
+  STATE_LABEL,
+  displayName,
+  familyKey,
+  filterViews,
+  groupByChangeId,
+  isExternalReview,
+  isFilterActive,
+  sortByBranch,
+  sortViews,
+  urgency,
+  type ChangeFamily,
+  type SortId,
+  type ViewFilter,
+} from '../../../shared/model.ts'
 import { ChangeRow, FamilyCard } from './ChangeRow.tsx'
 import { Ledger } from './Ledger.tsx'
 
@@ -154,6 +171,9 @@ export function Board(props: {
   tab: TabId
   views: ChangeView[]
   sort: SortId
+  /** From the View menu; rows are filtered inside each section. */
+  filter: ViewFilter
+  onFilter: (f: ViewFilter) => void
   self: AccountInfo | null
   loading: boolean
   /** Narrow window: render the ledger, one line per change, instead of the cards. */
@@ -169,7 +189,10 @@ export function Board(props: {
     return m
   }, [props.views])
   if (props.loading || !props.self) return <div className="panel muted">Loading...</div>
-  const groups = groupsFor(props.tab, props.views)
+  const all = groupsFor(props.tab, props.views)
+  const groups = all.map((g) => ({ ...g, items: filterViews(g.items, props.filter) })).filter((g) => g.items.length > 0)
+  const total = all.reduce((n, g) => n + g.items.length, 0)
+  const shown = groups.reduce((n, g) => n + g.items.length, 0)
   // A family is one card, led by its most urgent branch on this tab (see
   // URGENCY). It sits in that branch's section, at that branch's sort
   // position. A tie goes to the earliest section, so on Reviewing a branch
@@ -194,20 +217,38 @@ export function Board(props: {
       return lead.get(key)?.view === v ? [{ view: v, family: f }] : []
     }),
   }))
-  if (groups.length === 0) {
+  if (all.length === 0) {
     if (props.tab === 'needs-my-review') return <NeedsReviewEmpty views={props.views} onGoTo={props.onGoTo} />
     return <div className="panel empty">{EMPTY[props.tab]}</div>
+  }
+  const summary = isFilterActive(props.filter) && (
+    <FilterSummary filter={props.filter} sort={props.sort} shown={shown} total={total} onFilter={props.onFilter} />
+  )
+  if (groups.length === 0) {
+    return (
+      <main className="board">
+        {summary}
+        <div className="panel empty">
+          No change on this tab matches the filter.{' '}
+          <button className="link" onClick={() => props.onFilter({ search: '', authors: [], scopes: [] })}>
+            Show all
+          </button>
+        </div>
+      </main>
+    )
   }
   if (props.compact) {
     // Families are not folded here: every branch is its own line, named by branch.
     return (
       <main className="board">
-        <Ledger groups={groups} sort={props.sort} self={props.self} families={families} onAct={props.onAct} />
+        {summary}
+        <Ledger groups={groups} sort={props.sort} search={props.filter.search} self={props.self} families={families} onAct={props.onAct} />
       </main>
     )
   }
   return (
     <main className="board">
+      {summary}
       {props.tab === 'mine' && (
         <p className="muted small">
           Signed in as {displayName(props.self)}. Push as many patch sets as you like; reviewers are only asked to look
@@ -229,14 +270,62 @@ export function Board(props: {
           <ul className="changes">
             {g.rows.map((r) =>
               r.family ? (
-                <FamilyCard key={r.family.key} family={r.family} lead={r.view} self={props.self!} onAct={props.onAct} />
+                <FamilyCard key={r.family.key} family={r.family} lead={r.view} self={props.self!} onAct={props.onAct} sort={props.sort} search={props.filter.search} />
               ) : (
-                <ChangeRow key={r.view.change.id} view={r.view} self={props.self!} onAct={props.onAct} />
+                <ChangeRow key={r.view.change.id} view={r.view} self={props.self!} onAct={props.onAct} sort={props.sort} search={props.filter.search} />
               ),
             )}
           </ul>
         </section>
       ))}
     </main>
+  )
+}
+
+/**
+ * One line above the rows while a filter is on: how many of the tab's changes
+ * are left, each condition as a chip that can be taken off, and the sort when
+ * it is not the default, since that changes the order the chips leave behind.
+ */
+function FilterSummary(props: { filter: ViewFilter; sort: SortId; shown: number; total: number; onFilter: (f: ViewFilter) => void }) {
+  const { filter: f, onFilter } = props
+  const search = f.search.trim()
+  return (
+    <div className="filter-summary" role="status">
+      <span>
+        Showing <b>{props.shown}</b> of {props.total}
+      </span>
+      {search && (
+        <span className="chip filt" title="Subject contains this text">
+          “{search}”
+          <button className="chip-x" aria-label="Clear the search" onClick={() => onFilter({ ...f, search: '' })}>
+            ×
+          </button>
+        </span>
+      )}
+      {f.authors.map((a) => (
+        <span key={a._account_id} className="chip filt" title={`Changes owned by ${displayName(a)}`}>
+          {displayName(a)}
+          <button className="chip-x" aria-label={`Remove ${displayName(a)}`} onClick={() => onFilter({ ...f, authors: f.authors.filter((x) => x !== a) })}>
+            ×
+          </button>
+        </span>
+      ))}
+      {f.scopes.map((s) => {
+        const info = AUTHOR_SCOPES.find((x) => x.id === s)!
+        return (
+          <span key={s} className="chip filt" title={info.title}>
+            {info.label}
+            <button className="chip-x" aria-label={`Remove ${info.label}`} onClick={() => onFilter({ ...f, scopes: f.scopes.filter((x) => x !== s) })}>
+              ×
+            </button>
+          </span>
+        )
+      })}
+      {props.sort !== DEFAULT_SORT && <span className="chip">Sort: {SORT_OPTIONS.find((o) => o.id === props.sort)?.label.toLowerCase()}</span>}
+      <button className="link" onClick={() => onFilter({ search: '', authors: [], scopes: [] })}>
+        Show all
+      </button>
+    </div>
   )
 }

@@ -1,0 +1,74 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><script src="mock.js"></script><style>
+/* Design 3: table semantics. Sort by clicking a column header; filter by clicking what you see (the owner's name); search behind an icon. */
+.frame-full, .frame-compact { position: relative; }
+.changes { grid-template-columns: max-content max-content max-content max-content max-content minmax(140px, 1fr) max-content max-content max-content max-content; }
+.change.hdr { padding: 0 14px 0 12px; background: var(--panel); border-left-color: transparent; }
+.change.hdr .cell { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; padding: 5px 12px 5px 0; gap: 3px; }
+.change.hdr .cell.sortable { cursor: pointer; }
+.change.hdr .cell.sortable:hover { color: var(--fg); }
+.change.hdr .cell.on { color: var(--accent); }
+.change.hdr .cell.sortable::after { content: '⇅'; font-size: 10px; opacity: .5; }
+.change.hdr .cell.on::after { content: '↑'; opacity: 1; }
+.c-opened { font-size: 12.5px; }
+.psage { color: var(--muted); font-size: 12px; }
+.owner-link { text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; }
+.owner-link:hover { color: var(--accent); }
+.pop.owner { left: 300px; top: 236px; width: 250px; }
+.ledger th.sortk { color: var(--accent); }
+.ledger th .sk { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--accent); }
+.ledger th.srch { text-align: right; padding-right: 8px; }
+.ledger th.srch i { display: inline-flex; vertical-align: middle; color: var(--muted); }
+.ledger tr.filt td { padding: 4px 8px; background: var(--pending-bg); color: var(--pending); font-size: 12px; }
+.ledger tr.filt td .link { color: inherit; text-decoration: underline; }
+.ledger .s .owner-link { text-decoration: underline dotted; }
+.compact .pop.sortm { left: 150px; top: 106px; width: 230px; }
+i[class^="i-"] { display: inline-flex; }
+</style></head><body>
+
+<div class="cap">Full window · unfiltered, sorted by the Patch set column; the owner menu is open on the first card</div>
+<div class="app frame-full">
+  <header class="topbar" id="tf"></header>
+  <div class="pop owner">
+    <div class="item sel"><i class="i-funnel"></i> Only changes by Alice<span class="k">5</span></div>
+    <div class="item"><i class="i-funnel" style="visibility:hidden"></i> Hide changes by Alice<span class="k">20</span></div>
+    <hr>
+    <div class="item"><i class="i-funnel" style="visibility:hidden"></i> Open Alice's profile in Gerrit ↗</div>
+  </div>
+  <main class="board" id="full"></main>
+</div>
+
+<div class="cap">Compact window · filtered to Alice by tapping her name; the sort menu is open on the Change header</div>
+<div class="app compact frame-compact">
+  <header class="topbar" id="tc"></header>
+  <div class="pop sortm">
+    <h4>Sort rows by</h4>
+    <div class="item"><span class="rad"></span>Most recent update</div>
+    <div class="item"><span class="rad"></span>Overall age, oldest first</div>
+    <div class="item sel"><span class="rad"></span>Last patch set, oldest first</div>
+  </div>
+  <main class="board" id="cmp"></main>
+</div>
+
+<div class="mock-note"><b>3 · Column headers.</b> The board behaves like a table. Each section gets a header row over the cells the cards already line up; <b>Opened</b>, <b>Patch set</b> and <b>Updated</b> are sortable, the active one carries an arrow, and the patch set cell shows the age of the current patch set next to its number. The author filter is "filter by example": every owner's name is a link, and its menu offers "Only changes by Alice" or "Hide changes by Alice". Search sits behind the magnifier icon in the top bar and expands into a field when clicked (or Ctrl+F).
+<ul><li><b>Compact:</b> the ledger already has a header row. The <b>Change</b> header names the current sort and opens the sort menu; the magnifier in the last header cell expands into a search field that replaces the header row. Tapping an owner's name in the sub-line filters to them; the active filter is a tinted row under the header with "show all". No new rows in the header when nothing is active.</li>
+<li>Sort discovery is where the data is, and filtering by author takes one click on a name. The header row repeats per section, and a small header row over cards is less familiar than a select.</li></ul></div>
+
+<script>
+document.getElementById('tf').innerHTML = tabsFull() + `<div class="topbar-right"><span class="muted status-line">Bob · updated just now</span><button class="btn icon" title="Search titles"><i class="i-mag"></i></button>${ICONS}</div>`
+document.getElementById('tc').innerHTML = tabsCompact() + `<div class="topbar-right"><span class="muted status-line">updated just now</span>${ICONS_C}</div>`
+const header = () => `<li class="change hdr"><div class="change-row"><span class="cell">Branch</span><span class="cell">State</span><span class="cell">CI</span><span class="cell">#</span><span class="cell sortable on">Patch set</span><span class="cell">Reviewers</span><span class="cell">Diff</span><span class="cell sortable">Opened</span><span class="cell sortable">Updated</span><span class="cell"></span></div></li>`
+renderFull(document.getElementById('full'), {
+  sort: 'ps', header,
+  ownerLink: (c) => `<span class="owner-link">${ownerName(c)}</span>`,
+  psExtra: (c) => `<span class="psage">${fmt(c.psAge)} ago</span>`,
+  extraCells: (c) => `<span class="cell c-opened muted">${fmt(c.created)} ago</span>`,
+  ageCell: (c) => fmt(c.updated) + ' ago',
+})
+renderLedger(document.getElementById('cmp'), {
+  owner: 'Alice', sort: 'ps',
+  thead: `<thead><tr><th class="sortk">Change <span class="sk">· oldest patch set ▾</span></th><th>CI</th><th>Reviewers</th><th class="srch"><i class="i-mag"></i></th></tr></thead>`,
+  afterHead: `<tbody><tr class="filt"><td colspan="4"><i class="i-funnel" style="display:inline-flex;vertical-align:-2px;margin-right:4px"></i>Only changes by <b>Alice</b> · 5 of 25 · <span class="link">show all</span></td></tr></tbody>`,
+  ownerLink: (c) => `<span class="owner-link">${ownerName(c)}</span>`,
+})
+icons()
+</script></body></html>

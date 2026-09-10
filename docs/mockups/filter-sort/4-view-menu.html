@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><script src="mock.js"></script><style>
+/* Design 4: one "View" button in the top bar opens a panel with search, authors and sort. A summary strip shows what is active. */
+.frame-full, .frame-compact { position: relative; }
+.pop.view { right: 136px; top: 92px; width: 300px; }
+.pop .field { width: calc(100% - 8px); margin: 4px 4px 2px; }
+.compact .pop.view { left: 6px; right: 6px; top: 78px; width: auto; }
+i[class^="i-"] { display: inline-flex; }
+</style></head><body>
+
+<div class="cap">Full window · View panel open; author Alice, sorted by overall age</div>
+<div class="app frame-full">
+  <header class="topbar" id="tf"></header>
+  <div class="summary"><span>Showing <b>5 of 25</b></span><span class="chip filt">Author: Alice <span class="x">×</span></span><span class="chip filt">Sort: overall age, oldest first</span><button class="link">Reset</button></div>
+  <div class="pop view" id="pf"></div>
+  <main class="board" id="full"></main>
+</div>
+
+<div class="cap">Compact window · the same button; the panel spans the window</div>
+<div class="app compact frame-compact">
+  <header class="topbar" id="tc"></header>
+  <div class="summary"><span><b>5 of 25</b></span><span class="chip filt">Alice <span class="x">×</span></span><span class="chip filt">Overall age</span><button class="link" style="margin-left:auto">Reset</button></div>
+  <div class="pop view" id="pc"></div>
+  <main class="board" id="cmp"></main>
+</div>
+
+<div class="mock-note"><b>4 · View menu.</b> The sort select becomes a <b>View</b> button with a count of the active settings. Its panel holds everything: a search field, the authors on the current tab with counts (checkboxes, so two authors can be picked), and the three sort orders as radios. When anything is non-default a summary strip appears between the header and the board, with removable chips and a Reset link; with nothing active the app looks exactly as it does today.
+<ul><li><b>Compact:</b> the same button in the toolbar, badge and all; the panel drops down across the full window width. The summary strip is one short line and only shows while a filter is on. This is the design that costs the compact window the least space.</li>
+<li>Everything lives in one place and the default screen stays clean. Search takes two clicks (open, type) unless Ctrl+F opens the panel with the field focused.</li></ul></div>
+
+<script>
+document.getElementById('tf').innerHTML = tabsFull() + `<div class="topbar-right"><span class="muted status-line">Bob · updated just now</span><button class="btn sel on"><i class="i-sliders"></i> View <span class="badge n">2</span> <span class="dn">▾</span></button>${ICONS}</div>`
+document.getElementById('tc').innerHTML = tabsCompact() + `<div class="topbar-right"><span class="muted status-line">updated just now</span><button class="btn sel on" style="margin-left:auto"><i class="i-sliders"></i> <span class="badge n">2</span></button>${ICONS_C}</div>`
+const panel = `<span class="field"><i class="i-mag ico"></i><span class="ph">Search titles</span></span>
+<h4>Author</h4>
+<div class="item sel"><span class="box"></span>Alice<span class="k">5</span></div>
+<div class="item"><span class="box"></span>Dave<span class="k">2</span></div>
+<div class="item"><span class="box"></span>Erin (other team)<span class="k">1</span></div>
+<div class="item"><span class="box"></span>Frank<span class="k">1</span></div>
+<h4>Sort by</h4>
+<div class="item"><span class="rad"></span>Most recent update</div>
+<div class="item sel"><span class="rad"></span>Overall age, oldest first</div>
+<div class="item"><span class="rad"></span>Last patch set, oldest first</div>
+<hr><div class="foot"><span>Applies to every tab</span><span class="link">Reset</span></div>`
+document.getElementById('pf').innerHTML = panel
+document.getElementById('pc').innerHTML = panel
+renderFull(document.getElementById('full'), { owner: 'Alice', sort: 'age' })
+renderLedger(document.getElementById('cmp'), { owner: 'Alice', sort: 'age' })
+icons()
+</script></body></html>

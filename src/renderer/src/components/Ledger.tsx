@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName, familyKey, reviewLink, sortViews, type ChangeFamily, type SortId } from '../../../shared/model.ts'
-import { ago } from '../time.ts'
+import { ageCell } from '../age.ts'
 import { Reviewers } from './ChangeRow.tsx'
+import { Highlight } from './Highlight.tsx'
 import { ReviewButton } from './ReviewButton.tsx'
 import { actionClass, changeActions } from './actions.ts'
 import type { Group } from './Board.tsx'
@@ -17,6 +18,8 @@ import { api } from '../api.ts'
 export function Ledger(props: {
   groups: Group[]
   sort: SortId
+  /** Search text from the View menu, marked in the subject. */
+  search: string
   self: AccountInfo
   /** Change-Id families; a member of a multi-branch family names its branch on its line. */
   families: Map<string, ChangeFamily>
@@ -55,6 +58,8 @@ export function Ledger(props: {
               view={v}
               self={props.self}
               onAct={props.onAct}
+              sort={props.sort}
+              search={props.search}
               showCi={!narrow}
               columns={columns}
               showBranch={(props.families.get(familyKey(v.change))?.members.length ?? 1) > 1}
@@ -82,6 +87,8 @@ function LedgerRow(props: {
   view: ChangeView
   self: AccountInfo
   onAct: (a: ChangeAction) => Promise<void>
+  sort: SortId
+  search: string
   showCi: boolean
   columns: number
   showBranch: boolean
@@ -97,10 +104,14 @@ function LedgerRow(props: {
   const reviewer = open && v.iAmReviewer && !v.isMine
   const toggle = () => setExpanded((e) => !e)
 
+  // The line is clipped at the right, so the age, which carries the sort order, comes early and the diff last.
+  const age = ageCell(v, props.sort, true)
   const sub: ReactNode[] = [`#${id}`]
   if (props.showBranch) sub.push(<code>{c.branch}</code>)
+  sub.push(<span title={age.title}>{age.text}</span>)
   if (!v.isMine) sub.push(displayName(c.owner))
   sub.push(`PS ${v.patchSet}`)
+  if ((c.unresolved_comment_count ?? 0) > 0) sub.push(`${c.unresolved_comment_count} unresolved`)
   if (c.insertions !== undefined) {
     sub.push(
       <>
@@ -108,8 +119,6 @@ function LedgerRow(props: {
       </>,
     )
   }
-  if ((c.unresolved_comment_count ?? 0) > 0) sub.push(`${c.unresolved_comment_count} unresolved`)
-  sub.push(ago(c.updated))
 
   return (
     <>
@@ -123,7 +132,7 @@ function LedgerRow(props: {
               toggle()
             }}
           >
-            {c.subject}
+            <Highlight text={c.subject} term={props.search} />
           </button>
           <div className="s" title={`${c.project} · ${c.branch}`}>
             {sub.map((part, i) => (

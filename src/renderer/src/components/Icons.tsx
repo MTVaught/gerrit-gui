@@ -59,3 +59,15 @@ export const RestartIcon = () => (
     <path d="m9 12 2 2 4-4" />
   </svg>
 )
+
+/** Two sliders: the View menu with search, filter and sort. */
+export const SlidersIcon = () => (
+  <svg {...common} width={14} height={14}>
+    <path d="M4 7h9" />
+    <path d="M17 7h3" />
+    <path d="M4 17h3" />
+    <path d="M11 17h9" />
+    <circle cx="15" cy="7" r="2" />
+    <circle cx="9" cy="17" r="2" />
+  </svg>
+)
