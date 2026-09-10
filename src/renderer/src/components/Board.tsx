@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, familyKey, groupByChangeId, sortByBranch, sortViews, urgency, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, displayName, familyKey, groupByChangeId, isExternalReview, sortByBranch, sortViews, urgency, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ChangeRow, FamilyCard } from './ChangeRow.tsx'
 
 export type { TabId }
+export { isExternalReview }
 
 export const TABS: { id: TabId; label: string }[] = [
   { id: 'needs-my-review', label: 'Needs my review' },
@@ -17,12 +18,6 @@ export const TABS: { id: TabId; label: string }[] = [
 /** The External reviews tab exists only once a team is configured; without one nobody is external. */
 export function visibleTabs(teamConfigured: boolean): { id: TabId; label: string }[] {
   return TABS.filter((t) => t.id !== 'external-reviews' || teamConfigured)
-}
-
-/** Open changes that involve someone outside the team: an external reviewer, or an external owner asking me. */
-export function isExternalReview(v: ChangeView): boolean {
-  if (v.change.status !== 'NEW') return false
-  return v.externalReviewers.length > 0 || (v.externalOwner && v.iAmReviewer && !v.isMine)
 }
 
 interface Group {
@@ -85,29 +80,15 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
       return [{ title: 'Merged in the last 14 days', items: views.filter((v) => v.change.status === 'MERGED') }]
     case 'external-reviews': {
       const ext = open.filter(isExternalReview)
-      const withReviewers = ext.filter((v) => v.externalReviewers.length > 0)
-      const objected = withReviewers.filter((v) => v.externalReviewers.some((r) => r.vote < 0))
-      const approved = withReviewers.filter((v) => !objected.includes(v) && v.externalReviewers.every((r) => r.vote > 0))
-      const waiting = withReviewers.filter((v) => !objected.includes(v) && !approved.includes(v))
       return [
+        { title: 'Waiting on you', items: ext.filter((v) => v.needsMyReview && v.state === 'needs-review') },
         {
-          title: 'Asked by someone outside the team',
-          hint: 'Changes owned outside the team on which you are a reviewer. They also appear under Needs my review and Reviewing.',
-          items: ext.filter((v) => v.externalOwner && v.iAmReviewer && !v.isMine),
+          title: 'Reviewed, waiting on others',
+          items: ext.filter((v) => !v.needsMyReview && v.state === 'needs-review'),
         },
-        {
-          title: 'An external reviewer voted against',
-          hint: 'These votes do not change the state; the team decides. Look at the comments before you move on.',
-          items: objected,
-        },
-        {
-          title: 'External reviewers have not voted',
-          items: waiting,
-        },
-        {
-          title: 'Approved by every external reviewer',
-          items: approved,
-        },
+        ...byState(ext, ['needs-changes', 'approved', 'ready-to-merge', 'in-progress'], {
+          'in-progress': 'Author iterating, no review requested',
+        }),
       ].filter((g) => g.items.length > 0)
     }
   }
@@ -118,7 +99,7 @@ const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
   mine: 'You have no open changes.',
   'ready-to-merge': 'Nothing is tagged ready-to-merge.',
   merged: 'Nothing merged recently.',
-  'external-reviews': 'No open change has a reviewer or an owner outside the team.',
+  'external-reviews': 'No open change is owned by someone outside the team.',
 }
 
 function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => void }) {
@@ -217,8 +198,8 @@ export function Board(props: {
       )}
       {props.tab === 'external-reviews' && (
         <p className="muted small">
-          People outside the team you set in Settings. Their votes are shown on each change but only the team decides
-          whether a change is approved or needs changes.
+          Open changes owned by people outside the team you set in Settings. They also appear under Needs my review and
+          Reviewing as usual. Your own changes are never here, whoever reviews them.
         </p>
       )}
       {sections.map((g) => (
