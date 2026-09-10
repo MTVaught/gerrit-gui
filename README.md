@@ -11,20 +11,22 @@ The application shows three things:
 - The changes that you review
 - The status of your changes
 
-All users get the same five tabs. There are no settings for each user. A
-sort control in the top bar orders the rows on every tab, either by the most
-recent update (default) or by overall review age, oldest change first. The
-application remembers the choice.
+All users get the same five tabs. A sixth tab, "External Reviews", appears
+when you set a team in the settings (refer to "Teams" below). A sort control
+in the top bar orders the rows on every tab, either by the most recent update
+(default) or by overall review age, oldest change first. The application
+remembers the choice.
 
 | Tab | Contents |
 | --- | --- |
-| Needs my review | The author asked for a review of the current patch set. You are a reviewer. You did not vote on that patch set. The WIP status has no effect. |
+| Needs Review | The author asked for a review of the current patch set. You are a reviewer. You did not vote on that patch set. The WIP status has no effect. |
 | Reviewing | All open changes on which you are a reviewer, in groups by state. |
-| My changes | Your open changes, in groups by state, with the actions of the owner. |
-| Ready to merge | Approved changes that the author marked for the person who has merge authority. |
-| Recently merged | Changes that Gerrit merged in the last 14 days. |
+| My Changes | Your open changes, in groups by state, with the actions of the owner. |
+| Ready to Merge | Approved changes that the author marked for the person who has merge authority. |
+| Recently Merged | Changes that Gerrit merged in the last 14 days. |
+| External Reviews | Open changes owned by someone outside your team. Only with a team. |
 
-![Needs my review](docs/screenshots/needs-my-review.png)
+![Needs Review](docs/screenshots/needs-my-review.png)
 
 ## The workflow
 
@@ -32,24 +34,26 @@ application remembers the choice.
    patch sets, the state does not change. The application does not ask a
    reviewer to look at the change yet.
 2. When the patch set is ready, the author pushes the "Request review" button.
-   All reviewers then see the change on the "Needs my review" tab.
-3. Each reviewer votes +1 or -1 on that patch set. After a reviewer votes, the
-   application removes the change from the "Needs my review" tab of that
-   reviewer.
+   All reviewers then see the change on the "Needs Review" tab.
+3. Each reviewer pushes the "Review" button. It opens the change in Gerrit,
+   showing the diff from the last patch set that reviewer looked at to the
+   current one (or the whole change on a first look). The reviewer votes +1
+   or -1 in Gerrit. After a reviewer votes, the application removes the change
+   from the "Needs Review" tab of that reviewer.
 4. After the last reviewer votes, the change gets the "Approved" state (all
-   votes are +1) or the "Needs changes" state (one or more votes are -1).
+   votes are +1) or the "Needs Changes" state (one or more votes are -1).
    Votes that come before the last vote do not change the state.
-5. If the state is "Needs changes", the author pushes the corrections and
+5. If the state is "Needs Changes", the author pushes the corrections and
    pushes the "Request review" button again. The application asks all
    reviewers again, for the new patch set only.
-6. If the state is "Approved", the author pushes the "Ready to merge" button.
-   The change then goes to the "Ready to merge" tab.
+6. If the state is "Approved", the author pushes the "Ready to Merge" button.
+   The change then goes to the "Ready to Merge" tab.
 7. The person who has merge authority pushes the "+2 and submit" button.
 
 The WIP status is not part of this workflow. A change can go through the full
 workflow with the WIP status. The application shows WIP or Active as a
 separate badge with a separate switch. This is useful if you use WIP to stop
-CI until the review is complete. The "Ready to merge" button does not remove
+CI until the review is complete. The "Ready to Merge" button does not remove
 the WIP status.
 
 ## How the states are related to Gerrit data
@@ -61,11 +65,12 @@ the same votes, hashtags and WIP flags.
 | Workflow item | Gerrit data |
 | --- | --- |
 | Request review | The application writes the number of the current patch set to the custom keyed value `review-requested-ps` of the change. |
-| Needs review by X | The number in `review-requested-ps` is the same as the number of the current patch set. X is a reviewer. X has no Code-Review vote on the current patch set. |
+| Needs Review by X | The number in `review-requested-ps` is the same as the number of the current patch set. X is a reviewer. X has no Code-Review vote on the current patch set. |
 | Reviewer finished | X has a Code-Review vote (+1 or -1) on the current patch set. |
-| Needs changes | All reviewers voted on the current patch set. One or more reviewers voted -1. |
+| Review button | Opens Gerrit at `/c/<project>/+/<change>/<last>..<current>`, where `<last>` is the highest patch set with a vote or reply from you in the change messages. Without one, it opens the current patch set against base. The caret offers the other diffs and the change page. |
+| Needs Changes | All reviewers voted on the current patch set. One or more reviewers voted -1. |
 | Approved | All reviewers voted +1 on the current patch set. |
-| Ready to merge | The state is Approved, and the change has the hashtag `ready-to-merge`. |
+| Ready to Merge | The state is Approved, and the change has the hashtag `ready-to-merge`. |
 | Merge | The application votes +2 on the current patch set and submits the change. |
 
 These rules have these effects:
@@ -73,7 +78,7 @@ These rules have these effects:
 - When a user pushes a new patch set, Gerrit removes the votes that are not
   sticky. The number in `review-requested-ps` is then different from the
   number of the current patch set. Thus, a new push puts the change back in
-  the "In progress" state. The application does not ask a reviewer. A trivial
+  the "In Progress" state. The application does not ask a reviewer. A trivial
   rebase keeps the copied votes. Thus, an approved change stays approved after
   a trivial rebase.
 - A +2 vote does not count for the "Approved" state. The application shows the
@@ -84,12 +89,78 @@ These rules have these effects:
   values. Thus, a reviewer cannot request a review for a different user.
 - The application does not use the attention set.
 - Bots and the owner do not count as reviewers. Bots are the members of the
-  Gerrit "Service Users" group.
+  Gerrit "Service Users" group. Reviewers outside the team set in "Settings"
+  do not count either (refer to "Teams").
 - The Gerrit `reviewer:` search operator does not find WIP changes. Thus,
   the application also scans the open WIP changes of other owners and keeps
   the changes on which you are a reviewer. On a large server, set a project
   scope in "Settings" to keep this scan small. If Gerrit truncates a result,
   the application shows a warning.
+
+## One change on several branches
+
+A cherry-pick to another branch is a separate change in Gerrit. It keeps the
+Change-Id of the original commit. The application shows the changes that
+have the same Change-Id as one card with a table. Each branch is a row in the
+table.
+
+- The card is in the section of its most urgent branch. The order of
+  urgency is the same for the owner and for a reviewer: Needs Changes, Needs
+  Review, In Progress, Approved, Ready to Merge. If two branches have the
+  same state, the card goes to the earlier section. Thus, on "Reviewing", a
+  branch that waits on you comes before a branch that you reviewed.
+- Each row shows the branch, the state, the WIP or Active badge, the change
+  number, the patch set, the reviewers with their votes, the size of the
+  diff, the time of the last update and the buttons of that change. Each
+  branch is reviewed on its own. A vote on the master change does not count
+  for the release change.
+- A merged branch stays in the table. The row is grey, shows when the change
+  was merged and has no buttons. Thus, while you work on a release branch,
+  you can see that the change is already in on master. On the "Recently
+  Merged" tab, the merged branch leads the card and the open branches are
+  below it.
+- The counts on the tabs and on the sections count changes, not cards. A
+  section counts only the changes that are in that state.
+- In compact mode the table hides the change number, the diff and the time
+  columns.
+
+![Changes grouped by Change-Id](docs/screenshots/change-id-groups.png)
+
+`docs/mockups/change-id-groups/` has five mockups of ways to show a group.
+The application uses mockup 3.
+
+## Teams
+
+Reviewers from other teams often vote on a change without being part of the
+review that your team waits for. In "Settings", under "Team", add the people
+whose votes decide. Enter a username or an email address, or start to type and
+select an account from the server. The comparison ignores case. You are always
+on the team, so you do not need to add yourself.
+
+When the team list has one or more entries:
+
+- Only reviewers on the team count for "Needs Review by", "Needs Changes"
+  and "Approved". The last team member decides. A vote from anyone else does
+  not change the state.
+- The application shows reviewers who are not on the team on the change, in
+  a separate "Outside the team" row with a dashed outline. Their votes are
+  visible there and in the tooltip, and the owner can remove them.
+- The "External Reviews" tab lists every open change owned by someone
+  outside the team, in groups by state. Those changes are also on "Needs
+  Review" and "Reviewing" as usual. Only the owner decides this: your own
+  changes stay on "My Changes" even when CI or a maintainers list adds
+  reviewers from outside the team.
+- A change with only external reviewers stays in "Needs Review". Add a team
+  member to get it approved.
+
+When the team list is empty, every reviewer counts and the tab is hidden.
+The team is a setting of your computer. Each team member enters the same
+list. The state you see is calculated from your list only. Thus, two users
+with different lists can see different states for the same change.
+
+![External Reviews](docs/screenshots/external-reviews.png)
+
+![Team in Settings](docs/screenshots/settings-team.png)
 
 ## The tray icon
 
@@ -100,25 +171,30 @@ order:
 
 | Category | Color | Glyph | Meaning |
 | --- | --- | --- | --- |
-| Review | Blue | ◉ | The author asked you to review the current patch set. |
-| Fix | Red | ✎ | Your change has the "Needs changes" state. |
-| Mark ready | Green | ◆ | Your change is approved. Push "Ready to merge". |
-| Merge | Purple | ⇧ | The change is ready to merge, and you can vote +2. |
+| Needs Review | Blue | ◉ | The author asked you to review the current patch set. |
+| Needs Changes | Red | ✎ | Your change has the "Needs Changes" state. |
+| Approved | Green | ◆ | Your change is approved. Push "Ready to Merge". |
+| Ready to Merge | Purple | ⇧ | The change is ready to merge, and you can vote +2. |
 
 On macOS, the menu bar item shows one colored count per category that is not
 zero. If you cannot tell the colors apart, select "Show glyphs instead of
 colored counts" in the settings. The item then shows the glyph and the count
-as text next to the template icon. Select "Always show all four categories,
-even at zero" to keep every count in place; with colored counts the item is
-then the pills alone, without the icon. On Windows and Linux, the total is part of
-the icon image, because these trays cannot show text. The tooltip and the
-tray menu show the counts by category on all platforms; a category in the
-tray menu opens the tab that lists those changes. The tray menu also has
+as text. The counts take the place of the app icon; the icon shows only when
+nothing waits on you. Select "Always show Needs Review, Needs Changes and Approved, even at
+zero" to keep those counts in place. The Ready to Merge count appears only when you
+have something to merge, because it needs +2 rights and most users never
+have it. On Windows and Linux, the total is part of
+the icon image, because these trays cannot show text. Clear "Show counts on
+the menu bar icon" in the settings to keep the plain icon on every platform.
+The tooltip and the tray menu show the counts by category on all platforms,
+also with the counts off; a category in the tray menu opens the tab that
+lists those changes. The tray menu also has
 Open, Refresh, Compact window, Compact window stays on top, and Quit, and a
 disabled row with the version and the
 short git commit the build was made from (a trailing `+` means the working
 tree had uncommitted changes). The total goes to the macOS dock, the Linux
-launcher and the Windows taskbar overlay.
+launcher and the Windows taskbar overlay. Clear "Show the total as a badge
+on the app icon" in the settings to turn that badge off.
 
 Compact mode is a narrow window with a layout made for 320 to 460 pixels.
 The tabs have short names in a strip that scrolls sideways. The board is a
@@ -188,6 +264,58 @@ Chromium reads:
 To see if the network stack of the application trusts a server, run
 `pnpm exec electron scripts/net-check.cjs https://your-gerrit/`.
 
+## Releases
+
+Every pull request runs the "CI" workflow in GitHub Actions. It runs the
+typecheck, the unit tests and the build, then the integration test against a
+Gerrit 3.11 container, and last an unsigned packaging on Linux, macOS and
+Windows. The workflow uses no secrets, so it also runs on pull requests from
+forks.
+
+GitHub runs no CI on a pull request that has a merge conflict; the checks
+just do not appear. The "Merge check" workflow fills that gap. It runs when
+a pull request is opened or gets a new commit, also with a conflict, and
+fails with a message when GitHub reports the pull request as not mergeable.
+Rebase the branch, resolve the conflict and push again; the CI workflow then
+runs. The workflow uses the `pull_request_target` event, so it takes effect
+for a pull request only after the workflow file is on `main`, and it never
+runs code from the pull request.
+
+Every push to `main` (a merged pull request) runs the "Release" workflow in
+GitHub Actions. The workflow builds the AppImage, the macOS DMG for Intel and
+Apple silicon, and the Windows installer, creates a `v` tag at that commit
+and attaches the installers to a GitHub release for it. The version is the
+one in `package.json` when no tag for it exists yet; otherwise the workflow
+bumps the patch number of the newest `vX.Y.Z` tag. To release a new minor or
+major version, raise the version in `package.json` in the pull request.
+
+A push of a tag that starts with `v` (for example `v0.2.0`) releases that
+exact version. A manual run of the workflow makes a draft release instead.
+
+### Updates
+
+The desktop application checks the releases of this repository for a newer
+version shortly after it starts and then once an hour. When one exists, a
+banner and a button in the top bar offer to download it. The download runs in
+the background, and the application then asks for a restart to finish the
+install. Nothing is downloaded or installed without a click. Settings has an
+About section with the version, the release notes and a "Check for updates"
+button, and the tray menu has the same action.
+
+The updater reads the files the release workflow attaches next to the
+installers: the `latest*.yml` manifests, the macOS `.zip` archives and the
+`.blockmap` files. A release made by hand needs them too. On macOS the
+application must be signed to update itself; the workflow signs it, a local
+`pnpm run install:mac` build does not, and that build reports an error on
+download instead. Refer to `docs/testing.md` to try the flow from the source
+tree.
+
+The macOS build is signed with a Developer ID certificate and notarized with
+an App Store Connect API key. The workflow reads these from the repository
+secrets `CSC_LINK` (base64 of the `.p12`), `CSC_KEY_PASSWORD`,
+`APPLE_API_KEY` (the text of the `.p8`), `APPLE_API_KEY_ID` and
+`APPLE_API_ISSUER`. Linux and Windows builds are not signed.
+
 ## Browser mode
 
 Electron needs a display. On a machine without a display, for example with VS
@@ -211,7 +339,7 @@ mode do not operate in a browser. All other functions operate.
 ```sh
 pnpm test                                # unit tests of the classifier
 docker run -d --name gerrit-test -p 8080:8080 gerritcodereview/gerrit:3.11.2
-./test/seed-gerrit.sh                    # users alice/bob/carol/dave and changes in each state
+./test/seed-gerrit.sh                    # users alice/bob/carol/dave, erin from another team, and changes in each state
 node --test test/integration.test.ts     # runs the real REST client through the full workflow
 ```
 

@@ -3,15 +3,17 @@ import type { ChangeAction, ChangeView, DashboardData, SettingsStatus } from '..
 import { DEFAULT_SORT, SORT_OPTIONS, actionCounts, classifyAll, totalActions, type SortId } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
-import { Board, type TabId, TABS } from './components/Board.tsx'
+import { Board, type TabId, TABS, visibleTabs } from './components/Board.tsx'
+import { isExternalReview } from '../../shared/model.ts'
 import { ago } from './time.ts'
 import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
 import { ExpandIcon, GearIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
 import { api, isBrowserMode } from './api.ts'
+import { UpdateBanner, UpdatePill, useUpdateState } from './components/Update.tsx'
 
 export function App() {
   const [settings, setSettings] = useState<SettingsStatus | null>(null)
-  const [showSettings, setShowSettings] = useState(false)
+  const [showSettings, setShowSettings] = useState(initialSettingsOpen)
   const [data, setData] = useState<DashboardData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -19,6 +21,7 @@ export function App() {
   const [sort, setSort] = useState<SortId>(initialSort)
   const [compact, setCompact] = useState(false)
   const [, setTick] = useState(0)
+  const update = useUpdateState()
   const seenNeedsReview = useRef<Set<number> | null>(null)
   const tabsRef = useRef<HTMLElement>(null)
 
@@ -76,10 +79,16 @@ export function App() {
     }
   }, [configured, refresh])
 
+  const team = settings?.team ?? NO_TEAM
   const views = useMemo<ChangeView[]>(
-    () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id) : []),
-    [data],
+    () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id, team) : []),
+    [data, team],
   )
+  const tabs = useMemo(() => visibleTabs(team.length > 0), [team])
+  // Clearing the team hides the External Reviews tab; fall back if it was selected.
+  useEffect(() => {
+    if (!tabs.some((t) => t.id === tab)) setTab('needs-my-review')
+  }, [tabs, tab])
 
   const act = useCallback(
     async (action: ChangeAction) => {
@@ -103,9 +112,11 @@ export function App() {
       mine: 0,
       'ready-to-merge': 0,
       merged: 0,
+      'external-reviews': 0,
     }
     for (const v of views) {
       if (v.change.status === 'MERGED') c.merged++
+      if (isExternalReview(v)) c['external-reviews']++
       if (v.needsMyReview) c['needs-my-review']++
       if (v.iAmReviewer && !v.isMine && v.change.status === 'NEW') c.reviewing++
       if (v.isMine && v.change.status === 'NEW') c.mine++
@@ -125,22 +136,26 @@ export function App() {
   const actions = useMemo(() => actionCounts(views), [views])
   const badgeStyle = settings?.badgeStyle ?? 'color'
   const showZeroCounts = settings?.showZeroCounts ?? false
+  const showAppBadge = settings?.showAppBadge ?? true
+  const showTrayCounts = settings?.showTrayCounts ?? true
   useEffect(() => {
     if (!data) return
     api.setBadge({
       counts: actions,
       style: badgeStyle,
       showZeroCounts,
+      showAppBadge,
+      showTrayCounts,
       iconDataUrl: renderBadgeIcon(totalActions(actions)),
-      strip: badgeStyle === 'color' ? renderTrayStrip(actions, showZeroCounts) : null,
+      strip: showTrayCounts && badgeStyle === 'color' ? renderTrayStrip(actions, showZeroCounts) : null,
     })
-  }, [actions, badgeStyle, showZeroCounts, data])
+  }, [actions, badgeStyle, showZeroCounts, showAppBadge, showTrayCounts, data])
 
   return (
     <div className={'app' + (compact ? ' compact' : '')}>
       <header className="topbar">
         <nav className="tabs" role="tablist" ref={tabsRef}>
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.id}
               role="tab"
@@ -165,6 +180,7 @@ export function App() {
               </span>
             </span>
           )}
+          <UpdatePill state={update} />
           <select
             className="btn sort"
             value={sort}
@@ -200,6 +216,7 @@ export function App() {
           {error}
         </div>
       )}
+      <UpdateBanner state={update} />
       {isBrowserMode && !data && !error && (
         <div className="banner" role="status">
           Browser mode: the UI is served by Vite and talks to the local API in <code>src/server</code>. Tray, badge and
@@ -243,6 +260,8 @@ export function App() {
 }
 
 const SORT_KEY = 'gerrit-gui.sort'
+/** Stable empty list so the memo keyed on the team does not rerun every render before settings load. */
+const NO_TEAM: string[] = []
 
 function initialSort(): SortId {
   try {
@@ -257,6 +276,11 @@ function initialTab(): TabId {
   const m = /tab=([a-z-]+)/.exec(window.location.hash)
   const id = m?.[1] as TabId | undefined
   return id && TABS.some((t) => t.id === id) ? id : 'needs-my-review'
+}
+
+/** GERRIT_GUI_TAB=settings opens the settings panel instead of a board tab (screenshot hook). */
+function initialSettingsOpen(): boolean {
+  return /tab=settings\b/.test(window.location.hash)
 }
 
 function notifyNewReviews(d: DashboardData, seen: React.RefObject<Set<number> | null>) {

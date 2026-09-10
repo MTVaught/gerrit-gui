@@ -7,6 +7,7 @@ import { REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
 import type {
   AccountInfo,
   ChangeAction,
+  ChangeLink,
   DashboardData,
   SettingsInput,
   SettingsStatus,
@@ -32,7 +33,8 @@ export interface Service {
   fetchDashboard(): Promise<DashboardData>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
-  changeUrl(id: number): Promise<string>
+  suggestAccounts(q: string): Promise<AccountInfo[]>
+  changeUrl(link: ChangeLink): Promise<string>
 }
 
 /** Turn a failed /accounts/self call into something a user can act on. */
@@ -105,9 +107,6 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
           }
           return
         }
-        case 'vote':
-          await g.vote(action.id, 'Code-Review', action.value, action.message)
-          return
         case 'hashtag':
           await g.setHashtags(action.id, action.add, action.remove)
           return
@@ -121,6 +120,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
     },
 
     suggestReviewers: async (id, q) => (await client()).suggestReviewers(id, q),
-    changeUrl: async (id) => (await client()).changeUrl(id),
+    suggestAccounts: async (q) => (await client()).suggestAccounts(q),
+    changeUrl: async (link) => (await client()).changeUrl(link),
   }
 }

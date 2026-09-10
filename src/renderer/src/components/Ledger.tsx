@@ -1,11 +1,10 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, sortViews, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, displayName, familyKey, reviewLink, sortViews, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ago } from '../time.ts'
-import { VoteDialog } from './VoteDialog.tsx'
-import { ReviewerChips } from './ReviewerChips.tsx'
-import { actionClass, changeActions, fmtVote } from './actions.ts'
+import { Reviewers } from './ChangeRow.tsx'
+import { ReviewButton } from './ReviewButton.tsx'
+import { actionClass, changeActions } from './actions.ts'
 import type { Group } from './Board.tsx'
 import { api } from '../api.ts'
 
@@ -15,7 +14,14 @@ import { api } from '../api.ts'
  * votes as badges on avatars; the last column holds the one primary action.
  * Opening a row shows the state badges, the reviewer chips and the rest.
  */
-export function Ledger(props: { groups: Group[]; sort: SortId; self: AccountInfo; onAct: (a: ChangeAction) => Promise<void> }) {
+export function Ledger(props: {
+  groups: Group[]
+  sort: SortId
+  self: AccountInfo
+  /** Change-Id families; a member of a multi-branch family names its branch on its line. */
+  families: Map<string, ChangeFamily>
+  onAct: (a: ChangeAction) => Promise<void>
+}) {
   // Below 400px the CI column goes; WIP still shows in the detail row.
   const narrow = useMediaQuery('(max-width: 399px)')
   const columns = narrow ? 3 : 4
@@ -44,7 +50,15 @@ export function Ledger(props: { groups: Group[]; sort: SortId; self: AccountInfo
             </td>
           </tr>
           {sortViews(g.items, props.sort).map((v) => (
-            <LedgerRow key={v.change.id} view={v} self={props.self} onAct={props.onAct} showCi={!narrow} columns={columns} />
+            <LedgerRow
+              key={v.change.id}
+              view={v}
+              self={props.self}
+              onAct={props.onAct}
+              showCi={!narrow}
+              columns={columns}
+              showBranch={(props.families.get(familyKey(v.change))?.members.length ?? 1) > 1}
+            />
           ))}
         </tbody>
       ))}
@@ -70,19 +84,21 @@ function LedgerRow(props: {
   onAct: (a: ChangeAction) => Promise<void>
   showCi: boolean
   columns: number
+  showBranch: boolean
 }) {
   const { view: v, self } = props
   const c = v.change
   const id = c._number
   const open = c.status === 'NEW'
   const [expanded, setExpanded] = useState(false)
-  const [voting, setVoting] = useState(false)
-  const actions = changeActions(v, props.onAct, () => setVoting(true))
+  const actions = changeActions(v, props.onAct)
   const primary = actions.find((a) => a.primary)
   const rest = actions.filter((a) => a !== primary)
+  const reviewer = open && v.iAmReviewer && !v.isMine
   const toggle = () => setExpanded((e) => !e)
 
   const sub: ReactNode[] = [`#${id}`]
+  if (props.showBranch) sub.push(<code>{c.branch}</code>)
   if (!v.isMine) sub.push(displayName(c.owner))
   sub.push(`PS ${v.patchSet}`)
   if (c.insertions !== undefined) {
@@ -99,7 +115,14 @@ function LedgerRow(props: {
     <>
       <tr className={`lrow state-${v.state}${expanded ? ' open' : ''}`}>
         <td className="c" onClick={toggle}>
-          <button className="link t" aria-expanded={expanded} onClick={(e) => { e.stopPropagation(); toggle() }}>
+          <button
+            className="link t"
+            aria-expanded={expanded}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggle()
+            }}
+          >
             {c.subject}
           </button>
           <div className="s" title={`${c.project} · ${c.branch}`}>
@@ -124,6 +147,8 @@ function LedgerRow(props: {
             <button className={actionClass(primary, 'sm')} disabled={primary.disabled} title={primary.title ?? primary.label} onClick={primary.run}>
               {primary.short}
             </button>
+          ) : reviewer ? (
+            <ReviewShort view={v} />
           ) : (
             <button className="btn sm more" aria-label={expanded ? 'Hide details' : 'Show details'} aria-expanded={expanded} onClick={toggle}>
               ···
@@ -144,35 +169,39 @@ function LedgerRow(props: {
                 {open && v.requestedPatchSet !== null && !v.reviewRequested && ` · last requested on PS ${v.requestedPatchSet}`}
               </span>
             </div>
-            <ReviewerChips view={v} self={self} onAct={props.onAct} />
+            <Reviewers view={v} self={self} onAct={props.onAct} />
             <div className="ldet-actions">
               {rest.map((a) => (
                 <button key={a.key} className={actionClass(a, 'sm')} disabled={a.disabled} title={a.title} onClick={a.run}>
                   {a.label}
                 </button>
               ))}
-              <button className="btn sm" onClick={() => void api.openChange(id)}>
+              {reviewer && <ReviewButton view={v} />}
+              <button className="btn sm" onClick={() => void api.openChange({ id, project: c.project })}>
                 Open in Gerrit ↗
               </button>
             </div>
           </td>
         </tr>
       )}
-      {voting &&
-        createPortal(
-          <VoteDialog
-            subject={c.subject}
-            range={v.canVote}
-            current={v.myVote}
-            onCancel={() => setVoting(false)}
-            onVote={async (value, message) => {
-              setVoting(false)
-              await props.onAct({ type: 'vote', id, value, message })
-            }}
-          />,
-          document.body,
-        )}
     </>
+  )
+}
+
+/** The column-sized form of the reviewer's button: opens the diff since their last review. The split button with the other views is in the detail row. */
+function ReviewShort(props: { view: ChangeView }) {
+  const { view: v } = props
+  const link = reviewLink(v)
+  const upToDate = v.lastReviewedPatchSet !== null && v.lastReviewedPatchSet >= v.patchSet
+  const title = upToDate
+    ? `You already reviewed patch set ${v.patchSet}. Opens it in Gerrit.`
+    : link.basePatchSet !== undefined
+      ? `Opens the diff from patch set ${link.basePatchSet}, the last one you reviewed, to patch set ${v.patchSet}`
+      : `Opens patch set ${v.patchSet} against base in Gerrit`
+  return (
+    <button className={'btn sm' + (v.needsMyReview ? ' primary' : '')} title={title} onClick={() => void api.openChange(link)}>
+      {upToDate ? 'Open' : v.needsMyReview ? 'Review' : 'Diff'} ↗
+    </button>
   )
 }
 
@@ -191,7 +220,13 @@ function Avatars(props: { reviewers: ReviewerStatus[]; view: ChangeView; self: A
   const { view: v } = props
   const open = v.change.status === 'NEW'
   if (props.reviewers.length === 0) {
-    return open ? <span className="none" title="No reviewers yet">none</span> : null
+    if (!open) return null
+    const onlyExternal = v.teamScoped && v.externalReviewers.length > 0
+    return (
+      <span className="none" title={onlyExternal ? 'Only team votes decide the state, and nobody on the team is a reviewer' : 'No reviewers yet'}>
+        {onlyExternal ? 'no team' : 'none'}
+      </span>
+    )
   }
   // Pending reviewers first, so what still blocks the change is visible even when the stack is cut.
   const sorted = [...props.reviewers].sort((a, b) => Number(b.vote === 0) - Number(a.vote === 0))
@@ -223,6 +258,10 @@ function Avatars(props: { reviewers: ReviewerStatus[]; view: ChangeView; self: A
       )}
     </span>
   )
+}
+
+function fmtVote(v: number): string {
+  return v > 0 ? `+${v}` : String(v)
 }
 
 /** "Bob" -> "B", "Matthew Vaught" -> "MV", "Erin (other team)" -> "E": a second letter only from a capitalised last word. */

@@ -1,37 +1,39 @@
 import { useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName } from '../../../shared/model.ts'
-import { ago } from '../time.ts'
-import { VoteDialog } from './VoteDialog.tsx'
-import { ReviewerChips } from './ReviewerChips.tsx'
+import { STATE_LABEL, displayName, shortChangeId, type ChangeFamily } from '../../../shared/model.ts'
+import { ForkIcon } from './Icons.tsx'
 import { actionClass, changeActions } from './actions.ts'
+import { ago } from '../time.ts'
+import { ReviewButton } from './ReviewButton.tsx'
+import { AddReviewer } from './AddReviewer.tsx'
 import { api } from '../api.ts'
 
-/** Full-size card row: everything visible, actions in a column on the right. */
-export function ChangeRow(props: { view: ChangeView; self: AccountInfo; onAct: (a: ChangeAction) => Promise<void> }) {
-  const { view: v, self } = props
+interface RowProps {
+  view: ChangeView
+  self: AccountInfo
+  onAct: (a: ChangeAction) => Promise<void>
+}
+
+export function ChangeRow(props: RowProps) {
+  const { view: v } = props
   const c = v.change
-  const [voting, setVoting] = useState(false)
   const id = c._number
   const open = c.status === 'NEW'
-  const actions = changeActions(v, props.onAct, () => setVoting(true))
 
   return (
     <li className={`change state-${v.state}`}>
       <div className="change-main">
         <div className="change-title">
-          <button className="link subject" onClick={() => void api.openChange(id)} title="Open in Gerrit">
+          <button className="link subject" onClick={() => void api.openChange({ id, project: c.project })} title="Open in Gerrit">
             {c.subject}
           </button>
-          <span className="badges">
-            <span className={`badge ${v.state}`}>{STATE_LABEL[v.state]}</span>
-            {open && (
-              <span className={'badge ' + (v.wip ? 'wip' : 'active')} title={v.wip ? 'Work in progress: CI is not running on this change' : 'Active: CI runs on this change'}>
-                {v.wip ? 'WIP' : 'Active'}
-              </span>
-            )}
-            {v.staleReadyToMerge && <span className="badge stale">ready-to-merge tag is stale</span>}
-          </span>
+          <span className={`badge ${v.state}`}>{STATE_LABEL[v.state]}</span>
+          {open && (
+            <span className={'badge ' + (v.wip ? 'wip' : 'active')} title={v.wip ? 'Work in progress: CI is not running on this change' : 'Active: CI runs on this change'}>
+              {v.wip ? 'WIP' : 'Active'}
+            </span>
+          )}
+          {v.staleReadyToMerge && <span className="badge stale">ready-to-merge tag is stale</span>}
         </div>
         <div className="change-meta muted">
           <span>#{id}</span>
@@ -51,29 +53,245 @@ export function ChangeRow(props: { view: ChangeView; self: AccountInfo; onAct: (
           {(c.unresolved_comment_count ?? 0) > 0 && <span>{c.unresolved_comment_count} unresolved</span>}
           <span>{ago(c.updated)}</span>
         </div>
-        <ReviewerChips view={v} self={self} onAct={props.onAct} />
+        <Reviewers {...props} />
       </div>
 
-      <div className="actions">
-        {actions.map((a) => (
-          <button key={a.key} className={actionClass(a)} disabled={a.disabled} title={a.title} onClick={a.run}>
-            {a.label}
-          </button>
-        ))}
-      </div>
-
-      {voting && (
-        <VoteDialog
-          subject={c.subject}
-          range={v.canVote}
-          current={v.myVote}
-          onCancel={() => setVoting(false)}
-          onVote={async (value, message) => {
-            setVoting(false)
-            await props.onAct({ type: 'vote', id, value, message })
-          }}
-        />
-      )}
+      <Actions {...props} />
     </li>
   )
+}
+
+/**
+ * One Change-Id on several branches: one card, one table row per branch.
+ * Every member is listed, merged ones included and greyed, so any tab shows
+ * where the change is still open and where it is already in. Each row keeps
+ * its own reviewers and buttons, because Gerrit reviews each branch on its own.
+ */
+export function FamilyCard(props: { family: ChangeFamily; lead: ChangeView; self: AccountInfo; onAct: (a: ChangeAction) => Promise<void> }) {
+  const { family: f, lead } = props
+  const c = lead.change
+  return (
+    <li className={`change family state-${lead.state}`}>
+      <div className="change-main">
+        <div className="change-title">
+          <button className="link subject" onClick={() => void api.openChange({ id: c._number, project: c.project })} title={`Open #${c._number} in Gerrit`}>
+            {c.subject}
+          </button>
+          <span className="badge branch" title={`Change-Id ${f.key}`}>
+            <ForkIcon /> {f.members.length} branches
+          </span>
+          <span className="muted small">
+            Change-Id <code>{shortChangeId(f.key)}</code> · {c.project} · {lead.isMine ? 'you' : displayName(c.owner)}
+          </span>
+        </div>
+        <div className="branches-wrap">
+        <table className="branches">
+          <thead>
+            <tr>
+              <th>Branch</th>
+              <th>State</th>
+              <th>CI</th>
+              <th className="col-num">Change</th>
+              <th>PS</th>
+              <th>Reviewers</th>
+              <th className="col-diff">Diff</th>
+              <th className="col-updated">Updated</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {f.members.map((v) => (
+              <BranchRow key={v.change.id} view={v} self={props.self} onAct={props.onAct} />
+            ))}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </li>
+  )
+}
+
+function BranchRow(props: RowProps) {
+  const { view: v } = props
+  const c = v.change
+  const open = c.status === 'NEW'
+  return (
+    <tr className={open ? '' : 'closed'}>
+      <td className="branch" title={c.project}>
+        <code>{c.branch}</code>
+      </td>
+      <td>
+        <span className={`badge ${v.state}`}>
+          {STATE_LABEL[v.state]}
+          {c.status === 'MERGED' && ` ${ago(c.submitted ?? c.updated)}`}
+        </span>
+        {v.staleReadyToMerge && <span className="badge stale">stale tag</span>}
+      </td>
+      <td>
+        {open ? (
+          <span className={'badge ' + (v.wip ? 'wip' : 'active')} title={v.wip ? 'Work in progress: CI is not running on this change' : 'Active: CI runs on this change'}>
+            {v.wip ? 'WIP' : 'Active'}
+          </span>
+        ) : (
+          <span className="muted">—</span>
+        )}
+      </td>
+      <td className="col-num">
+        <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title="Open in Gerrit">
+          #{c._number}
+        </button>
+      </td>
+      <td>
+        {v.patchSet}
+        {open && v.reviewRequested && (
+          <span className="req" title="Review requested for this patch set">
+            asked
+          </span>
+        )}
+        {open && v.requestedPatchSet !== null && !v.reviewRequested && (
+          <span className="req stale" title="Votes on that patch set no longer apply to the current one">
+            asked PS {v.requestedPatchSet}
+          </span>
+        )}
+      </td>
+      <td className="cell-reviewers">
+        <Reviewers {...props} bare />
+      </td>
+      <td className="col-diff">
+        {c.insertions !== undefined && (
+          <>
+            <span className="ins">+{c.insertions}</span> <span className="del">−{c.deletions}</span>
+          </>
+        )}
+        {(c.unresolved_comment_count ?? 0) > 0 && <span className="muted"> · {c.unresolved_comment_count} unresolved</span>}
+      </td>
+      <td className="col-updated muted">{ago(c.updated)}</td>
+      <td className="cell-actions">
+        <Actions {...props} inline />
+      </td>
+    </tr>
+  )
+}
+
+/** Reviewer chips with votes; `bare` leaves out the "Needs Review by" label for table cells. */
+export function Reviewers(props: RowProps & { bare?: boolean }) {
+  const { view: v, self } = props
+  const c = v.change
+  const id = c._number
+  const open = c.status === 'NEW'
+  const owner = open && v.isMine
+  const [adding, setAdding] = useState(false)
+  return (
+    <>
+      <div className={props.bare ? 'reviewers bare' : 'reviewers'}>
+          {!props.bare && open && v.reviewers.length > 0 && (
+            <span className={'reviewers-label ' + (v.reviewRequested ? 'asked' : 'not-asked')}>
+              {!v.reviewRequested
+                ? 'Review not requested'
+                : v.pending.length > 0
+                  ? 'Needs Review by'
+                  : 'Reviewed by everyone'}
+            </span>
+          )}
+          {v.reviewers.length === 0 && open && (
+            <span className="chip warn" title={v.teamScoped && v.externalReviewers.length > 0 ? 'Only team votes decide the state, and nobody on the team is a reviewer' : undefined}>
+              {v.teamScoped && v.externalReviewers.length > 0 ? 'no team reviewers' : 'no reviewers'}
+            </span>
+          )}
+          {[...v.reviewers]
+            .sort((a, b) => Number(b.vote === 0) - Number(a.vote === 0))
+            .map((r) => (
+              <span
+                key={r.account._account_id}
+                className={'chip ' + (r.vote > 0 ? 'pos' : r.vote < 0 ? 'neg' : open && v.reviewRequested ? 'pending' : '')}
+                title={
+                  r.vote !== 0
+                    ? `voted ${fmtVote(r.vote)} on patch set ${v.patchSet}`
+                    : v.reviewRequested
+                      ? 'asked to review this patch set, has not voted yet'
+                      : 'reviewer, but review has not been requested for this patch set'
+                }
+              >
+                {r.account._account_id === self._account_id ? 'you' : displayName(r.account)}
+                {r.vote !== 0 && <b> {fmtVote(r.vote)}</b>}
+                {owner && (
+                  <button
+                    className="chip-x"
+                    title="Remove reviewer"
+                    onClick={() => void props.onAct({ type: 'removeReviewer', id, accountId: r.account._account_id })}
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            ))}
+          {owner && (
+            <button className="chip add" onClick={() => setAdding((a) => !a)} title="Add reviewer">
+              {props.bare ? '+' : '+ reviewer'}
+            </button>
+          )}
+        </div>
+        {v.externalReviewers.length > 0 && (
+          <div className="reviewers external">
+            <span className="reviewers-label not-asked" title="Reviewers outside your team. Their votes do not change the state.">
+              Outside the team
+            </span>
+            {[...v.externalReviewers]
+              .sort((a, b) => Number(b.vote === 0) - Number(a.vote === 0))
+              .map((r) => (
+                <span
+                  key={r.account._account_id}
+                  className={'chip ext ' + (r.vote > 0 ? 'pos' : r.vote < 0 ? 'neg' : '')}
+                  title={
+                    r.vote !== 0
+                      ? `outside the team, voted ${fmtVote(r.vote)} on patch set ${v.patchSet}; this vote does not change the state`
+                      : 'outside the team, has not voted; not waited for'
+                  }
+                >
+                  {displayName(r.account)}
+                  {r.vote !== 0 && <b> {fmtVote(r.vote)}</b>}
+                  {owner && (
+                    <button
+                      className="chip-x"
+                      title="Remove reviewer"
+                      onClick={() => void props.onAct({ type: 'removeReviewer', id, accountId: r.account._account_id })}
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              ))}
+          </div>
+        )}
+        {adding && (
+          <AddReviewer
+            changeId={id}
+            onDone={async (reviewer) => {
+              setAdding(false)
+              if (reviewer) await props.onAct({ type: 'addReviewer', id, reviewer })
+            }}
+          />
+        )}
+    </>
+  )
+}
+
+/** The buttons for one change; `inline` lays them out in a row for table cells. */
+export function Actions(props: RowProps & { inline?: boolean }) {
+  const { view: v } = props
+  const open = v.change.status === 'NEW'
+  return (
+    <div className={props.inline ? 'actions inline' : 'actions'}>
+      {changeActions(v, props.onAct).map((a) => (
+        <button key={a.key} className={actionClass(a)} disabled={a.disabled} title={a.title} onClick={a.run}>
+          {a.label}
+        </button>
+      ))}
+      {open && v.iAmReviewer && !v.isMine && <ReviewButton view={v} />}
+    </div>
+  )
+}
+
+function fmtVote(v: number): string {
+  return v > 0 ? `+${v}` : String(v)
 }

@@ -31,3 +31,31 @@ export const GearIcon = () => (
     <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
   </svg>
 )
+
+/** Git branch glyph for changes that exist on several branches. */
+export const ForkIcon = () => (
+  <svg {...common} width={14} height={14}>
+    <circle cx="6" cy="4" r="2.5" />
+    <circle cx="6" cy="20" r="2.5" />
+    <circle cx="18" cy="8" r="2.5" />
+    <path d="M6 6.5v11" />
+    <path d="M18 10.5c0 4-12 2-12 7" />
+  </svg>
+)
+
+export const DownloadIcon = () => (
+  <svg {...common}>
+    <path d="M12 3v13" />
+    <path d="m7 11 5 5 5-5" />
+    <path d="M4 21h16" />
+  </svg>
+)
+
+/** Circular arrow with a check: the update is on disk, a restart applies it. */
+export const RestartIcon = () => (
+  <svg {...common}>
+    <path d="M21 12a9 9 0 1 1-3-6.7" />
+    <path d="M21 3v6h-6" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+)

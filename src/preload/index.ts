@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { Api } from '../shared/api.ts'
-import type { TabId } from '../shared/types.ts'
+import type { TabId, UpdateState } from '../shared/types.ts'
 
 function subscribe<T extends unknown[]>(channel: string, cb: (...args: T) => void): () => void {
   const listener = (_e: Electron.IpcRendererEvent, ...args: unknown[]) => cb(...(args as T))
@@ -15,7 +15,9 @@ const api: Api = {
   fetchDashboard: () => ipcRenderer.invoke('gerrit:fetchDashboard'),
   act: (action) => ipcRenderer.invoke('gerrit:act', action),
   suggestReviewers: (id, q) => ipcRenderer.invoke('gerrit:suggestReviewers', id, q),
-  openChange: (id) => ipcRenderer.invoke('gerrit:openChange', id),
+  suggestAccounts: (q) => ipcRenderer.invoke('gerrit:suggestAccounts', q),
+  openChange: (link) => ipcRenderer.invoke('gerrit:openChange', link),
+  changeUrl: (link) => ipcRenderer.invoke('gerrit:changeUrl', link),
   getUi: () => ipcRenderer.invoke('ui:get'),
   setCompact: (on) => ipcRenderer.invoke('ui:setCompact', on),
   setBadge: (payload) => ipcRenderer.send('ui:badge', payload),
@@ -23,6 +25,12 @@ const api: Api = {
   onSettingsChanged: (cb) => subscribe<[]>('app:settings', cb),
   onRefreshRequested: (cb) => subscribe<[]>('app:refresh', cb),
   onTabRequested: (cb) => subscribe<[TabId]>('app:tab', cb),
+  getUpdateState: () => ipcRenderer.invoke('update:get'),
+  checkForUpdate: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  installUpdate: (confirm) => ipcRenderer.invoke('update:install', confirm),
+  openReleaseNotes: () => ipcRenderer.invoke('update:openReleaseNotes'),
+  onUpdateState: (cb) => subscribe<[UpdateState]>('app:update', cb),
 }
 
 contextBridge.exposeInMainWorld('api', api)

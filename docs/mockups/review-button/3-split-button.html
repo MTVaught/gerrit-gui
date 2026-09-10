@@ -1,0 +1,78 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+.actions { min-width: 200px; overflow: visible; }
+.split { display: inline-flex; position: relative; }
+.split .btn { border-radius: 6px 0 0 6px; flex: 1; text-align: left; }
+.split .btn.caret { border-radius: 0 6px 6px 0; border-left-color: #ffffff66; padding: 6px 8px; flex: 0; }
+.split .btn.caret.plain { border-left-color: var(--border); }
+.menu { position: absolute; right: 0; top: calc(100% + 4px); width: 280px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px #0002; padding: 6px; z-index: 10; text-align: left; }
+.menu div { padding: 6px 10px; border-radius: 5px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+.menu div small { color: var(--muted); }
+.menu div.sel { background: var(--panel); font-weight: 600; }
+.menu div.sel::before { content: "✓ "; color: var(--accent); }
+.menu div:not(.sel) { padding-left: 24px; }
+.menu hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+.change.open { z-index: 5; }
+</style></head><body><div class="app">
+<div class="topbar"><div class="tabs">
+<button class="tab active">Needs my review <span class="count hot">3</span></button><button class="tab">Reviewing <span class="count">2</span></button><button class="tab">My changes <span class="count">4</span></button><button class="tab">Ready to merge <span class="count">1</span></button><button class="tab">Recently merged <span class="count">7</span></button>
+</div><div class="topbar-right"><span class="muted small">Bob · updated just now</span><button class="btn icon">⟳</button><button class="btn icon">⚙</button></div></div>
+<div class="board">
+
+<div class="group"><h3>Needs review</h3><ul class="changes" style="overflow:visible">
+
+<li class="change state-needs-review"><div class="change-main">
+<div class="change-title"><button class="link subject">Add retry to upload client</button><span class="badge needs-review">Needs review</span><span class="badge active">Active</span></div>
+<div class="change-meta muted"><span>#31</span><span>demo</span><span>master</span><span>Alice</span><span>PS 5</span><span>review requested for PS 5</span><span><span class="ins">+84</span> <span class="del">−12</span></span><span>20m ago</span></div>
+<div class="reviewers"><span class="reviewers-label asked">Needs review by</span><span class="chip pending">you</span><span class="chip pos">Carol <b>+1</b></span></div>
+</div><div class="actions">
+<div class="split"><button class="btn primary">Review PS 5<span class="ext">↗</span></button><button class="btn primary caret">▾</button></div>
+</div></li>
+
+<li class="change state-needs-review open"><div class="change-main">
+<div class="change-title"><button class="link subject">Fix flaky scheduler test</button><span class="badge needs-review">Needs review</span><span class="badge active">Active</span></div>
+<div class="change-meta muted"><span>#27</span><span>demo</span><span>master</span><span>Alice</span><span>PS 5</span><span>review requested for PS 5</span><span><span class="ins">+23</span> <span class="del">−9</span></span><span>2 unresolved</span><span>1h ago</span></div>
+<div class="reviewers"><span class="reviewers-label asked">Needs review by</span><span class="chip pending">you</span><span class="chip pending">Carol</span></div>
+</div><div class="actions">
+<div class="split"><button class="btn primary">Review PS 3 → 5<span class="ext">↗</span></button><button class="btn primary caret">▾</button>
+<div class="menu">
+<div class="sel">Since my last review <small>PS 3 → 5</small></div>
+<div>Since base <small>PS 5</small></div>
+<div>Since previous patch set <small>PS 4 → 5</small></div>
+<hr>
+<div>Open change page <small>#27</small></div>
+<div>Copy diff link</div>
+</div></div>
+</div></li>
+
+<li class="change state-needs-review"><div class="change-main">
+<div class="change-title"><button class="link subject">Migrate config to TOML</button><span class="badge needs-review">Needs review</span><span class="badge wip">WIP</span></div>
+<div class="change-meta muted"><span>#19</span><span>demo</span><span>release-2.4</span><span>Dave</span><span>PS 2</span><span>review requested for PS 2</span><span><span class="ins">+310</span> <span class="del">−198</span></span><span>3h ago</span></div>
+<div class="reviewers"><span class="reviewers-label asked">Needs review by</span><span class="chip pending">you</span><span class="chip pos">Carol <b>+1</b></span></div>
+</div><div class="actions">
+<div class="split"><button class="btn primary">Review PS 1 → 2<span class="ext">↗</span></button><button class="btn primary caret">▾</button></div>
+</div></li>
+
+</ul></div>
+
+<div class="group"><h3>Reviewing</h3><ul class="changes">
+
+<li class="change state-needs-review"><div class="change-main">
+<div class="change-title"><button class="link subject">Rename Storage helpers</button><span class="badge needs-review">Needs review</span><span class="badge active">Active</span></div>
+<div class="change-meta muted"><span>#24</span><span>demo</span><span>master</span><span>Alice</span><span>PS 4</span><span>review requested for PS 4</span><span><span class="ins">+41</span> <span class="del">−41</span></span><span>1d ago</span></div>
+<div class="reviewers"><span class="reviewers-label asked">Needs review by</span><span class="chip pending">Carol</span><span class="chip pos">you <b>+1</b></span></div>
+</div><div class="actions">
+<div class="split"><button class="btn">Open PS 4<span class="ext">↗</span></button><button class="btn caret plain">▾</button></div>
+</div></li>
+
+<li class="change state-in-progress"><div class="change-main">
+<div class="change-title"><button class="link subject">Bump build dependencies</button><span class="badge">In progress</span><span class="badge wip">WIP</span></div>
+<div class="change-meta muted"><span>#12</span><span>demo</span><span>master</span><span>Alice</span><span>PS 3</span><span title="Votes on that patch set no longer apply to the current one">last requested on PS 2</span><span><span class="ins">+6</span> <span class="del">−6</span></span><span>3d ago</span></div>
+<div class="reviewers"><span class="reviewers-label not-asked">Review not requested</span><span class="chip">you</span><span class="chip">Carol</span></div>
+</div><div class="actions">
+<div class="split"><button class="btn">See PS 2 → 3<span class="ext">↗</span></button><button class="btn caret plain">▾</button></div>
+</div></li>
+
+</ul></div>
+
+<p class="mock-note"><b>3 · Split button.</b> The main part opens the diff since your last review (or from base); the caret offers the other ranges Gerrit can show: since base, since the previous patch set, the plain change page, and a copyable diff link. Row #27 shows the menu open. Good when you sometimes want the full diff even after a partial review.</p>
+</div></div></body></html>

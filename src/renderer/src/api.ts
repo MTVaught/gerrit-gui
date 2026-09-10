@@ -3,6 +3,7 @@
 import type { Api } from '../../shared/api.ts'
 import type { UiState } from '../../shared/types.ts'
 import { totalActions } from '../../shared/model.ts'
+import { RELEASES_URL, initialUpdateState } from '../../shared/update.ts'
 
 async function call<T>(method: string, args: unknown[] = []): Promise<T> {
   const res = await fetch(`/api/${method}`, {
@@ -17,6 +18,7 @@ async function call<T>(method: string, args: unknown[] = []): Promise<T> {
 
 function browserApi(): Api {
   const ui: UiState = { compact: false }
+  const noUpdates = initialUpdateState('dev', 'Updates are for the desktop app; in the browser, pull the repository.')
   return {
     getSettings: () => call('getSettings'),
     saveSettings: (input) => call('saveSettings', [input]),
@@ -24,9 +26,11 @@ function browserApi(): Api {
     fetchDashboard: () => call('fetchDashboard'),
     act: (action) => call('act', [action]),
     suggestReviewers: (id, q) => call('suggestReviewers', [id, q]),
-    openChange: async (id) => {
-      window.open(await call<string>('changeUrl', [id]), '_blank', 'noopener')
+    suggestAccounts: (q) => call('suggestAccounts', [q]),
+    openChange: async (link) => {
+      window.open(await call<string>('changeUrl', [link]), '_blank', 'noopener')
     },
+    changeUrl: (link) => call('changeUrl', [link]),
     // Window/tray features have no browser equivalent.
     getUi: async () => ui,
     setCompact: async () => undefined,
@@ -38,6 +42,15 @@ function browserApi(): Api {
     onSettingsChanged: () => () => undefined,
     onRefreshRequested: () => () => undefined,
     onTabRequested: () => () => undefined,
+    // Nor do updates: the browser serves whatever the checkout contains.
+    getUpdateState: async () => noUpdates,
+    checkForUpdate: async () => noUpdates,
+    downloadUpdate: async () => noUpdates,
+    installUpdate: async () => noUpdates,
+    openReleaseNotes: async () => {
+      window.open(RELEASES_URL, '_blank', 'noopener')
+    },
+    onUpdateState: () => () => undefined,
   }
 }
 

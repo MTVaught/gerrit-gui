@@ -3,14 +3,18 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import type { BadgeStyle, SettingsInput, SettingsStatus, UiState } from '../shared/types.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
+import { normalizeTeam } from '../shared/model.ts'
 
 interface StoredSettings {
   serverUrl: string
   username: string
   projects?: string[]
+  team?: string[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
   compactOnTop?: boolean
+  showAppBadge?: boolean
+  showTrayCounts?: boolean
   /** base64 of safeStorage ciphertext, or plaintext when no keychain is available. */
   password?: string
   passwordEncrypted?: boolean
@@ -35,9 +39,12 @@ export async function getStatus(): Promise<SettingsStatus> {
     serverUrl: s.serverUrl,
     username: s.username,
     projects: s.projects ?? [],
+    team: s.team ?? [],
     badgeStyle: s.badgeStyle ?? 'color',
     showZeroCounts: s.showZeroCounts ?? false,
     compactOnTop: s.compactOnTop ?? true,
+    showAppBadge: s.showAppBadge ?? true,
+    showTrayCounts: s.showTrayCounts ?? true,
     hasPassword: Boolean(s.password),
     encrypted: safeStorage.isEncryptionAvailable(),
   }
@@ -58,9 +65,12 @@ export async function save(input: SettingsInput): Promise<void> {
     serverUrl: normalizeServerUrl(input.serverUrl),
     username: input.username.trim(),
     projects: input.projects.map((p) => p.trim()).filter(Boolean),
+    team: normalizeTeam(input.team),
     badgeStyle: input.badgeStyle,
     showZeroCounts: input.showZeroCounts,
     compactOnTop: input.compactOnTop,
+    showAppBadge: input.showAppBadge,
+    showTrayCounts: input.showTrayCounts,
     password: prev.password,
     passwordEncrypted: prev.passwordEncrypted,
     ui: prev.ui,

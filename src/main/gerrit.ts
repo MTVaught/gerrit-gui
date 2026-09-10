@@ -1,8 +1,5 @@
-import type {
-  AccountInfo,
-  ChangeInfo,
-  SuggestedReviewerInfo,
-} from '../shared/types.ts'
+import type { AccountInfo, ChangeInfo, ChangeLink, SuggestedReviewerInfo } from '../shared/types.ts'
+import { changePath } from '../shared/url.ts'
 
 const XSSI_PREFIX = ")]}'"
 
@@ -72,7 +69,7 @@ export class GerritClient {
     const q = new URLSearchParams()
     for (const s of queries) q.append('q', s)
     q.set('n', String(limit))
-    for (const o of ['DETAILED_LABELS', 'DETAILED_ACCOUNTS', 'CURRENT_REVISION', 'SUBMITTABLE', 'SUBMIT_REQUIREMENTS', 'CURRENT_ACTIONS', 'CUSTOM_KEYED_VALUES']) {
+    for (const o of ['DETAILED_LABELS', 'DETAILED_ACCOUNTS', 'CURRENT_REVISION', 'SUBMITTABLE', 'SUBMIT_REQUIREMENTS', 'CURRENT_ACTIONS', 'CUSTOM_KEYED_VALUES', 'MESSAGES']) {
       q.append('o', o)
     }
     const result = await this.req<ChangeInfo[] | ChangeInfo[][]>('GET', '/changes/', undefined, q)
@@ -121,7 +118,14 @@ export class GerritClient {
     return this.req('GET', `/changes/${id}/suggest_reviewers`, undefined, params)
   }
 
-  changeUrl(id: number): string {
-    return `${this.base}/c/${id}`
+  /** Account search for the team picker in Settings: name, username or email prefix. */
+  suggestAccounts(q: string): Promise<AccountInfo[]> {
+    const params = new URLSearchParams({ q: `is:active ${q}`, n: '8' })
+    params.append('o', 'DETAILS')
+    return this.req('GET', '/accounts/', undefined, params)
+  }
+
+  changeUrl(link: ChangeLink): string {
+    return this.base + changePath(link)
   }
 }

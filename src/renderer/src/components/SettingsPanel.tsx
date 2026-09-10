@@ -1,14 +1,21 @@
 import { useState } from 'react'
 import type { BadgeStyle, SettingsStatus } from '../../../shared/types.ts'
+import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
+import { ago } from '../time.ts'
+import { runUpdateAction, useUpdateState } from './Update.tsx'
+import { TeamEditor } from './TeamEditor.tsx'
 
 export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => void; onClose: () => void }) {
   const [serverUrl, setServerUrl] = useState(props.initial.serverUrl)
   const [username, setUsername] = useState(props.initial.username)
   const [password, setPassword] = useState('')
   const [projects, setProjects] = useState(props.initial.projects.join(', '))
+  const [team, setTeam] = useState<string[]>(props.initial.team)
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(props.initial.badgeStyle)
   const [showZeroCounts, setShowZeroCounts] = useState(props.initial.showZeroCounts)
+  const [showAppBadge, setShowAppBadge] = useState(props.initial.showAppBadge)
+  const [showTrayCounts, setShowTrayCounts] = useState(props.initial.showTrayCounts)
   const [compactOnTop, setCompactOnTop] = useState(props.initial.compactOnTop)
   const [status, setStatus] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -23,8 +30,11 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         username,
         password: password || undefined,
         projects: projects.split(',').map((p) => p.trim()).filter(Boolean),
+        team,
         badgeStyle,
         showZeroCounts,
+        showAppBadge,
+        showTrayCounts,
         compactOnTop,
       })
       const me = await api.testConnection()
@@ -69,8 +79,25 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         Gerrit cannot search for WIP changes by reviewer, so the app scans open WIP changes and keeps the ones you are on.
         Leave empty on a small server. Comma-separated; a trailing * matches a prefix.
       </p>
+      <h2>Team</h2>
+      <p className="muted">
+        With a team, only the votes of its members decide whether a change is approved or needs changes. Anyone else
+        who reviews is shown on the change, and their votes never change the state. Changes owned by people outside
+        the team are listed on the <b>External Reviews</b> tab. Leave the list empty to count every reviewer.
+      </p>
+      <TeamEditor members={team} onChange={setTeam} canSearch={Boolean(canClose)} />
+      <p className="muted small">
+        Usernames or email addresses, matched without regard to case. You are always on the team, so you do not need
+        to add yourself. Start typing to pick from the accounts on the server.
+      </p>
       {!isBrowserMode && (
         <>
+          <h2>App icon</h2>
+          <label className="check">
+            <input type="checkbox" checked={showAppBadge} onChange={(e) => setShowAppBadge(e.target.checked)} />
+            Show the total as a badge on the app icon
+          </label>
+          <p className="muted small">The Dock on macOS, the launcher on Linux and the taskbar on Windows.</p>
           <h2>Window</h2>
           <label className="check">
             <input type="checkbox" checked={compactOnTop} onChange={(e) => setCompactOnTop(e.target.checked)} />
@@ -82,24 +109,38 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
           </p>
           <h2>Menu bar</h2>
           <label className="check">
+            <input type="checkbox" checked={showTrayCounts} onChange={(e) => setShowTrayCounts(e.target.checked)} />
+            Show counts on the menu bar icon
+          </label>
+          <p className="muted small">
+            Off, the menu bar keeps the plain icon. The tooltip and the menu still list what waits on you.
+          </p>
+          <label className="check">
             <input
               type="checkbox"
               checked={badgeStyle === 'glyph'}
+              disabled={!showTrayCounts}
               onChange={(e) => setBadgeStyle(e.target.checked ? 'glyph' : 'color')}
             />
             Show glyphs instead of colored counts
           </label>
           <p className="muted small">
-            The menu bar shows what waits on you as one colored count per category: Review, Fix, Mark ready, Merge. Glyphs
-            (◉ ✎ ◆ ⇧) replace the colors if you cannot tell them apart. The tray menu names each category with its count.
+            The menu bar shows what waits on you as one colored count per category: Needs Review, Needs Changes, Approved, Ready to Merge. Glyphs
+            (◉ ✎ ◆ ⇧) replace the colors if you cannot tell them apart. The counts stand in for the app icon, which
+            shows only when nothing waits on you. The tray menu names each category with its count.
           </p>
           <label className="check">
-            <input type="checkbox" checked={showZeroCounts} onChange={(e) => setShowZeroCounts(e.target.checked)} />
-            Always show all four categories, even at zero
+            <input
+              type="checkbox"
+              checked={showZeroCounts}
+              disabled={!showTrayCounts}
+              onChange={(e) => setShowZeroCounts(e.target.checked)}
+            />
+            Always show Needs Review, Needs Changes and Approved, even at zero
           </label>
           <p className="muted small">
-            Keeps every count in the menu bar so its position never changes. With colored counts, the app icon is left out
-            and only the pills show.
+            Keeps those counts in the menu bar so their position never changes. Ready to Merge appears only when you have something
+            to merge, since it needs +2 rights.
           </p>
         </>
       )}
@@ -114,6 +155,47 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         )}
       </div>
       {status && <p className={'status ' + (status.startsWith('Connected') ? 'ok' : 'error')}>{status}</p>}
+      {!isBrowserMode && <AboutSection />}
     </div>
+  )
+}
+
+/** Version, update status and the manual check; the same steps as the top bar button and the tray. */
+function AboutSection() {
+  const state = useUpdateState()
+  const [pending, setPending] = useState(false)
+  if (!state) return null
+  const action = updateAction(state)
+  return (
+    <>
+      <h2>About</h2>
+      <p>
+        Gerrit Review Board {state.currentVersion}.{' '}
+        <span className="muted">
+          {updateSummary(state)}
+          {state.checkedAt && ` · Last checked ${ago(new Date(state.checkedAt))}`}
+        </span>
+      </p>
+      <div className="row">
+        <button
+          className="btn"
+          disabled={action === 'none' || pending}
+          onClick={async () => {
+            setPending(true)
+            try {
+              await runUpdateAction(state, true)
+            } finally {
+              setPending(false)
+            }
+          }}
+        >
+          {updateButtonLabel(state)}
+        </button>
+        <button className="btn" onClick={() => void api.openReleaseNotes()}>
+          Release notes
+        </button>
+      </div>
+      {state.releaseNotes && <pre className="release-notes">{state.releaseNotes}</pre>}
+    </>
   )
 }

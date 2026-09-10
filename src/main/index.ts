@@ -4,7 +4,9 @@ import { promises as fs } from 'node:fs'
 import * as settings from './settings.ts'
 import { createService } from './service.ts'
 import { TrayController } from './tray.ts'
-import type { BadgePayload, ChangeAction, SettingsInput, TabId, UiState, WindowBounds } from '../shared/types.ts'
+import { createUpdater, type Updater } from './updater.ts'
+import { RELEASES_URL, updateAction } from '../shared/update.ts'
+import type { BadgePayload, ChangeAction, ChangeLink, SettingsInput, TabId, UiState, WindowBounds } from '../shared/types.ts'
 import appIconPath from '../../resources/icon.png?asset'
 
 const COMPACT_DEFAULT: WindowBounds = { x: 0, y: 0, width: 460, height: 720 }
@@ -16,6 +18,7 @@ let ui: UiState = { compact: false }
 /** User setting: the compact window floats above other windows (see Settings, Window). */
 let compactOnTop = true
 let quitting = false
+let updater: Updater | null = null
 
 // net.fetch: Chromium's network stack, so the OS certificate store and system proxy apply.
 const service = createService(settings, (url, init) => net.fetch(url, init))
@@ -112,14 +115,24 @@ function registerIpc(): void {
   ipcMain.handle('gerrit:fetchDashboard', () => service.fetchDashboard())
   ipcMain.handle('gerrit:act', (_e, action: ChangeAction) => service.act(action))
   ipcMain.handle('gerrit:suggestReviewers', (_e, id: number, q: string) => service.suggestReviewers(id, q))
-  ipcMain.handle('gerrit:openChange', async (_e, id: number) => {
-    await shell.openExternal(await service.changeUrl(id))
+  ipcMain.handle('gerrit:suggestAccounts', (_e, q: string) => service.suggestAccounts(q))
+  ipcMain.handle('gerrit:openChange', async (_e, link: ChangeLink) => {
+    await shell.openExternal(await service.changeUrl(link))
   })
+  ipcMain.handle('gerrit:changeUrl', (_e, link: ChangeLink) => service.changeUrl(link))
 
   ipcMain.handle('ui:get', (): UiState => ui)
   ipcMain.handle('ui:setCompact', (_e, on: boolean) => setCompact(on))
   ipcMain.on('ui:badge', (_e, payload: BadgePayload) => {
     tray?.setBadge(payload, mainWindow)
+  })
+
+  ipcMain.handle('update:get', () => updater?.getState())
+  ipcMain.handle('update:check', () => updater?.check())
+  ipcMain.handle('update:download', () => updater?.download())
+  ipcMain.handle('update:install', (_e, confirm: boolean) => updater?.install(confirm))
+  ipcMain.handle('update:openReleaseNotes', async () => {
+    await shell.openExternal(updater?.getState().releaseUrl ?? RELEASES_URL)
   })
 }
 
@@ -180,6 +193,16 @@ if (!app.requestSingleInstanceLock()) {
     ui = await settings.getUi()
     compactOnTop = (await service.getSettings()).compactOnTop
     registerIpc()
+    updater = createUpdater({
+      onChange: (state) => {
+        tray?.setUpdate(state)
+        mainWindow?.webContents.send('app:update', state)
+      },
+      setQuitting: (on) => {
+        quitting = on
+      },
+      window: () => mainWindow,
+    })
     tray = new TrayController(
       {
         show: showWindow,
@@ -187,6 +210,12 @@ if (!app.requestSingleInstanceLock()) {
         refresh: () => mainWindow?.webContents.send('app:refresh'),
         setCompact: (on) => void setCompact(on),
         setCompactOnTop: (on) => void setCompactOnTop(on),
+        update: () => {
+          if (!updater) return
+          // Progress and the restart prompt are in the window, so raise it for a download.
+          if (updateAction(updater.getState()) === 'download') showWindow()
+          void updater.runAction(true)
+        },
         quit: () => {
           quitting = true
           app.quit()
@@ -195,6 +224,7 @@ if (!app.requestSingleInstanceLock()) {
       ui.compact,
       compactOnTop,
     )
+    tray.setUpdate(updater.getState())
     const win = createWindow()
     const shot = process.env['GERRIT_GUI_SCREENSHOT']
     if (shot) {
@@ -212,6 +242,7 @@ if (!app.requestSingleInstanceLock()) {
         }, delay)
       })
     }
+    updater.start()
     app.on('activate', showWindow)
   })
 }

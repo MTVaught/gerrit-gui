@@ -1,0 +1,113 @@
+# Checks every pull request before it can be merged. Nothing here signs,
+# notarizes or publishes; that is the Release workflow, which runs after
+# the merge. Secrets are never used, so the workflow is safe on pull
+# requests from forks.
+#
+# Two jobs:
+#   checks   - typecheck, unit tests, electron-vite build, and the integration
+#              test against a real Gerrit 3.11 in a service container.
+#   package  - electron-builder on Linux, macOS and Windows, unsigned, so a
+#              change that breaks packaging fails here and not in the release.
+#
+# GitHub does not run this workflow on a pull request with a merge conflict;
+# merge-check.yml reports that case as a failure.
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to the same pull request cancels the run for the old commit.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      # The same image and settings as the "Tests" section of README.md. The
+      # image defaults to DEVELOPMENT_BECOME_ANY_ACCOUNT, which the seed
+      # script needs to create users and set HTTP passwords.
+      gerrit:
+        image: gerritcodereview/gerrit:3.11.2
+        ports:
+          - 8080:8080
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+      # Gerrit takes a minute or two to initialise on first start. The seed
+      # script waits for it, and the timeout stops a broken container from
+      # holding the job open for the six-hour default.
+      - name: Seed Gerrit
+        run: timeout 600 ./test/seed-gerrit.sh
+
+      # The test skips itself when Gerrit is unreachable. In CI that must be a
+      # failure, so check the server first and make node fail on a skip.
+      - name: Integration test
+        run: |
+          set -euo pipefail
+          curl -sf -o /dev/null http://localhost:8080/config/server/version
+          out=$(pnpm test:integration 2>&1 | tee /dev/stderr)
+          if grep -Eq '^(ℹ|#) skipped [1-9]' <<<"$out"; then
+            echo 'integration test skipped: Gerrit was unreachable' >&2
+            exit 1
+          fi
+        env:
+          GERRIT_TEST_URL: http://localhost:8080
+
+  package:
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            args: --linux
+          - os: macos-latest
+            args: --mac
+          - os: windows-latest
+            args: --win
+    runs-on: ${{ matrix.os }}
+    # Git Bash on Windows too, as in release.yml.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Unsigned build. CSC_IDENTITY_AUTO_DISCOVERY=false stops electron-builder
+      # from looking for a signing identity on the macOS runner; with no
+      # Apple credentials in the environment it also skips notarization.
+      - name: Package
+        run: pnpm dist ${{ matrix.args }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: List artifacts
+        run: ls -la dist/

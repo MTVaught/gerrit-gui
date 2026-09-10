@@ -1,23 +1,43 @@
+import { useMemo } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewState, TabId } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, sortViews, type SortId } from '../../../shared/model.ts'
-import { ChangeRow } from './ChangeRow.tsx'
+import { STATE_LABEL, displayName, familyKey, groupByChangeId, isExternalReview, sortByBranch, sortViews, urgency, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { ChangeRow, FamilyCard } from './ChangeRow.tsx'
 import { Ledger } from './Ledger.tsx'
 
 export type { TabId }
+export { isExternalReview }
 
-/** `short` is the compact-window label; it must fit five tabs in about 440px. */
-export const TABS: { id: TabId; label: string; short: string }[] = [
-  { id: 'needs-my-review', label: 'Needs my review', short: 'To review' },
+export interface Tab {
+  id: TabId
+  label: string
+  /** Compact-window label; all of them must fit a strip about 440px wide. */
+  short: string
+}
+
+export const TABS: Tab[] = [
+  { id: 'needs-my-review', label: 'Needs Review', short: 'To review' },
   { id: 'reviewing', label: 'Reviewing', short: 'Reviewing' },
-  { id: 'mine', label: 'My changes', short: 'Mine' },
-  { id: 'ready-to-merge', label: 'Ready to merge', short: 'Ready' },
-  { id: 'merged', label: 'Recently merged', short: 'Merged' },
+  { id: 'mine', label: 'My Changes', short: 'Mine' },
+  { id: 'ready-to-merge', label: 'Ready to Merge', short: 'Ready' },
+  { id: 'merged', label: 'Recently Merged', short: 'Merged' },
+  { id: 'external-reviews', label: 'External Reviews', short: 'External' },
 ]
+
+/** The External Reviews tab exists only once a team is configured; without one nobody is external. */
+export function visibleTabs(teamConfigured: boolean): Tab[] {
+  return TABS.filter((t) => t.id !== 'external-reviews' || teamConfigured)
+}
 
 export interface Group {
   title: string
   hint?: string
   items: ChangeView[]
+}
+
+/** One list entry: a single change, or the lead of a family card. */
+interface Row {
+  view: ChangeView
+  family: ChangeFamily | null
 }
 
 function byState(items: ChangeView[], order: ReviewState[], titles?: Partial<Record<ReviewState, string>>): Group[] {
@@ -49,14 +69,14 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
       const m = open.filter((v) => v.isMine)
       return byState(m, ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'in-progress'], {
         'needs-review': 'Out for review',
-        'in-progress': 'In progress, review not requested',
+        'in-progress': 'In Progress, review not requested',
       })
     }
     case 'ready-to-merge': {
       const rtm = open.filter((v) => v.state === 'ready-to-merge')
       const stale = open.filter((v) => v.staleReadyToMerge)
       return [
-        { title: 'Ready to merge', items: rtm },
+        { title: 'Ready to Merge', items: rtm },
         {
           title: 'Tagged ready-to-merge but no longer approved',
           hint: 'A new patch set reset the votes. The owner should request review again or clear the tag.',
@@ -66,6 +86,19 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
     }
     case 'merged':
       return [{ title: 'Merged in the last 14 days', items: views.filter((v) => v.change.status === 'MERGED') }]
+    case 'external-reviews': {
+      const ext = open.filter(isExternalReview)
+      return [
+        { title: 'Waiting on you', items: ext.filter((v) => v.needsMyReview && v.state === 'needs-review') },
+        {
+          title: 'Reviewed, waiting on others',
+          items: ext.filter((v) => !v.needsMyReview && v.state === 'needs-review'),
+        },
+        ...byState(ext, ['needs-changes', 'approved', 'ready-to-merge', 'in-progress'], {
+          'in-progress': 'Author iterating, no review requested',
+        }),
+      ].filter((g) => g.items.length > 0)
+    }
   }
 }
 
@@ -74,6 +107,7 @@ const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
   mine: 'You have no open changes.',
   'ready-to-merge': 'Nothing is tagged ready-to-merge.',
   merged: 'Nothing merged recently.',
+  'external-reviews': 'No open change is owned by someone outside the team.',
 }
 
 function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => void }) {
@@ -122,42 +156,84 @@ export function Board(props: {
   sort: SortId
   self: AccountInfo | null
   loading: boolean
-  /** Narrow window: render the ledger instead of the cards. */
+  /** Narrow window: render the ledger, one line per change, instead of the cards. */
   compact: boolean
   onAct: (a: ChangeAction) => Promise<void>
   onGoTo: (tab: TabId) => void
 }) {
+  // Every Change-Id family in the whole data set, merged members included,
+  // so a card lists all branches no matter which tab it is on.
+  const families = useMemo(() => {
+    const m = new Map<string, ChangeFamily>()
+    for (const f of groupByChangeId(props.views)) m.set(f.key, { key: f.key, members: sortByBranch(f.members) })
+    return m
+  }, [props.views])
   if (props.loading || !props.self) return <div className="panel muted">Loading...</div>
   const groups = groupsFor(props.tab, props.views)
+  // A family is one card, led by its most urgent branch on this tab (see
+  // URGENCY). It sits in that branch's section, at that branch's sort
+  // position. A tie goes to the earliest section, so on Reviewing a branch
+  // waiting on you beats one you already reviewed. Section counts still count
+  // the changes in that state.
+  const sorted = groups.map((g) => sortViews(g.items, props.sort))
+  const lead = new Map<string, { section: number; view: ChangeView }>()
+  sorted.forEach((items, section) => {
+    for (const view of items) {
+      const key = familyKey(view.change)
+      if ((families.get(key)?.members.length ?? 1) === 1) continue
+      const cur = lead.get(key)
+      if (!cur || urgency(view.state) < urgency(cur.view.state)) lead.set(key, { section, view })
+    }
+  })
+  const sections = groups.map((g, section) => ({
+    ...g,
+    rows: sorted[section]!.flatMap((v): Row[] => {
+      const key = familyKey(v.change)
+      const f = families.get(key)
+      if (!f || f.members.length === 1) return [{ view: v, family: null }]
+      return lead.get(key)?.view === v ? [{ view: v, family: f }] : []
+    }),
+  }))
   if (groups.length === 0) {
     if (props.tab === 'needs-my-review') return <NeedsReviewEmpty views={props.views} onGoTo={props.onGoTo} />
     return <div className="panel empty">{EMPTY[props.tab]}</div>
   }
   if (props.compact) {
+    // Families are not folded here: every branch is its own line, named by branch.
     return (
       <main className="board">
-        <Ledger groups={groups} sort={props.sort} self={props.self} onAct={props.onAct} />
+        <Ledger groups={groups} sort={props.sort} self={props.self} families={families} onAct={props.onAct} />
       </main>
     )
   }
   return (
     <main className="board">
       {props.tab === 'mine' && (
-        <p className="muted small intro">
+        <p className="muted small">
           Signed in as {displayName(props.self)}. Push as many patch sets as you like; reviewers are only asked to look
           when you press Request review, and only for that patch set.
         </p>
       )}
-      {groups.map((g) => (
+      {props.tab === 'external-reviews' && (
+        <p className="muted small">
+          Open changes owned by people outside the team you set in Settings. They also appear under Needs Review and
+          Reviewing as usual. Your own changes are never here, whoever reviews them.
+        </p>
+      )}
+      {sections.map((g) => (
         <section key={g.title} className="group">
           <h3>
             {g.title} <span className="count">{g.items.length}</span>
           </h3>
           {g.hint && <p className="muted small">{g.hint}</p>}
           <ul className="changes">
-            {sortViews(g.items, props.sort).map((v) => (
-              <ChangeRow key={v.change.id} view={v} self={props.self!} onAct={props.onAct} />
-            ))}
+            {g.rows.map((r) =>
+              r.family ? (
+                <FamilyCard key={r.family.key} family={r.family} lead={r.view} self={props.self!} onAct={props.onAct} />
+              ) : (
+                <ChangeRow key={r.view.change.id} view={r.view} self={props.self!} onAct={props.onAct} />
+              ),
+            )}
           </ul>
         </section>
       ))}

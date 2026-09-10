@@ -1,6 +1,7 @@
-// The buttons a change offers the current user. Shared by the full-size card
-// row and the compact ledger, which shows the primary one in its own column
-// and the rest in the detail row.
+// The owner's and merger's buttons for a change. Shared by the full-size
+// card row and the compact ledger, which shows the primary one in its own
+// column and the rest in the detail row. The reviewer's button is separate
+// (ReviewButton), because it is a split button that opens Gerrit.
 import type { ChangeAction, ChangeView } from '../../../shared/types.ts'
 import { READY_TO_MERGE_TAG } from '../../../shared/constants.ts'
 
@@ -16,11 +17,7 @@ export interface ActionSpec {
   run: () => void
 }
 
-export function fmtVote(v: number): string {
-  return v > 0 ? `+${v}` : String(v)
-}
-
-export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<void>, openVote: () => void): ActionSpec[] {
+export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<void>): ActionSpec[] {
   const c = v.change
   const id = c._number
   const open = c.status === 'NEW'
@@ -30,13 +27,18 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
 
   if (owner && !v.reviewRequested && v.state !== 'approved' && v.state !== 'ready-to-merge') {
     const again = v.requestedPatchSet !== null && v.requestedPatchSet < v.patchSet
+    const nobody = v.reviewers.length === 0 && v.externalReviewers.length === 0
     out.push({
       key: 'request',
       label: `${again ? 'Re-request' : 'Request'} review (PS ${v.patchSet})`,
       short: again ? 'Re-request' : 'Request',
       primary: true,
-      disabled: v.reviewers.length === 0,
-      title: v.reviewers.length === 0 ? 'Add a reviewer first' : 'Ask every reviewer to look at this patch set',
+      disabled: nobody,
+      title: nobody
+        ? 'Add a reviewer first'
+        : v.reviewers.length === 0
+          ? 'Only external reviewers are on this change; it cannot be approved until a team member is added'
+          : 'Ask every reviewer to look at this patch set',
       run: () => void act({ type: 'requestReview', id, patchSet: v.patchSet }),
     })
   }
@@ -46,7 +48,7 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
   if (owner && v.state === 'approved') {
     out.push({
       key: 'ready',
-      label: 'Ready to merge',
+      label: 'Ready to Merge',
       short: 'Ready',
       primary: true,
       title: 'Tag the change for the merger',
@@ -75,15 +77,6 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
       subtle: true,
       title: v.wip ? 'Clear WIP so CI runs on this change' : 'Mark WIP so CI stops running on this change',
       run: () => void act({ type: 'setWip', id, wip: !v.wip }),
-    })
-  }
-  if (open && v.iAmReviewer && !v.isMine) {
-    out.push({
-      key: 'review',
-      label: v.myVote === 0 ? 'Review' : `Change vote (${fmtVote(v.myVote)})`,
-      short: v.myVote === 0 ? 'Review' : `Vote ${fmtVote(v.myVote)}`,
-      primary: v.needsMyReview,
-      run: openVote,
     })
   }
   return out

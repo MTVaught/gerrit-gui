@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { GerritClient } from '../src/main/gerrit.ts'
 import { fetchDashboard } from '../src/main/dashboard.ts'
 import type { ChangeInfo } from '../src/shared/types.ts'
-import { classify } from '../src/shared/model.ts'
+import { classify, reviewLink } from '../src/shared/model.ts'
 import { READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../src/shared/constants.ts'
 
 const URL = process.env['GERRIT_TEST_URL'] ?? 'http://localhost:8080'
@@ -33,11 +33,11 @@ async function pushPatchSet(u: string, id: number, content: string) {
   await raw(u, 'POST', `/changes/${id}/edit:publish`, { notify: 'NONE' })
 }
 
-async function view(u: string, id: number) {
+async function view(u: string, id: number, team: string[] = []) {
   const g = user(u)
   const me = await g.self()
   const [[c]] = await g.queryChanges([`change:${id}`])
-  return classify(c, me._account_id)
+  return classify(c, me._account_id, team)
 }
 
 test('full workflow through the client', { skip: !reachable && 'no local Gerrit at ' + URL }, async () => {
@@ -65,14 +65,24 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   assert.equal(v.needsMyReview, true, 'requested on a WIP change still counts')
   assert.deepEqual(v.pending.map((a) => a.username).sort(), ['bob', 'carol'])
 
+  assert.equal(v.lastReviewedPatchSet, null, 'no vote or reply yet')
+  assert.equal(reviewLink(v).basePatchSet, undefined, 'first look: the whole patch set against base')
+  const reviewedPs = v.patchSet
   await bob.vote(id, 'Code-Review', 1, 'fine by me')
   v = await view('bob', id)
   assert.equal(v.needsMyReview, false, 'voting removes me from needs-review')
+  assert.equal(v.lastReviewedPatchSet, reviewedPs, 'the vote message records the patch set')
   assert.deepEqual(v.pending.map((a) => a.username), ['carol'])
   assert.equal(v.state, 'needs-review', 'not decided until carol votes')
 
   await carol.vote(id, 'Code-Review', -1, 'rename please')
   assert.equal((await view('alice', id)).state, 'needs-changes', 'everyone voted, one negative')
+
+  // The same votes seen with a team that leaves carol out: her -1 is shown but does not decide.
+  v = await view('alice', id, ['bob'])
+  assert.equal(v.state, 'approved', 'only team votes decide')
+  assert.deepEqual(v.externalReviewers.map((r) => [r.account.username, r.vote]), [['carol', -1]])
+  assert.deepEqual(v.reviewers.map((r) => r.account.username), ['bob'])
 
   // Author pushes fixes over two patch sets; nobody is asked to look at either.
   await pushPatchSet('alice', id, 'v2')
@@ -83,6 +93,9 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   await pushPatchSet('alice', id, 'v3')
   v = await view('carol', id)
   assert.equal(v.patchSet, 4)
+  v = await view('bob', id)
+  assert.equal(v.lastReviewedPatchSet, reviewedPs, "the author's uploads do not move my last review")
+  assert.deepEqual(reviewLink(v), { id, project: v.change.project, patchSet: 4, basePatchSet: reviewedPs })
   assert.equal(v.needsMyReview, false)
 
   // Re-request: everyone is asked again, for this patch set only.
