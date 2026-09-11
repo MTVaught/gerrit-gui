@@ -1,10 +1,9 @@
-// Application updates in the UI: a hook for the state the main process pushes,
-// a top bar button while an update is available, downloading or ready, and a
-// banner that prompts once when an update turns up and again when it has
-// downloaded. The words come from ../../../shared/update.ts.
+// Application updates in the UI: a hook for the state the main process pushes
+// and a top bar button while an update is available, downloading or ready.
+// The words come from ../../../shared/update.ts.
 import { useEffect, useState } from 'react'
 import type { UpdateState } from '../../../shared/types.ts'
-import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
+import { updateAction, updateSummary } from '../../../shared/update.ts'
 import { api } from '../api.ts'
 import { DownloadIcon, RestartIcon } from './Icons.tsx'
 
@@ -61,35 +60,6 @@ export function UpdatePill(props: { state: UpdateState | null }) {
       {busy ? <ProgressRing percent={s.downloadPercent ?? 0} /> : ready ? <RestartIcon /> : <DownloadIcon />}
       <span>{label}</span>
     </button>
-  )
-}
-
-/** The prompt. "Later" hides it until the next step (downloaded) or the next version. */
-export function UpdateBanner(props: { state: UpdateState | null }) {
-  const [dismissed, setDismissed] = useState<string | null>(null)
-  const s = props.state
-  if (!s || !showsUpdate(s)) return null
-  const key = `${s.status === 'downloaded' ? 'downloaded' : 'available'}:${s.availableVersion}`
-  if (key === dismissed) return null
-  const action = updateAction(s)
-  return (
-    <div className={'banner update' + (s.status === 'downloaded' ? ' ready' : '')} role="status">
-      <span className="banner-text">{updateSummary(s)}</span>
-      {s.status === 'downloading' && <progress max={100} value={s.downloadPercent ?? 0} />}
-      <span className="banner-actions">
-        {action !== 'none' && (
-          <button className="btn small primary" onClick={() => void runUpdateAction(s)}>
-            {updateButtonLabel(s)}
-          </button>
-        )}
-        <button className="btn small" onClick={() => void api.openReleaseNotes()}>
-          Release notes
-        </button>
-        <button className="btn small" onClick={() => setDismissed(key)}>
-          Later
-        </button>
-      </span>
-    </div>
   )
 }
 
