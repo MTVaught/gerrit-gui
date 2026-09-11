@@ -159,7 +159,7 @@ export function updateSummary(s: UpdateState): string {
   }
 }
 
-/** Short label for the action button in Settings and the banner. */
+/** Short label for the action button in Settings. */
 export function updateButtonLabel(s: UpdateState): string {
   switch (updateAction(s)) {
     case 'install':

@@ -9,7 +9,7 @@ import { ago } from './time.ts'
 import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
 import { ExpandIcon, GearIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
 import { api, isBrowserMode } from './api.ts'
-import { UpdateBanner, UpdatePill, useUpdateState } from './components/Update.tsx'
+import { UpdatePill, useUpdateState } from './components/Update.tsx'
 
 export function App() {
   const [settings, setSettings] = useState<SettingsStatus | null>(null)
@@ -198,7 +198,6 @@ export function App() {
           {error}
         </div>
       )}
-      <UpdateBanner state={update} />
       {isBrowserMode && !data && !error && (
         <div className="banner" role="status">
           Browser mode: the UI is served by Vite and talks to the local API in <code>src/server</code>. Tray, badge and
