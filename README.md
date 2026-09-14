@@ -30,7 +30,7 @@ application remembers the sort; the search and filter last for the session.
 | Needs Review | The author asked for a review of the current patch set. You are a reviewer. You did not vote on that patch set. The WIP status has no effect. |
 | Reviewing | All open changes on which you are a reviewer, in groups by state. |
 | My Changes | Your open changes, in groups by state, with the actions of the owner. |
-| Ready to Merge | Approved changes that the author marked for the person who has merge authority. |
+| Ready to Merge | Approved changes that the author asked you, by name, to merge. |
 | Recently Merged | Changes that Gerrit merged in the last 14 days. |
 | External Reviews | Open changes owned by someone outside your team, in groups by state. Only with a team. These changes are on no other tab. |
 
@@ -56,9 +56,17 @@ application remembers the sort; the search and filter last for the session.
    reviewers again, for the new patch set only. If the change still has the
    `ready-to-merge` hashtag from an earlier patch set, the button also removes
    the hashtag. The application does not remove the hashtag on its own.
-6. If the state is "Approved", the author pushes the "Ready to Merge" button.
-   The change then goes to the "Ready to Merge" tab.
-7. The person who has merge authority pushes the "+2 and submit" button.
+6. If the state is "Approved", the author pushes the "Ready to Merge" button
+   and picks the person to merge: one of the mergers set for the project in
+   "Settings", or anyone else on the server. The change then shows
+   "Ready to Merge · Dave" on "My Changes".
+7. The person who was asked sees the change on the "Ready to Merge" tab,
+   in the tray count, and in a desktop notification. That person pushes the
+   "+2 and submit" button. Nobody else is asked; if the merger cannot merge,
+   the author picks someone else with "Change merger".
+
+Refer to `docs/walkthrough.md` for the same flow with a screenshot of each
+step, from the developer's, a reviewer's and the merger's window.
 
 The WIP status is not part of this workflow. A change can go through the full
 workflow with the WIP status. The application shows WIP or Active as a
@@ -81,6 +89,9 @@ the same votes, hashtags and WIP flags.
 | Needs Changes | All reviewers voted on the current patch set. One or more reviewers voted -1. |
 | Approved | All reviewers voted +1 on the current patch set. |
 | Ready to Merge | The state is Approved, and the change has the hashtag `ready-to-merge`. |
+| Ready to Merge button | The application adds the hashtags `ready-to-merge` and `merger:<username>` in one request. The username is the Gerrit username of the person asked, in lower case; the email address for an account with no username. A change has one `merger:` tag; "Change merger" replaces it. |
+| Asked of you | The change is Ready to Merge and the `merger:` tag names your username or email address. |
+| Tagged without a merger | The change is Ready to Merge and has no `merger:` tag. Only an older version of the application makes this. Every user with +2 sees it. |
 | Merge | The application votes +2 on the current patch set and submits the change. |
 
 These rules have these effects:
@@ -92,9 +103,16 @@ These rules have these effects:
   rebase keeps the copied votes. Thus, an approved change stays approved after
   a trivial rebase.
 - A +2 vote does not count for the "Approved" state. The application shows the
-  merge button to users who have the Code-Review permission for +2. Gerrit has
-  no query that tells if a user can submit a change before the change is
-  submittable.
+  merge button to the person the author asked, if that person has the
+  Code-Review permission for +2. Gerrit has no query that tells if a user can
+  submit a change before the change is submittable. The application cannot
+  warn the author that the person picked has no +2; the person asked sees a
+  hint instead.
+- The merger is not added as a reviewer or CC. Gerrit itself sends the merger
+  nothing. The application is the notification channel, so a merger who does
+  not run the application learns of the request from the author.
+- "Re-request review" and "Clear ready-to-merge" remove the `merger:` tag
+  together with the `ready-to-merge` tag.
 - Only the owner of the change or an administrator can write custom keyed
   values. Thus, a reviewer cannot request a review for a different user.
 - The application does not use the attention set.
@@ -177,6 +195,29 @@ with different lists can see different states for the same change.
 
 ![Team in Settings](docs/screenshots/settings-team.png)
 
+## Mergers
+
+In "Settings", under "Mergers", list the people to offer when you ask for a
+merge, by project. A row is a project and the people for it. The project is
+an exact name, a prefix ending in `*`, or `*` alone for every project. A
+change in `platform/core` gets the people from the rows `platform/core`,
+`platform/*` and `*`, most specific row first.
+
+The "Ready to Merge" button opens that list, with the person asked last time
+for that project preselected. Once asked, the button reads "Change merger"
+and opens the same list; "Clear ready-to-merge" is a link in that menu. "Someone else" searches the accounts on the
+server for a one-off request; a checkbox under the search adds that person
+to the row for the project. The list only fills the menu: a wrong or empty
+list costs one search. It is a setting of your computer, and it does not
+have to match anyone else's.
+
+The person who was asked sees the change on the "Ready to Merge" tab under
+"Asked of you", and nowhere else on that tab: a request for somebody else is
+not listed. A person without +2 rights who was asked by mistake sees the
+change with a hint to tell the author.
+
+![Ready to Merge picker](docs/walkthrough/08-dev-pick-merger.png)
+
 ## The tray icon
 
 The application stays open. It is independent of the browser.
@@ -189,16 +230,15 @@ order:
 | Needs Review | Blue | ◉ | The author asked you to review the current patch set. |
 | Needs Changes | Red | ✎ | Your change has the "Needs Changes" state. |
 | Approved | Green | ◆ | Your change is approved. Push "Ready to Merge". |
-| Ready to Merge | Purple | ⇧ | The change is ready to merge, and you can vote +2. |
+| Ready to Merge | Purple | ⇧ | The author asked you to merge the change. |
 
 On macOS, the menu bar item shows one colored count per category that is not
 zero. If you cannot tell the colors apart, select "Show glyphs instead of
 colored counts" in the settings. The item then shows the glyph and the count
 as text. The counts take the place of the app icon; the icon shows only when
 nothing waits on you. Select "Always show Needs Review, Needs Changes and Approved, even at
-zero" to keep those counts in place. The Ready to Merge count appears only when you
-have something to merge, because it needs +2 rights and most users never
-have it. On Windows and Linux, the total is part of
+zero" to keep those counts in place. The Ready to Merge count appears only when
+someone asked you to merge, because most users never are. On Windows and Linux, the total is part of
 the icon image, because these trays cannot show text. Clear "Show counts on
 the menu bar icon" in the settings to keep the plain icon on every platform.
 The tooltip and the tray menu show the counts by category on all platforms,
@@ -357,7 +397,9 @@ docker run -d --name gerrit-test -p 8080:8080 gerritcodereview/gerrit:3.11.2
 node --test test/integration.test.ts     # runs the real REST client through the full workflow
 ```
 
-Refer to `docs/testing.md` for UI checks without a display.
+Refer to `docs/testing.md` for UI checks without a display, and to
+`docs/walkthrough/shoot.sh` for the script that makes the screenshots in
+`docs/walkthrough.md` against an empty Gerrit.
 
 ## Fallback dashboard
 

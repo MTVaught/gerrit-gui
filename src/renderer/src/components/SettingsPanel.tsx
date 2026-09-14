@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import type { BadgeStyle, SettingsStatus } from '../../../shared/types.ts'
+import type { BadgeStyle, MergerRule, SettingsStatus } from '../../../shared/types.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
 import { ago } from '../time.ts'
 import { runUpdateAction, useUpdateState } from './Update.tsx'
 import { TeamEditor } from './TeamEditor.tsx'
+import { MergersEditor } from './MergersEditor.tsx'
 
 export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => void; onClose: () => void }) {
   const [serverUrl, setServerUrl] = useState(props.initial.serverUrl)
@@ -12,6 +13,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
   const [password, setPassword] = useState('')
   const [projects, setProjects] = useState(props.initial.projects.join(', '))
   const [team, setTeam] = useState<string[]>(props.initial.team)
+  const [mergers, setMergers] = useState<MergerRule[]>(props.initial.mergers)
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(props.initial.badgeStyle)
   const [showZeroCounts, setShowZeroCounts] = useState(props.initial.showZeroCounts)
   const [showAppBadge, setShowAppBadge] = useState(props.initial.showAppBadge)
@@ -31,6 +33,7 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
         password: password || undefined,
         projects: projects.split(',').map((p) => p.trim()).filter(Boolean),
         team,
+        mergers,
         badgeStyle,
         showZeroCounts,
         showAppBadge,
@@ -90,6 +93,15 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
       <p className="muted small">
         Usernames or email addresses, matched without regard to case. You are always on the team, so you do not need
         to add yourself. Start typing to pick from the accounts on the server.
+      </p>
+      <h2>Mergers</h2>
+      <p className="muted">
+        Who to offer when you ask for a merge. The <b>Ready to Merge</b> button lists the people set for the project of
+        the change, most specific row first; anyone else on the server is a search away. The list only fills that menu.
+      </p>
+      <MergersEditor rules={mergers} onChange={setMergers} canSearch={Boolean(canClose)} />
+      <p className="muted small">
+        A project is an exact name, a prefix ending in <code>*</code>, or <code>*</code> alone for every project.
       </p>
       {!isBrowserMode && (
         <>

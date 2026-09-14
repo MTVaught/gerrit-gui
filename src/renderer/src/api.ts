@@ -27,6 +27,7 @@ function browserApi(): Api {
     act: (action) => call('act', [action]),
     suggestReviewers: (id, q) => call('suggestReviewers', [id, q]),
     suggestAccounts: (q) => call('suggestAccounts', [q]),
+    lookupAccounts: (keys) => call('lookupAccounts', [keys]),
     openChange: async (link) => {
       window.open(await call<string>('changeUrl', [link]), '_blank', 'noopener')
     },

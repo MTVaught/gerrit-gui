@@ -4,9 +4,9 @@
 import { promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import type { BadgeStyle, SettingsInput, SettingsStatus } from '../shared/types.ts'
+import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus } from '../shared/types.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
-import { normalizeTeam } from '../shared/model.ts'
+import { normalizeMergers, normalizeTeam } from '../shared/model.ts'
 import type { Credentials, SettingsStore } from '../main/service.ts'
 
 interface Stored {
@@ -15,6 +15,7 @@ interface Stored {
   password?: string
   projects?: string[]
   team?: string[]
+  mergers?: MergerRule[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
   compactOnTop?: boolean
@@ -39,7 +40,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
   return {
     async getStatus(): Promise<SettingsStatus> {
       const s = await read()
-      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], team: s.team ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, compactOnTop: s.compactOnTop ?? true, hasPassword: Boolean(s.password), encrypted: false }
+      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], team: s.team ?? [], mergers: s.mergers ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, compactOnTop: s.compactOnTop ?? true, hasPassword: Boolean(s.password), encrypted: false }
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
@@ -53,6 +54,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
         password: input.password || prev.password,
         projects: input.projects.map((p) => p.trim()).filter(Boolean),
         team: normalizeTeam(input.team),
+        mergers: normalizeMergers(input.mergers ?? []),
         badgeStyle: input.badgeStyle,
         showZeroCounts: input.showZeroCounts,
         compactOnTop: input.compactOnTop,

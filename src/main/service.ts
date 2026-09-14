@@ -4,6 +4,7 @@
 import { GerritClient, GerritError, type FetchLike } from './gerrit.ts'
 import { fetchDashboard } from './dashboard.ts'
 import { READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
+import { mergerTag } from '../shared/model.ts'
 import type {
   AccountInfo,
   ChangeAction,
@@ -34,6 +35,8 @@ export interface Service {
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
   suggestAccounts(q: string): Promise<AccountInfo[]>
+  /** Accounts for usernames or email addresses; keys with no account are left out. */
+  lookupAccounts(keys: string[]): Promise<AccountInfo[]>
   changeUrl(link: ChangeLink): Promise<string>
 }
 
@@ -87,11 +90,20 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
       const g = await client()
       switch (action.type) {
         case 'requestReview':
-          // A ready-to-merge tag from an earlier patch set has no meaning
-          // once the author restarts the review, so it goes with the request.
-          if (action.clearReadyTag) await g.setHashtags(action.id, undefined, [READY_TO_MERGE_TAG])
+          // A ready-to-merge tag (and the merger named with it) from an earlier
+          // patch set has no meaning once the author restarts the review, so
+          // it goes with the request.
+          if (action.clearTags?.length) await g.setHashtags(action.id, undefined, action.clearTags)
           await g.setCustomKeyedValues(action.id, { [REVIEW_REQUESTED_KEY]: String(action.patchSet) })
           return
+        case 'requestMerge': {
+          // The state tag and the addressee go in one request; a previous
+          // merger tag leaves in the same one, so exactly one person is named.
+          const tag = mergerTag(action.merger)
+          const remove = (action.replace ?? []).filter((t) => t !== tag)
+          await g.setHashtags(action.id, [READY_TO_MERGE_TAG, tag], remove)
+          return
+        }
         case 'withdrawReview':
           await g.setCustomKeyedValues(action.id, {}, [REVIEW_REQUESTED_KEY])
           return
@@ -124,6 +136,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
 
     suggestReviewers: async (id, q) => (await client()).suggestReviewers(id, q),
     suggestAccounts: async (q) => (await client()).suggestAccounts(q),
+    lookupAccounts: async (keys) => (keys.length ? (await client()).accountsByKey(keys) : []),
     changeUrl: async (link) => (await client()).changeUrl(link),
   }
 }

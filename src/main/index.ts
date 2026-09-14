@@ -116,6 +116,7 @@ function registerIpc(): void {
   ipcMain.handle('gerrit:act', (_e, action: ChangeAction) => service.act(action))
   ipcMain.handle('gerrit:suggestReviewers', (_e, id: number, q: string) => service.suggestReviewers(id, q))
   ipcMain.handle('gerrit:suggestAccounts', (_e, q: string) => service.suggestAccounts(q))
+  ipcMain.handle('gerrit:lookupAccounts', (_e, keys: string[]) => service.lookupAccounts(keys))
   ipcMain.handle('gerrit:openChange', async (_e, link: ChangeLink) => {
     await shell.openExternal(await service.changeUrl(link))
   })

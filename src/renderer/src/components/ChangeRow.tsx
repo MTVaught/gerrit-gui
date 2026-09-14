@@ -8,7 +8,9 @@ import { actionClass, changeActions, type ActionSpec } from './actions.ts'
 import { ago } from '../time.ts'
 import { ReviewButton } from './ReviewButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
+import { MergerPicker } from './MergerPicker.tsx'
 import { api } from '../api.ts'
+import { useNames } from '../names.ts'
 
 /** What the reviewer chips and the buttons of one change need. */
 interface ActProps {
@@ -88,14 +90,16 @@ function BranchRow(props: RowProps) {
   const c = v.change
   const open = c.status === 'NEW'
   const age = ageCell(v, props.sort, false)
+  const merger = mergerLabel(v, useNames(v.requestedMerger ? [v.requestedMerger] : []))
   return (
     <div className={open ? 'change-row' : 'change-row closed'}>
       <span className="cell c-branch" title={c.project}>
         <code>{c.branch}</code>
       </span>
       <span className="cell c-state">
-        <span className={`badge ${v.state}`}>
+        <span className={`badge ${v.state}`} title={merger ? `The owner asked ${merger} to merge` : undefined}>
           {STATE_LABEL[v.state]}
+          {merger && ` · ${merger}`}
           {c.status === 'MERGED' && ` ${ago(c.submitted ?? c.updated)}`}
         </span>
         {v.staleReadyToMerge && (
@@ -146,6 +150,13 @@ function BranchRow(props: RowProps) {
       <Actions {...props} />
     </div>
   )
+}
+
+/** Who was asked to merge, for the state badge: "you" for the signed-in user, else the name. Nothing once the change is closed. */
+export function mergerLabel(v: ChangeView, nameFor: (key: string) => string): string | null {
+  if (v.change.status !== 'NEW' || !v.requestedMerger) return null
+  if (v.state !== 'ready-to-merge' && !v.staleReadyToMerge) return null
+  return v.mergeRequestedFromMe ? 'you' : nameFor(v.requestedMerger)
 }
 
 /** Votes first, a -1 before a +1, so the chips that matter survive truncation. */
@@ -346,11 +357,14 @@ function Actions(props: ActProps) {
   const { view: v } = props
   const open = v.change.status === 'NEW'
   const actions = changeActions(v, props.onAct)
-  const button = (a: ActionSpec) => (
-    <button key={a.key} className={actionClass(a)} disabled={a.disabled} title={a.title} onClick={a.run}>
-      {a.label}
-    </button>
-  )
+  const button = (a: ActionSpec) =>
+    a.picker ? (
+      <MergerPicker key={a.key} view={v} spec={a} onAct={props.onAct} />
+    ) : (
+      <button key={a.key} className={actionClass(a)} disabled={a.disabled} title={a.title} onClick={a.run}>
+        {a.label}
+      </button>
+    )
   return (
     <>
       <div className="cell c-actions actions">

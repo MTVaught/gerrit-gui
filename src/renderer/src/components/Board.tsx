@@ -59,7 +59,7 @@ export type Section = Group & { rows: Row[] }
 const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
   reviewing: 'You are not a reviewer on any open change.',
   mine: 'You have no open changes.',
-  'ready-to-merge': 'Nothing is tagged ready-to-merge.',
+  'ready-to-merge': 'Nobody has asked you to merge anything.',
   merged: 'Nothing merged recently.',
   'external-reviews': 'No open change is owned by someone outside the team.',
 }
