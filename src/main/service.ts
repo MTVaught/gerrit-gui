@@ -110,18 +110,6 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
         case 'setWip':
           await (action.wip ? g.setWip(action.id) : g.setReady(action.id))
           return
-        case 'merge': {
-          // The merger's +2 is the approval-to-merge itself; submit right after.
-          await g.vote(action.id, 'Code-Review', 2)
-          try {
-            await g.submit(action.id)
-          } catch (e) {
-            throw new Error(
-              `Voted +2 but submit failed: ${(e as Error).message}. The change is now submittable by anyone with Submit permission.`,
-            )
-          }
-          return
-        }
         case 'hashtag':
           await g.setHashtags(action.id, action.add, action.remove)
           return

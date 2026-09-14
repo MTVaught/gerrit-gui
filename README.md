@@ -61,9 +61,10 @@ application remembers the sort; the search and filter last for the session.
    "Settings", or anyone else on the server. The change then shows
    "Ready to Merge · Dave" on "My Changes".
 7. The person who was asked sees the change on the "Ready to Merge" tab,
-   in the tray count, and in a desktop notification. That person pushes the
-   "+2 and submit" button. Nobody else is asked; if the merger cannot merge,
-   the author picks someone else with "Change merger".
+   in the tray count, and in a desktop notification. That person opens the
+   change in Gerrit, votes +2 and submits it there; the application has no
+   merge button. Nobody else is asked; if the merger cannot merge, the author
+   picks someone else with "Change merger".
 
 Refer to `docs/walkthrough.md` for the same flow with a screenshot of each
 step, from the developer's, a reviewer's and the merger's window.
@@ -92,7 +93,7 @@ the same votes, hashtags and WIP flags.
 | Ready to Merge button | The application adds the hashtags `ready-to-merge` and `merger:<username>` in one request. The username is the Gerrit username of the person asked, in lower case; the email address for an account with no username. A change has one `merger:` tag; "Change merger" replaces it. |
 | Asked of you | The change is Ready to Merge and the `merger:` tag names your username or email address. |
 | Tagged without a merger | The change is Ready to Merge and has no `merger:` tag. Only an older version of the application makes this. Every user with +2 sees it. |
-| Merge | The application votes +2 on the current patch set and submits the change. |
+| Merge | Done in the Gerrit web UI: the merger votes +2 and submits there. The application only lists the change. |
 
 These rules have these effects:
 
@@ -102,12 +103,10 @@ These rules have these effects:
   the "In Progress" state. The application does not ask a reviewer. A trivial
   rebase keeps the copied votes. Thus, an approved change stays approved after
   a trivial rebase.
-- A +2 vote does not count for the "Approved" state. The application shows the
-  merge button to the person the author asked, if that person has the
-  Code-Review permission for +2. Gerrit has no query that tells if a user can
-  submit a change before the change is submittable. The application cannot
-  warn the author that the person picked has no +2; the person asked sees a
-  hint instead.
+- A +2 vote does not count for the "Approved" state. Gerrit has no query that
+  tells if a user can submit a change before the change is submittable. The
+  application cannot warn the author that the person picked has no +2; the
+  person asked finds out in Gerrit.
 - The merger is not added as a reviewer or CC. Gerrit itself sends the merger
   nothing. The application is the notification channel, so a merger who does
   not run the application learns of the request from the author.

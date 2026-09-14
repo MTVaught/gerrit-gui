@@ -292,8 +292,6 @@ export type ChangeAction =
   | { type: 'requestMerge'; id: number; merger: string; replace?: string[] }
   | { type: 'withdrawReview'; id: number }
   | { type: 'setWip'; id: number; wip: boolean }
-  /** Merger's action: vote +2 on the current patch set, then submit. */
-  | { type: 'merge'; id: number }
   | { type: 'hashtag'; id: number; add?: string[]; remove?: string[] }
   | { type: 'addReviewer'; id: number; reviewer: string }
   | { type: 'removeReviewer'; id: number; accountId: number }
