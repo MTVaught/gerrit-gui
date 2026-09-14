@@ -279,10 +279,10 @@ function Avatars(props: { reviewers: ReviewerStatus[]; view: ChangeView; self: A
   const open = v.change.status === 'NEW'
   if (props.reviewers.length === 0) {
     if (!open) return null
-    const onlyExternal = v.teamScoped && v.externalReviewers.length > 0
+    const untagged = v.otherReviewers.length > 0
     return (
-      <span className="none" title={onlyExternal ? 'Only team votes decide the state, and nobody on the team is a reviewer' : 'No reviewers yet'}>
-        {onlyExternal ? 'no team' : 'none'}
+      <span className="none" title={untagged ? 'Nobody is tagged as primary, so nobody is waited for' : 'No primary reviewers yet'}>
+        {untagged ? 'no primary' : 'none'}
       </span>
     )
   }

@@ -14,7 +14,8 @@ Gerrit matches what you see here.
 Each person enters the server, their username and an HTTP password. Then
 two lists, the same on every computer on the team:
 
-- **Team**: the people whose votes decide. Alice, Bob, Carol and Dave.
+- **Team**: Alice, Bob, Carol and Dave. The team decides which tabs a change
+  is on. Who decides a change is tagged on the change itself, below.
 - **Mergers**: who to offer when asking for a merge, by project. Here,
   `platform/*` has Dave.
 
@@ -22,8 +23,12 @@ two lists, the same on every computer on the team:
 
 ## 1. Alice pushes a change and adds reviewers
 
-Alice pushes to `platform/core` and adds Bob and Carol as reviewers, in
-Gerrit or with the "+" on the row. Nothing is asked of anyone yet: the
+Alice pushes to `platform/core` and adds Bob and Carol as primary reviewers
+with the "+" on the row. That adds each of them as a reviewer in Gerrit
+and tags the change `reviewer:bob` and `reviewer:carol`. Their votes are the
+ones that decide. Had CI added a maintainer as well, that person would sit
+on a dashed second line under Bob and Carol, with their vote shown and no
+say in the state. Nothing is asked of anyone yet: the
 change is "In Progress" on Alice's **My Changes** tab, and it is not on
 Bob's **Needs Review** tab. Alice can push as many patch sets as she likes.
 
@@ -45,8 +50,10 @@ the diff in Gerrit. Bob votes there.
 ## 3. The reviewers vote
 
 Bob votes +1. Carol votes -1 and asks for a lone comma to be handled. The
-state is decided only when the last reviewer has voted: with both votes
-in and one of them negative, the change is "Needs Changes" for Alice.
+state is decided only when the last primary reviewer has voted. With both
+votes in and one of them negative, the change is "Needs Changes" for Alice.
+Anyone could have untagged Carol with the "↓" on her chip, and the change
+would have been "Approved" on Bob's vote alone; the tags are the whole rule.
 
 ![Alice: needs changes](walkthrough/05-dev-needs-changes.png)
 
@@ -58,8 +65,9 @@ at patch set 2 until Alice says so. The reviewer chips are grey again.
 
 ![Alice: new patch set](walkthrough/06-dev-new-patch-set.png)
 
-Alice pushes **Re-request review (PS 2)**. Bob and Carol both vote +1. The
-change is "Approved", and the primary button is now **Ready to Merge**.
+Alice pushes **Re-request review (PS 2)**. The `reviewer:` tags stay, so
+the same two people are asked. Bob and Carol both vote +1. The change is
+"Approved", and the primary button is now **Ready to Merge**.
 
 ![Alice: approved](walkthrough/07-dev-approved.png)
 
@@ -105,7 +113,11 @@ After Dave submits, the change is on everyone's **Recently Merged** tab for
 
 | Button | Gerrit |
 | --- | --- |
-| Request review | Custom value `review-requested-ps` = the patch set number |
+| "+" with Primary | Adds the reviewer, then hashtag `reviewer:bob` |
+| "+" with Other | Adds the reviewer only; owner's choice |
+| "↑" or "↓" on a chip | Adds or removes the `reviewer:` hashtag |
+| "×" on a primary chip | Removes the `reviewer:` hashtag, then the reviewer where Gerrit allows it |
+| Request review | Custom value `review-requested-ps` = the patch set number. Off until a primary reviewer is tagged |
 | Review | Opens Gerrit; the vote is Gerrit's own Code-Review +1 or -1 |
 | Ready to Merge | Hashtags `ready-to-merge` and `merger:dave` |
 | Change merger | Replaces the `merger:` hashtag |

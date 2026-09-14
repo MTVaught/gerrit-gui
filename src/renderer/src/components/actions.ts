@@ -33,7 +33,8 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
 
   if (owner && !v.reviewRequested && v.state !== 'approved' && v.state !== 'ready-to-merge') {
     const again = v.requestedPatchSet !== null && v.requestedPatchSet < v.patchSet
-    const nobody = v.reviewers.length === 0 && v.externalReviewers.length === 0
+    // Nobody tagged means nobody to decide: the request is refused until someone is.
+    const nobody = v.reviewers.length === 0
     out.push({
       key: 'request',
       label: `${again ? 'Re-request' : 'Request'} review (PS ${v.patchSet})`,
@@ -41,12 +42,12 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
       primary: true,
       disabled: nobody,
       title: nobody
-        ? 'Add a reviewer first'
-        : v.reviewers.length === 0
-          ? 'Only external reviewers are on this change; it cannot be approved until a team member is added'
-          : v.staleReadyToMerge
-            ? 'Ask every reviewer to look at this patch set. Also clears the ready-to-merge tag, which was for an earlier patch set.'
-            : 'Ask every reviewer to look at this patch set',
+        ? v.otherReviewers.length > 0
+          ? 'Tag a primary reviewer first: the people on this change are not waited for until one of them is made primary'
+          : 'Add a primary reviewer first'
+        : v.staleReadyToMerge
+          ? 'Ask every primary reviewer to look at this patch set. Also clears the ready-to-merge tag, which was for an earlier patch set.'
+          : 'Ask every primary reviewer to look at this patch set',
       run: () => void act({ type: 'requestReview', id, patchSet: v.patchSet, clearTags: v.staleReadyToMerge ? readyTags : undefined }),
     })
   }

@@ -13,6 +13,9 @@ export class GerritError extends Error {
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>
 
+/** What the board needs on every change: labels, accounts, the current revision, hashtags, keyed values and messages. */
+const CHANGE_OPTIONS = ['DETAILED_LABELS', 'DETAILED_ACCOUNTS', 'CURRENT_REVISION', 'SUBMITTABLE', 'SUBMIT_REQUIREMENTS', 'CURRENT_ACTIONS', 'CUSTOM_KEYED_VALUES', 'MESSAGES']
+
 /**
  * Minimal Gerrit REST client using HTTP-password basic auth on /a/ endpoints.
  *
@@ -69,12 +72,20 @@ export class GerritClient {
     const q = new URLSearchParams()
     for (const s of queries) q.append('q', s)
     q.set('n', String(limit))
-    for (const o of ['DETAILED_LABELS', 'DETAILED_ACCOUNTS', 'CURRENT_REVISION', 'SUBMITTABLE', 'SUBMIT_REQUIREMENTS', 'CURRENT_ACTIONS', 'CUSTOM_KEYED_VALUES', 'MESSAGES']) {
-      q.append('o', o)
-    }
+    for (const o of CHANGE_OPTIONS) q.append('o', o)
     const result = await this.req<ChangeInfo[] | ChangeInfo[][]>('GET', '/changes/', undefined, q)
     // Gerrit returns a flat array for a single q= and an array of arrays for several.
     return queries.length === 1 ? [result as ChangeInfo[]] : (result as ChangeInfo[][])
+  }
+
+  /**
+   * One change with the same fields as a search result, read from NoteDb
+   * rather than the index, so a write made a moment ago is already in it.
+   */
+  change(id: number): Promise<ChangeInfo> {
+    const q = new URLSearchParams()
+    for (const o of CHANGE_OPTIONS) q.append('o', o)
+    return this.req('GET', `/changes/${id}/detail`, undefined, q)
   }
 
   setReady(id: number) {
@@ -107,6 +118,14 @@ export class GerritClient {
 
   addReviewer(id: number, reviewer: string) {
     return this.req<unknown>('POST', `/changes/${id}/reviewers`, { reviewer })
+  }
+
+  /**
+   * One account by id, username, email or "Name <email>": what the primary
+   * reviewer tag is written from. A group or an unknown name is a 404.
+   */
+  account(id: string): Promise<AccountInfo> {
+    return this.req('GET', `/accounts/${encodeURIComponent(id)}/detail`)
   }
 
   removeReviewer(id: number, accountId: number) {

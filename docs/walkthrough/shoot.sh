@@ -35,6 +35,7 @@ admin PUT "/projects/platform%2Fcore" '{"create_empty_commit":true}' >/dev/null
 admin PUT "/groups/Mergers" '{"members":["dave"]}' >/dev/null
 MERGERS=$(admin GET "/groups/Mergers" | grep -o '"id": *"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
 admin POST "/projects/platform%2Fcore/access" "{\"add\":{\"refs/heads/*\":{\"permissions\":{\"label-Code-Review\":{\"label\":\"Code-Review\",\"rules\":{\"$MERGERS\":{\"action\":\"ALLOW\",\"min\":-2,\"max\":2}}},\"submit\":{\"rules\":{\"$MERGERS\":{\"action\":\"ALLOW\"}}}}}}}" >/dev/null
+admin POST "/projects/platform%2Fcore/access" '{"add":{"refs/*":{"permissions":{"editHashtags":{"rules":{"global:Registered-Users":{"action":"ALLOW"}}}}}}}' >/dev/null
 
 # One profile per person: same server, same team and mergers list.
 profile() { # user
@@ -94,6 +95,7 @@ ID=$(as alice GET "/changes/?q=owner:self+project:platform/core+is:open" | grep 
 echo "change $ID"
 as alice POST "/changes/$ID/reviewers" '{"reviewer":"bob"}' >/dev/null
 as alice POST "/changes/$ID/reviewers" '{"reviewer":"carol"}' >/dev/null
+as alice POST "/changes/$ID/hashtags" '{"add":["reviewer:bob","reviewer:carol"]}' >/dev/null
 shot alice mine 02-dev-in-progress.png
 
 echo "== 3. alice requests review"
