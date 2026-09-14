@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName, reviewLink, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
-import { Reviewers, mergerLabel } from './ChangeRow.tsx'
+import { PrivateBadge, Reviewers, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
 import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
@@ -230,6 +230,7 @@ function LedgerRow(
                 {merger && ` · ${merger}`}
               </span>
               {open && !props.showCi && <CiBadge wip={v.wip} />}
+              {open && v.isPrivate && <PrivateBadge />}
               {v.staleReadyToMerge && <span className="badge stale">ready-to-merge tag is stale</span>}
               <span className="muted">
                 {c.project} · {c.branch}

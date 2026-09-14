@@ -49,8 +49,8 @@ admin POST "/projects/demo/access" "{\"add\":{\"refs/heads/*\":{\"permissions\":
 admin POST "/projects/demo/access" '{"add":{"refs/*":{"permissions":{"editHashtags":{"rules":{"global:Registered-Users":{"action":"ALLOW"}}}}}}}' >/dev/null
 
 # Everything is pushed WIP; WIP is cleared only to run CI.
-mk() { # owner subject -> change number
-  as "$1" POST "/changes/" "{\"project\":\"demo\",\"branch\":\"master\",\"subject\":\"$2\",\"work_in_progress\":true}" | grep -o '"_number": *[0-9]*' | grep -o '[0-9]*'
+mk() { # owner subject [private] -> change number
+  as "$1" POST "/changes/" "{\"project\":\"demo\",\"branch\":\"master\",\"subject\":\"$2\",\"work_in_progress\":true,\"is_private\":${3:-false}}" | grep -o '"_number": *[0-9]*' | grep -o '[0-9]*'
 }
 newps() { # owner change -> publish a new patch set via a change edit
   curl -s -u "$1:${1}pw" -X PUT -H 'Content-Type: text/plain' --data "hello $RANDOM" "$G/a/changes/$2/edit/f.txt" >/dev/null
@@ -76,6 +76,10 @@ C9=$(mk alice "C9 bot is a reviewer, bob (primary) pending"); primary alice $C9 
 C10=$(mk alice "C10 reviewers added but review not requested yet"); primary alice $C10 bob; primary alice $C10 carol; echo "C10=$C10"
 B1=$(mk bob "B1 bob's change, alice+carol requested"); primary bob $B1 alice; primary bob $B1 carol; request bob $B1 1; echo "B1=$B1"
 B2=$(mk bob "B2 bob's change, alice already +1"); primary bob $B2 alice; request bob $B2 1; vote alice $B2 1 "fine"; echo "B2=$B2"
+# Private changes: Gerrit shows them to the owner, the reviewers and the CCs only. The board lists them last on My Changes.
+V1=$(mk alice "V1 private, bob asked to review" true); primary alice $V1 bob; request alice $V1 1; echo "V1=$V1"
+V2=$(mk alice "V2 private, no reviewers yet" true); echo "V2=$V2"
+V3=$(mk alice "V3 private, approved by bob" true); primary alice $V3 bob; request alice $V3 1; vote bob $V3 1 "ok"; echo "V3=$V3"
 # erin is a plain reviewer on X1-X3: her votes are shown but never decide. With team alice,bob,carol,dave in Settings, E1 is on the External Reviews tab.
 X1=$(mk alice "X1 bob (primary) +1, erin (not primary) -1"); primary alice $X1 bob; reviewers alice $X1 erin; request alice $X1 1; vote bob $X1 1 "ok"; vote erin $X1 -1 "our side needs a flag"; echo "X1=$X1"
 X2=$(mk alice "X2 bob and carol (primary) +1, erin (not primary) has not voted"); primary alice $X2 bob; primary alice $X2 carol; reviewers alice $X2 erin; request alice $X2 1; vote bob $X2 1 "ok"; vote carol $X2 1 "ok"; echo "X2=$X2"

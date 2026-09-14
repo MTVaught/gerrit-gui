@@ -22,6 +22,7 @@ function change(opts: {
   primary?: AccountInfo[]
   votes?: Record<number, number>
   wip?: boolean
+  private?: boolean
   hashtags?: string[]
   status?: ChangeInfo['status']
   patchSet?: number
@@ -52,6 +53,7 @@ function change(opts: {
     status: opts.status ?? 'NEW',
     owner: opts.owner ?? alice,
     work_in_progress: opts.wip,
+    is_private: opts.private,
     hashtags: [...primary, ...(opts.hashtags ?? [])],
     custom_keyed_values: opts.requested ? { [REVIEW_REQUESTED_KEY]: String(opts.requested) } : {},
     created: opts.created ?? '',
@@ -374,6 +376,39 @@ test('groupsFor: the tabs are sectioned by state and empty sections are left out
   )
   assert.deepEqual(groupsFor('needs-my-review', asBob).map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Waiting on you', [1]]])
   assert.deepEqual(groupsFor('mine', asBob), [])
+})
+
+test('private: the flag is read from Gerrit; absent means public', () => {
+  assert.equal(classify(change({ private: true }), alice._account_id).isPrivate, true)
+  assert.equal(classify(change({ private: false }), alice._account_id).isPrivate, false)
+  assert.equal(classify(change({}), alice._account_id).isPrivate, false)
+})
+
+test('private: My Changes lists private changes in one section at the bottom, whatever their state; other tabs do not split', () => {
+  const views = classifyAll(
+    [
+      change({ number: 1, reviewers: [bob], requested: 3 }),
+      change({ number: 2, reviewers: [bob], votes: { 2: -1 }, requested: 3, private: true }),
+      change({ number: 3, reviewers: [bob], private: true }),
+      change({ number: 4, reviewers: [bob] }),
+    ],
+    alice._account_id,
+  )
+  assert.deepEqual(
+    groupsFor('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]),
+    [
+      ['Out for review', [1]],
+      ['In Progress, review not requested', [4]],
+      ['Private', [2, 3]],
+    ],
+  )
+  // Only private changes: the Private section alone, no empty state sections.
+  const onlyPrivate = classifyAll([change({ number: 5, private: true })], alice._account_id)
+  assert.deepEqual(groupsFor('mine', onlyPrivate).map((g) => g.title), ['Private'])
+  // A reviewer sees a private change in its state section, like any other.
+  const asBob = classifyAll([change({ number: 2, reviewers: [bob], requested: 3, private: true })], bob._account_id)
+  assert.deepEqual(groupsFor('reviewing', asBob).map((g) => g.title), ['Waiting on you'])
+  assert.deepEqual(tabCounts(views).mine, 4)
 })
 
 test('dashboard queries search for my reviewer tags and for the team\'s changes', () => {
