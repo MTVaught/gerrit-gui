@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountMatches, actionCounts, classify, classifyAll, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, lastReviewedPatchSet, normalizeTeam, ownersOf, reviewLink, shortChangeId, sortByBranch, sortViews, tabCounts, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, actionCounts, addMerger, classify, classifyAll, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, projectMatches, requestedMerger, reviewLink, shortChangeId, sortByBranch, sortViews, tabCounts, urgency, type ViewFilter } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -517,4 +517,108 @@ test('urgency: fix first, then look, then iterate, then mark, then wait on the m
     [...states].sort((a, b) => urgency(a) - urgency(b)),
     ['needs-changes', 'needs-review', 'in-progress', 'approved', 'ready-to-merge', 'merged'],
   )
+})
+
+// ---- Merge requests: the author names one person with a merger: hashtag.
+
+const dave: AccountInfo = { _account_id: 4, name: 'Dave', username: 'dave', email: 'dave@example.com' }
+const READY = ['ready-to-merge', 'merger:dave']
+const approved = (extra = {}) => change({ reviewers: [bob, carol], votes: { 2: 1, 3: 1 }, requested: 3, hashtags: READY, ...extra })
+
+test('merger tag: parsed to the requested merger, lower-case; the tag for a key is built the same way', () => {
+  assert.equal(requestedMerger(change({ hashtags: ['ready-to-merge', 'merger:Dave'] })), 'dave')
+  assert.equal(requestedMerger(change({ hashtags: ['ready-to-merge'] })), null)
+  assert.equal(requestedMerger(change({ hashtags: ['merger:'] })), null, 'an empty name is no merger')
+  assert.deepEqual(mergerTags(change({ hashtags: ['x', 'merger:dave', 'merger:bob'] })), ['merger:dave', 'merger:bob'])
+  assert.equal(mergerTag(' Dave '), 'merger:dave')
+  assert.equal(mergerTag('Dave@Example.com'), 'merger:dave@example.com')
+  assert.deepEqual(accountKeys(dave), ['dave', 'dave@example.com'])
+  assert.deepEqual(accountKeys({ _account_id: 7 }), [])
+})
+
+test('merger tag: the merge waits on the named person, whether matched by username or by email', () => {
+  const byName = classify(approved({ maxVote: 2 }), dave._account_id, [], accountKeys(dave))
+  assert.equal(byName.state, 'ready-to-merge')
+  assert.equal(byName.requestedMerger, 'dave')
+  assert.equal(byName.mergeRequestedFromMe, true)
+  assert.equal(mergeWaitsOnMe(byName), true)
+
+  const byEmail = classify(approved({ hashtags: ['ready-to-merge', 'merger:dave@example.com'], maxVote: 2 }), dave._account_id, [], accountKeys(dave))
+  assert.equal(byEmail.mergeRequestedFromMe, true)
+
+  const someoneElse = classify(approved({ maxVote: 2 }), carol._account_id, [], accountKeys(carol))
+  assert.equal(someoneElse.mergeRequestedFromMe, false)
+  assert.equal(mergeWaitsOnMe(someoneElse), false, 'a +2 user who was not asked is not waited on')
+})
+
+test('merger tag: a tag naming nobody (older version) waits on anyone who can +2', () => {
+  const unnamed = approved({ hashtags: ['ready-to-merge'], maxVote: 2 })
+  assert.equal(mergeWaitsOnMe(classify(unnamed, dave._account_id, [], accountKeys(dave))), true)
+  assert.equal(mergeWaitsOnMe(classify(approved({ hashtags: ['ready-to-merge'] }), bob._account_id, [], accountKeys(bob))), false, 'no +2, no merge')
+})
+
+test('merger tag: asked but without +2 rights is still asked, so the hint can be shown', () => {
+  const v = classify(approved({ hashtags: ['ready-to-merge', 'merger:bob'] }), bob._account_id, [], accountKeys(bob))
+  assert.equal(v.mergeRequestedFromMe, true)
+  assert.equal(v.canMerge, false)
+  assert.equal(mergeWaitsOnMe(v), true)
+})
+
+test('Ready to Merge tab: only what is asked of me, plus unnamed tags for +2 users, plus my own stale tags', () => {
+  const mine = approved({ number: 1 })
+  const forMe = approved({ number: 2, owner: bob, hashtags: ['ready-to-merge', 'merger:alice'] })
+  const forDave = approved({ number: 3, owner: bob })
+  const unnamed = approved({ number: 4, owner: bob, hashtags: ['ready-to-merge'], maxVote: 2 })
+  const stale = change({ number: 5, reviewers: [bob], requested: 2, hashtags: READY, patchSet: 3 })
+  const staleForMe = change({ number: 6, owner: bob, reviewers: [carol], requested: 2, hashtags: ['ready-to-merge', 'merger:alice'], patchSet: 3 })
+  const staleForDave = change({ number: 7, owner: bob, reviewers: [carol], requested: 2, hashtags: READY, patchSet: 3 })
+  const views = classifyAll([mine, forMe, forDave, unnamed, stale, staleForMe, staleForDave], alice._account_id, [], accountKeys(alice))
+  const groups = groupsFor('ready-to-merge', views)
+  assert.deepEqual(
+    groups.map((g) => [g.title, g.items.map((v) => v.change._number)]),
+    [
+      ['Asked of you', [2]],
+      ['Tagged without a merger', [4]],
+      ['Tagged but no longer approved', [5, 6]],
+    ],
+  )
+  assert.equal(tabCounts(views)['ready-to-merge'], 4)
+  assert.equal(actionCounts(views).merge, 2, 'asked of me and the unnamed one I can +2')
+  // My own ready change is on My Changes, not on the merger's queue.
+  assert.ok(groupsFor('mine', views).some((g) => g.title === 'Ready to Merge' && g.items.some((v) => v.change._number === 1)))
+})
+
+test('mergers settings: patterns match exactly, by prefix, or everything', () => {
+  assert.equal(projectMatches('demo', 'demo'), true)
+  assert.equal(projectMatches('demo', 'demo2'), false)
+  assert.equal(projectMatches('platform/*', 'platform/core'), true)
+  assert.equal(projectMatches('platform/*', 'tools/build'), false)
+  assert.equal(projectMatches('*', 'anything'), true)
+})
+
+test('mergers settings: the list for a project is the union, most specific rule first, each person once', () => {
+  const rules = normalizeMergers([
+    { project: '*', people: ['Alice', 'dave'] },
+    { project: 'platform/*', people: ['bob'] },
+    { project: 'platform/core', people: ['Carol@Example.com', 'bob'] },
+    { project: '  ', people: ['nobody'] },
+    { project: 'tools', people: [] },
+  ])
+  assert.deepEqual(rules.map((r) => r.project), ['*', 'platform/*', 'platform/core'])
+  assert.deepEqual(mergersFor('platform/core', rules), ['carol@example.com', 'bob', 'alice', 'dave'])
+  assert.deepEqual(mergersFor('platform/ui', rules), ['bob', 'alice', 'dave'])
+  assert.deepEqual(mergersFor('tools/build', rules), ['alice', 'dave'])
+  assert.deepEqual(mergersFor('x', []), [])
+})
+
+test('mergers settings: a one-off pick can be added to the row for that project, or a new exact row', () => {
+  const rules = [{ project: '*', people: ['alice'] }]
+  assert.deepEqual(addMerger(rules, 'demo', 'Dave'), [
+    { project: '*', people: ['alice'] },
+    { project: 'demo', people: ['dave'] },
+  ])
+  assert.deepEqual(addMerger(addMerger(rules, 'demo', 'dave'), 'demo', 'dave'), [
+    { project: '*', people: ['alice'] },
+    { project: 'demo', people: ['dave'] },
+  ])
 })

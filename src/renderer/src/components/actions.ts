@@ -4,6 +4,7 @@
 // (ReviewButton), because it is a split button that opens Gerrit.
 import type { ChangeAction, ChangeView } from '../../../shared/types.ts'
 import { READY_TO_MERGE_TAG } from '../../../shared/constants.ts'
+import { mergeWaitsOnMe, mergerTags } from '../../../shared/model.ts'
 
 export interface ActionSpec {
   key: string
@@ -14,6 +15,8 @@ export interface ActionSpec {
   subtle?: boolean
   disabled?: boolean
   title?: string
+  /** Rendered as the merger picker (a button with a menu) instead of a plain button; `run` is then unused. */
+  picker?: 'merger'
   run: () => void
 }
 
@@ -22,7 +25,9 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
   const id = c._number
   const open = c.status === 'NEW'
   const owner = open && v.isMine
-  const merger = v.canMerge && (v.state === 'ready-to-merge' || v.staleReadyToMerge)
+  // The person the author asked, or anyone with +2 when nobody was named (a tag from an older version).
+  const merger = (v.state === 'ready-to-merge' || v.staleReadyToMerge) && (v.mergeRequestedFromMe || (v.requestedMerger === null && v.canMerge))
+  const readyTags = [READY_TO_MERGE_TAG, ...mergerTags(c)]
   const out: ActionSpec[] = []
 
   if (owner && !v.reviewRequested && v.state !== 'approved' && v.state !== 'ready-to-merge') {
@@ -41,7 +46,7 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
           : v.staleReadyToMerge
             ? 'Ask every reviewer to look at this patch set. Also clears the ready-to-merge tag, which was for an earlier patch set.'
             : 'Ask every reviewer to look at this patch set',
-      run: () => void act({ type: 'requestReview', id, patchSet: v.patchSet, clearReadyTag: v.staleReadyToMerge }),
+      run: () => void act({ type: 'requestReview', id, patchSet: v.patchSet, clearTags: v.staleReadyToMerge ? readyTags : undefined }),
     })
   }
   if (owner && v.reviewRequested && v.state === 'needs-review') {
@@ -53,11 +58,22 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
       label: 'Ready to Merge',
       short: 'Ready',
       primary: true,
-      title: 'Tag the change for the merger',
-      run: () => void act({ type: 'hashtag', id, add: [READY_TO_MERGE_TAG] }),
+      picker: 'merger',
+      title: 'Pick the person to ask for the merge',
+      run: () => undefined,
     })
   }
-  if (v.canMerge && v.state === 'ready-to-merge') {
+  if (owner && v.state === 'ready-to-merge') {
+    out.push({
+      key: 'change-merger',
+      label: 'Change merger',
+      short: 'Merger',
+      picker: 'merger',
+      title: 'Ask someone else to merge instead',
+      run: () => undefined,
+    })
+  }
+  if (v.canMerge && mergeWaitsOnMe(v)) {
     out.push({
       key: 'merge',
       label: '+2 and submit',
@@ -68,11 +84,12 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
       run: () => void act({ type: 'merge', id }),
     })
   }
-  // The owner does not get a separate "clear" for a stale tag when the request
-  // button is there: re-requesting review clears it, so one button does both.
-  const requesting = out.some((a) => a.key === 'request')
-  if (open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && ((v.isMine && !requesting) || merger)) {
-    out.push({ key: 'clear', label: 'Clear ready-to-merge', short: 'Clear tag', run: () => void act({ type: 'hashtag', id, remove: [READY_TO_MERGE_TAG] }) })
+  // The owner does not get a separate "clear" when another button already
+  // covers it: re-requesting review clears a stale tag, and the merger picker
+  // offers the clear in its menu. So the row keeps one button.
+  const covered = out.some((a) => a.key === 'request' || a.key === 'change-merger')
+  if (open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && ((v.isMine && !covered) || merger)) {
+    out.push({ key: 'clear', label: 'Clear ready-to-merge', short: 'Clear tag', run: () => void act({ type: 'hashtag', id, remove: readyTags }) })
   }
   if (owner || (merger && v.wip)) {
     out.push({

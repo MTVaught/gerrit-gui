@@ -16,6 +16,7 @@ const api: Api = {
   act: (action) => ipcRenderer.invoke('gerrit:act', action),
   suggestReviewers: (id, q) => ipcRenderer.invoke('gerrit:suggestReviewers', id, q),
   suggestAccounts: (q) => ipcRenderer.invoke('gerrit:suggestAccounts', q),
+  lookupAccounts: (keys) => ipcRenderer.invoke('gerrit:lookupAccounts', keys),
   openChange: (link) => ipcRenderer.invoke('gerrit:openChange', link),
   changeUrl: (link) => ipcRenderer.invoke('gerrit:changeUrl', link),
   getUi: () => ipcRenderer.invoke('ui:get'),

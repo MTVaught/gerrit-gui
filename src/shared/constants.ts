@@ -1,6 +1,12 @@
 /** Hashtag the author sets once a change is approved and they want it merged. */
 export const READY_TO_MERGE_TAG = 'ready-to-merge'
 /**
+ * Hashtag prefix naming the person the author asked to merge: `merger:alice`,
+ * with the Gerrit username (or the email address for an account without one)
+ * in lower case. Set together with `ready-to-merge`; one per change.
+ */
+export const MERGER_TAG_PREFIX = 'merger:'
+/**
  * Custom keyed value holding the patch set number the author asked to have
  * reviewed. Only the change owner (or an admin) can write it. When it does not
  * match the current patch set, no review is outstanding.

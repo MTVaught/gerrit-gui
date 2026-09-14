@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeAction, ChangeView, DashboardData, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, actionCounts, classifyAll, tabCounts, totalActions, type SortId, type ViewFilter } from '../../shared/model.ts'
+import type { ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, classifyAll, tabCounts, totalActions, type SortId, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
@@ -10,6 +10,8 @@ import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
 import { ExpandIcon, GearIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
 import { api, isBrowserMode } from './api.ts'
 import { UpdatePill, useUpdateState } from './components/Update.tsx'
+import { rememberAccounts } from './names.ts'
+import { SettingsContext, type SettingsHandle } from './settings-context.ts'
 
 export function App() {
   const [settings, setSettings] = useState<SettingsStatus | null>(null)
@@ -25,6 +27,7 @@ export function App() {
   const [, setTick] = useState(0)
   const update = useUpdateState()
   const seenNeedsReview = useRef<Set<number> | null>(null)
+  const seenMergeRequests = useRef<Set<number> | null>(null)
   const tabsRef = useRef<HTMLElement>(null)
 
   const configured = Boolean(settings?.serverUrl && settings?.username && settings?.hasPassword)
@@ -33,9 +36,11 @@ export function App() {
     setBusy(true)
     try {
       const d = await api.fetchDashboard()
+      rememberAccounts([d.self, ...d.open.flatMap((c) => [c.owner, ...(c.reviewers?.REVIEWER ?? [])])])
       setData(d)
       setError(null)
       notifyNewReviews(d, seenNeedsReview)
+      notifyMergeRequests(d, seenMergeRequests)
     } catch (e) {
       setError(String((e as Error).message ?? e))
     } finally {
@@ -83,8 +88,20 @@ export function App() {
 
   const team = settings?.team ?? NO_TEAM
   const views = useMemo<ChangeView[]>(
-    () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id, team) : []),
+    () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id, team, accountKeys(data.self)) : []),
     [data, team],
+  )
+  // The parts of the board that read or write settings directly (the merger picker).
+  const settingsHandle = useMemo<SettingsHandle>(
+    () => ({
+      settings,
+      save: async (patch: Partial<SettingsInput>) => {
+        const current = await api.getSettings()
+        await api.saveSettings({ ...current, ...patch })
+        setSettings(await api.getSettings())
+      },
+    }),
+    [settings],
   )
   const tabs = useMemo(() => visibleTabs(team.length > 0), [team])
   // What the current tab lists before the filter: the author picker suggests these owners first.
@@ -139,6 +156,7 @@ export function App() {
   }, [actions, badgeStyle, showZeroCounts, showAppBadge, showTrayCounts, data])
 
   return (
+    <SettingsContext.Provider value={settingsHandle}>
     <div className={'app' + (compact ? ' compact' : '')}>
       <header className="topbar">
         <nav className="tabs" role="tablist" ref={tabsRef}>
@@ -221,6 +239,7 @@ export function App() {
               setShowSettings(false)
               setData(null)
               seenNeedsReview.current = null
+              seenMergeRequests.current = null
             }}
           />
         )
@@ -239,6 +258,7 @@ export function App() {
         />
       )}
     </div>
+    </SettingsContext.Provider>
   )
 }
 
@@ -264,6 +284,22 @@ function initialTab(): TabId {
 /** GERRIT_GUI_TAB=settings opens the settings panel instead of a board tab (screenshot hook). */
 function initialSettingsOpen(): boolean {
   return /tab=settings\b/.test(window.location.hash)
+}
+
+/** A desktop notification for each change that the author just asked this user to merge. */
+function notifyMergeRequests(d: DashboardData, seen: React.RefObject<Set<number> | null>) {
+  const now = new Set(
+    classifyAll(d.open, d.self._account_id, [], accountKeys(d.self))
+      .filter((v) => v.state === 'ready-to-merge' && v.mergeRequestedFromMe)
+      .map((v) => v.change._number),
+  )
+  if (seen.current && typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
+    const fresh = d.open.filter((c) => now.has(c._number) && !seen.current!.has(c._number))
+    for (const c of fresh) {
+      new Notification(`Merge requested: ${c.subject}`, { body: `${c.project} · ${c.owner.name ?? ''}` })
+    }
+  }
+  seen.current = now
 }
 
 function notifyNewReviews(d: DashboardData, seen: React.RefObject<Set<number> | null>) {

@@ -5,11 +5,12 @@ import type {
   ChangeInfo,
   ChangeLink,
   ChangeView,
+  MergerRule,
   ReviewState,
   ReviewerStatus,
   TabId,
 } from './types.ts'
-import { CODE_REVIEW, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from './constants.ts'
+import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from './constants.ts'
 
 export function isBot(a: AccountInfo): boolean {
   return a.tags?.includes('SERVICE_USER') ?? false
@@ -56,8 +57,71 @@ export function isTeamMember(a: AccountInfo, team: string[], selfId: number): bo
   return team.some((t) => keys.includes(t))
 }
 
+/** Does a project pattern from Settings (exact name, prefix ending in "*", or "*") match a project? */
+export function projectMatches(pattern: string, project: string): boolean {
+  const p = pattern.trim()
+  if (p === '*') return true
+  if (p.endsWith('*')) return project.startsWith(p.slice(0, -1))
+  return p === project
+}
+
+/** Trim the patterns, normalize the people, drop empty rows. */
+export function normalizeMergers(rules: MergerRule[]): MergerRule[] {
+  return rules
+    .map((r) => ({ project: r.project.trim(), people: normalizeTeam(r.people) }))
+    .filter((r) => r.project.length > 0 && r.people.length > 0)
+}
+
+/**
+ * The people to offer as mergers for a project: every matching rule, the
+ * most specific first (exact name, then the longest prefix, then "*"), each
+ * person once.
+ */
+export function mergersFor(project: string, rules: MergerRule[]): string[] {
+  const specificity = (p: string) => (p === '*' ? 0 : p.endsWith('*') ? p.length : Number.MAX_SAFE_INTEGER)
+  const out: string[] = []
+  for (const r of rules.filter((r) => projectMatches(r.project, project)).sort((a, b) => specificity(b.project) - specificity(a.project))) {
+    for (const p of r.people) if (!out.includes(p)) out.push(p)
+  }
+  return out
+}
+
+/** The rules with `person` added to the row for `project`, or a new exact row for it. */
+export function addMerger(rules: MergerRule[], project: string, person: string): MergerRule[] {
+  const key = accountKey(person)
+  const i = rules.findIndex((r) => r.project === project)
+  if (i < 0) return normalizeMergers([...rules, { project, people: [key] }])
+  return normalizeMergers(rules.map((r, j) => (j === i ? { ...r, people: [...r.people, key] } : r)))
+}
+
 export function hasTag(change: ChangeInfo, tag: string): boolean {
   return change.hashtags?.includes(tag) ?? false
+}
+
+/** The `merger:` hashtags on a change, as written; usually none or one. */
+export function mergerTags(change: ChangeInfo): string[] {
+  return (change.hashtags ?? []).filter((t) => t.startsWith(MERGER_TAG_PREFIX) && t.length > MERGER_TAG_PREFIX.length)
+}
+
+/** The tag for one person: `merger:alice`. */
+export function mergerTag(merger: string): string {
+  return MERGER_TAG_PREFIX + accountKey(merger)
+}
+
+/** Who the author asked to merge: the first `merger:` tag, or null. */
+export function requestedMerger(change: ChangeInfo): string | null {
+  const t = mergerTags(change)[0]
+  return t ? accountKey(t.slice(MERGER_TAG_PREFIX.length)) : null
+}
+
+/** A username or email address as stored in the team list and in the merger tag. */
+export function accountKey(s: string): string {
+  return s.trim().toLowerCase()
+}
+
+/** The keys that name this account: its username and its email, lower-case. */
+export function accountKeys(a: AccountInfo): string[] {
+  return [a.username, a.email].filter((k): k is string => Boolean(k)).map(accountKey)
 }
 
 export function requestedPatchSet(change: ChangeInfo): number | null {
@@ -119,7 +183,7 @@ export function reviewLink(view: ChangeView): ChangeLink {
  * `team` (usernames or emails from Settings) limits "every reviewer" to the
  * team; an empty list means all human reviewers count.
  */
-export function classify(change: ChangeInfo, selfId: number, team: string[] = []): ChangeView {
+export function classify(change: ChangeInfo, selfId: number, team: string[] = [], selfKeys: string[] = []): ChangeView {
   const votes = currentVotes(change)
   const everyone: ReviewerStatus[] = humanReviewers(change).map((account) => ({
     account,
@@ -142,6 +206,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
   const requested = requestedPatchSet(change)
   const reviewRequested = requested !== null && requested === patchSet
   const open = change.status === 'NEW'
+  const merger = requestedMerger(change)
 
   // The outcome is decided only when the last reviewer has voted; until then a
   // change stays under review no matter which way the early votes went.
@@ -173,12 +238,23 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     patchSetCreated: rev?.created ?? change.created,
     lastReviewedPatchSet: lastReviewedPatchSet(change, selfId),
     staleReadyToMerge: open && tagged && state !== 'ready-to-merge',
+    requestedMerger: merger,
+    mergeRequestedFromMe: merger !== null && selfKeys.includes(merger),
     canMerge: open && maxPermittedVote(change) >= 2,
   }
 }
 
-export function classifyAll(changes: ChangeInfo[], selfId: number, team: string[] = []): ChangeView[] {
-  return changes.map((c) => classify(c, selfId, team))
+/** `selfKeys` is `accountKeys(self)`: the merger tag is matched against it. */
+export function classifyAll(changes: ChangeInfo[], selfId: number, team: string[] = [], selfKeys: string[] = []): ChangeView[] {
+  return changes.map((c) => classify(c, selfId, team, selfKeys))
+}
+
+/**
+ * The merge waits on this user: the author named them, or the tag names
+ * nobody (an older version made it) and they can vote +2.
+ */
+export function mergeWaitsOnMe(v: ChangeView): boolean {
+  return v.state === 'ready-to-merge' && (v.mergeRequestedFromMe || (v.requestedMerger === null && v.canMerge))
 }
 
 /**
@@ -244,12 +320,18 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
         { 'needs-review': 'Out for review', 'in-progress': 'In Progress, review not requested' },
       )
     case 'ready-to-merge':
+      // The merger's queue: what the author asked of this user, and nothing asked of somebody else.
       return [
-        { title: 'Ready to Merge', items: open.filter((v) => v.state === 'ready-to-merge') },
+        { title: 'Asked of you', items: open.filter((v) => v.state === 'ready-to-merge' && v.mergeRequestedFromMe) },
         {
-          title: 'Tagged ready-to-merge but no longer approved',
+          title: 'Tagged without a merger',
+          hint: 'Tagged by an older version of the application, which named nobody. Anyone who can vote +2 may merge these.',
+          items: open.filter((v) => v.state === 'ready-to-merge' && v.requestedMerger === null && v.canMerge),
+        },
+        {
+          title: 'Tagged but no longer approved',
           hint: 'A new patch set reset the votes. The owner should request review again or clear the tag.',
-          items: open.filter((v) => v.staleReadyToMerge),
+          items: open.filter((v) => v.staleReadyToMerge && (v.isMine || v.mergeRequestedFromMe)),
         },
       ].filter((g) => g.items.length > 0)
     case 'merged':
@@ -279,7 +361,7 @@ export function tabCounts(views: ChangeView[]): Record<TabId, number> {
     if (v.needsMyReview) c['needs-my-review']++
     if (v.iAmReviewer && !v.isMine) c.reviewing++
     if (v.isMine) c.mine++
-    if (v.state === 'ready-to-merge' || v.staleReadyToMerge) c['ready-to-merge']++
+    if (mergeWaitsOnMe(v) || (v.staleReadyToMerge && (v.isMine || v.mergeRequestedFromMe))) c['ready-to-merge']++
   }
   return c
 }
@@ -310,7 +392,7 @@ export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
  *  review  someone on the team asked me to review the current patch set
  *  fix     my change got a negative outcome; push corrections
  *  ready   my change is approved; mark it ready to merge
- *  merge   tagged ready-to-merge and I may +2
+ *  merge   the author asked me to merge (or nobody was named and I may +2)
  */
 export function actionCounts(views: ChangeView[]): ActionCounts {
   const c: ActionCounts = { review: 0, fix: 0, ready: 0, merge: 0 }
@@ -320,7 +402,7 @@ export function actionCounts(views: ChangeView[]): ActionCounts {
     if (v.needsMyReview) c.review++
     if (v.isMine && v.state === 'needs-changes') c.fix++
     if (v.isMine && v.state === 'approved') c.ready++
-    if (v.canMerge && v.state === 'ready-to-merge') c.merge++
+    if (mergeWaitsOnMe(v)) c.merge++
   }
   return c
 }

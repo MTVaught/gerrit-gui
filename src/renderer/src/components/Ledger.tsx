@@ -2,7 +2,9 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName, reviewLink, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
-import { Reviewers } from './ChangeRow.tsx'
+import { Reviewers, mergerLabel } from './ChangeRow.tsx'
+import { MergerPicker } from './MergerPicker.tsx'
+import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
 import { ForkIcon } from './Icons.tsx'
 import { ReviewButton } from './ReviewButton.tsx'
@@ -139,6 +141,7 @@ function LedgerRow(
   const rest = actions.filter((a) => a !== primary)
   const reviewer = open && v.iAmReviewer && !v.isMine
   const toggle = () => setExpanded((e) => !e)
+  const merger = mergerLabel(v, useNames(v.requestedMerger ? [v.requestedMerger] : []))
 
   // The line is clipped at the right, so the age, which carries the sort order, comes early and the diff last.
   const age = ageCell(v, props.sort, true)
@@ -189,7 +192,9 @@ function LedgerRow(
           <Avatars reviewers={v.reviewers} view={v} self={self} />
         </td>
         <td className="a">
-          {primary ? (
+          {primary?.picker ? (
+            <MergerPicker view={v} spec={primary} onAct={props.onAct} small />
+          ) : primary ? (
             <button className={actionClass(primary, 'sm')} disabled={primary.disabled} title={primary.title ?? primary.label} onClick={primary.run}>
               {primary.short}
             </button>
@@ -206,7 +211,10 @@ function LedgerRow(
         <tr className={`ldetail${props.member ? ` mem${props.member.last ? ' end' : ''}` : ''}`}>
           <td colSpan={props.columns}>
             <div className="ldet-badges">
-              <span className={`badge ${v.state}`}>{STATE_LABEL[v.state]}</span>
+              <span className={`badge ${v.state}`}>
+                {STATE_LABEL[v.state]}
+                {merger && ` · ${merger}`}
+              </span>
               {open && !props.showCi && <CiBadge wip={v.wip} />}
               {v.staleReadyToMerge && <span className="badge stale">ready-to-merge tag is stale</span>}
               <span className="muted">
@@ -217,11 +225,15 @@ function LedgerRow(
             </div>
             <Reviewers view={v} self={self} onAct={props.onAct} />
             <div className="ldet-actions">
-              {rest.map((a) => (
-                <button key={a.key} className={actionClass(a, 'sm')} disabled={a.disabled} title={a.title} onClick={a.run}>
-                  {a.label}
-                </button>
-              ))}
+              {rest.map((a) =>
+                a.picker ? (
+                  <MergerPicker key={a.key} view={v} spec={a} onAct={props.onAct} small />
+                ) : (
+                  <button key={a.key} className={actionClass(a, 'sm')} disabled={a.disabled} title={a.title} onClick={a.run}>
+                    {a.label}
+                  </button>
+                ),
+              )}
               {reviewer && <ReviewButton view={v} />}
               <button className="btn sm" onClick={() => void api.openChange({ id, project: c.project })}>
                 Open in Gerrit ↗

@@ -23,6 +23,8 @@ export interface Api {
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
   /** Gerrit accounts matching a name, username or email, for the team list in Settings. */
   suggestAccounts(q: string): Promise<AccountInfo[]>
+  /** The accounts behind usernames or email addresses (merger tags, Settings entries). Unknown keys are left out. */
+  lookupAccounts(keys: string[]): Promise<AccountInfo[]>
   /** Open the change, a patch set, or a patch-set diff in the browser. */
   openChange(link: ChangeLink): Promise<void>
   /** The same URL as a string, for copying. */

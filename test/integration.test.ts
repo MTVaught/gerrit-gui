@@ -6,7 +6,7 @@ import { GerritClient } from '../src/main/gerrit.ts'
 import { createService } from '../src/main/service.ts'
 import { fetchDashboard } from '../src/main/dashboard.ts'
 import type { ChangeInfo } from '../src/shared/types.ts'
-import { classify, reviewLink } from '../src/shared/model.ts'
+import { accountKeys, classify, mergerTags, reviewLink } from '../src/shared/model.ts'
 import { READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../src/shared/constants.ts'
 
 const URL = process.env['GERRIT_TEST_URL'] ?? 'http://localhost:8080'
@@ -38,7 +38,18 @@ async function view(u: string, id: number, team: string[] = []) {
   const g = user(u)
   const me = await g.self()
   const [[c]] = await g.queryChanges([`change:${id}`])
-  return classify(c, me._account_id, team)
+  return classify(c, me._account_id, team, accountKeys(me))
+}
+
+function serviceAs(u: string) {
+  return createService(
+    {
+      getStatus: () => Promise.reject(new Error('unused')),
+      getCredentials: async () => ({ serverUrl: URL, username: u, password: `${u}pw` }),
+      save: () => Promise.reject(new Error('unused')),
+    },
+    (url, init) => fetch(url, init),
+  )
 }
 
 test('full workflow through the client', { skip: !reachable && 'no local Gerrit at ' + URL }, async () => {
@@ -118,13 +129,33 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   assert.equal(v.wip, true, 'approved while still WIP, CI has not run')
   assert.notEqual(v.change.submittable, true, 'Gerrit itself does not consider +1s submittable')
 
-  await alice.setHashtags(id, [READY_TO_MERGE_TAG])
+  // The author asks dave in particular. Both tags go in one request.
+  await serviceAs('alice').act({ type: 'requestMerge', id, merger: 'Dave', replace: [] })
   await alice.setReady(id) // now let CI run
   v = await view('dave', id)
   assert.equal(v.state, 'ready-to-merge')
   assert.equal(v.wip, false)
+  assert.equal(v.requestedMerger, 'dave')
+  assert.equal(v.mergeRequestedFromMe, true)
   assert.equal(v.canMerge, true, 'dave is in the Mergers group (+2 permission)')
+  assert.deepEqual(v.change.hashtags?.slice().sort(), ['merger:dave', READY_TO_MERGE_TAG])
   assert.equal((await view('bob', id)).canMerge, false, 'reviewers cannot +2')
+  assert.equal((await view('bob', id)).mergeRequestedFromMe, false)
+
+  // The author changes their mind: the old merger tag leaves with the new one arriving.
+  await serviceAs('alice').act({ type: 'requestMerge', id, merger: 'bob', replace: mergerTags(v.change) })
+  v = await view('bob', id)
+  assert.equal(v.requestedMerger, 'bob')
+  assert.equal(v.mergeRequestedFromMe, true)
+  assert.deepEqual(mergerTags(v.change), ['merger:bob'])
+  await serviceAs('alice').act({ type: 'requestMerge', id, merger: 'dave', replace: mergerTags(v.change) })
+  v = await view('dave', id)
+  assert.equal(v.mergeRequestedFromMe, true)
+
+  // The name behind the tag, for the owner's row.
+  const [acct] = await alice.accountsByKey(['dave'])
+  assert.equal(acct?.name, 'Dave')
+  assert.deepEqual((await alice.accountsByKey(['no-such-user'])).length, 0)
 
   // The merger's single action: +2 then submit.
   const dave = user('dave')
@@ -133,23 +164,16 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   assert.equal((await view('alice', id)).state, 'merged')
 })
 
-test('re-requesting review drops a ready-to-merge tag left over from an earlier patch set', { skip: !reachable && 'no local Gerrit' }, async () => {
+test('re-requesting review drops a ready-to-merge tag and its merger left over from an earlier patch set', { skip: !reachable && 'no local Gerrit' }, async () => {
   const alice = user('alice')
-  const service = createService(
-    {
-      getStatus: () => Promise.reject(new Error('unused')),
-      getCredentials: async () => ({ serverUrl: URL, username: 'alice', password: 'alicepw' }),
-      save: () => Promise.reject(new Error('unused')),
-    },
-    (url, init) => fetch(url, init),
-  )
+  const service = serviceAs('alice')
   const c = await raw('alice', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `stale tag ${Date.now()}`, work_in_progress: true })
   const id: number = c._number
   await pushPatchSet('alice', id, 'v1')
   await alice.addReviewer(id, 'bob')
   await service.act({ type: 'requestReview', id, patchSet: 1 })
   await user('bob').vote(id, 'Code-Review', 1, 'ok')
-  await alice.setHashtags(id, [READY_TO_MERGE_TAG])
+  await service.act({ type: 'requestMerge', id, merger: 'dave' })
   assert.equal((await view('alice', id)).state, 'ready-to-merge')
 
   // A new patch set resets the votes; the tag stays behind in Gerrit and is now stale.
@@ -165,11 +189,12 @@ test('re-requesting review drops a ready-to-merge tag left over from an earlier 
   assert.equal(v.staleReadyToMerge, true)
   await alice.setCustomKeyedValues(id, {}, [REVIEW_REQUESTED_KEY])
 
-  await service.act({ type: 'requestReview', id, patchSet: v.patchSet, clearReadyTag: true })
+  await service.act({ type: 'requestReview', id, patchSet: v.patchSet, clearTags: [READY_TO_MERGE_TAG, ...mergerTags(v.change)] })
   v = await view('alice', id)
   assert.equal(v.state, 'needs-review')
   assert.equal(v.staleReadyToMerge, false, 'the tag went with the request')
   assert.ok(!v.change.hashtags?.includes(READY_TO_MERGE_TAG))
+  assert.equal(v.requestedMerger, null, 'the merger tag went with it')
   assert.equal(v.requestedPatchSet, v.patchSet)
 })
 

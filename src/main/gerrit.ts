@@ -125,6 +125,18 @@ export class GerritClient {
     return this.req('GET', '/accounts/', undefined, params)
   }
 
+  /**
+   * The accounts behind usernames or email addresses, for showing a name for
+   * a merger tag or a Settings entry. One query for all of them.
+   */
+  accountsByKey(keys: string[]): Promise<AccountInfo[]> {
+    const terms = keys.map((k) => (k.includes('@') ? `email:${k}` : `username:${k}`))
+    if (terms.length === 0) return Promise.resolve([])
+    const params = new URLSearchParams({ q: terms.join(' OR '), n: String(keys.length + 5) })
+    params.append('o', 'DETAILS')
+    return this.req('GET', '/accounts/', undefined, params)
+  }
+
   changeUrl(link: ChangeLink): string {
     return this.base + changePath(link)
   }

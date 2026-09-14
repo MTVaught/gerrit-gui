@@ -153,6 +153,14 @@ export interface ChangeView {
   /** Hashtag says ready-to-merge but the approval no longer holds (e.g. new patch set). */
   staleReadyToMerge: boolean
   /**
+   * Username or email from the `merger:` hashtag, lower-case: the person the
+   * author asked to merge. Null when the tag is missing, which only an older
+   * version of the application produces.
+   */
+  requestedMerger: string | null
+  /** `requestedMerger` is the signed-in user. */
+  mergeRequestedFromMe: boolean
+  /**
    * This user may vote +2, which in this workflow is the merger's act:
    * reviewers only +1, and the merger's +2 and submit happen together.
    */
@@ -204,8 +212,21 @@ export interface Settings {
    * state. Changes owned outside the team appear on the "External Reviews" tab.
    */
   team: string[]
+  /**
+   * Who the owner is offered when asking for a merge, by project. The list
+   * only fills a menu: a wrong or missing entry costs one account search.
+   */
+  mergers: MergerRule[]
   /** Keep the compact window above other windows and on every workspace. */
   compactOnTop: boolean
+}
+
+/** The people to offer as mergers for the projects matching `project`. */
+export interface MergerRule {
+  /** An exact project name, a prefix ending in "*", or "*" alone for every project. */
+  project: string
+  /** Usernames or email addresses, lower-case. */
+  people: string[]
 }
 
 export interface SettingsInput extends Settings {
@@ -261,8 +282,14 @@ export interface DashboardData {
 }
 
 export type ChangeAction =
-  /** Owner's action. `clearReadyTag` also drops a ready-to-merge tag left over from an earlier patch set. */
-  | { type: 'requestReview'; id: number; patchSet: number; clearReadyTag?: boolean }
+  /** Owner's action. `clearTags` drops a ready-to-merge and merger tag left over from an earlier patch set. */
+  | { type: 'requestReview'; id: number; patchSet: number; clearTags?: string[] }
+  /**
+   * Owner's action: tag the change ready-to-merge for one person. `merger` is
+   * a username or email; `replace` lists the merger tags already on the change,
+   * which go away so that one person is named.
+   */
+  | { type: 'requestMerge'; id: number; merger: string; replace?: string[] }
   | { type: 'withdrawReview'; id: number }
   | { type: 'setWip'; id: number; wip: boolean }
   /** Merger's action: vote +2 on the current patch set, then submit. */

@@ -9,7 +9,17 @@ import { api } from '../api.ts'
  * Members are stored as usernames or email addresses, which is what the
  * classifier compares against, so the list stays readable in the settings file.
  */
-export function TeamEditor(props: { members: string[]; onChange: (members: string[]) => void; canSearch: boolean }) {
+export function TeamEditor(props: {
+  members: string[]
+  onChange: (members: string[]) => void
+  canSearch: boolean
+  /** Shown while the list is empty. */
+  emptyText?: string
+  /** What an entry is called in the labels; "team member" by default. */
+  noun?: string
+  /** Names for the stored keys, when known. */
+  nameFor?: (key: string) => string
+}) {
   const [q, setQ] = useState('')
   const [suggestions, setSuggestions] = useState<AccountInfo[]>([])
 
@@ -50,11 +60,11 @@ export function TeamEditor(props: { members: string[]; onChange: (members: strin
   return (
     <div className="team-editor">
       <div className="team-members">
-        {props.members.length === 0 && <span className="muted small">No team yet: every reviewer counts.</span>}
+        {props.members.length === 0 && <span className="muted small">{props.emptyText ?? 'No team yet: every reviewer counts.'}</span>}
         {props.members.map((m) => (
-          <span key={m} className="chip member">
-            {m}
-            <button type="button" className="chip-x" title={`Remove ${m} from the team`} aria-label={`Remove ${m}`} onClick={() => remove(m)}>
+          <span key={m} className="chip member" title={m}>
+            {props.nameFor ? props.nameFor(m) : m}
+            <button type="button" className="chip-x" title={`Remove ${m}`} aria-label={`Remove ${m}`} onClick={() => remove(m)}>
               ×
             </button>
           </span>
@@ -65,7 +75,7 @@ export function TeamEditor(props: { members: string[]; onChange: (members: strin
           <input
             value={q}
             placeholder="Username or email"
-            aria-label="Add a team member"
+            aria-label={`Add a ${props.noun ?? 'team member'}`}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {

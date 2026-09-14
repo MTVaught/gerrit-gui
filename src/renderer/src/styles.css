@@ -200,6 +200,30 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .suggestions { position: absolute; left: 0; right: 0; list-style: none; margin: 2px 0 0; padding: 4px 0; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; z-index: 10; box-shadow: 0 4px 16px #0003; }
 .suggestions li button { display: block; width: 100%; padding: 6px 10px; }
 .suggestions li button:hover { background: var(--panel); text-decoration: none; }
+/* Merger picker: the owner's Ready to Merge button opens a menu naming one person. */
+.picker-wrap .btn .arrow { margin-left: 6px; }
+.menu.picker { width: 340px; padding: 10px; }
+.menu.picker h4 { margin: 0 4px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
+.menu.picker .opt { display: flex; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 13px; }
+.menu.picker .opt:hover { background: var(--panel); }
+.menu.picker .opt input { margin: 0; accent-color: var(--accent); }
+.menu.picker .opt .muted { font-size: 12px; margin-left: auto; }
+.menu.picker .opt.small { font-size: 12px; color: var(--muted); }
+.menu.picker p { margin: 0 4px 8px; }
+.picker-search { margin: 6px 0 0; max-width: none; }
+.picker-search input { font-size: 13px; }
+.picker-foot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+.picker-foot .link { font-size: 12px; margin-right: auto; }
+.picker-foot .btn { padding: 5px 12px; font-size: 13px; }
+/* Mergers list in Settings: a row per project pattern. */
+.mergers-editor { margin-top: 8px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.mergers-editor p { margin: 0; }
+.merger-rule { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.merger-project { display: flex; gap: 8px; align-items: center; }
+.merger-project input { flex: 1; margin-top: 0; background: var(--bg); }
+.merger-rule .team-editor { margin-top: 8px; }
+.merger-rule .chip.member { background: var(--bg); }
+.merger-rule .team-add input { background: var(--bg); }
 /* Reviewer's split button: main part opens the diff since their last review, caret lists other views. */
 .split { display: inline-flex; }
 .btn.split-main { flex: 1; border-radius: 6px 0 0 6px; text-align: left; }
