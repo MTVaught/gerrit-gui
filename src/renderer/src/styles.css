@@ -313,7 +313,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .ledger tr.mem td { background: var(--band); border-bottom-color: var(--band-border); }
 .ledger tr.mem td:last-child { border-right: 1px solid var(--band-border); }
 .ledger tr.mem td.c { padding-left: 14px; }
-.ledger tr.mem .t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.ledger tr.mem .t { display: inline-block; width: auto; max-width: 100%; vertical-align: bottom; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 .ledger tr.mem.closed .t { color: var(--muted); font-weight: 500; }
 .ledger tr.mem.open td, .ledger tr.mem.ldetail td { background: var(--band-head); }
 .ledger tr.mem.open td { border-bottom: none; }

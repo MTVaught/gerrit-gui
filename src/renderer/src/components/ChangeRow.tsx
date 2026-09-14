@@ -93,8 +93,10 @@ function BranchRow(props: RowProps) {
   const merger = mergerLabel(v, useNames(v.requestedMerger ? [v.requestedMerger] : []))
   return (
     <div className={open ? 'change-row' : 'change-row closed'}>
-      <span className="cell c-branch" title={c.project}>
-        <code>{c.branch}</code>
+      <span className="cell c-branch">
+        <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title={`Open #${c._number} (${c.project}) in Gerrit`}>
+          <code>{c.branch}</code>
+        </button>
       </span>
       <span className="cell c-state">
         <span className={`badge ${v.state}`} title={merger ? `The owner asked ${merger} to merge` : undefined}>
