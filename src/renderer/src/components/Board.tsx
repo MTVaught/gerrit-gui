@@ -3,6 +3,7 @@ import type { AccountInfo, ChangeAction, ChangeView, TabId } from '../../../shar
 import {
   AUTHOR_SCOPES,
   DEFAULT_SORT,
+  EMPTY_FILTER,
   SORT_OPTIONS,
   displayName,
   familyKey,
@@ -169,7 +170,7 @@ export function Board(props: {
         {summary}
         <div className="panel empty">
           No change on this tab matches the filter.{' '}
-          <button className="link" onClick={() => props.onFilter({ search: '', authors: [], scopes: [] })}>
+          <button className="link" onClick={() => props.onFilter(EMPTY_FILTER)}>
             Show all
           </button>
         </div>
@@ -191,7 +192,8 @@ export function Board(props: {
       {props.tab === 'mine' && (
         <p className="muted small">
           Signed in as {displayName(props.self)}. Push as many patch sets as you like; reviewers are only asked to look
-          when you press Request review, and only for that patch set.
+          when you press Request review, and only for that patch set. Private changes are listed last, in a section of
+          their own.
         </p>
       )}
       {props.tab === 'team-reviews' && (
@@ -270,7 +272,7 @@ function FilterSummary(props: { filter: ViewFilter; sort: SortId; shown: number;
         )
       })}
       {props.sort !== DEFAULT_SORT && <span className="chip">Sort: {SORT_OPTIONS.find((o) => o.id === props.sort)?.label.toLowerCase()}</span>}
-      <button className="link" onClick={() => onFilter({ search: '', authors: [], scopes: [] })}>
+      <button className="link" onClick={() => onFilter(EMPTY_FILTER)}>
         Show all
       </button>
     </div>

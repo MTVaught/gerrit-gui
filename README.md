@@ -30,7 +30,7 @@ application remembers the sort; the search and filter last for the session.
 | --- | --- |
 | Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. |
 | Reviewing | All open changes on which you are a reviewer, primary or not, in groups by state. |
-| My Changes | Your open changes, in groups by state, with the actions of the owner. |
+| My Changes | Your open changes, in groups by state, with the actions of the owner. Private changes are in one section at the bottom, whatever their state. |
 | Ready to Merge | Approved changes that the author asked you, by name, to merge. |
 | Recently Merged | Changes that Gerrit merged in the last 14 days. |
 | Team Reviews | Every open change owned by someone else on your team, in groups by state, whether or not you review it. Only with a team. |
@@ -162,8 +162,8 @@ change on one branch is a card with one row, so both read the same way.
   Review, In Progress, Approved, Ready to Merge. If two branches have the
   same state, the card goes to the earlier section. Thus, on "Reviewing", a
   branch that waits on you comes before a branch that you reviewed.
-- Each row shows the branch, the state, the WIP or Active badge, the change
-  number, the patch set, the reviewers with their votes, the size of the
+- Each row shows the branch, the state, a "Private" badge on a change that
+  is private in Gerrit, the WIP or Active badge, the change number, the patch set, the reviewers with their votes, the size of the
   diff, the time of the last update and the buttons of that change. The
   cards in a section share the same columns. Each branch is reviewed on its
   own. A vote on the master change does not count for the release change.

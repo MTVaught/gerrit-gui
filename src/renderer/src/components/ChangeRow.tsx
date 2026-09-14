@@ -3,7 +3,7 @@ import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../.
 import { STATE_LABEL, accountKeys, displayName, reviewerTag, reviewerTagsFor, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
-import { ForkIcon } from './Icons.tsx'
+import { ForkIcon, LockIcon } from './Icons.tsx'
 import { actionClass, changeActions, type ActionSpec } from './actions.ts'
 import { ago } from '../time.ts'
 import { ReviewButton } from './ReviewButton.tsx'
@@ -109,6 +109,7 @@ function BranchRow(props: RowProps) {
             stale tag
           </span>
         )}
+        {open && v.isPrivate && <PrivateBadge />}
       </span>
       <span className="cell c-ci">
         {open && (
@@ -151,6 +152,16 @@ function BranchRow(props: RowProps) {
       </span>
       <Actions {...props} />
     </div>
+  )
+}
+
+/** Gerrit's private flag: the change is hidden from everyone but the people on it. */
+export function PrivateBadge() {
+  return (
+    <span className="badge private" title="Private: only the owner, the reviewers and the CCs can see this change in Gerrit">
+      <LockIcon />
+      Private
+    </span>
   )
 }
 

@@ -278,6 +278,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     teamScoped,
     externalOwner: teamScoped && !isTeamMember(change.owner, members, selfId),
     wip: change.work_in_progress === true,
+    isPrivate: change.is_private === true,
     requestedPatchSet: requested,
     reviewRequested,
     isMine,
@@ -383,12 +384,24 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
       return [{ title: 'Waiting on you', items: open.filter((v) => v.needsMyReview) }].filter((g) => g.items.length > 0)
     case 'reviewing':
       return reviewerGroups(open.filter((v) => v.iAmReviewer && !v.isMine))
-    case 'mine':
-      return byState(
-        open.filter((v) => v.isMine),
-        ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'in-progress'],
-        { 'needs-review': 'Out for review', 'in-progress': 'In Progress, review not requested' },
-      )
+    case 'mine': {
+      // Private changes are kept apart at the bottom, whatever their state:
+      // nobody but the people on them can see them, so they are not part of
+      // the team's picture of what is out for review.
+      const mine = open.filter((v) => v.isMine)
+      return [
+        ...byState(
+          mine.filter((v) => !v.isPrivate),
+          ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'in-progress'],
+          { 'needs-review': 'Out for review', 'in-progress': 'In Progress, review not requested' },
+        ),
+        {
+          title: 'Private',
+          hint: 'Visible only to you, the reviewers and the CCs. The state of each is on its row.',
+          items: mine.filter((v) => v.isPrivate),
+        },
+      ].filter((g) => g.items.length > 0)
+    }
     case 'ready-to-merge':
       // The merger's queue: what the author asked of this user, and nothing asked of somebody else.
       return [

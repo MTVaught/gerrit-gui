@@ -67,6 +67,8 @@ export interface ChangeInfo {
   status: 'NEW' | 'MERGED' | 'ABANDONED'
   owner: AccountInfo
   work_in_progress?: boolean
+  /** Private: visible only to the owner, the reviewers and the CCs. Absent when false. */
+  is_private?: boolean
   hashtags?: string[]
   created: string
   updated: string
@@ -142,6 +144,8 @@ export interface ChangeView {
   externalOwner: boolean
   /** Gerrit WIP flag. Independent of review state; commonly used to hold CI until review is done. */
   wip: boolean
+  /** Gerrit private flag: only the owner, the reviewers and the CCs can see the change. */
+  isPrivate: boolean
   /** Patch set the author last requested review on, or null if never. */
   requestedPatchSet: number | null
   /** The request is for the current patch set, so reviews are outstanding. */
