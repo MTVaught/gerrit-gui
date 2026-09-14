@@ -198,23 +198,25 @@ export function Board(props: {
           Needs Review or Reviewing. Your own changes are never here, whoever reviews them.
         </p>
       )}
-      {sections.map((g) => (
-        <section key={g.title} className="group">
-          <h3>
-            {g.title} <span className="count">{g.items.length}</span>
-          </h3>
-          {g.hint && <p className="muted small">{g.hint}</p>}
-          <ul className="changes">
-            {g.rows.map((r) =>
-              r.family ? (
-                <FamilyCard key={r.family.key} family={r.family} lead={r.view} self={props.self!} onAct={props.onAct} sort={props.sort} search={props.filter.search} />
-              ) : (
-                <ChangeRow key={r.view.change.id} view={r.view} self={props.self!} onAct={props.onAct} sort={props.sort} search={props.filter.search} />
-              ),
-            )}
-          </ul>
-        </section>
-      ))}
+      <div className="sections">
+        {sections.map((g) => (
+          <section key={g.title} className="group">
+            <h3>
+              {g.title} <span className="count">{g.items.length}</span>
+            </h3>
+            {g.hint && <p className="muted small">{g.hint}</p>}
+            <ul className="changes">
+              {g.rows.map((r) =>
+                r.family ? (
+                  <FamilyCard key={r.family.key} family={r.family} lead={r.view} self={props.self!} onAct={props.onAct} sort={props.sort} search={props.filter.search} />
+                ) : (
+                  <ChangeRow key={r.view.change.id} view={r.view} self={props.self!} onAct={props.onAct} sort={props.sort} search={props.filter.search} />
+                ),
+              )}
+            </ul>
+          </section>
+        ))}
+      </div>
     </main>
   )
 }

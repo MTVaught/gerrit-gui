@@ -84,17 +84,21 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .board { padding: 8px 16px 40px; max-width: 1400px; margin: 0 auto; width: 100%; }
 .group { margin-top: 20px; }
 .group h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); display: flex; gap: 8px; align-items: center; }
-.changes { list-style: none; margin: 0; padding: 0; row-gap: 8px; }
 /*
- * One grid per section, so every card lines its cells up in the same
- * columns: branch, state, CI, number, patch set, reviewers, diff, age,
- * buttons, WIP toggle. A card is a subgrid; its rows are `display: contents`,
- * so their cells sit directly in the columns. Reviewers take what is left.
- * The WIP toggle is its own column: its label changes width ("Mark WIP" or
- * "Mark active (runs CI)"), and in the buttons cell it would push the button
- * beside it out of line with the rows above and below.
+ * One grid for the whole board, so every card on the tab lines its cells up
+ * in the same columns: branch, state, CI, number, patch set, reviewers, diff,
+ * age, buttons, WIP toggle. A section, its list and each card are subgrids of
+ * it; a card's rows are `display: contents`, so their cells sit directly in
+ * the columns. Column widths follow the widest cell on the tab, as in a
+ * table; nothing is spaced by hand. Reviewers take what is left. The WIP
+ * toggle is its own column: its label changes width ("Mark WIP" or "Mark
+ * active (runs CI)"), and in the buttons cell it would push the button beside
+ * it out of line with the rows above and below.
  */
-.changes { display: grid; grid-template-columns: max-content max-content max-content max-content max-content minmax(140px, 1fr) max-content max-content max-content max-content; }
+.sections { display: grid; grid-template-columns: max-content max-content max-content max-content max-content minmax(140px, 1fr) max-content max-content max-content max-content; }
+.group, .changes { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+.group > h3, .group > p { grid-column: 1 / -1; }
+.changes { list-style: none; margin: 0; padding: 0; row-gap: 8px; }
 /* Each card is an island: its own border, corners and a gap, so a family's rows read as one block and a card edge is never mistaken for a row divider. */
 .change { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding: 8px 14px 8px 12px; border: 1px solid var(--border); border-left: 4px solid transparent; border-radius: 8px; position: relative; }
 .change.state-needs-review { border-left-color: var(--pending); }
