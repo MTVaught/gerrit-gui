@@ -24,7 +24,8 @@ two lists, the same on every computer on the team:
 ## 1. Alice pushes a change and adds reviewers
 
 Alice pushes to `platform/core` and adds Bob and Carol as primary reviewers
-with the "+" on the row. That adds each of them as a reviewer in Gerrit
+with the "+" on the row: both are on her team, so she checks them in the
+list and pushes "Add 2 as primary". That adds each of them as a reviewer in Gerrit
 and tags the change `reviewer:bob` and `reviewer:carol`. Their votes are the
 ones that decide. Had CI added a maintainer as well, that person would sit
 on a dashed second line under Bob and Carol, with their vote shown and no
@@ -113,8 +114,8 @@ After Dave submits, the change is on everyone's **Recently Merged** tab for
 
 | Button | Gerrit |
 | --- | --- |
-| "+" with Primary | Adds the reviewer, then hashtag `reviewer:bob` |
-| "+" with Other | Adds the reviewer only; owner's choice |
+| "+" with Primary | For each person checked: adds the reviewer, then hashtag `reviewer:bob` |
+| "+" with Other | For each person checked: adds the reviewer only; owner's choice |
 | "↑" or "↓" on a chip | Adds or removes the `reviewer:` hashtag |
 | "×" on a primary chip | Removes the `reviewer:` hashtag, then the reviewer where Gerrit allows it |
 | Request review | Custom value `review-requested-ps` = the patch set number. Off until a primary reviewer is tagged |

@@ -41,7 +41,9 @@ application remembers the sort; the search and filter last for the session.
 ## The workflow
 
 1. The author pushes a change and adds primary reviewers with the "+"
-   button on the row, with "Primary" selected. The application adds each one
+   button on the row. It opens a checklist of the team from Settings; anyone
+   else on the server can be searched for and joins the list. One button adds
+   everyone checked. With "Primary" selected, the application adds each one
    as a reviewer in Gerrit, if needed, and tags the change
    `reviewer:<username>`. The primary reviewers are the people whose votes
    decide. Anyone else on the change, added in Gerrit, by CI or with the
@@ -96,7 +98,7 @@ the same votes, hashtags and WIP flags.
 | Primary reviewer X | The change has the hashtag `reviewer:<username>`, with the Gerrit username of X in lower case, or the email address for an account with no username. One tag per primary reviewer. |
 | Needs Review by X | The number in `review-requested-ps` is the same as the number of the current patch set. X is a primary reviewer. X has no Code-Review vote on the current patch set. |
 | Reviewer finished | X has a Code-Review vote (+1 or -1) on the current patch set. |
-| "+" button, "Primary" | Adds the person as a reviewer of the change in Gerrit, when they are not one yet, then adds the `reviewer:` tag. One account per tag; a group is refused. |
+| "+" button, "Primary" | For each person checked: adds them as a reviewer of the change in Gerrit, when they are not one yet, then adds the `reviewer:` tag. One account per tag; a group is refused. |
 | "×" on a primary reviewer | Removes the `reviewer:` tag, then tries to remove the reviewer in Gerrit. Gerrit lets only the owner, an administrator or the person themself do the second part; for anyone else the tag goes and the person stays on the change as an other reviewer. |
 | "↑" and "↓" on a reviewer | Adds or removes the `reviewer:` tag only. The person stays on the change in Gerrit. |
 | Review button | Opens Gerrit at `/c/<project>/+/<change>/<last>..<current>`, where `<last>` is the highest patch set with a vote or reply from you in the change messages. Without one, it opens the current patch set against base. The caret offers the other diffs and the change page. |

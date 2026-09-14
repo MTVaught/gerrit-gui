@@ -219,12 +219,6 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .menu.picker .opt.small { font-size: 12px; color: var(--muted); }
 .menu.picker p { margin: 0 4px 8px; }
 .picker-search { margin: 6px 0 0; max-width: none; }
-/* Add reviewers: the team as a checklist, then the search; a long team scrolls. */
-.picker-list { max-height: 240px; overflow: auto; }
-.menu.picker .opt.blocked { color: var(--muted); cursor: default; }
-.menu.picker .opt.blocked:hover { background: none; }
-.menu.picker .add-mode { margin: 10px 4px 0; }
-.chip.add[aria-expanded='true'] { color: var(--fg); }
 .picker-search input { font-size: 13px; }
 .picker-foot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
 .picker-foot .link { font-size: 12px; margin-right: auto; }
