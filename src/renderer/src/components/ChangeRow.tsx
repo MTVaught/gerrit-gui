@@ -191,7 +191,6 @@ export function Reviewers(props: ActProps) {
   const id = c._number
   const open = c.status === 'NEW'
   const owner = open && v.isMine
-  const [adding, setAdding] = useState(false)
   const nameFor = useNames(v.reviewers.filter((r) => r.tagOnly).map((r) => r.key!))
 
   const isMe = (r: ReviewerStatus) => r.account._account_id === self._account_id || (r.tagOnly === true && accountKeys(self).includes(r.key!))
@@ -282,25 +281,9 @@ export function Reviewers(props: ActProps) {
     <>
       <ChipRow
         chips={primary}
-        trailing={
-          open && (
-            <button className="chip add" onClick={() => setAdding((a) => !a)} title={owner ? 'Add a primary reviewer, or a reviewer who is not waited for' : 'Add a primary reviewer: added to the change in Gerrit and tagged; their vote decides'}>
-              +
-            </button>
-          )
-        }
+        trailing={open && <AddReviewer view={v} self={self} allowOther={owner} onAct={props.onAct} />}
       />
       {others.length > 0 && <ChipRow className="others" chips={others} />}
-      {adding && (
-        <AddReviewer
-          changeId={id}
-          allowOther={owner}
-          onDone={async (reviewer, primary) => {
-            setAdding(false)
-            if (reviewer) await props.onAct(primary ? { type: 'addPrimaryReviewer', id, reviewer } : { type: 'addReviewer', id, reviewer })
-          }}
-        />
-      )}
     </>
   )
 }

@@ -1,0 +1,13 @@
+/* Mockup-only: static stand-ins for the popover and dropdown, and the caption. */
+.c-reviewers { position: relative; overflow: visible; }
+.menu.picker.mock { position: absolute; top: calc(100% - 4px); left: 0; }
+.suggestions.in-flow { position: static; margin-top: 4px; }
+.suggestions .head { margin: 6px 10px 2px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
+.suggestions .hint { padding: 4px 10px 6px; font-size: 12px; color: var(--muted); }
+.suggestions li button { display: flex; gap: 8px; align-items: baseline; }
+.suggestions li button .muted { font-size: 12px; }
+.suggestions li.hl button { background: var(--panel); }
+.mock-note { margin: 28px 16px 8px; padding: 10px 14px; border: 1px dashed var(--border); border-radius: 8px; max-width: 900px; font-size: 13px; color: var(--muted); }
+.mock-note b { color: var(--fg); }
+.caption { font-size: 11px; color: var(--muted); margin: 8px 0 2px; }
+.spacer { height: 0; }

@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Add reviewer mockup</title>
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"><style>.menu.picker.mock { width: 360px; } .prow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; border-radius: 5px; font-size: 13px; } .prow:hover { background: var(--panel); } .pname .muted { font-size: 12px; margin-left: 6px; } .pbtns { display: inline-flex; gap: 4px; } .pbtns .btn.sm { font-size: 11.5px; padding: 1px 8px; }</style></head>
+<body><div class="app">
+<div class="topbar"><div class="tabs">
+<button class="tab">Needs Review <span class="count hot">1</span></button><button class="tab">Reviewing <span class="count">2</span></button><button class="tab active">My Changes <span class="count">19</span></button><button class="tab">Ready to Merge <span class="count">0</span></button><button class="tab">Recently Merged <span class="count">1</span></button><button class="tab">Team Reviews <span class="count">2</span></button><button class="tab">External Reviews <span class="count">0</span></button>
+</div><div class="topbar-right"><span class="muted status-line">Alice · updated just now</span><button class="btn view-btn">View <span class="arrow">▾</span></button><button class="btn icon">⟳</button><button class="btn icon">⚙</button></div></div>
+<div class="board"><div class="sections">
+<div class="group"><h3>Out for review <span class="count">7</span></h3><ul class="changes">
+<li class="change state-in-progress">
+<div class="change-head"><button class="link subject">S3 rename the storage helpers</button><span class="muted small">demo · you</span></div>
+<div class="change-row">
+<span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge in-progress">In progress</span></span>
+<span class="cell c-ci"><span class="badge wip">WIP</span></span>
+<span class="cell c-num"><button class="link">#27</button></span>
+<span class="cell c-ps"><span>PS 2</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip">Bob</span><span class="trailing"><button class="chip add" style="color:var(--fg)">+</button></span></div><div class="menu picker mock" role="dialog"><h4>Team</h4>
+<div class="prow"><span class="pname">Bob</span><span class="muted small">primary ✓</span></div>
+<div class="prow"><span class="pname">Carol <span class="muted">carol</span></span><span class="pbtns"><button class="btn sm">Primary</button><button class="btn sm">Other</button></span></div>
+<div class="prow"><span class="pname">Dave <span class="muted">dave</span></span><span class="pbtns"><button class="btn sm">Primary</button><button class="btn sm">Other</button></span></div>
+<div class="prow"><span class="pname">Frank <span class="muted">frank</span></span><span class="pbtns"><button class="btn sm">Primary</button><button class="btn sm">Other</button></span></div>
+<div class="prow"><span class="pname">Grace <span class="muted">grace</span></span><span class="pbtns"><button class="btn sm">Primary</button><button class="btn sm">Other</button></span></div>
+<h4 style="margin-top:10px">Someone else</h4>
+<div class="picker-search add-reviewer" style="margin-top:0"><input value="ha" style="border-color:var(--accent)"></div>
+<div class="prow"><span class="pname">Hana Ito <span class="muted">hito</span></span><span class="pbtns"><button class="btn sm">Primary</button><button class="btn sm">Other</button></span></div>
+<div class="prow"><span class="pname">Hal Brooks <span class="muted">hbrooks</span></span><span class="pbtns"><button class="btn sm">Primary</button><button class="btn sm">Other</button></span></div>
+<div class="prow"><span class="pname">Micah Hart <span class="muted">mhart</span></span><span class="pbtns"><button class="btn sm">Primary</button><button class="btn sm">Other</button></span></div>
+</div></div>
+<span class="cell c-diff"><span><span class="ins">+120</span> <span class="del">−33</span></span></span>
+<span class="cell c-updated muted">5m ago</span>
+<span class="cell c-actions"><button class="btn" disabled title="Ask every primary reviewer to look at this patch set">Request review</button></span>
+<span class="cell c-wip"><button class="btn subtle">Mark active (runs CI)</button></span>
+</div></li>
+<li class="change state-needs-review">
+<div class="change-head"><button class="link subject">S4 drop the legacy TOML loader</button><span class="muted small">demo · you</span></div>
+<div class="change-row">
+<span class="cell c-branch"><button class="link"><code>release-2.0</code></button></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#25</button></span>
+<span class="cell c-ps"><span>PS 3</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class=reviewers><span class=chip pending>Carol</span><span class=chip pos>Dave <b>+1</b></span><span class=trailing><button class=chip add>+</button></span></div><div class=reviewers others><span class=chip ext>Erin (other team)</span></div></div>
+<span class="cell c-diff"><span><span class="ins">+8</span> <span class="del">−310</span></span></span>
+<span class="cell c-updated muted">1h ago</span>
+<span class="cell c-actions"><button class="btn" title="Ask every primary reviewer to look at this patch set again">Request review</button></span>
+<span class="cell c-wip"><button class="btn subtle">Mark WIP</button></span>
+</div></li>
+<li class="change state-in-progress">
+<div class="change-head"><button class="link subject">S5 bump build dependencies</button><span class="muted small">demo · you</span></div>
+<div class="change-row">
+<span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge in-progress">In progress</span></span>
+<span class="cell c-ci"><span class="badge wip">WIP</span></span>
+<span class="cell c-num"><button class="link">#12</button></span>
+<span class="cell c-ps"><span>PS 3</span><span class="req stale">asked PS 2</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip">Bob</span><span class="chip">Carol</span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+6</span> <span class="del">−6</span></span></span>
+<span class="cell c-updated muted">3d ago</span>
+<span class="cell c-actions"><button class="btn">Request review</button></span>
+<span class="cell c-wip"><button class="btn subtle">Mark active (runs CI)</button></span>
+</div></li>
+</ul></div>
+<div class="spacer" style="height:380px"></div>
+</div></div>
+<p class="mock-note"><b>4 · A role button on every row.</b> No Primary/Other radio: each person, on the team or from the search, has a "Primary" and an "Other" button, so adding someone in either role is one click and the panel stays open for the next one. People already on the change show their role instead of buttons. For a reviewer who is not the owner, only "Primary" is shown. Most direct, at the cost of a busier panel.</p>
+</div></body></html>
