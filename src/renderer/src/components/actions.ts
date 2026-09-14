@@ -1,10 +1,11 @@
 // The owner's and merger's buttons for a change. Shared by the full-size
 // card row and the compact ledger, which shows the primary one in its own
-// column and the rest in the detail row. The reviewer's button is separate
-// (ReviewButton), because it is a split button that opens Gerrit.
+// column and the rest in the detail row. The merge itself is not here: the
+// merger votes +2 and submits in the Gerrit web UI. The reviewer's button is
+// separate (ReviewButton), because it is a split button that opens Gerrit.
 import type { ChangeAction, ChangeView } from '../../../shared/types.ts'
 import { READY_TO_MERGE_TAG } from '../../../shared/constants.ts'
-import { mergeWaitsOnMe, mergerTags } from '../../../shared/model.ts'
+import { mergerTags } from '../../../shared/model.ts'
 
 export interface ActionSpec {
   key: string
@@ -71,17 +72,6 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
       picker: 'merger',
       title: 'Ask someone else to merge instead',
       run: () => undefined,
-    })
-  }
-  if (v.canMerge && mergeWaitsOnMe(v)) {
-    out.push({
-      key: 'merge',
-      label: '+2 and submit',
-      short: 'Merge',
-      primary: true,
-      disabled: v.wip,
-      title: v.wip ? 'Still WIP, so CI has not run. Mark it active first.' : 'Vote +2 on this patch set and submit it',
-      run: () => void act({ type: 'merge', id }),
     })
   }
   // The owner does not get a separate "clear" when another button already

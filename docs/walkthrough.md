@@ -81,7 +81,7 @@ asked without opening Gerrit. **Change merger** asks someone else instead.
 
 Dave's **Ready to Merge** tab is his queue: the changes people asked him, by
 name, to merge. The tray count and a desktop notification point him here.
-**+2 and submit** votes +2 and submits in one step.
+He opens the change in Gerrit, votes +2 and submits it there.
 
 ![Dave: asked of you](walkthrough/10-merger-queue.png)
 
@@ -109,7 +109,7 @@ After Dave submits, the change is on everyone's **Recently Merged** tab for
 | Review | Opens Gerrit; the vote is Gerrit's own Code-Review +1 or -1 |
 | Ready to Merge | Hashtags `ready-to-merge` and `merger:dave` |
 | Change merger | Replaces the `merger:` hashtag |
-| +2 and submit | Code-Review +2, then submit |
+| (merge) | Nothing; the merger votes +2 and submits in the Gerrit web UI |
 
 To make these screenshots again, run `docs/walkthrough/shoot.sh` against an
 empty Gerrit; the header of the script says how.
