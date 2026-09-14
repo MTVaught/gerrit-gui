@@ -164,16 +164,30 @@ function LedgerRow(
     <>
       <tr className={`lrow state-${v.state}${expanded ? ' open' : ''}${mem}`}>
         <td className="c" onClick={toggle}>
-          <button
-            className="link t"
-            aria-expanded={expanded}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggle()
-            }}
-          >
-            {props.member ? <code>{c.branch}</code> : <Highlight text={c.subject} term={props.search} />}
-          </button>
+          {props.member ? (
+            // A member line is titled by its branch; the title opens that branch's change, the rest of the cell toggles the details.
+            <button
+              className="link t"
+              title={`Open #${id} in Gerrit`}
+              onClick={(e) => {
+                e.stopPropagation()
+                void api.openChange({ id, project: c.project })
+              }}
+            >
+              <code>{c.branch}</code>
+            </button>
+          ) : (
+            <button
+              className="link t"
+              aria-expanded={expanded}
+              onClick={(e) => {
+                e.stopPropagation()
+                toggle()
+              }}
+            >
+              <Highlight text={c.subject} term={props.search} />
+            </button>
+          )}
           <div className="s" title={`${c.project} · ${c.branch}`}>
             {sub.map((part, i) => (
               <Fragment key={i}>
