@@ -10,7 +10,7 @@ import type {
   ReviewerStatus,
   TabId,
 } from './types.ts'
-import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from './constants.ts'
+import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY } from './constants.ts'
 
 export function isBot(a: AccountInfo): boolean {
   return a.tags?.includes('SERVICE_USER') ?? false
@@ -114,6 +114,32 @@ export function requestedMerger(change: ChangeInfo): string | null {
   return t ? accountKey(t.slice(MERGER_TAG_PREFIX.length)) : null
 }
 
+/** The `reviewer:` hashtags on a change, as written: one per primary reviewer. */
+export function reviewerTags(change: ChangeInfo): string[] {
+  return (change.hashtags ?? []).filter((t) => t.startsWith(REVIEWER_TAG_PREFIX) && t.length > REVIEWER_TAG_PREFIX.length)
+}
+
+/** The tag for one primary reviewer: `reviewer:bob`. */
+export function reviewerTag(reviewer: string): string {
+  return REVIEWER_TAG_PREFIX + accountKey(reviewer)
+}
+
+/** The keys the `reviewer:` tags name, lower-case, in tag order, each once. */
+export function primaryReviewerKeys(change: ChangeInfo): string[] {
+  const out: string[] = []
+  for (const t of reviewerTags(change)) {
+    const k = accountKey(t.slice(REVIEWER_TAG_PREFIX.length))
+    if (!out.includes(k)) out.push(k)
+  }
+  return out
+}
+
+/** The tags on a change that name this account, by username or email: what a demotion removes. */
+export function reviewerTagsFor(change: ChangeInfo, a: AccountInfo): string[] {
+  const keys = accountKeys(a)
+  return reviewerTags(change).filter((t) => keys.includes(accountKey(t.slice(REVIEWER_TAG_PREFIX.length))))
+}
+
 /** A username or email address as stored in the team list and in the merger tag. */
 export function accountKey(s: string): string {
   return s.trim().toLowerCase()
@@ -168,20 +194,28 @@ export function reviewLink(view: ChangeView): ChangeLink {
  * Derive the workflow state for one change.
  *
  *  in-progress    author has not asked for review of the current patch set
- *  needs-review   review requested on this patch set; someone has not voted yet
- *                 (early -1s do not change this; the last reviewer decides)
- *  needs-changes  every reviewer has voted and at least one is negative
- *  approved       every reviewer voted +1 on the current patch set
+ *  needs-review   review requested on this patch set; a primary reviewer has
+ *                 not voted yet (early -1s do not change this; the last one
+ *                 decides), or nobody is tagged as primary yet
+ *  needs-changes  every primary reviewer has voted and at least one is negative
+ *  approved       every primary reviewer voted +1 on the current patch set
  *  ready-to-merge approved and the author tagged it for the merger, whose
  *                 +2 and submit happen together (reviewers never +2)
+ *
+ * The primary reviewers are the people named by `reviewer:` hashtags. Anyone
+ * else on the change in Gerrit is shown with their vote, but not waited for.
+ * A tag names a person by username or email, like the merger tag; when the
+ * person is not on the change in Gerrit, a stand-in account is built from
+ * the tag so that they are still shown and waited for.
  *
  * WIP is not part of this. Review can happen on WIP patch sets, with
  * the WIP flag left to control when CI runs. Gerrit clears votes on a
  * new patch set, so a follow-up push the author did not re-request review for
  * drops back to in-progress instead of pinging everyone again.
  *
- * `team` (usernames or emails from Settings) limits "every reviewer" to the
- * team; an empty list means all human reviewers count.
+ * `team` (usernames or emails from Settings) decides only whether the owner
+ * is on the team, which picks the tabs the change is listed on. `selfKeys`
+ * is `accountKeys(self)`: the reviewer and merger tags are matched against it.
  */
 export function classify(change: ChangeInfo, selfId: number, team: string[] = [], selfKeys: string[] = []): ChangeView {
   const votes = currentVotes(change)
@@ -189,16 +223,30 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     account,
     vote: votes.get(account._account_id) ?? 0,
   }))
-  // With a team, only its members decide the outcome. Everyone else is shown
-  // on the change and on the External Reviews tab, but their votes are inert.
+  const ownerKeys = accountKeys(change.owner)
+  const reviewers: ReviewerStatus[] = []
+  const primaryIds = new Set<number>()
+  for (const key of primaryReviewerKeys(change)) {
+    if (ownerKeys.includes(key)) continue
+    const known = everyone.find((r) => accountKeys(r.account).includes(key))
+    if (known) {
+      // One person tagged twice (username and email) is one primary reviewer.
+      if (!primaryIds.has(known.account._account_id)) reviewers.push({ ...known, key })
+      primaryIds.add(known.account._account_id)
+      continue
+    }
+    // A bot tagged by mistake stays out, like a bot added as a reviewer.
+    if ((change.reviewers?.REVIEWER ?? []).some((r) => isBot(r) && accountKeys(r).includes(key))) continue
+    reviewers.push({ account: standIn(key, reviewers.length), vote: 0, key, tagOnly: true })
+  }
+  const otherReviewers = everyone.filter((r) => !primaryIds.has(r.account._account_id))
   const members = normalizeTeam(team)
   const teamScoped = members.length > 0
-  const reviewers = teamScoped ? everyone.filter((r) => isTeamMember(r.account, members, selfId)) : everyone
-  const externalReviewers = teamScoped ? everyone.filter((r) => !isTeamMember(r.account, members, selfId)) : []
   const pending = reviewers.filter((r) => r.vote === 0).map((r) => r.account)
   const negatives = reviewers.filter((r) => r.vote < 0)
   const isMine = change.owner._account_id === selfId
-  const iAmReviewer = reviewers.some((r) => r.account._account_id === selfId)
+  const iAmPrimary = reviewers.some((r) => r.account._account_id === selfId || (r.tagOnly === true && selfKeys.includes(r.key!)))
+  const iAmReviewer = iAmPrimary || everyone.some((r) => r.account._account_id === selfId)
   const myVote = votes.get(selfId) ?? 0
   const tagged = hasTag(change, READY_TO_MERGE_TAG)
   const rev = change.current_revision ? change.revisions?.[change.current_revision] : undefined
@@ -208,8 +256,10 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
   const open = change.status === 'NEW'
   const merger = requestedMerger(change)
 
-  // The outcome is decided only when the last reviewer has voted; until then a
-  // change stays under review no matter which way the early votes went.
+  // The outcome is decided only when the last primary reviewer has voted;
+  // until then a change stays under review no matter which way the early
+  // votes went. With nobody tagged there is nobody to decide, so a request
+  // waits until someone is.
   const everyoneVoted = reviewers.length > 0 && pending.length === 0
   let state: ReviewState
   if (change.status === 'MERGED') state = 'merged'
@@ -224,7 +274,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     state,
     reviewers,
     pending,
-    externalReviewers,
+    otherReviewers,
     teamScoped,
     externalOwner: teamScoped && !isTeamMember(change.owner, members, selfId),
     wip: change.work_in_progress === true,
@@ -232,7 +282,8 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     reviewRequested,
     isMine,
     iAmReviewer,
-    needsMyReview: open && !isMine && iAmReviewer && reviewRequested && myVote === 0,
+    iAmPrimary,
+    needsMyReview: open && !isMine && iAmPrimary && reviewRequested && myVote === 0,
     myVote,
     patchSet,
     patchSetCreated: rev?.created ?? change.created,
@@ -242,6 +293,15 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     mergeRequestedFromMe: merger !== null && selfKeys.includes(merger),
     canMerge: open && maxPermittedVote(change) >= 2,
   }
+}
+
+/**
+ * An account for a tagged person who is not on the change in Gerrit. The id
+ * is negative so it never collides with a real one; the UI resolves the name
+ * from the key, as it does for the merger tag.
+ */
+function standIn(key: string, n: number): AccountInfo {
+  return key.includes('@') ? { _account_id: -(n + 1), email: key } : { _account_id: -(n + 1), username: key }
 }
 
 /** `selfKeys` is `accountKeys(self)`: the merger tag is matched against it. */
@@ -276,6 +336,15 @@ export function isExternalReview(v: ChangeView): boolean {
   return v.change.status === 'NEW' && v.externalOwner
 }
 
+/**
+ * Open changes owned by a teammate: the Team Reviews tab, which lists them
+ * whether or not the user reviews them. Unlike External Reviews this tab is
+ * not exclusive: a teammate's change the user reviews is on Reviewing too.
+ */
+export function isTeamReview(v: ChangeView): boolean {
+  return v.change.status === 'NEW' && v.teamScoped && !v.externalOwner && !v.isMine
+}
+
 export interface Group {
   title: string
   hint?: string
@@ -291,7 +360,7 @@ function byState(items: ChangeView[], order: ReviewState[], titles?: Partial<Rec
 const REVIEWER_ORDER: ReviewState[] = ['needs-changes', 'approved', 'ready-to-merge', 'in-progress']
 const REVIEWER_TITLES: Partial<Record<ReviewState, string>> = { 'in-progress': 'Author iterating, no review requested' }
 
-/** Sections for the tabs where the user is a reviewer, the same on Reviewing and External Reviews. */
+/** Sections for the tabs that list other people's changes: the same on Reviewing, Team Reviews and External Reviews. */
 function reviewerGroups(items: ChangeView[]): Group[] {
   return [
     { title: 'Waiting on you', items: items.filter((v) => v.needsMyReview && v.state === 'needs-review') },
@@ -303,7 +372,8 @@ function reviewerGroups(items: ChangeView[]): Group[] {
 /**
  * The sections of one tab, before the View filter. Every tab except External
  * Reviews lists internal changes only (see isInternal); External Reviews
- * lists the open external ones. No change is on both kinds of tab.
+ * lists the open external ones. No change is on both kinds of tab. Team
+ * Reviews lists every open internal change of somebody else, reviewed or not.
  */
 export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
   const internal = views.filter(isInternal)
@@ -336,6 +406,8 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
       ].filter((g) => g.items.length > 0)
     case 'merged':
       return [{ title: 'Merged in the last 14 days', items: internal.filter((v) => v.change.status === 'MERGED') }]
+    case 'team-reviews':
+      return reviewerGroups(views.filter(isTeamReview))
     case 'external-reviews':
       return reviewerGroups(views.filter(isExternalReview))
   }
@@ -349,6 +421,7 @@ export function tabCounts(views: ChangeView[]): Record<TabId, number> {
     mine: 0,
     'ready-to-merge': 0,
     merged: 0,
+    'team-reviews': 0,
     'external-reviews': 0,
   }
   for (const v of views) {
@@ -361,6 +434,7 @@ export function tabCounts(views: ChangeView[]): Record<TabId, number> {
     if (v.needsMyReview) c['needs-my-review']++
     if (v.iAmReviewer && !v.isMine) c.reviewing++
     if (v.isMine) c.mine++
+    if (isTeamReview(v)) c['team-reviews']++
     if (mergeWaitsOnMe(v) || (v.staleReadyToMerge && (v.isMine || v.mergeRequestedFromMe))) c['ready-to-merge']++
   }
   return c
@@ -389,7 +463,7 @@ export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
 
 /**
  * How many changes wait on this user, by the action they need to take:
- *  review  someone on the team asked me to review the current patch set
+ *  review  I am a primary reviewer and the author asked for a review of the current patch set
  *  fix     my change got a negative outcome; push corrections
  *  ready   my change is approved; mark it ready to merge
  *  merge   the author asked me to merge (or nobody was named and I may +2)
@@ -462,14 +536,26 @@ function projectScope(projects: string[]): string {
  * Gerrit's reviewer:/reviewerin: operators exclude WIP changes (observed on
  * 3.11.2; not in the Gerrit docs), and review can happen on WIP patch sets, so
  * the second query scans open WIP changes owned by others; the caller keeps
- * only those where the user is a reviewer.
+ * only those where the user is a reviewer. A `reviewer:` tag naming the user
+ * (`selfKeys`) is searched for as well, so a primary reviewer who was taken
+ * off the change in Gerrit still sees it. The team query fetches the open
+ * changes of every teammate for the Team Reviews tab; it is empty without a
+ * team, and the caller then skips it.
  */
-export function dashboardQueries(projects: string[] = []): { direct: string; wipScan: string; merged: string } {
+export function dashboardQueries(projects: string[] = [], selfKeys: string[] = [], team: string[] = []): { direct: string; wipScan: string; merged: string; team: string } {
+  const mine = ['owner:self', 'reviewer:self', `hashtag:${READY_TO_MERGE_TAG}`, ...selfKeys.map((k) => `hashtag:${reviewerTag(k)}`)]
+  const owners = normalizeTeam(team).map((k) => `owner:${k}`)
   return {
-    direct: `is:open (owner:self OR reviewer:self OR hashtag:${READY_TO_MERGE_TAG})`,
+    direct: `is:open (${mine.join(' OR ')})`,
     wipScan: `is:open is:wip -owner:self${projectScope(projects)}`,
     merged: `is:merged (owner:self OR reviewer:self) -age:14d`,
+    team: owners.length === 0 ? '' : `is:open -owner:self (${owners.join(' OR ')})${projectScope(projects)}`,
   }
+}
+
+/** Tagged as a primary reviewer, matched by username or email. */
+export function isTaggedReviewer(change: ChangeInfo, keys: string[]): boolean {
+  return primaryReviewerKeys(change).some((k) => keys.includes(k))
 }
 
 export function isReviewer(change: ChangeInfo, accountId: number): boolean {

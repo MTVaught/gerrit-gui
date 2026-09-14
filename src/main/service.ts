@@ -4,7 +4,7 @@
 import { GerritClient, GerritError, type FetchLike } from './gerrit.ts'
 import { fetchDashboard } from './dashboard.ts'
 import { READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
-import { mergerTag } from '../shared/model.ts'
+import { accountKey, accountKeys, mergerTag, reviewerTag } from '../shared/model.ts'
 import type {
   AccountInfo,
   ChangeAction,
@@ -83,7 +83,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
 
     async fetchDashboard() {
       const [g, status] = await Promise.all([client(), store.getStatus()])
-      return fetchDashboard(g, status.projects)
+      return fetchDashboard(g, status.projects, status.team)
     },
 
     async act(action) {
@@ -119,6 +119,38 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
         case 'removeReviewer':
           await g.removeReviewer(action.id, action.accountId)
           return
+        case 'addPrimaryReviewer': {
+          // The tag names a person, so the input has to be one account. The
+          // lookup also turns whatever was typed into the username (or the
+          // email of an account without one), which is what the tag stores.
+          let account: AccountInfo
+          try {
+            account = await g.account(action.reviewer)
+          } catch (e) {
+            if ((e as GerritError).status === 404) throw new Error(`No account matches "${action.reviewer}". A primary reviewer is one person; groups cannot be tagged.`)
+            throw e
+          }
+          const key = account.username ? accountKey(account.username) : accountKeys(account)[0]
+          if (!key) throw new Error(`${account.name ?? action.reviewer} has neither a username nor an email address, so there is nothing to tag.`)
+          // Adding an existing reviewer is a no-op in Gerrit, so no check first.
+          await g.addReviewer(action.id, String(account._account_id))
+          await g.setHashtags(action.id, [reviewerTag(key)])
+          return
+        }
+        case 'removePrimaryReviewer': {
+          // The tag is what makes the person primary and anyone may edit it;
+          // the reviewer row in Gerrit belongs to the owner, so that step may
+          // be refused and the person then stays on the change as a plain
+          // reviewer.
+          await g.setHashtags(action.id, [], [reviewerTag(action.key)])
+          if (action.accountId === undefined) return
+          try {
+            await g.removeReviewer(action.id, action.accountId)
+          } catch (e) {
+            if ((e as GerritError).status !== 403) throw e
+          }
+          return
+        }
       }
     },
 

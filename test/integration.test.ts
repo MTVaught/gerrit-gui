@@ -6,7 +6,7 @@ import { GerritClient } from '../src/main/gerrit.ts'
 import { createService } from '../src/main/service.ts'
 import { fetchDashboard } from '../src/main/dashboard.ts'
 import type { ChangeInfo } from '../src/shared/types.ts'
-import { accountKeys, classify, mergerTags, reviewLink } from '../src/shared/model.ts'
+import { accountKeys, classify, mergerTags, reviewLink, reviewerTagsFor } from '../src/shared/model.ts'
 import { READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../src/shared/constants.ts'
 
 const URL = process.env['GERRIT_TEST_URL'] ?? 'http://localhost:8080'
@@ -34,10 +34,10 @@ async function pushPatchSet(u: string, id: number, content: string) {
   await raw(u, 'POST', `/changes/${id}/edit:publish`, { notify: 'NONE' })
 }
 
+/** The change as the user sees it, read directly rather than searched: the index can lag a write by a moment. */
 async function view(u: string, id: number, team: string[] = []) {
   const g = user(u)
-  const me = await g.self()
-  const [[c]] = await g.queryChanges([`change:${id}`])
+  const [me, c] = await Promise.all([g.self(), g.change(id)])
   return classify(c, me._account_id, team, accountKeys(me))
 }
 
@@ -63,10 +63,14 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   })
   const id: number = c._number
   await pushPatchSet('alice', id, 'v1')
-  await alice.addReviewer(id, 'bob')
-  await alice.addReviewer(id, 'carol')
+  // Primary reviewers: added to the change in Gerrit and tagged, by any name Gerrit resolves.
+  await serviceAs('alice').act({ type: 'addPrimaryReviewer', id, reviewer: 'bob' })
+  await serviceAs('alice').act({ type: 'addPrimaryReviewer', id, reviewer: 'carol@example.com' })
 
   let v = await view('bob', id)
+  assert.deepEqual(v.change.hashtags?.slice().sort(), ['reviewer:bob', 'reviewer:carol'], 'the tag stores the username')
+  assert.deepEqual(v.change.reviewers?.REVIEWER?.map((r) => r.username).sort(), ['bob', 'carol'])
+  assert.equal(v.iAmPrimary, true)
   assert.equal(v.state, 'in-progress')
   assert.equal(v.wip, true)
   assert.equal(v.needsMyReview, false, 'nothing requested yet')
@@ -90,11 +94,15 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   await carol.vote(id, 'Code-Review', -1, 'rename please')
   assert.equal((await view('alice', id)).state, 'needs-changes', 'everyone voted, one negative')
 
-  // The same votes seen with a team that leaves carol out: her -1 is shown but does not decide.
+  // Carol demoted: she stays on the change, her -1 is shown but no longer decides.
+  await serviceAs('alice').act({ type: 'hashtag', id, remove: reviewerTagsFor((await view('alice', id)).change, { _account_id: 0, username: 'carol' }) })
   v = await view('alice', id, ['bob'])
-  assert.equal(v.state, 'approved', 'only team votes decide')
-  assert.deepEqual(v.externalReviewers.map((r) => [r.account.username, r.vote]), [['carol', -1]])
+  assert.equal(v.state, 'approved', 'only primary votes decide')
+  assert.deepEqual(v.otherReviewers.map((r) => [r.account.username, r.vote]), [['carol', -1]])
   assert.deepEqual(v.reviewers.map((r) => r.account.username), ['bob'])
+  // And promoted again, from the chip: just the tag, she is already on the change.
+  await serviceAs('alice').act({ type: 'hashtag', id, add: ['reviewer:carol'] })
+  assert.equal((await view('alice', id)).state, 'needs-changes')
 
   // Author pushes fixes over two patch sets; nobody is asked to look at either.
   await pushPatchSet('alice', id, 'v2')
@@ -138,7 +146,7 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   assert.equal(v.requestedMerger, 'dave')
   assert.equal(v.mergeRequestedFromMe, true)
   assert.equal(v.canMerge, true, 'dave is in the Mergers group (+2 permission)')
-  assert.deepEqual(v.change.hashtags?.slice().sort(), ['merger:dave', READY_TO_MERGE_TAG])
+  assert.deepEqual(v.change.hashtags?.slice().sort(), ['merger:dave', READY_TO_MERGE_TAG, 'reviewer:bob', 'reviewer:carol'])
   assert.equal((await view('bob', id)).canMerge, false, 'reviewers cannot +2')
   assert.equal((await view('bob', id)).mergeRequestedFromMe, false)
 
@@ -164,13 +172,54 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   assert.equal((await view('alice', id)).state, 'merged')
 })
 
+test('primary reviewer tags: anyone may tag and untag; the removal in Gerrit is best effort', { skip: !reachable && 'no local Gerrit' }, async () => {
+  const c = await raw('alice', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `tags ${Date.now()}`, work_in_progress: true })
+  const id: number = c._number
+  await pushPatchSet('alice', id, 'v1')
+  await serviceAs('alice').act({ type: 'addPrimaryReviewer', id, reviewer: 'bob' })
+  await serviceAs('alice').act({ type: 'requestReview', id, patchSet: (await view('alice', id)).patchSet })
+
+  // Bob, not the owner, adds carol as primary and then takes her off again.
+  await serviceAs('bob').act({ type: 'addPrimaryReviewer', id, reviewer: 'carol' })
+  let v = await view('bob', id)
+  assert.deepEqual(v.reviewers.map((r) => r.account.username), ['bob', 'carol'])
+  const carolId = v.reviewers[1]!.account._account_id
+  await serviceAs('bob').act({ type: 'removePrimaryReviewer', id, key: 'carol', accountId: carolId })
+  v = await view('bob', id)
+  assert.deepEqual(v.reviewers.map((r) => r.account.username), ['bob'], 'the tag went')
+  assert.deepEqual(v.otherReviewers.map((r) => r.account.username), ['carol'], 'Gerrit refused bob the removal, so carol stays as a plain reviewer')
+  // The owner may remove her for real.
+  await serviceAs('alice').act({ type: 'addPrimaryReviewer', id, reviewer: 'carol' })
+  await serviceAs('alice').act({ type: 'removePrimaryReviewer', id, key: 'carol', accountId: carolId })
+  v = await view('alice', id)
+  assert.deepEqual(v.reviewers.map((r) => r.account.username), ['bob'])
+  assert.deepEqual(v.otherReviewers, [])
+
+  // A tag written without adding the person: a stand-in that is waited for, and that dave sees on his board.
+  await serviceAs('alice').act({ type: 'hashtag', id, add: ['reviewer:dave'] })
+  v = await view('bob', id)
+  assert.deepEqual(v.reviewers.map((r) => [r.key, r.tagOnly ?? false]).sort(), [['bob', false], ['dave', true]])
+  assert.equal(v.state, 'needs-review')
+  const asDave = await view('dave', id)
+  assert.equal(asDave.iAmPrimary, true)
+  assert.equal(asDave.needsMyReview, true)
+  const d = await fetchDashboard(user('dave'), [])
+  assert.ok(d.open.some((x) => x._number === id), 'found through hashtag:reviewer:dave although dave is not a reviewer in Gerrit')
+  await serviceAs('bob').act({ type: 'removePrimaryReviewer', id, key: 'dave' })
+  assert.deepEqual((await view('bob', id)).reviewers.map((r) => r.key), ['bob'])
+
+  // A group is one input but many people; the tag names one, so it is refused before anything is added.
+  await assert.rejects(serviceAs('alice').act({ type: 'addPrimaryReviewer', id, reviewer: 'Mergers' }), /groups cannot be tagged/)
+  assert.deepEqual((await view('alice', id)).change.reviewers?.REVIEWER?.map((r) => r.username), ['bob'], 'nothing was added')
+})
+
 test('re-requesting review drops a ready-to-merge tag and its merger left over from an earlier patch set', { skip: !reachable && 'no local Gerrit' }, async () => {
   const alice = user('alice')
   const service = serviceAs('alice')
   const c = await raw('alice', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `stale tag ${Date.now()}`, work_in_progress: true })
   const id: number = c._number
   await pushPatchSet('alice', id, 'v1')
-  await alice.addReviewer(id, 'bob')
+  await service.act({ type: 'addPrimaryReviewer', id, reviewer: 'bob' })
   await service.act({ type: 'requestReview', id, patchSet: 1 })
   await user('bob').vote(id, 'Code-Review', 1, 'ok')
   await service.act({ type: 'requestMerge', id, merger: 'dave' })
@@ -210,9 +259,17 @@ test('dashboard fetch includes WIP changes the user reviews, which reviewer: can
   assert.equal(new Set(d.open.map((c) => c.id)).size, d.open.length, 'no duplicates')
   assert.equal(d.truncated, false)
 
+  // A reviewer: tag naming bob is found directly, WIP or not, so only untagged changes depend on the scan.
   const scoped = await fetchDashboard(bob, ['does-not-exist'])
-  const scannedOnly = (c: ChangeInfo) => c.work_in_progress && c.owner.username !== 'bob' && !c.hashtags?.includes('ready-to-merge')
+  const scannedOnly = (c: ChangeInfo) => c.work_in_progress && c.owner.username !== 'bob' && !c.hashtags?.includes('ready-to-merge') && !c.hashtags?.includes('reviewer:bob')
   assert.equal(scoped.open.filter(scannedOnly).length, 0, 'scope excludes the demo project from the WIP scan')
+
+  // With a team, every open change of a teammate comes along, reviewed by bob or not, for the Team Reviews tab.
+  const withTeam = await fetchDashboard(bob, [], ['alice'])
+  const notInvolved = (c: ChangeInfo) => c.owner.username === 'alice' && !c.reviewers?.REVIEWER?.some((r) => r.username === 'bob') && !c.hashtags?.some((t) => t.startsWith('reviewer:bob'))
+  assert.equal(d.open.filter(notInvolved).length, 0, 'without a team, only what concerns bob')
+  assert.ok(withTeam.open.filter(notInvolved).length > 0, 'the seeded C1 has no reviewers at all')
+  assert.equal(new Set(withTeam.open.map((c) => c.id)).size, withTeam.open.length, 'no duplicates')
 })
 
 test('reviewers cannot forge a review request', { skip: !reachable && 'no local Gerrit' }, async () => {

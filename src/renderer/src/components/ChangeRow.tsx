@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, accountKeys, displayName, reviewerTag, reviewerTagsFor, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
 import { ForkIcon } from './Icons.tsx'
@@ -166,9 +166,11 @@ function byVote(rs: ReviewerStatus[]): ReviewerStatus[] {
 }
 
 /**
- * Reviewer chips with votes: the team on the first line, reviewers outside
- * the team on a second one (dashed, since their votes do not change the
- * state). Each line is one row of chips; what does not fit is behind "+N".
+ * Reviewer chips with votes: the primary reviewers on the first line, every
+ * other reviewer on the change on a second one (dashed, since their votes do
+ * not change the state). Each line is one row of chips; what does not fit is
+ * behind "+N". Anyone may tag or untag a primary reviewer; only the owner
+ * adds or removes plain reviewers, as in Gerrit.
  */
 export function Reviewers(props: ActProps) {
   const { view: v, self } = props
@@ -177,75 +179,112 @@ export function Reviewers(props: ActProps) {
   const open = c.status === 'NEW'
   const owner = open && v.isMine
   const [adding, setAdding] = useState(false)
+  const nameFor = useNames(v.reviewers.filter((r) => r.tagOnly).map((r) => r.key!))
 
-  const remove = (r: ReviewerStatus) =>
-    owner && (
-      <button className="chip-x" title="Remove reviewer" onClick={() => void props.onAct({ type: 'removeReviewer', id, accountId: r.account._account_id })}>
-        ×
-      </button>
-    )
-  const name = (r: ReviewerStatus) => (r.account._account_id === self._account_id ? 'you' : displayName(r.account))
+  const isMe = (r: ReviewerStatus) => r.account._account_id === self._account_id || (r.tagOnly === true && accountKeys(self).includes(r.key!))
+  const name = (r: ReviewerStatus) => (isMe(r) ? 'you' : r.tagOnly ? nameFor(r.key!) : displayName(r.account))
   const label = (r: ReviewerStatus) => (r.vote !== 0 ? `${name(r)} ${fmtVote(r.vote)}` : name(r))
-  const body = (r: ReviewerStatus) => (
+  const body = (r: ReviewerStatus, ...buttons: ReactNode[]) => (
     <>
       {name(r)}
       {r.vote !== 0 && <b> {fmtVote(r.vote)}</b>}
-      {remove(r)}
+      {open && buttons}
     </>
   )
+  const demote = (r: ReviewerStatus) =>
+    !r.tagOnly && (
+      <button
+        key="demote"
+        className="chip-x"
+        title="Stop waiting for this vote; the person stays on the change in Gerrit"
+        onClick={() => void props.onAct({ type: 'hashtag', id, remove: reviewerTagsFor(c, r.account) })}
+      >
+        ↓
+      </button>
+    )
+  const removePrimary = (r: ReviewerStatus) => (
+    <button
+      key="remove"
+      className="chip-x"
+      title="Remove primary reviewer: drops the tag and, when Gerrit lets you, takes the person off the change"
+      onClick={() => void props.onAct({ type: 'removePrimaryReviewer', id, key: r.key!, accountId: r.tagOnly ? undefined : r.account._account_id })}
+    >
+      ×
+    </button>
+  )
+  const promote = (r: ReviewerStatus) => {
+    const key = r.account.username ?? r.account.email
+    return (
+      key && (
+        <button key="promote" className="chip-x" title="Make primary: this vote then decides the state" onClick={() => void props.onAct({ type: 'hashtag', id, add: [reviewerTag(key)] })}>
+          ↑
+        </button>
+      )
+    )
+  }
+  const removeOther = (r: ReviewerStatus) =>
+    owner && (
+      <button key="remove" className="chip-x" title="Remove reviewer" onClick={() => void props.onAct({ type: 'removeReviewer', id, accountId: r.account._account_id })}>
+        ×
+      </button>
+    )
 
-  const team: Chip[] = byVote(v.reviewers).map((r) => ({
-    key: String(r.account._account_id),
-    className: r.vote > 0 ? 'pos' : r.vote < 0 ? 'neg' : open && v.reviewRequested ? 'pending' : '',
+  const primary: Chip[] = byVote(v.reviewers).map((r) => ({
+    key: r.key ?? String(r.account._account_id),
+    className: (r.vote > 0 ? 'pos' : r.vote < 0 ? 'neg' : open && v.reviewRequested ? 'pending' : '') + (r.tagOnly ? ' tagonly' : ''),
     title:
-      r.vote !== 0
+      (r.tagOnly ? 'tagged as a primary reviewer, but not on the change in Gerrit; ' : 'primary reviewer, ') +
+      (r.vote !== 0
         ? `voted ${fmtVote(r.vote)} on patch set ${v.patchSet}`
         : v.reviewRequested
           ? 'asked to review this patch set, has not voted yet'
-          : 'reviewer, but review has not been requested for this patch set',
+          : 'review has not been requested for this patch set'),
     label: label(r),
-    children: body(r),
+    children: body(r, demote(r), removePrimary(r)),
   }))
-  if (team.length === 0 && open) {
-    const onlyExternal = v.teamScoped && v.externalReviewers.length > 0
-    team.push({
+  if (primary.length === 0 && open) {
+    const untagged = v.otherReviewers.length > 0
+    primary.push({
       key: 'none',
       className: 'warn',
-      title: onlyExternal ? 'Only team votes decide the state, and nobody on the team is a reviewer' : 'Add a reviewer to get this change reviewed',
-      label: onlyExternal ? 'no team reviewers' : 'no reviewers',
-      children: onlyExternal ? 'no team reviewers' : 'no reviewers',
+      title: untagged
+        ? 'Nobody is tagged as primary, so nobody is waited for. Use ↑ on a reviewer below, or add one.'
+        : 'Add a primary reviewer to get this change reviewed',
+      label: 'no primary reviewers',
+      children: 'no primary reviewers',
     })
   }
-  const external: Chip[] = byVote(v.externalReviewers).map((r) => ({
+  const others: Chip[] = byVote(v.otherReviewers).map((r) => ({
     key: String(r.account._account_id),
     className: 'ext ' + (r.vote > 0 ? 'pos' : r.vote < 0 ? 'neg' : ''),
     title:
       r.vote !== 0
-        ? `outside the team, voted ${fmtVote(r.vote)} on patch set ${v.patchSet}; this vote does not change the state`
-        : 'outside the team, has not voted; not waited for',
+        ? `not primary, voted ${fmtVote(r.vote)} on patch set ${v.patchSet}; this vote does not change the state`
+        : 'not primary, has not voted; not waited for',
     label: label(r),
-    children: body(r),
+    children: body(r, promote(r), removeOther(r)),
   }))
 
   return (
     <>
       <ChipRow
-        chips={team}
+        chips={primary}
         trailing={
-          owner && (
-            <button className="chip add" onClick={() => setAdding((a) => !a)} title="Add reviewer">
+          open && (
+            <button className="chip add" onClick={() => setAdding((a) => !a)} title={owner ? 'Add a primary reviewer, or a reviewer who is not waited for' : 'Add a primary reviewer: added to the change in Gerrit and tagged; their vote decides'}>
               +
             </button>
           )
         }
       />
-      {external.length > 0 && <ChipRow className="external" chips={external} />}
+      {others.length > 0 && <ChipRow className="others" chips={others} />}
       {adding && (
         <AddReviewer
           changeId={id}
-          onDone={async (reviewer) => {
+          allowOther={owner}
+          onDone={async (reviewer, primary) => {
             setAdding(false)
-            if (reviewer) await props.onAct({ type: 'addReviewer', id, reviewer })
+            if (reviewer) await props.onAct(primary ? { type: 'addPrimaryReviewer', id, reviewer } : { type: 'addReviewer', id, reviewer })
           }}
         />
       )}

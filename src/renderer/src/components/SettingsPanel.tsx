@@ -84,10 +84,10 @@ export function SettingsPanel(props: { initial: SettingsStatus; onSaved: () => v
       </p>
       <h2>Team</h2>
       <p className="muted">
-        With a team, only the votes of its members decide whether a change is approved or needs changes. Anyone else
-        who reviews is shown on the change, and their votes never change the state. Changes owned by people outside
-        the team are listed on the <b>External Reviews</b> tab only; the other tabs list changes owned by the team.
-        Leave the list empty to count every reviewer.
+        The team decides where a change is listed. Changes owned by the team are on the regular tabs and on{' '}
+        <b>Team Reviews</b>; changes owned by people outside the team are on <b>External Reviews</b> only. Who decides a
+        change is not the team but its primary reviewers, tagged on the change with the "+" button on its row. Leave the
+        list empty to hide the two tabs.
       </p>
       <TeamEditor members={team} onChange={setTeam} canSearch={Boolean(canClose)} />
       <p className="muted small">

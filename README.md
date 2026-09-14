@@ -2,8 +2,8 @@
 
 Gerrit Review Board is a desktop application for Gerrit 3.11. It shows code
 review as a workflow with a request and a response. The author asks for a
-review of one patch set. Each reviewer votes on that patch set. The result is
-set after the last reviewer votes.
+review of one patch set. Each primary reviewer votes on that patch set. The
+result is set after the last primary reviewer votes.
 
 The application shows three things:
 
@@ -11,11 +11,12 @@ The application shows three things:
 - The changes that you review
 - The status of your changes
 
-All users get the same five tabs. A sixth tab, "External Reviews", appears
-when you set a team in the settings (refer to "Teams" below). The owner of a
-change, checked against that team list, decides where it is listed: changes
-owned by the team are on the five tabs, changes owned by anyone else are on
-"External Reviews" only. The "View"
+All users get the same five tabs. Two more tabs, "Team Reviews" and
+"External Reviews", appear when you set a team in the settings (refer to
+"Teams" below). The owner of a change, checked against that team list,
+decides where it is listed: changes owned by the team are on the five tabs
+and on "Team Reviews", changes owned by anyone else are on "External Reviews"
+only. The "View"
 button in the top bar (or Ctrl+F) opens the search, filter and sort for every
 tab: a search over the subjects, an author filter, and the row order. The
 author field suggests the owners of the changes on the current tab first,
@@ -27,35 +28,43 @@ application remembers the sort; the search and filter last for the session.
 
 | Tab | Contents |
 | --- | --- |
-| Needs Review | The author asked for a review of the current patch set. You are a reviewer. You did not vote on that patch set. The WIP status has no effect. |
-| Reviewing | All open changes on which you are a reviewer, in groups by state. |
+| Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. |
+| Reviewing | All open changes on which you are a reviewer, primary or not, in groups by state. |
 | My Changes | Your open changes, in groups by state, with the actions of the owner. |
 | Ready to Merge | Approved changes that the author asked you, by name, to merge. |
 | Recently Merged | Changes that Gerrit merged in the last 14 days. |
+| Team Reviews | Every open change owned by someone else on your team, in groups by state, whether or not you review it. Only with a team. |
 | External Reviews | Open changes owned by someone outside your team, in groups by state. Only with a team. These changes are on no other tab. |
 
 ![Needs Review](docs/screenshots/needs-my-review.png)
 
 ## The workflow
 
-1. The author pushes a change and adds reviewers. If the author pushes more
-   patch sets, the state does not change. The application does not ask a
-   reviewer to look at the change yet.
+1. The author pushes a change and adds primary reviewers with the "+"
+   button on the row, with "Primary" selected. The application adds each one
+   as a reviewer in Gerrit, if needed, and tags the change
+   `reviewer:<username>`. The primary reviewers are the people whose votes
+   decide. Anyone else on the change, added in Gerrit, by CI or with the
+   "Other" choice of the same button, is shown but not waited for. If the author pushes more patch sets, the state does not
+   change. The application does not ask a reviewer to look at the change yet.
 2. When the patch set is ready, the author pushes the "Request review" button.
-   All reviewers then see the change on the "Needs Review" tab.
-3. Each reviewer pushes the "Review" button. It opens the change in Gerrit,
+   The button is off until the change has a primary reviewer. All primary
+   reviewers then see the change on the "Needs Review" tab.
+3. Each primary reviewer pushes the "Review" button. It opens the change in Gerrit,
    showing the diff from the last patch set that reviewer looked at to the
    current one (or the whole change on a first look). The reviewer votes +1
    or -1 in Gerrit. After a reviewer votes, the application removes the change
    from the "Needs Review" tab of that reviewer.
-4. After the last reviewer votes, the change gets the "Approved" state (all
-   votes are +1) or the "Needs Changes" state (one or more votes are -1).
-   Votes that come before the last vote do not change the state.
+4. After the last primary reviewer votes, the change gets the "Approved"
+   state (all votes are +1) or the "Needs Changes" state (one or more votes
+   are -1). Votes that come before the last vote do not change the state.
+   The votes of the other reviewers never change the state.
 5. If the state is "Needs Changes", the author pushes the corrections and
    pushes the "Request review" button again. The application asks all
    reviewers again, for the new patch set only. If the change still has the
    `ready-to-merge` hashtag from an earlier patch set, the button also removes
-   the hashtag. The application does not remove the hashtag on its own.
+   the hashtag. The application does not remove the hashtag on its own. The
+   `reviewer:` tags stay: the same people are asked again.
 6. If the state is "Approved", the author pushes the "Ready to Merge" button
    and picks the person to merge: one of the mergers set for the project in
    "Settings", or anyone else on the server. The change then shows
@@ -84,11 +93,15 @@ the same votes, hashtags and WIP flags.
 | Workflow item | Gerrit data |
 | --- | --- |
 | Request review | The application writes the number of the current patch set to the custom keyed value `review-requested-ps` of the change. |
-| Needs Review by X | The number in `review-requested-ps` is the same as the number of the current patch set. X is a reviewer. X has no Code-Review vote on the current patch set. |
+| Primary reviewer X | The change has the hashtag `reviewer:<username>`, with the Gerrit username of X in lower case, or the email address for an account with no username. One tag per primary reviewer. |
+| Needs Review by X | The number in `review-requested-ps` is the same as the number of the current patch set. X is a primary reviewer. X has no Code-Review vote on the current patch set. |
 | Reviewer finished | X has a Code-Review vote (+1 or -1) on the current patch set. |
+| "+" button, "Primary" | Adds the person as a reviewer of the change in Gerrit, when they are not one yet, then adds the `reviewer:` tag. One account per tag; a group is refused. |
+| "×" on a primary reviewer | Removes the `reviewer:` tag, then tries to remove the reviewer in Gerrit. Gerrit lets only the owner, an administrator or the person themself do the second part; for anyone else the tag goes and the person stays on the change as an other reviewer. |
+| "↑" and "↓" on a reviewer | Adds or removes the `reviewer:` tag only. The person stays on the change in Gerrit. |
 | Review button | Opens Gerrit at `/c/<project>/+/<change>/<last>..<current>`, where `<last>` is the highest patch set with a vote or reply from you in the change messages. Without one, it opens the current patch set against base. The caret offers the other diffs and the change page. |
-| Needs Changes | All reviewers voted on the current patch set. One or more reviewers voted -1. |
-| Approved | All reviewers voted +1 on the current patch set. |
+| Needs Changes | All primary reviewers voted on the current patch set. One or more of them voted -1. |
+| Approved | All primary reviewers voted +1 on the current patch set. There is at least one primary reviewer. |
 | Ready to Merge | The state is Approved, and the change has the hashtag `ready-to-merge`. |
 | Ready to Merge button | The application adds the hashtags `ready-to-merge` and `merger:<username>` in one request. The username is the Gerrit username of the person asked, in lower case; the email address for an account with no username. A change has one `merger:` tag; "Change merger" replaces it. |
 | Asked of you | The change is Ready to Merge and the `merger:` tag names your username or email address. |
@@ -114,10 +127,23 @@ These rules have these effects:
   together with the `ready-to-merge` tag.
 - Only the owner of the change or an administrator can write custom keyed
   values. Thus, a reviewer cannot request a review for a different user.
+- Anyone may add or remove a `reviewer:` tag, if Gerrit lets them edit
+  hashtags. Gerrit grants "Edit Hashtags" to the owner and administrators
+  only by default. Grant it to "Registered Users" on the project, or on
+  `All-Projects`, so that reviewers can tag each other. `test/seed-gerrit.sh`
+  shows the REST call.
+- A `reviewer:` tag for a person who is not a reviewer of the change in
+  Gerrit still counts. The application shows the person with a dotted
+  outline and waits for their vote, and the person sees the change on their
+  own board. This happens when someone removes the reviewer in Gerrit but
+  not the tag, or writes the tag by hand.
+- A change with reviewers but no `reviewer:` tag has nobody to decide. It
+  stays in "Needs Review" after a request, and the "Request review" button
+  is off until a primary reviewer is tagged. Changes made before this
+  version have no tags: tag the reviewers, with "↑" on each chip.
 - The application does not use the attention set.
-- Bots and the owner do not count as reviewers. Bots are the members of the
-  Gerrit "Service Users" group. Reviewers outside the team set in "Settings"
-  do not count either (refer to "Teams").
+- Bots and the owner do not count as reviewers, tagged or not. Bots are the
+  members of the Gerrit "Service Users" group.
 - The Gerrit `reviewer:` search operator does not find WIP changes. Thus,
   the application also scans the open WIP changes of other owners and keeps
   the changes on which you are a reviewer. On a large server, set a project
@@ -162,33 +188,30 @@ The application uses mockup 3.
 
 ## Teams
 
-Reviewers from other teams often vote on a change without being part of the
-review that your team waits for. In "Settings", under "Team", add the people
-whose votes decide. Enter a username or an email address, or start to type and
-select an account from the server. The comparison ignores case. You are always
-on the team, so you do not need to add yourself.
+In "Settings", under "Team", add the people on your team. Enter a username
+or an email address, or start to type and select an account from the server.
+The comparison ignores case. You are always on the team, so you do not need
+to add yourself.
 
-When the team list has one or more entries:
+The team decides where a change is listed, by its owner. It has no say in
+the state of a change: the primary reviewers, tagged on each change, decide
+that (refer to "The workflow"). When the team list has one or more entries:
 
-- Only reviewers on the team count for "Needs Review by", "Needs Changes"
-  and "Approved". The last team member decides. A vote from anyone else does
-  not change the state.
-- The application shows reviewers who are not on the team on a second line
-  under the team, with a dashed outline. Their votes are visible there and in
-  the tooltip, and the owner can remove them.
+- The "Team Reviews" tab lists every open change owned by someone else on
+  the team, in groups by state, whether or not you are a reviewer of it.
+  These changes stay on "Needs Review" and "Reviewing" as well, when they
+  belong there.
 - The "External Reviews" tab lists every open change owned by someone
   outside the team, in groups by state. Those changes are not on "Needs
   Review", "Reviewing", "Ready to Merge" or "Recently Merged", and the counts
   on those tabs and in the tray leave them out. Only the owner decides this:
   your own changes stay on "My Changes" even when CI or a maintainers list
   adds reviewers from outside the team.
-- A change with only external reviewers stays in "Needs Review". Add a team
-  member to get it approved.
 
-When the team list is empty, every reviewer counts and the tab is hidden.
-The team is a setting of your computer. Each team member enters the same
-list. The state you see is calculated from your list only. Thus, two users
-with different lists can see different states for the same change.
+When the team list is empty, both tabs are hidden. The team is a setting of
+your computer. Each team member enters the same list.
+
+![Team Reviews](docs/screenshots/team-reviews.png)
 
 ![External Reviews](docs/screenshots/external-reviews.png)
 
@@ -392,7 +415,7 @@ mode do not operate in a browser. All other functions operate.
 ```sh
 pnpm test                                # unit tests of the classifier
 docker run -d --name gerrit-test -p 8080:8080 gerritcodereview/gerrit:3.11.2
-./test/seed-gerrit.sh                    # users alice/bob/carol/dave, erin from another team, and changes in each state
+./test/seed-gerrit.sh                    # users alice/bob/carol/dave, erin from another team, primary reviewers tagged, changes in each state
 node --test test/integration.test.ts     # runs the real REST client through the full workflow
 ```
 

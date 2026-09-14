@@ -109,25 +109,34 @@ export interface ReviewerStatus {
   account: AccountInfo
   /** Code-Review vote on the current patch set; 0 = not reviewed yet. */
   vote: number
+  /** The username or email the `reviewer:` tag names, lower-case; set for primary reviewers only. */
+  key?: string
+  /**
+   * Tagged as primary but not a reviewer in Gerrit: removed there, or tagged
+   * by hand. `account` is then a stand-in built from the tag, with a negative
+   * id, and the person is still waited for.
+   */
+  tagOnly?: boolean
 }
 
 export interface ChangeView {
   change: ChangeInfo
   state: ReviewState
   /**
-   * The reviewers whose votes decide the state: humans, not the owner, and
-   * when a team is configured, only its members.
+   * The primary reviewers, whose votes decide the state: the people named by
+   * a `reviewer:` hashtag, less bots and the owner. In the order Gerrit
+   * lists the tags, which is alphabetical.
    */
   reviewers: ReviewerStatus[]
-  /** Reviewers who have not voted on the current patch set. */
+  /** Primary reviewers who have not voted on the current patch set. */
   pending: AccountInfo[]
   /**
-   * Human reviewers outside the configured team. Their votes are shown but
-   * never change the state, and they do not make the change external; only
-   * the owner does. Empty when no team is configured.
+   * Human reviewers on the change in Gerrit who are not tagged as primary:
+   * CI-added maintainers, people from other teams, anyone who dropped in.
+   * Their votes are shown but never change the state.
    */
-  externalReviewers: ReviewerStatus[]
-  /** A team is configured, so `reviewers` is limited to its members. */
+  otherReviewers: ReviewerStatus[]
+  /** A team is configured, so the owner decides between the team tabs and External Reviews. */
   teamScoped: boolean
   /** The owner is outside the configured team; the change is listed on the External Reviews tab and on no other. */
   externalOwner: boolean
@@ -138,7 +147,10 @@ export interface ChangeView {
   /** The request is for the current patch set, so reviews are outstanding. */
   reviewRequested: boolean
   isMine: boolean
+  /** A reviewer in Gerrit, or tagged as primary. */
   iAmReviewer: boolean
+  /** Tagged as primary: my vote decides, and a request lands on my Needs Review tab. */
+  iAmPrimary: boolean
   needsMyReview: boolean
   myVote: number
   patchSet: number
@@ -206,10 +218,11 @@ export interface Settings {
    */
   projects: string[]
   /**
-   * Usernames or email addresses of the people whose votes decide the state
-   * of a change. Empty means every reviewer counts. The signed-in user is
-   * always a member. Votes from reviewers outside the team never change the
-   * state. Changes owned outside the team appear on the "External Reviews" tab.
+   * Usernames or email addresses of the team. The owner of a change decides
+   * where it is listed: changes owned by the team are on the regular tabs
+   * and on "Team Reviews", changes owned by anyone else on "External Reviews"
+   * only. The signed-in user is always a member. The team has no say in the
+   * state of a change; the `reviewer:` tags do (see ChangeView.reviewers).
    */
   team: string[]
   /**
@@ -253,7 +266,7 @@ export interface UiState {
   compactBounds?: WindowBounds
 }
 
-export type TabId = 'needs-my-review' | 'reviewing' | 'mine' | 'ready-to-merge' | 'merged' | 'external-reviews'
+export type TabId = 'needs-my-review' | 'reviewing' | 'mine' | 'ready-to-merge' | 'merged' | 'team-reviews' | 'external-reviews'
 
 /** Things that wait on the current user, one count per kind of action. */
 export type ActionCategory = 'review' | 'fix' | 'ready' | 'merge'
@@ -293,8 +306,22 @@ export type ChangeAction =
   | { type: 'withdrawReview'; id: number }
   | { type: 'setWip'; id: number; wip: boolean }
   | { type: 'hashtag'; id: number; add?: string[]; remove?: string[] }
+  /** Add to the change in Gerrit only; the person is shown but not waited for. `reviewer` is an account, group or free text. */
   | { type: 'addReviewer'; id: number; reviewer: string }
   | { type: 'removeReviewer'; id: number; accountId: number }
+  /**
+   * Anyone's action: add the person as a reviewer in Gerrit when they are not
+   * one yet, then tag them `reviewer:<key>`. `reviewer` names one account
+   * (id, username or email); a group is refused.
+   */
+  | { type: 'addPrimaryReviewer'; id: number; reviewer: string }
+  /**
+   * Anyone's action: drop the `reviewer:` tag, then try to take the person
+   * off the change in Gerrit. The removal in Gerrit is best effort, because
+   * only the owner (or an admin) may remove a reviewer there; the tag goes
+   * either way. No `accountId` when the person is not on the change in Gerrit.
+   */
+  | { type: 'removePrimaryReviewer'; id: number; key: string; accountId?: number }
 
 export type UpdateStatus = 'disabled' | 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'downloaded' | 'error'
 

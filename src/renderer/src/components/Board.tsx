@@ -39,12 +39,13 @@ export const TABS: Tab[] = [
   { id: 'mine', label: 'My Changes', short: 'Mine' },
   { id: 'ready-to-merge', label: 'Ready to Merge', short: 'Ready' },
   { id: 'merged', label: 'Recently Merged', short: 'Merged' },
+  { id: 'team-reviews', label: 'Team Reviews', short: 'Team' },
   { id: 'external-reviews', label: 'External Reviews', short: 'External' },
 ]
 
-/** The External Reviews tab exists only once a team is configured; without one nobody is external. */
+/** The Team Reviews and External Reviews tabs exist only once a team is configured; without one there is no team and nobody is external. */
 export function visibleTabs(teamConfigured: boolean): Tab[] {
-  return TABS.filter((t) => t.id !== 'external-reviews' || teamConfigured)
+  return TABS.filter((t) => (t.id !== 'external-reviews' && t.id !== 'team-reviews') || teamConfigured)
 }
 
 /** One list entry: a single change, or the lead of a family card. */
@@ -61,6 +62,7 @@ const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
   mine: 'You have no open changes.',
   'ready-to-merge': 'Nobody has asked you to merge anything.',
   merged: 'Nothing merged recently.',
+  'team-reviews': 'Nobody else on the team has an open change.',
   'external-reviews': 'No open change is owned by someone outside the team.',
 }
 
@@ -76,12 +78,12 @@ function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => 
           The author pressed <b>Request review</b> on it, and that request is for the <b>current patch set</b>. A new
           patch set cancels the request until the author asks again.
         </li>
-        <li>You are a reviewer on it (bots and the owner do not count), and the owner is on your team.</li>
+        <li>You are a primary reviewer on it, tagged with the "+" button on the row. Being a reviewer in Gerrit alone is not enough. The owner is on your team.</li>
         <li>You have not voted on that patch set yet. Any vote clears it.</li>
       </ol>
       <p className="muted">
-        Being added as a reviewer in Gerrit, a new patch set, or the attention set do not put anything here. WIP status
-        makes no difference. Requests from owners outside the team are under External Reviews.
+        Being added as a reviewer in Gerrit without the tag, a new patch set, or the attention set do not put anything
+        here. WIP status makes no difference. Requests from owners outside the team are under External Reviews.
       </p>
       {reviewing.length > 0 ? (
         <p>
@@ -190,6 +192,12 @@ export function Board(props: {
         <p className="muted small">
           Signed in as {displayName(props.self)}. Push as many patch sets as you like; reviewers are only asked to look
           when you press Request review, and only for that patch set.
+        </p>
+      )}
+      {props.tab === 'team-reviews' && (
+        <p className="muted small">
+          Every open change owned by someone else on the team you set in Settings, whether or not you review it. The ones
+          you review are under Reviewing as well.
         </p>
       )}
       {props.tab === 'external-reviews' && (
