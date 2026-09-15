@@ -256,13 +256,6 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .menu-item:hover { background: var(--panel); }
 .menu-item.selected { font-weight: 600; }
 .menu-item.selected::before { content: '\2713'; position: absolute; left: 8px; color: var(--accent); }
-/* Owner's flags menu: the subtle button in the last column opens the WIP and private toggles. */
-.flags-menu { display: inline-flex; }
-.flags-menu .btn.subtle .arrow { margin-left: 4px; }
-.flags-menu .btn.subtle[aria-expanded='true'] { color: var(--fg); border-color: var(--border); background: var(--panel); }
-.menu.flags { width: 260px; }
-.menu.flags .menu-item { padding-left: 10px; }
-.menu.flags .menu-item .muted { font-size: 12px; }
 
 
 /*

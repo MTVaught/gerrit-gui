@@ -79,6 +79,13 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   v = await view('bob', id)
   assert.equal(v.state, 'needs-review')
   assert.equal(v.needsMyReview, true, 'requested on a WIP change still counts')
+
+  // The owner hides the change and shows it again; a reviewer sees it either way.
+  await serviceAs('alice').act({ type: 'setPrivate', id, private: true })
+  assert.equal((await view('bob', id)).isPrivate, true)
+  await serviceAs('alice').act({ type: 'setPrivate', id, private: false })
+  v = await view('bob', id)
+  assert.equal(v.isPrivate, false)
   assert.deepEqual(v.pending.map((a) => a.username).sort(), ['bob', 'carol'])
 
   assert.equal(v.lastReviewedPatchSet, null, 'no vote or reply yet')

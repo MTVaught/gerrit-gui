@@ -250,9 +250,16 @@ function LedgerRow(
             </div>
             <Reviewers view={v} self={self} onAct={props.onAct} />
             <div className="ldet-actions">
-              {rest.map((a) =>
+              {rest.flatMap((a) =>
                 a.picker ? (
                   <MergerPicker key={a.key} view={v} spec={a} onAct={props.onAct} small />
+                ) : a.menu ? (
+                  // The detail row has room, so the menu's items are plain buttons here.
+                  a.menu.map((m) => (
+                    <button key={m.key} className={actionClass(a, 'sm')} title={m.title} onClick={m.run}>
+                      {m.label}
+                    </button>
+                  ))
                 ) : (
                   <button key={a.key} className={actionClass(a, 'sm')} disabled={a.disabled} title={a.title} onClick={a.run}>
                     {a.label}

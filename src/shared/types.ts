@@ -309,6 +309,8 @@ export type ChangeAction =
   | { type: 'requestMerge'; id: number; merger: string; replace?: string[] }
   | { type: 'withdrawReview'; id: number }
   | { type: 'setWip'; id: number; wip: boolean }
+  /** Owner's action: hide the change from everyone not on it, or show it again. */
+  | { type: 'setPrivate'; id: number; private: boolean }
   | { type: 'hashtag'; id: number; add?: string[]; remove?: string[] }
   /** Add to the change in Gerrit only; the person is shown but not waited for. `reviewer` is an account, group or free text. */
   | { type: 'addReviewer'; id: number; reviewer: string }

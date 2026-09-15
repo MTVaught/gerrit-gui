@@ -18,6 +18,17 @@ export interface ActionSpec {
   title?: string
   /** Rendered as the merger picker (a button with a menu) instead of a plain button; `run` is then unused. */
   picker?: 'merger'
+  /** Rendered as a button that opens a menu of these; `run` is then unused. The ledger shows them as plain buttons. */
+  menu?: MenuItem[]
+  run: () => void
+}
+
+export interface MenuItem {
+  key: string
+  label: string
+  /** A few words after the label, in the menu only. */
+  detail?: string
+  title?: string
   run: () => void
 }
 
@@ -82,15 +93,34 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
   if (open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && ((v.isMine && !covered) || merger)) {
     out.push({ key: 'clear', label: 'Clear ready-to-merge', short: 'Clear tag', run: () => void act({ type: 'hashtag', id, remove: readyTags }) })
   }
+  // The subtle button in the last column. The owner gets a menu with the WIP
+  // and private toggles; a merger only clears WIP, so theirs is a plain button.
+  const flags: MenuItem[] = []
   if (owner || (merger && v.wip)) {
-    out.push({
+    flags.push({
       key: 'wip',
-      label: v.wip ? 'Mark active (runs CI)' : 'Mark WIP',
-      short: v.wip ? 'Mark active' : 'Mark WIP',
-      subtle: true,
+      label: v.wip ? 'Mark active' : 'Mark WIP',
+      detail: v.wip ? 'runs CI' : 'stops CI',
       title: v.wip ? 'Clear WIP so CI runs on this change' : 'Mark WIP so CI stops running on this change',
       run: () => void act({ type: 'setWip', id, wip: !v.wip }),
     })
+  }
+  if (owner) {
+    flags.push({
+      key: 'private',
+      label: v.isPrivate ? 'Make public' : 'Make private',
+      detail: v.isPrivate ? 'everyone can see it' : 'hides it from others',
+      title: v.isPrivate
+        ? 'Clear the private flag so anyone with access to the project can see this change'
+        : 'Set the private flag so only you, the reviewers and the CCs can see this change',
+      run: () => void act({ type: 'setPrivate', id, private: !v.isPrivate }),
+    })
+  }
+  if (flags.length === 1) {
+    const f = flags[0]!
+    out.push({ key: f.key, label: f.key === 'wip' && v.wip ? 'Mark active (runs CI)' : f.label, short: f.label, subtle: true, title: f.title, run: f.run })
+  } else if (flags.length > 1) {
+    out.push({ key: 'flags', label: flags[0]!.label, short: flags[0]!.label, subtle: true, title: 'WIP and private flags', menu: flags, run: () => undefined })
   }
   return out
 }
