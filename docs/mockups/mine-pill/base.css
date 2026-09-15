@@ -66,14 +66,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .count.split > span { padding: 1px 7px; }
 .count.split > .pos { background: var(--pos-bg); color: var(--pos); }
 .count.split > .neg { background: var(--neg-bg); color: var(--neg); }
-.count.split > .pending { background: var(--pending-bg); color: var(--pending); }
-.count.split > .wip { background: var(--panel); color: var(--muted); }
-/* A hairline between segments, so two pale ones still read as two; a gap between what waits on me and what waits on others. */
-.count.split > span + span { border-left: 1px solid var(--bg); }
-.count.split > .gap { width: 3px; padding: 0; background: var(--bg); }
-/* The private count: a lock pill after the capsule, outlined rather than filled. */
-.count.private { display: inline-flex; align-items: center; gap: 3px; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0 6px; margin-left: -2px; }
-.count.private svg { width: 9px; height: 9px; }
 .btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--fg); cursor: pointer; white-space: nowrap; }
 .btn:hover:not(:disabled) { border-color: var(--muted); }
 .btn:disabled { opacity: 0.5; cursor: default; }
@@ -333,7 +325,6 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .compact .tab .count { padding: 0 5px; }
 .compact .tab .count.split { padding: 0; }
 .compact .tab .count.split > span { padding: 0 5px; }
-.compact .tab .count.split > .gap { padding: 0; }
 .compact .topbar-right { flex: 0 0 100%; gap: 6px; }
 .compact .btn.icon { padding: 5px 7px; }
 .compact .btn.view-btn { padding: 5px 7px; }
