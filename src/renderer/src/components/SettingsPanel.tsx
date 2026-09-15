@@ -103,8 +103,8 @@ export function SettingsPanel(props: {
             </p>
             <TeamEditor members={s.team} onChange={(team) => void apply({ team })} canSearch={connected} />
             <p className="muted small">
-              Usernames or email addresses, matched without regard to case. You are always on the team, so you do not need
-              to add yourself. Start typing to pick from the accounts on the server.
+              Stored as usernames; an email address still matches. You are always on the team, so you do not need to add
+              yourself. Start typing to pick from the accounts on the server.
             </p>
           </>
         )}

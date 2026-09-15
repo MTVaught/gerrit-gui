@@ -156,6 +156,15 @@ export function accountKeys(a: AccountInfo): string[] {
   return [a.username, a.email].filter((k): k is string => Boolean(k)).map(accountKey)
 }
 
+/**
+ * The key the application writes for an account: the username, or the email
+ * of an account without one. Reads still match either, so entries and tags
+ * written as emails before this rule keep working.
+ */
+export function preferredKey(a: AccountInfo): string | null {
+  return accountKeys(a)[0] ?? null
+}
+
 export function requestedPatchSet(change: ChangeInfo): number | null {
   return patchSetValue(change, REVIEW_REQUESTED_KEY)
 }
