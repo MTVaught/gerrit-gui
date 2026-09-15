@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, accountKeys, displayName, reviewerTag, reviewerTagsFor, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, accountKeys, displayName, preferredKey, reviewerTag, reviewerTagsFor, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
 import { ForkIcon, LockIcon } from './Icons.tsx'
@@ -232,7 +232,7 @@ export function Reviewers(props: ActProps) {
     </button>
   )
   const promote = (r: ReviewerStatus) => {
-    const key = r.account.username ?? r.account.email
+    const key = preferredKey(r.account)
     return (
       key && (
         <button key="promote" className="chip-x" title="Make primary: this vote then decides the state" onClick={() => void props.onAct({ type: 'hashtag', id, add: [reviewerTag(key)] })}>

@@ -1,5 +1,4 @@
 import type { MergerRule } from '../../../shared/types.ts'
-import { useNames } from '../names.ts'
 import { TeamEditor } from './TeamEditor.tsx'
 
 /**
@@ -8,7 +7,6 @@ import { TeamEditor } from './TeamEditor.tsx'
  * usernames or email addresses picked from the server or typed as is.
  */
 export function MergersEditor(props: { rules: MergerRule[]; onChange: (rules: MergerRule[]) => void; canSearch: boolean }) {
-  const nameFor = useNames(props.rules.flatMap((r) => r.people))
   const update = (i: number, patch: Partial<MergerRule>) => props.onChange(props.rules.map((r, j) => (j === i ? { ...r, ...patch } : r)))
   const remove = (i: number) => props.onChange(props.rules.filter((_, j) => j !== i))
   return (
@@ -33,7 +31,6 @@ export function MergersEditor(props: { rules: MergerRule[]; onChange: (rules: Me
             canSearch={props.canSearch}
             emptyText="Nobody yet: add the people to ask for a merge in this project."
             noun="merger"
-            nameFor={nameFor}
           />
         </div>
       ))}

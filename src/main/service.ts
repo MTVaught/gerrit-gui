@@ -4,7 +4,7 @@
 import { GerritClient, GerritError, type FetchLike } from './gerrit.ts'
 import { fetchDashboard } from './dashboard.ts'
 import { READY_TO_MERGE_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
-import { accountKey, accountKeys, mergerTag, reviewerTag } from '../shared/model.ts'
+import { mergerTag, preferredKey, reviewerTag } from '../shared/model.ts'
 import type {
   AccountInfo,
   ChangeAction,
@@ -38,6 +38,20 @@ export interface Service {
   /** Accounts for usernames or email addresses; keys with no account are left out. */
   lookupAccounts(keys: string[]): Promise<AccountInfo[]>
   changeUrl(link: ChangeLink): Promise<string>
+}
+
+/**
+ * The username behind whatever names an account (username, email, id), for
+ * the keys the application writes. An unknown key is kept as typed, so an
+ * entry the server cannot resolve still tags something.
+ */
+async function usernameFor(g: GerritClient, key: string): Promise<string> {
+  try {
+    return preferredKey(await g.account(key)) ?? key
+  } catch (e) {
+    if ((e as GerritError).status === 404) return key
+    throw e
+  }
 }
 
 /** Turn a failed /accounts/self call into something a user can act on. */
@@ -99,7 +113,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
         case 'requestMerge': {
           // The state tag and the addressee go in one request; a previous
           // merger tag leaves in the same one, so exactly one person is named.
-          const tag = mergerTag(action.merger)
+          const tag = mergerTag(await usernameFor(g, action.merger))
           const remove = (action.replace ?? []).filter((t) => t !== tag)
           await g.setHashtags(action.id, [READY_TO_MERGE_TAG, tag], remove)
           // The patch set the tag is for. Only the owner can write it, which
@@ -136,7 +150,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
             if ((e as GerritError).status === 404) throw new Error(`No account matches "${action.reviewer}". A primary reviewer is one person; groups cannot be tagged.`)
             throw e
           }
-          const key = account.username ? accountKey(account.username) : accountKeys(account)[0]
+          const key = preferredKey(account)
           if (!key) throw new Error(`${account.name ?? action.reviewer} has neither a username nor an email address, so there is nothing to tag.`)
           // Adding an existing reviewer is a no-op in Gerrit, so no check first.
           await g.addReviewer(action.id, String(account._account_id))

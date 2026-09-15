@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView } from '../../../shared/types.ts'
 import { READY_TO_MERGE_TAG } from '../../../shared/constants.ts'
-import { accountKey, accountKeys, addMerger, displayName, mergerTags, mergersFor } from '../../../shared/model.ts'
+import { accountKey, addMerger, displayName, mergerTags, mergersFor, preferredKey } from '../../../shared/model.ts'
 import { api } from '../api.ts'
 import { useNames } from '../names.ts'
 import { useSettings } from '../settings-context.ts'
@@ -107,12 +107,12 @@ export function MergerPicker(props: { view: ChangeView; spec: ActionSpec; onAct:
 
   function pickOther(a: AccountInfo) {
     setOther(a)
-    setChoice(accountKeys(a)[0] ?? null)
+    setChoice(preferredKey(a))
     setQ('')
     setSuggestions([])
   }
 
-  const otherKey = other ? (accountKeys(other)[0] ?? null) : null
+  const otherKey = other ? preferredKey(other) : null
   const chosen = choice
   const chosenName = chosen === null ? '' : otherKey === chosen && other ? displayName(other) : nameFor(chosen)
   const changing = spec.key === 'change-merger'

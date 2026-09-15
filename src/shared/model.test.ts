@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, preferredKey, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
 import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -799,4 +799,10 @@ test('mergers settings: a one-off pick can be added to the row for that project,
     { project: '*', people: ['alice'] },
     { project: 'demo', people: ['dave'] },
   ])
+})
+
+test('preferredKey writes the username, or the email of an account without one', () => {
+  assert.equal(preferredKey({ _account_id: 1, username: 'Alice', email: 'alice@example.com' }), 'alice')
+  assert.equal(preferredKey({ _account_id: 2, email: 'Bob@example.com' }), 'bob@example.com')
+  assert.equal(preferredKey({ _account_id: 3 }), null)
 })
