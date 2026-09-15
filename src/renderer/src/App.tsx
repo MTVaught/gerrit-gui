@@ -199,6 +199,14 @@ export function App() {
   const showZeroCounts = settings?.showZeroCounts ?? false
   const showAppBadge = settings?.showAppBadge ?? true
   const showTrayCounts = settings?.showTrayCounts ?? true
+  // The menu bar strip is a plain image, so the renderer picks the ring color for the current appearance and redraws when it flips.
+  const [darkMenuBar, setDarkMenuBar] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = (e: MediaQueryListEvent): void => setDarkMenuBar(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
   useEffect(() => {
     if (!data) return
     api.setBadge({
@@ -208,9 +216,9 @@ export function App() {
       showAppBadge,
       showTrayCounts,
       iconDataUrl: renderBadgeIcon(totalActions(actions)),
-      strip: showTrayCounts && badgeStyle === 'color' ? renderTrayStrip(actions, showZeroCounts) : null,
+      strip: showTrayCounts && badgeStyle === 'color' ? renderTrayStrip(actions, showZeroCounts, darkMenuBar) : null,
     })
-  }, [actions, badgeStyle, showZeroCounts, showAppBadge, showTrayCounts, data])
+  }, [actions, badgeStyle, showZeroCounts, showAppBadge, showTrayCounts, darkMenuBar, data])
 
   return (
     <SettingsContext.Provider value={settingsHandle}>
