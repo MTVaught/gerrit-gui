@@ -547,16 +547,31 @@ function projectScope(projects: string[]): string {
  * off the change in Gerrit still sees it. The team query fetches the open
  * changes of every teammate for the Team Reviews tab; it is empty without a
  * team, and the caller then skips it.
+ *
+ * A private change of another author is never shown, even when the user is
+ * a reviewer or CC on it and Gerrit would return it, so every query leaves
+ * those out; `isVisibleOnBoard` applies the same rule to the results.
  */
 export function dashboardQueries(projects: string[] = [], selfKeys: string[] = [], team: string[] = []): { direct: string; wipScan: string; merged: string; team: string } {
   const mine = ['owner:self', 'reviewer:self', `hashtag:${READY_TO_MERGE_TAG}`, ...selfKeys.map((k) => `hashtag:${reviewerTag(k)}`)]
   const owners = normalizeTeam(team).map((k) => `owner:${k}`)
   return {
-    direct: `is:open (${mine.join(' OR ')})`,
-    wipScan: `is:open is:wip -owner:self${projectScope(projects)}`,
-    merged: `is:merged (owner:self OR reviewer:self) -age:14d`,
-    team: owners.length === 0 ? '' : `is:open -owner:self (${owners.join(' OR ')})${projectScope(projects)}`,
+    direct: `is:open (${mine.join(' OR ')}) ${NOT_OTHERS_PRIVATE}`,
+    wipScan: `is:open is:wip -owner:self -is:private${projectScope(projects)}`,
+    merged: `is:merged (owner:self OR reviewer:self) -age:14d ${NOT_OTHERS_PRIVATE}`,
+    team: owners.length === 0 ? '' : `is:open -owner:self -is:private (${owners.join(' OR ')})${projectScope(projects)}`,
   }
+}
+
+/** Query clause that keeps the user's own private changes and drops everyone else's. */
+const NOT_OTHERS_PRIVATE = '(owner:self OR -is:private)'
+
+/**
+ * Whether the board may show a change: everything except a private change
+ * owned by someone else. Being a reviewer or CC does not make an exception.
+ */
+export function isVisibleOnBoard(change: ChangeInfo, selfId: number): boolean {
+  return change.is_private !== true || change.owner._account_id === selfId
 }
 
 /** Tagged as a primary reviewer, matched by username or email. */

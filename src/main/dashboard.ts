@@ -1,5 +1,5 @@
 import type { ChangeInfo, DashboardData } from '../shared/types.ts'
-import { accountKeys, dashboardQueries, hasTag, isReviewer, isTaggedReviewer } from '../shared/model.ts'
+import { accountKeys, dashboardQueries, hasTag, isReviewer, isTaggedReviewer, isVisibleOnBoard } from '../shared/model.ts'
 import { READY_TO_MERGE_TAG } from '../shared/constants.ts'
 import type { GerritClient } from './gerrit.ts'
 
@@ -16,10 +16,13 @@ export async function fetchDashboard(g: GerritClient, projects: string[], team: 
   const q = dashboardQueries(projects, keys, team)
   const queries = [q.direct, q.wipScan, q.merged, ...(q.team ? [q.team] : [])]
   const [direct, wipScan, merged, teamOwned = []] = await g.queryChanges(queries, LIMIT)
+  // The queries already exclude other people's private changes; this is the
+  // guarantee in case a server answers differently.
+  const visible = (c: ChangeInfo): boolean => isVisibleOnBoard(c, self._account_id)
   const seen = new Set(direct!.map((c) => c.id))
-  const open: ChangeInfo[] = [...direct!]
+  const open: ChangeInfo[] = direct!.filter(visible)
   for (const c of [...wipScan!, ...teamOwned]) {
-    if (seen.has(c.id)) continue
+    if (seen.has(c.id) || !visible(c)) continue
     // From the WIP scan only what concerns the user; the team query is kept whole.
     if (teamOwned.includes(c) || isReviewer(c, self._account_id) || isTaggedReviewer(c, keys) || hasTag(c, READY_TO_MERGE_TAG)) {
       open.push(c)
@@ -27,5 +30,5 @@ export async function fetchDashboard(g: GerritClient, projects: string[], team: 
     }
   }
   const truncated = [direct!, wipScan!, merged!, teamOwned].some((list) => list.at(-1)?._more_changes === true)
-  return { self, open, merged: merged!, fetchedAt: new Date().toISOString(), truncated }
+  return { self, open, merged: merged!.filter(visible), fetchedAt: new Date().toISOString(), truncated }
 }

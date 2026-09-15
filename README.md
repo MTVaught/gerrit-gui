@@ -30,7 +30,7 @@ application remembers the sort; the search and filter last for the session.
 | --- | --- |
 | Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. |
 | Reviewing | All open changes on which you are a reviewer, primary or not, in groups by state. |
-| My Changes | Your open changes, in groups by state, with the actions of the owner. Private changes are in one section at the bottom, whatever their state. |
+| My Changes | Your open changes, in groups by state, with the actions of the owner. Private changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
 | Ready to Merge | Approved changes that the author asked you, by name, to merge. |
 | Recently Merged | Changes that Gerrit merged in the last 14 days. |
 | Team Reviews | Every open change owned by someone else on your team, in groups by state, whether or not you review it. Only with a team. |
