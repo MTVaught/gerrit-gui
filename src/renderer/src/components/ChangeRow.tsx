@@ -9,6 +9,7 @@ import { ago } from '../time.ts'
 import { ReviewButton } from './ReviewButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
+import { FlagsMenu } from './FlagsMenu.tsx'
 import { api } from '../api.ts'
 import { useNames } from '../names.ts'
 
@@ -401,6 +402,8 @@ function Actions(props: ActProps) {
   const button = (a: ActionSpec) =>
     a.picker ? (
       <MergerPicker key={a.key} view={v} spec={a} onAct={props.onAct} />
+    ) : a.menu ? (
+      <FlagsMenu key={a.key} spec={a} />
     ) : (
       <button key={a.key} className={actionClass(a)} disabled={a.disabled} title={a.title} onClick={a.run}>
         {a.label}

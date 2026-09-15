@@ -96,6 +96,11 @@ export class GerritClient {
     return this.req<void>('POST', `/changes/${id}/wip`, {})
   }
 
+  /** Gerrit's private flag: on, only the owner, reviewers and CCs can see the change. */
+  setPrivate(id: number, isPrivate: boolean) {
+    return this.req<void>('POST', `/changes/${id}/${isPrivate ? 'private' : 'private.delete'}`, {})
+  }
+
   vote(id: number, label: string, value: number, message?: string) {
     return this.req<unknown>('POST', `/changes/${id}/revisions/current/review`, {
       labels: { [label]: value },

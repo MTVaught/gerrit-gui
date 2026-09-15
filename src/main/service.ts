@@ -110,6 +110,9 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
         case 'setWip':
           await (action.wip ? g.setWip(action.id) : g.setReady(action.id))
           return
+        case 'setPrivate':
+          await g.setPrivate(action.id, action.private)
+          return
         case 'hashtag':
           await g.setHashtags(action.id, action.add, action.remove)
           return
