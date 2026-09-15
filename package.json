@@ -12,7 +12,7 @@
     "icons": "node scripts/gen-icons.mjs",
     "build": "node scripts/ensure-electron.mjs && electron-vite build",
     "start": "node scripts/ensure-electron.mjs && electron-vite preview",
-    "test": "node --test src/shared/*.test.ts",
+    "test": "node --test src/shared/*.test.ts src/renderer/src/components/*.test.ts",
     "test:integration": "node --test test/integration.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "dist": "node scripts/ensure-electron.mjs && electron-vite build && electron-builder",

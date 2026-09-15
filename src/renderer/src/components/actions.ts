@@ -65,14 +65,18 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
   if (owner && v.reviewRequested && v.state === 'needs-review') {
     out.push({ key: 'withdraw', label: 'Withdraw request', short: 'Withdraw', run: () => void act({ type: 'withdrawReview', id }) })
   }
+  // The merger votes +2 and submits, so the change must be mergeable before
+  // they are asked: active (CI runs) and verified (CI passed), on top of approved.
   if (owner && v.state === 'approved') {
+    const blocked = v.wip ? 'Mark the change active first: CI does not run on a WIP change' : !v.verified ? 'Wait for Verified +1 on this patch set first' : null
     out.push({
       key: 'ready',
       label: 'Ready to Merge',
       short: 'Ready',
       primary: true,
       picker: 'merger',
-      title: 'Pick the person to ask for the merge',
+      disabled: blocked !== null,
+      title: blocked ?? 'Pick the person to ask for the merge',
       run: () => undefined,
     })
   }

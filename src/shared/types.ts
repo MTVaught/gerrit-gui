@@ -146,6 +146,8 @@ export interface ChangeView {
   wip: boolean
   /** Gerrit private flag: only the owner, the reviewers and the CCs can see the change. */
   isPrivate: boolean
+  /** The Verified label is +1 on the current patch set (CI passed) with no -1. Required, with Active, to ask for the merge. */
+  verified: boolean
   /** Patch set the author last requested review on, or null if never. */
   requestedPatchSet: number | null
   /** The request is for the current patch set, so reviews are outstanding. */
@@ -166,7 +168,9 @@ export interface ChangeView {
    * only what changed since they last looked.
    */
   lastReviewedPatchSet: number | null
-  /** Hashtag says ready-to-merge but the approval no longer holds (e.g. new patch set). */
+  /** Patch set the author tagged ready-to-merge, or null: never, or an older version wrote the tag alone. */
+  readyPatchSet: number | null
+  /** Hashtag says ready-to-merge but it was for an earlier patch set, or the approval no longer holds. */
   staleReadyToMerge: boolean
   /**
    * Username or email from the `merger:` hashtag, lower-case: the person the
@@ -302,11 +306,11 @@ export type ChangeAction =
   /** Owner's action. `clearTags` drops a ready-to-merge and merger tag left over from an earlier patch set. */
   | { type: 'requestReview'; id: number; patchSet: number; clearTags?: string[] }
   /**
-   * Owner's action: tag the change ready-to-merge for one person. `merger` is
-   * a username or email; `replace` lists the merger tags already on the change,
+   * Owner's action: tag the change ready-to-merge for one person, recording
+   * `patchSet` as the one it is for. `merger` is a username or email; `replace` lists the merger tags already on the change,
    * which go away so that one person is named.
    */
-  | { type: 'requestMerge'; id: number; merger: string; replace?: string[] }
+  | { type: 'requestMerge'; id: number; merger: string; patchSet: number; replace?: string[] }
   | { type: 'withdrawReview'; id: number }
   | { type: 'setWip'; id: number; wip: boolean }
   /** Owner's action: hide the change from everyone not on it, or show it again. */

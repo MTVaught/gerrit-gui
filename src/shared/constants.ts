@@ -18,5 +18,14 @@ export const REVIEWER_TAG_PREFIX = 'reviewer:'
  * match the current patch set, no review is outstanding.
  */
 export const REVIEW_REQUESTED_KEY = 'review-requested-ps'
+/**
+ * Custom keyed value holding the patch set number the author tagged
+ * ready-to-merge. Written with the tag; the tag only counts while it matches
+ * the current patch set, so a push after the request (even one that keeps
+ * the votes, like a trivial rebase) takes the change off the merger's queue.
+ */
+export const READY_TO_MERGE_KEY = 'ready-to-merge-ps'
 export const CODE_REVIEW = 'Code-Review'
+/** CI's label: a +1 on the current patch set is required before the author may ask for the merge. */
+export const VERIFIED = 'Verified'
 export const POLL_INTERVAL_MS = 45_000

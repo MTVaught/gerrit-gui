@@ -66,8 +66,9 @@ application remembers the sort; the search and filter last for the session.
    `ready-to-merge` hashtag from an earlier patch set, the button also removes
    the hashtag. The application does not remove the hashtag on its own. The
    `reviewer:` tags stay: the same people are asked again.
-6. If the state is "Approved", the author pushes the "Ready to Merge" button
-   and picks the person to merge: one of the mergers set for the project in
+6. If the state is "Approved", the change is Active (not WIP) and CI voted
+   Verified +1 on the current patch set, the author pushes the "Ready to
+   Merge" button and picks the person to merge: one of the mergers set for the project in
    "Settings", or anyone else on the server. The change then shows
    "Ready to Merge · Dave" on "My Changes".
 7. The person who was asked sees the change at the top of the "Merged" tab,
@@ -83,7 +84,8 @@ The WIP status is not part of this workflow. A change can go through the full
 workflow with the WIP status. The application shows WIP or Active as a
 separate badge with a separate switch. This is useful if you use WIP to stop
 CI until the review is complete. The "Ready to Merge" button does not remove
-the WIP status.
+the WIP status; it is disabled until the change is Active and Verified +1, so
+the merger is only asked once CI has passed.
 
 ## How the states are related to Gerrit data
 
@@ -103,8 +105,8 @@ the same votes, hashtags and WIP flags.
 | Review button | Opens Gerrit at `/c/<project>/+/<change>/<last>..<current>`, where `<last>` is the highest patch set with a vote or reply from you in the change messages. Without one, it opens the current patch set against base. The caret offers the other diffs and the change page. |
 | Needs Changes | All primary reviewers voted on the current patch set. One or more of them voted -1. |
 | Approved | All primary reviewers voted +1 on the current patch set. There is at least one primary reviewer. |
-| Ready to Merge | The state is Approved, and the change has the hashtag `ready-to-merge`. |
-| Ready to Merge button | The application adds the hashtags `ready-to-merge` and `merger:<username>` in one request. The username is the Gerrit username of the person asked, in lower case; the email address for an account with no username. A change has one `merger:` tag; "Change merger" replaces it. |
+| Ready to Merge | The state is Approved, the change has the hashtag `ready-to-merge`, and the custom value `ready-to-merge-ps` equals the current patch set number. A tag for an earlier patch set (or without the value, from an older version) is shown as stale and the change stays Approved. |
+| Ready to Merge button | Enabled when the state is Approved, the change is not WIP, and the `Verified` label has a +1 (or higher) vote and no negative vote on the current patch set. The application adds the hashtags `ready-to-merge` and `merger:<username>` in one request, then sets the custom value `ready-to-merge-ps` to the current patch set number. The username is the Gerrit username of the person asked, in lower case; the email address for an account with no username. A change has one `merger:` tag; "Change merger" replaces it. |
 | Asked of you | The change is Ready to Merge and the `merger:` tag names your username or email address. |
 | Tagged without a merger | The change is Ready to Merge and has no `merger:` tag. Only an older version of the application makes this. Every user with +2 sees it. |
 | Merge | Done in the Gerrit web UI: the merger votes +2 and submits there. The application only lists the change. |

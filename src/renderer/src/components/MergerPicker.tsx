@@ -122,13 +122,13 @@ export function MergerPicker(props: { view: ChangeView; spec: ActionSpec; onAct:
     setOpen(false)
     rememberLast(c.project, chosen)
     if (remember && otherKey === chosen) await save({ mergers: addMerger(rules, c.project, chosen) })
-    await props.onAct({ type: 'requestMerge', id: c._number, merger: chosen, replace: mergerTags(c) })
+    await props.onAct({ type: 'requestMerge', id: c._number, merger: chosen, patchSet: v.patchSet, replace: mergerTags(c) })
   }
 
   const cls = ['btn', spec.primary ? 'primary' : '', props.small ? 'sm' : ''].filter(Boolean).join(' ')
   return (
     <div className="split picker-wrap" ref={wrap}>
-      <button className={cls} title={spec.title} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+      <button className={cls} title={spec.title} disabled={spec.disabled} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
         {props.small ? spec.short : spec.label}
         <span className="arrow" aria-hidden="true">
           ▾

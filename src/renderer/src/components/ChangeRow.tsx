@@ -112,7 +112,7 @@ function BranchRow(props: RowProps) {
           {c.status === 'MERGED' && ` ${ago(c.submitted ?? c.updated)}`}
         </span>
         {v.staleReadyToMerge && (
-          <span className="badge stale" title="Tagged ready-to-merge, but a new patch set reset the approval">
+          <span className="badge stale" title="Tagged ready-to-merge for an earlier patch set, or the approval no longer holds">
             stale tag
           </span>
         )}

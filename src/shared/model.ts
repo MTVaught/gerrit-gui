@@ -10,7 +10,7 @@ import type {
   ReviewerStatus,
   TabId,
 } from './types.ts'
-import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY } from './constants.ts'
+import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, READY_TO_MERGE_KEY, VERIFIED } from './constants.ts'
 
 export function isBot(a: AccountInfo): boolean {
   return a.tags?.includes('SERVICE_USER') ?? false
@@ -28,6 +28,12 @@ export function currentVotes(change: ChangeInfo): Map<number, number> {
     votes.set(a._account_id, a.value ?? 0)
   }
   return votes
+}
+
+/** Someone (usually CI) voted Verified +1 or more on the current patch set, and nobody vetoed it. */
+export function isVerified(change: ChangeInfo): boolean {
+  const votes = (change.labels?.[VERIFIED]?.all ?? []).map((a) => a.value ?? 0)
+  return votes.some((v) => v > 0) && !votes.some((v) => v < 0)
 }
 
 export function humanReviewers(change: ChangeInfo): AccountInfo[] {
@@ -151,7 +157,15 @@ export function accountKeys(a: AccountInfo): string[] {
 }
 
 export function requestedPatchSet(change: ChangeInfo): number | null {
-  const n = parseInt(change.custom_keyed_values?.[REVIEW_REQUESTED_KEY] ?? '', 10)
+  return patchSetValue(change, REVIEW_REQUESTED_KEY)
+}
+
+export function readyPatchSet(change: ChangeInfo): number | null {
+  return patchSetValue(change, READY_TO_MERGE_KEY)
+}
+
+function patchSetValue(change: ChangeInfo, key: string): number | null {
+  const n = parseInt(change.custom_keyed_values?.[key] ?? '', 10)
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
@@ -199,8 +213,9 @@ export function reviewLink(view: ChangeView): ChangeLink {
  *                 decides), or nobody is tagged as primary yet
  *  needs-changes  every primary reviewer has voted and at least one is negative
  *  approved       every primary reviewer voted +1 on the current patch set
- *  ready-to-merge approved and the author tagged it for the merger, whose
- *                 +2 and submit happen together (reviewers never +2)
+ *  ready-to-merge approved and the author tagged this patch set for the
+ *                 merger, whose +2 and submit happen together (reviewers
+ *                 never +2)
  *
  * The primary reviewers are the people named by `reviewer:` hashtags. Anyone
  * else on the change in Gerrit is shown with their vote, but not waited for.
@@ -248,9 +263,13 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
   const iAmPrimary = reviewers.some((r) => r.account._account_id === selfId || (r.tagOnly === true && selfKeys.includes(r.key!)))
   const iAmReviewer = iAmPrimary || everyone.some((r) => r.account._account_id === selfId)
   const myVote = votes.get(selfId) ?? 0
-  const tagged = hasTag(change, READY_TO_MERGE_TAG)
   const rev = change.current_revision ? change.revisions?.[change.current_revision] : undefined
   const patchSet = rev?._number ?? 0
+  // The tag counts only for the patch set it was set on, like a review
+  // request. A tag with no recorded patch set (older version) is stale too.
+  const hasReadyTag = hasTag(change, READY_TO_MERGE_TAG)
+  const readyPs = readyPatchSet(change)
+  const tagged = hasReadyTag && readyPs === patchSet
   const requested = requestedPatchSet(change)
   const reviewRequested = requested !== null && requested === patchSet
   const open = change.status === 'NEW'
@@ -279,6 +298,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     externalOwner: teamScoped && !isTeamMember(change.owner, members, selfId),
     wip: change.work_in_progress === true,
     isPrivate: change.is_private === true,
+    verified: isVerified(change),
     requestedPatchSet: requested,
     reviewRequested,
     isMine,
@@ -289,7 +309,8 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     patchSet,
     patchSetCreated: rev?.created ?? change.created,
     lastReviewedPatchSet: lastReviewedPatchSet(change, selfId),
-    staleReadyToMerge: open && tagged && state !== 'ready-to-merge',
+    readyPatchSet: readyPs,
+    staleReadyToMerge: open && hasReadyTag && state !== 'ready-to-merge',
     requestedMerger: merger,
     mergeRequestedFromMe: merger !== null && selfKeys.includes(merger),
     canMerge: open && maxPermittedVote(change) >= 2,

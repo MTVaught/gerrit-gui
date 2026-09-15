@@ -120,7 +120,7 @@ After Dave submits, the change is on everyone's **Merged** tab for
 | "×" on a primary chip | Removes the `reviewer:` hashtag, then the reviewer where Gerrit allows it |
 | Request review | Custom value `review-requested-ps` = the patch set number. Off until a primary reviewer is tagged |
 | Review | Opens Gerrit; the vote is Gerrit's own Code-Review +1 or -1 |
-| Ready to Merge | Hashtags `ready-to-merge` and `merger:dave` |
+| Ready to Merge | Hashtags `ready-to-merge` and `merger:dave`; custom value `ready-to-merge-ps` = the patch set number |
 | Change merger | Replaces the `merger:` hashtag |
 | (merge) | Nothing; the merger votes +2 and submits in the Gerrit web UI |
 
