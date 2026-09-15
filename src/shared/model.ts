@@ -519,7 +519,12 @@ export interface ActionCategoryInfo {
   id: ActionCategory
   /** Short name for the tray menu and tooltip. */
   label: string
-  /** Menu bar pill color; white text passes 4.5:1 on each. */
+  /**
+   * Menu bar pill color; white text passes 4.5:1 on each. A step below full
+   * saturation on purpose: the four sit side by side in the menu bar at
+   * near-equal luminance, and fully saturated red against blue makes the
+   * pills appear to float at different depths (chromostereopsis).
+   */
   color: string
   /** Monochrome stand-in for the color, for the glyph badge style. */
   glyph: string
@@ -529,10 +534,10 @@ export interface ActionCategoryInfo {
 
 /** Fixed order everywhere the counts appear, so position carries meaning as well as color. */
 export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
-  { id: 'review', label: 'Needs Review', color: '#2563eb', glyph: '\u25c9', tab: 'needs-my-review' },
-  { id: 'fix', label: 'Needs Changes', color: '#dc2626', glyph: '\u270e', tab: 'mine' },
-  { id: 'ready', label: 'Approved', color: '#15803d', glyph: '\u25c6', tab: 'mine' },
-  { id: 'merge', label: 'Ready to Merge', color: '#7c3aed', glyph: '\u21e7', tab: 'merged' },
+  { id: 'review', label: 'Needs Review', color: '#3b6fe0', glyph: '\u25c9', tab: 'needs-my-review' },
+  { id: 'fix', label: 'Needs Changes', color: '#d13c3c', glyph: '\u270e', tab: 'mine' },
+  { id: 'ready', label: 'Approved', color: '#2a824a', glyph: '\u25c6', tab: 'mine' },
+  { id: 'merge', label: 'Ready to Merge', color: '#8657e6', glyph: '\u21e7', tab: 'merged' },
 ]
 
 /**
