@@ -51,7 +51,6 @@ const STRIP_H = 22
 const PILL_H = 16
 const PILL_MIN_W = 22
 const GAP = 6
-const RING_W = 1
 const SCALE = 2
 
 /**
@@ -63,11 +62,13 @@ const SCALE = 2
  * there is nothing to draw, so the tray shows the plain template icon
  * instead.
  *
- * The pills are near-equal in luminance, so where two touch the eye has no
- * brightness step to hold the edge and the boundary seems to shimmer. Each
- * pill therefore gets a faint ring in the menu bar's text color (dark picks
- * white, light picks black) and the gap is wide enough to keep the fills
- * apart. The ring is drawn inside the pill so the geometry is unchanged.
+ * The pills are tinted rather than solid, like the count segments on the
+ * board: a pale wash of the category color with the digit in the full color.
+ * Solid fills of these four hues sit at near-equal luminance, and side by
+ * side in the menu bar that makes red seem to float in front of blue and
+ * the shared edges shimmer (chromostereopsis). Thin colored digits on a
+ * near-neutral wash are too small for either effect. A dark menu bar gets a
+ * stronger wash and a lightened digit so the pills keep the same weight.
  */
 export function renderTrayStrip(counts: ActionCounts, showZero = false, dark = false): { dataUrl: string; width: number; height: number } | null {
   const active = visibleCategories(counts, showZero)
@@ -91,23 +92,31 @@ export function renderTrayStrip(counts: ActionCounts, showZero = false, dark = f
   ctx.font = font
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.lineWidth = RING_W
-  ctx.strokeStyle = dark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(0, 0, 0, 0.28)'
   let x = -GAP
   for (const p of pills) {
     x += GAP
-    const y = (STRIP_H - PILL_H) / 2
-    ctx.fillStyle = p.color
+    ctx.fillStyle = withAlpha(p.color, dark ? 0.32 : 0.18)
     ctx.beginPath()
-    ctx.roundRect(x, y, p.w, PILL_H, PILL_H / 2)
+    ctx.roundRect(x, (STRIP_H - PILL_H) / 2, p.w, PILL_H, PILL_H / 2)
     ctx.fill()
-    // Half the ring width in, so the stroke sits on whole device pixels at 2x.
-    ctx.beginPath()
-    ctx.roundRect(x + RING_W / 2, y + RING_W / 2, p.w - RING_W, PILL_H - RING_W, (PILL_H - RING_W) / 2)
-    ctx.stroke()
-    ctx.fillStyle = '#fff'
+    ctx.fillStyle = dark ? lighten(p.color, 0.45) : p.color
     ctx.fillText(p.text, x + p.w / 2, STRIP_H / 2 + 0.5)
     x += p.w
   }
   return { dataUrl: canvas.toDataURL('image/png'), width, height: STRIP_H }
+}
+
+function rgb(hex: string): [number, number, number] {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number]
+}
+
+function withAlpha(hex: string, alpha: number): string {
+  const [r, g, b] = rgb(hex)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+/** Move the color the given fraction of the way to white. */
+function lighten(hex: string, amount: number): string {
+  const [r, g, b] = rgb(hex).map((v) => Math.round(v + (255 - v) * amount))
+  return `rgb(${r}, ${g}, ${b})`
 }
