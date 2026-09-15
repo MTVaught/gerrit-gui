@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -316,7 +316,6 @@ test('team: an external change is on the External Reviews tab and on no other; a
   assert.deepEqual(on('needs-my-review'), [4])
   assert.deepEqual(on('reviewing'), [4])
   assert.deepEqual(on('mine'), [5])
-  assert.deepEqual(on('ready-to-merge'), [])
   assert.deepEqual(on('merged'), [6])
   assert.deepEqual(on('team-reviews'), [4, 7])
   assert.deepEqual(
@@ -327,7 +326,8 @@ test('team: an external change is on the External Reviews tab and on no other; a
     ],
   )
   assert.deepEqual(on('external-reviews'), [1, 2])
-  assert.deepEqual(tabCounts(views), { 'needs-my-review': 1, reviewing: 1, mine: 1, 'ready-to-merge': 0, merged: 1, 'team-reviews': 2, 'external-reviews': 2 })
+  assert.deepEqual(tabCounts(views), { 'needs-my-review': 1, reviewing: 1, mine: 1, merged: 1, 'team-reviews': 2, 'external-reviews': 2 })
+  assert.deepEqual(tabSegments(views), { merged: [], mine: [] }, 'nothing colored: Erin\'s ready change is external')
   // The tray counts follow the regular tabs, so Erin's request and her ready change are left out.
   assert.deepEqual(actionCounts(views), { review: 1, fix: 0, ready: 0, merge: 0 })
   // Without a team the same changes are all internal and both team tabs are empty.
@@ -336,7 +336,8 @@ test('team: an external change is on the External Reviews tab and on no other; a
   assert.deepEqual(groupsFor('external-reviews', none), [])
   assert.deepEqual(groupsFor('team-reviews', none), [])
   assert.deepEqual(groupsFor('needs-my-review', none).flatMap((g) => g.items.map((v) => v.change._number)), [1, 4])
-  assert.deepEqual(groupsFor('merged', none).flatMap((g) => g.items.map((v) => v.change._number)), [3, 6])
+  // Erin's unnamed ready change waits on anyone with +2, so it heads the Merged tab ahead of the merges.
+  assert.deepEqual(groupsFor('merged', none).flatMap((g) => g.items.map((v) => v.change._number)), [2, 3, 6])
   assert.equal(actionCounts(none).review, 2)
   assert.equal(actionCounts(none).merge, 1)
 })
@@ -702,7 +703,7 @@ test('merger tag: asked but without +2 rights is still asked, so the hint can be
   assert.equal(mergeWaitsOnMe(v), true)
 })
 
-test('Ready to Merge tab: only what is asked of me, plus unnamed tags for +2 users, plus my own stale tags', () => {
+test('Merged tab: only what is asked of me, plus unnamed tags for +2 users, plus my own stale tags, above the merges', () => {
   const mine = approved({ number: 1 })
   const forMe = approved({ number: 2, owner: bob, hashtags: ['ready-to-merge', 'merger:alice'] })
   const forDave = approved({ number: 3, owner: bob })
@@ -710,17 +711,21 @@ test('Ready to Merge tab: only what is asked of me, plus unnamed tags for +2 use
   const stale = change({ number: 5, reviewers: [bob], requested: 2, hashtags: READY, patchSet: 3 })
   const staleForMe = change({ number: 6, owner: bob, reviewers: [carol], requested: 2, hashtags: ['ready-to-merge', 'merger:alice'], patchSet: 3 })
   const staleForDave = change({ number: 7, owner: bob, reviewers: [carol], requested: 2, hashtags: READY, patchSet: 3 })
-  const views = classifyAll([mine, forMe, forDave, unnamed, stale, staleForMe, staleForDave], alice._account_id, [], accountKeys(alice))
-  const groups = groupsFor('ready-to-merge', views)
+  const merged = change({ number: 8, owner: bob, reviewers: [alice], status: 'MERGED' })
+  const views = classifyAll([mine, forMe, forDave, unnamed, stale, staleForMe, staleForDave, merged], alice._account_id, [], accountKeys(alice))
+  const groups = groupsFor('merged', views)
   assert.deepEqual(
     groups.map((g) => [g.title, g.items.map((v) => v.change._number)]),
     [
       ['Asked of you', [2]],
       ['Tagged without a merger', [4]],
       ['Tagged but no longer approved', [5, 6]],
+      ['Merged in the last 14 days', [8]],
     ],
   )
-  assert.equal(tabCounts(views)['ready-to-merge'], 4)
+  assert.equal(tabCounts(views).merged, 5)
+  // The pill's green segment counts the queue, not the history.
+  assert.deepEqual(tabSegments(views).merged, [{ n: 4, tone: 'pos', label: 'ready to merge' }])
   assert.equal(actionCounts(views).merge, 2, 'asked of me and the unnamed one I can +2')
   // My own ready change is on My Changes, not on the merger's queue.
   assert.ok(groupsFor('mine', views).some((g) => g.title === 'Ready to Merge' && g.items.some((v) => v.change._number === 1)))

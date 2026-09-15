@@ -1,0 +1,12 @@
+/* Mockup-only additions on top of the real app stylesheet. */
+body { padding-bottom: 24px; }
+.state { padding: 10px 16px 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+.topbar { position: static; }
+.note { max-width: 1400px; margin: 0 auto; padding: 8px 16px 0; font-size: 13px; color: var(--muted); }
+.count.rtm { background: var(--pos-bg); color: var(--pos); }
+.count.dim { background: none; color: var(--muted); font-weight: 500; padding-left: 0; }
+.count.split { display: inline-flex; padding: 0; overflow: hidden; }
+.count.split > span { padding: 1px 7px; }
+.count.split > .rtm { background: var(--pos-bg); color: var(--pos); }
+.tab .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pos); display: inline-block; }
+.group h3 .count.rtm { font-size: 11px; }

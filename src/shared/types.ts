@@ -270,7 +270,7 @@ export interface UiState {
   compactBounds?: WindowBounds
 }
 
-export type TabId = 'needs-my-review' | 'reviewing' | 'mine' | 'ready-to-merge' | 'merged' | 'team-reviews' | 'external-reviews'
+export type TabId = 'needs-my-review' | 'reviewing' | 'mine' | 'merged' | 'team-reviews' | 'external-reviews'
 
 /** Things that wait on the current user, one count per kind of action. */
 export type ActionCategory = 'review' | 'fix' | 'ready' | 'merge'

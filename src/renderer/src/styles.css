@@ -56,6 +56,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .tab.active { color: var(--fg); background: var(--panel); font-weight: 600; }
 .count { font-size: 11px; background: var(--border); border-radius: 999px; padding: 1px 7px; color: var(--fg); font-weight: 600; }
 .count.hot { background: var(--accent); color: var(--accent-fg); }
+.count.split { display: inline-flex; padding: 0; overflow: hidden; }
+.count.split > span { padding: 1px 7px; }
+.count.split > .pos { background: var(--pos-bg); color: var(--pos); }
+.count.split > .neg { background: var(--neg-bg); color: var(--neg); }
 .btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--fg); cursor: pointer; white-space: nowrap; }
 .btn:hover:not(:disabled) { border-color: var(--muted); }
 .btn:disabled { opacity: 0.5; cursor: default; }
@@ -277,6 +281,8 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .compact .tab:hover { background: none; color: var(--fg); }
 .compact .tab.active { background: none; border-bottom-color: var(--accent); }
 .compact .tab .count { padding: 0 5px; }
+.compact .tab .count.split { padding: 0; }
+.compact .tab .count.split > span { padding: 0 5px; }
 .compact .topbar-right { flex: 0 0 100%; gap: 6px; }
 .compact .status-line { max-width: none; font-size: 12px; }
 .compact .status-line .who { display: none; }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, classifyAll, tabCounts, totalActions, type SortId, type ViewFilter } from '../../shared/model.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, classifyAll, tabCounts, tabSegments, totalActions, type SortId, type TabSegment, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
@@ -128,6 +128,7 @@ export function App() {
   )
 
   const counts = useMemo(() => tabCounts(views), [views])
+  const segments = useMemo(() => tabSegments(views), [views])
 
   useEffect(() => {
     try {
@@ -170,9 +171,7 @@ export function App() {
               onClick={() => setTab(t.id)}
             >
               {compact ? t.short : t.label}
-              <span className={'count' + (t.id === 'needs-my-review' && counts[t.id] > 0 ? ' hot' : '')}>
-                {counts[t.id]}
-              </span>
+              <TabCount total={counts[t.id]} hot={t.id === 'needs-my-review'} segments={segments[t.id] ?? []} />
             </button>
           ))}
         </nav>
@@ -273,6 +272,33 @@ function initialSort(): SortId {
   } catch {
     return DEFAULT_SORT
   }
+}
+
+/**
+ * The count beside a tab label. Colored segments sit to the left of the grey
+ * total, so the pill splits into "what waits on someone" and "everything";
+ * with no segment it is the plain pill.
+ */
+function TabCount(props: {
+  total: number
+  /** Accent the plain pill when non-zero: the tab that waits on the user. */
+  hot: boolean
+  segments: TabSegment[]
+}) {
+  if (props.segments.length === 0) {
+    return <span className={'count' + (props.hot && props.total > 0 ? ' hot' : '')}>{props.total}</span>
+  }
+  const title = [...props.segments.map((s) => `${s.n} ${s.label}`), `${props.total} total`].join(' · ')
+  return (
+    <span className="count split" title={title}>
+      {props.segments.map((s) => (
+        <span key={s.label} className={s.tone}>
+          {s.n}
+        </span>
+      ))}
+      <span>{props.total}</span>
+    </span>
+  )
 }
 
 function initialTab(): TabId {
