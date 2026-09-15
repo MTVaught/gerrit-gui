@@ -289,8 +289,18 @@ export interface BadgePayload {
   showTrayCounts: boolean
   /** Square icon with the total baked in: Windows overlay, Linux tray. */
   iconDataUrl: string
-  /** macOS menu bar strip of colored pills at 2x, or null when there is nothing to draw. */
-  strip: { dataUrl: string; width: number; height: number } | null
+  /**
+   * macOS menu bar strip of colored pills at 2x, one drawn for each menu bar
+   * appearance, or null when there is nothing to draw. The main process
+   * picks by the system theme, which it knows for certain.
+   */
+  strip: { light: TrayStrip; dark: TrayStrip } | null
+}
+
+export interface TrayStrip {
+  dataUrl: string
+  width: number
+  height: number
 }
 
 export interface DashboardData {
