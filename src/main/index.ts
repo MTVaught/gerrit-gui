@@ -13,6 +13,8 @@ const COMPACT_DEFAULT: WindowBounds = { x: 0, y: 0, width: 460, height: 720 }
 const NORMAL_DEFAULT: WindowBounds = { x: 0, y: 0, width: 1200, height: 800 }
 
 let mainWindow: BrowserWindow | null = null
+/** The connection window: server, account and password, apart from the settings page. */
+let connectionWindow: BrowserWindow | null = null
 let tray: TrayController | null = null
 let ui: UiState = { compact: false }
 /** User setting: the compact window floats above other windows (see Settings, Window). */
@@ -122,6 +124,12 @@ function registerIpc(): void {
   })
   ipcMain.handle('gerrit:changeUrl', (_e, link: ChangeLink) => service.changeUrl(link))
 
+  ipcMain.handle('connection:open', () => showConnectionWindow())
+  ipcMain.handle('connection:changed', () => {
+    mainWindow?.webContents.send('app:connection')
+  })
+  ipcMain.handle('connection:close', () => connectionWindow?.close())
+
   ipcMain.handle('ui:get', (): UiState => ui)
   ipcMain.handle('ui:setCompact', (_e, on: boolean) => setCompact(on))
   ipcMain.on('ui:badge', (_e, payload: BadgePayload) => {
@@ -172,13 +180,57 @@ function createWindow(): BrowserWindow {
     return { action: 'deny' }
   })
   // Optional initial tab, e.g. GERRIT_GUI_TAB=mine (also used by the screenshot test hook).
-  const hash = process.env['GERRIT_GUI_TAB'] ? `tab=${process.env['GERRIT_GUI_TAB']}` : ''
+  loadRenderer(win, process.env['GERRIT_GUI_TAB'] ? `tab=${process.env['GERRIT_GUI_TAB']}` : '')
+  return win
+}
+
+function loadRenderer(win: BrowserWindow, hash: string): void {
   if (process.env['ELECTRON_RENDERER_URL']) {
     void win.loadURL(process.env['ELECTRON_RENDERER_URL'] + (hash ? `#${hash}` : ''))
   } else {
     void win.loadFile(path.join(__dirname, '../renderer/index.html'), hash ? { hash } : undefined)
   }
-  return win
+}
+
+/**
+ * The connection window: a small separate window for the server URL, the
+ * username and the HTTP password, with the one Test button. It is what the
+ * first launch shows, and what "Connection" on the settings page opens. The
+ * renderer picks the page from the hash.
+ */
+function showConnectionWindow(): void {
+  if (connectionWindow) {
+    if (connectionWindow.isMinimized()) connectionWindow.restore()
+    connectionWindow.show()
+    connectionWindow.focus()
+    return
+  }
+  const win = new BrowserWindow({
+    width: 520,
+    height: 560,
+    minWidth: 420,
+    minHeight: 420,
+    title: 'Connection',
+    icon: appIconPath,
+    show: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  })
+  connectionWindow = win
+  win.once('ready-to-show', () => win.show())
+  win.on('closed', () => {
+    connectionWindow = null
+  })
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  loadRenderer(win, 'connection')
 }
 
 // Test hooks: isolated config dir, and headless screenshot-then-exit.
@@ -228,6 +280,9 @@ if (!app.requestSingleInstanceLock()) {
     tray.setUpdate(updater.getState())
     const win = createWindow()
     const shot = process.env['GERRIT_GUI_SCREENSHOT']
+    // First launch: nothing to show until the server and the account are in.
+    const s = await service.getSettings()
+    if (!(s.serverUrl && s.username && s.hasPassword) && !shot) showConnectionWindow()
     if (shot) {
       const delay = Number(process.env['GERRIT_GUI_SCREENSHOT_DELAY'] ?? 3000)
       win.webContents.once('did-finish-load', () => {

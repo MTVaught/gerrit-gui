@@ -189,6 +189,18 @@ change on one branch is a card with one row, so both read the same way.
 `docs/mockups/change-id-groups/` has five mockups of ways to show a group.
 The application uses mockup 3.
 
+## Settings
+
+The gear at the right of the tab row opens the settings in place of the
+board, like a tab; any tab click closes them. The page has one section per
+entry in its left column (Team, Mergers, Scope, App icon, Window, Menu bar,
+About), and "Connection" at the bottom, which opens the connection window.
+There is no Save button: every control is written as soon as it changes, and
+the board follows at once. A "Saved" or "Saving…" pill in the section
+header shows the state of the last write. Text fields are written when they
+lose focus or on Enter. In the compact window the column is a picker above
+the section.
+
 ## Teams
 
 In "Settings", under "Team", add the people on your team. Enter a username
@@ -323,7 +335,10 @@ command that corrects the Electron sandbox.
 The packaged AppImage has the same requirement on these systems. The usual
 correction there is `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`.
 
-At the first start, enter the server URL, your username and an HTTP password.
+At the first start, a "Connection" window opens. Enter the server URL, your
+username and an HTTP password, and press "Test and save". The same window
+opens later from "Connection" at the bottom of the settings page; it is the
+only place that tests the connection and reloads the board.
 Make the HTTP password in Gerrit under "Settings", "HTTP Credentials". The
 server URL is the base URL of Gerrit. Include the path prefix. For example,
 enter `https://host/gerrit1`, not only the host. You can also paste the URL of

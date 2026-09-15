@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"><script src="settings.js"></script><style>
+/* Design 1: the gear is the last tab. Same shape, same row; with it selected the label "Settings" appears. */
+.tab.gear.active { color: var(--fg); background: var(--panel); font-weight: 600; }
+.compact .tab.gear { border-radius: 6px; padding: 5px 7px; margin-left: 0; }
+.compact .tab.gear.active { background: var(--panel); border-bottom: none; }
+.dialog .row { justify-content: flex-end; }
+</style></head><body>
+
+<div class="cap">Full window · the gear is a tab; it is selected, so the label shows and the board is replaced</div>
+<div class="app frame-full" id="full"></div>
+
+<div class="cap">Compact window · gear on the toolbar row, styled as a tab &nbsp;·&nbsp; Connection dialog (opened from the top of the settings page)</div>
+<div class="frames">
+  <div class="app compact frame-compact" id="cmp"></div>
+  <div class="frame-win" style="width:520px"><div class="titlebar"><span class="dots"><i></i><i></i><i></i></span><span class="title">Connection</span></div>
+    <div class="settings" style="padding:18px 22px" id="conn"></div></div>
+</div>
+
+<div class="mock-note"><b>1 · Gear tab.</b> The gear moves into the tab strip as its last tab, pushed to the right edge next to View, Refresh and Compact. It behaves like every other tab: click it and it is selected, its label "Settings" appears, the board goes away; click Needs Review and the board is back. There is no Save and no Cancel. Every control writes on change and a green "Saved" fades in beside the control for a moment, then dims. The team, mergers and tray options take effect while you watch: add a member and the Team Reviews tab count changes behind the page.
+<ul><li><b>Connection:</b> a status line at the top of the page ("alice on gerrit.example.com · connected") with one button that opens a small dialog for the URL, username and password. Only that dialog has a Test button, and only it reloads the board.</li>
+<li><b>Compact:</b> the tab strip keeps scrolling sideways; the gear sits on the toolbar row with the other three buttons but is drawn as a tab, so its selected state matches the strip above.</li>
+<li>Least change from today: one component moves, one section leaves, one button goes.</li></ul></div>
+
+<script>
+document.getElementById('full').innerHTML = topbar({ settings: 'tab', open: true, active: '' }) +
+  `<main class="panel settings">${connectionSummary()}${projectsSection()}${teamSection({ saved: true })}${mergersSection()}${appIconSection()}${windowSection()}${menubarSection()}${aboutSection()}</main>`
+document.getElementById('cmp').innerHTML = topbar({ compact: true, settings: 'tab', open: true, active: '' }) +
+  `<main class="panel settings">${connectionSummary({ label: 'Change…' })}${teamSection({ saved: true })}${mergersSection()}</main>`
+document.getElementById('conn').innerHTML = `<p class="muted" style="margin-top:0">Change the server or the account. The board reloads after a successful test.</p>${connectionForm()}<div class="row"><button class="btn">Cancel</button><button class="btn primary">Test and save</button></div><p class="status ok">Connected as Alice Ahlgren (alice@example.com)</p>`
+</script></body></html>
