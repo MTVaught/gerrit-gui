@@ -19,4 +19,6 @@ export const REVIEWER_TAG_PREFIX = 'reviewer:'
  */
 export const REVIEW_REQUESTED_KEY = 'review-requested-ps'
 export const CODE_REVIEW = 'Code-Review'
+/** CI's label: a +1 on the current patch set is required before the author may ask for the merge. */
+export const VERIFIED = 'Verified'
 export const POLL_INTERVAL_MS = 45_000

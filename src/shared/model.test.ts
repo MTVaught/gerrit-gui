@@ -38,6 +38,8 @@ function change(opts: {
   subject?: string
   messages?: ChangeMessageInfo[]
   branch?: string
+  /** Verified votes on the current patch set, by account id. */
+  verified?: Record<number, number>
   /** Change-Id shared by cherry-picks; left out to mimic a server that does not send it. */
   changeId?: string
 }): ChangeInfo {
@@ -62,6 +64,9 @@ function change(opts: {
     labels: {
       'Code-Review': {
         all: reviewers.map((r) => ({ ...r, value: opts.votes?.[r._account_id] ?? 0 })),
+      },
+      Verified: {
+        all: Object.entries(opts.verified ?? {}).map(([id, value]) => ({ _account_id: Number(id), value })),
       },
     },
     permitted_labels: { 'Code-Review': opts.maxVote === 2 ? ['-2', '-1', ' 0', '+1', '+2'] : ['-1', ' 0', '+1'] },
@@ -136,6 +141,13 @@ test('all positive votes means approved; hashtag promotes to ready-to-merge', ()
   c.hashtags!.push('ready-to-merge')
   assert.equal(classify(c, 1).state, 'ready-to-merge')
   assert.equal(classify(c, 1).staleReadyToMerge, false)
+})
+
+test('verified: a Verified +1 on the current patch set, unless someone voted it down', () => {
+  assert.equal(classify(change({ reviewers: [bob] }), 1).verified, false)
+  assert.equal(classify(change({ reviewers: [bob], verified: { 9: 1 } }), 1).verified, true)
+  assert.equal(classify(change({ reviewers: [bob], verified: { 9: 0 } }), 1).verified, false)
+  assert.equal(classify(change({ reviewers: [bob], verified: { 9: 1, 2: -1 } }), 1).verified, false)
 })
 
 test('copied votes after a trivial rebase keep the change approved without a new request', () => {

@@ -128,7 +128,7 @@ export function MergerPicker(props: { view: ChangeView; spec: ActionSpec; onAct:
   const cls = ['btn', spec.primary ? 'primary' : '', props.small ? 'sm' : ''].filter(Boolean).join(' ')
   return (
     <div className="split picker-wrap" ref={wrap}>
-      <button className={cls} title={spec.title} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+      <button className={cls} title={spec.title} disabled={spec.disabled} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
         {props.small ? spec.short : spec.label}
         <span className="arrow" aria-hidden="true">
           ▾

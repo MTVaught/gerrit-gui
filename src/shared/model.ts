@@ -10,7 +10,7 @@ import type {
   ReviewerStatus,
   TabId,
 } from './types.ts'
-import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY } from './constants.ts'
+import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, VERIFIED } from './constants.ts'
 
 export function isBot(a: AccountInfo): boolean {
   return a.tags?.includes('SERVICE_USER') ?? false
@@ -28,6 +28,12 @@ export function currentVotes(change: ChangeInfo): Map<number, number> {
     votes.set(a._account_id, a.value ?? 0)
   }
   return votes
+}
+
+/** Someone (usually CI) voted Verified +1 or more on the current patch set, and nobody vetoed it. */
+export function isVerified(change: ChangeInfo): boolean {
+  const votes = (change.labels?.[VERIFIED]?.all ?? []).map((a) => a.value ?? 0)
+  return votes.some((v) => v > 0) && !votes.some((v) => v < 0)
 }
 
 export function humanReviewers(change: ChangeInfo): AccountInfo[] {
@@ -279,6 +285,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     externalOwner: teamScoped && !isTeamMember(change.owner, members, selfId),
     wip: change.work_in_progress === true,
     isPrivate: change.is_private === true,
+    verified: isVerified(change),
     requestedPatchSet: requested,
     reviewRequested,
     isMine,

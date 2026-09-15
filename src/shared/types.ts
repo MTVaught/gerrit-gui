@@ -146,6 +146,8 @@ export interface ChangeView {
   wip: boolean
   /** Gerrit private flag: only the owner, the reviewers and the CCs can see the change. */
   isPrivate: boolean
+  /** The Verified label is +1 on the current patch set (CI passed) with no -1. Required, with Active, to ask for the merge. */
+  verified: boolean
   /** Patch set the author last requested review on, or null if never. */
   requestedPatchSet: number | null
   /** The request is for the current patch set, so reviews are outstanding. */
