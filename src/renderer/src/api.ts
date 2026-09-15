@@ -43,6 +43,15 @@ function browserApi(): Api {
     onSettingsChanged: () => () => undefined,
     onRefreshRequested: () => () => undefined,
     onTabRequested: () => () => undefined,
+    // The connection form opens in a second browser tab; the board tab re-reads the settings when it regains focus.
+    openConnection: async () => {
+      window.open(window.location.pathname + '#connection', '_blank', 'noopener')
+    },
+    connectionChanged: async () => undefined,
+    closeConnection: async () => {
+      window.close()
+    },
+    onConnectionChanged: () => () => undefined,
     // Nor do updates: the browser serves whatever the checkout contains.
     getUpdateState: async () => noUpdates,
     checkForUpdate: async () => noUpdates,

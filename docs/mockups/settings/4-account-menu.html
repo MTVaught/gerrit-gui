@@ -1,0 +1,41 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"><script src="settings.js"></script><style>
+/* Design 4: who you are lives in an account menu; what you prefer lives on a card grid with switches. */
+.btn.account { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; border-radius: 999px; }
+.pop.account { right: 12px; top: 46px; width: 260px; }
+.pop.account .head { padding: 8px 10px 4px; }
+.pop.account .head .who { font-weight: 600; }
+.compact .pop.account { top: 76px; right: 8px; }
+.compact .btn.account span.name { display: none; }
+.card .team-add { margin-top: 8px; }
+</style></head><body>
+
+<div class="cap">Full window · settings open as cards; the account menu is open at the right of the tab row</div>
+<div class="app frame-full" id="full"></div>
+
+<div class="cap">Compact window · one column of cards, avatar in the toolbar &nbsp;·&nbsp; Connection window, from the account menu</div>
+<div class="frames">
+  <div class="app compact frame-compact" id="cmp"></div>
+  <div class="frame-win" style="width:520px"><div class="titlebar"><span class="dots"><i></i><i></i><i></i></span><span class="title">Connection</span></div>
+    <div class="settings" style="padding:18px 22px" id="conn"></div></div>
+</div>
+
+<div class="mock-note"><b>4 · Account menu and cards.</b> Two different things get two different homes. Who you are is the avatar at the far right of the tab row: its menu names the account and server (the name itself is in the tooltip, so the strip keeps its width) and offers Connection…, Sign out, Check for updates and About. What you prefer is behind the gear, which toggles like a tab and shows a grid of cards. Checkboxes become switches, which read as "takes effect now"; each card shows "Saved" in its corner for a moment after a change.
+<ul><li><b>Connection:</b> only in the account menu. It opens a small window with the three fields and Test. About and update checks move there too, so the settings page is only preferences.</li>
+<li><b>Compact:</b> the avatar sits on the toolbar row without the name; the cards stack in one column.</li>
+<li>Clearest split of auth from settings; the account menu is the idiom of most desktop apps. Two icons on the right instead of one.</li></ul></div>
+
+<script>
+const acct = (name = true) => `<button class="btn account"><span class="avatar">A</span>${name ? '<span class="name">alice</span>' : ''} ${I.chev}</button>`
+const menu = `<div class="pop account"><div class="head"><div class="who">Alice Ahlgren</div><div class="muted small">alice · gerrit.example.com/gerrit1</div></div><hr><div class="item">${I.plug} Connection…</div><div class="item">${I.lock} Sign out</div><hr><div class="item">Check for updates<span class="k">0.9.2</span></div><div class="item">Release notes</div><div class="item">About</div></div>`
+const cards = `<div class="cards">
+<section class="card wide settings"><h2>Team ${SAVED}</h2>${teamSection({ saved: false }).replace('<h2>Team</h2>', '')}</section>
+<section class="card wide settings"><h2>Mergers</h2>${mergersSection().replace('<h2>Mergers</h2>', '')}</section>
+<section class="card settings"><h2>App icon</h2>${appIconSection(sw).replace('<h2>App icon</h2>', '')}</section>
+<section class="card settings"><h2>Window</h2>${windowSection(sw).replace('<h2>Window</h2>', '')}</section>
+<section class="card settings"><h2>Menu bar</h2>${menubarSection(sw).replace('<h2>Menu bar</h2>', '')}</section>
+<section class="card settings"><h2>Scope</h2>${projectsSection().replace('<h2>Scope</h2>', '')}</section>
+</div>`
+document.getElementById('full').innerHTML = topbar({ settings: 'icon', open: true, active: '', right: acct(false) }) + menu + cards
+document.getElementById('cmp').innerHTML = topbar({ compact: true, settings: 'icon', open: true, active: '', right: acct(false), status: false }) + cards
+document.getElementById('conn').innerHTML = `${connectionForm()}<div class="row" style="justify-content:flex-end"><button class="btn">Cancel</button><button class="btn primary">Test and save</button></div><p class="status ok">Connected as Alice Ahlgren (alice@example.com)</p>`
+</script></body></html>

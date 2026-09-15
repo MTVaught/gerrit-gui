@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"><script src="settings.js"></script><style>
+/* Design 2: the settings page has a section nav on the left; Connection is the last entry and opens its own window. */
+.content-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.content-head h1 { font-size: 20px; margin: 0; }
+.compact .secpick { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 600; }
+.compact .secpick .k { margin-left: auto; font-weight: 400; }
+.compact .settings { padding: 12px; margin: 0; }
+</style></head><body>
+
+<div class="cap">Full window · gear lit while the page is open; section nav on the left</div>
+<div class="app frame-full" id="full"></div>
+
+<div class="cap">Compact window · sections in a picker at the top &nbsp;·&nbsp; Connection is its own OS window</div>
+<div class="frames">
+  <div class="app compact frame-compact" id="cmp"></div>
+  <div class="frame-win" style="width:520px"><div class="titlebar"><span class="dots"><i></i><i></i><i></i></span><span class="title">Gerrit Review Board · Connection</span></div>
+    <div class="settings" style="padding:18px 22px" id="conn"></div></div>
+</div>
+
+<div class="mock-note"><b>2 · Section nav.</b> The gear stays an icon button on the tab row but toggles like a tab: it is lit while the settings page is open, and any tab click closes the page. The page itself has a left nav, one entry per section, so the growing list of options does not become one long scroll. A "Saved" pill in the page header says every change is on disk; it turns into "Saving…" for the instant a write is in flight. No Save button anywhere.
+<ul><li><b>Connection:</b> the last nav entry, set apart by a rule and labelled with the account and host. It opens a separate small window (a real OS window, so it can stay open beside the board while you fetch a new HTTP password from Gerrit). That window is the only place with a Test button; the first launch shows it alone.</li>
+<li><b>Compact:</b> no room for a nav column, so the sections become a picker row at the top ("Team ▾"); the rest is the same page.</li>
+<li>Scales best if more sections arrive later; costs a little horizontal space on the full window.</li></ul></div>
+
+<script>
+const NAV = ['Team', 'Mergers', 'Scope', 'App icon', 'Window', 'Menu bar', 'About']
+const nav = `<aside class="sidenav">${NAV.map((n) => `<a class="${n === 'Team' ? 'active' : ''}">${n}</a>`).join('')}<div class="sep"></div><a>${I.plug} Connection ${I.ext}</a><div class="foot muted">alice · gerrit.example.com</div></aside>`
+document.getElementById('full').innerHTML = topbar({ settings: 'icon', open: true, active: '' }) +
+  `<div class="sidebar-layout">${nav}<main class="settings content"><div class="content-head"><h1>Team</h1><span class="sync"><span class="dot"></span> Saved</span></div>${teamSection({ saved: true }).replace('<h2>Team</h2>', '')}<div style="height:28px"></div><h2>Mergers</h2>${mergersSection().replace('<h2>Mergers</h2>', '')}</main></div>`
+document.getElementById('cmp').innerHTML = topbar({ compact: true, settings: 'icon', open: true, active: '' }) +
+  `<div class="secpick">Team ${I.chev}<span class="k sync"><span class="dot"></span> Saved</span></div><main class="settings">${teamSection({ saved: true }).replace('<h2>Team</h2>', '')}</main>`
+document.getElementById('conn').innerHTML = `${connectionForm()}<div class="row" style="justify-content:flex-end"><button class="btn primary">Test and save</button></div><p class="status ok">Connected as Alice Ahlgren (alice@example.com)</p>`
+</script></body></html>

@@ -30,9 +30,8 @@ application remembers the sort; the search and filter last for the session.
 | --- | --- |
 | Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. |
 | Reviewing | All open changes on which you are a reviewer, primary or not, in groups by state. |
-| My Changes | Your open changes, in groups by state, with the actions of the owner. Private changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
-| Ready to Merge | Approved changes that the author asked you, by name, to merge. |
-| Recently Merged | Changes that Gerrit merged in the last 14 days. |
+| My Changes | Your open changes, in groups by state, with the actions of the owner. The count gains a red segment for changes that need work and a green one for approved changes. Private changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
+| Merged | Approved changes that the author asked you, by name, to merge, above the changes that Gerrit merged in the last 14 days. The count gains a green segment while anything waits on you to merge. |
 | Team Reviews | Every open change owned by someone else on your team, in groups by state, whether or not you review it. Only with a team. |
 | External Reviews | Open changes owned by someone outside your team, in groups by state. Only with a team. These changes are on no other tab. |
 
@@ -72,7 +71,7 @@ application remembers the sort; the search and filter last for the session.
    Merge" button and picks the person to merge: one of the mergers set for the project in
    "Settings", or anyone else on the server. The change then shows
    "Ready to Merge · Dave" on "My Changes".
-7. The person who was asked sees the change on the "Ready to Merge" tab,
+7. The person who was asked sees the change at the top of the "Merged" tab,
    in the tray count, and in a desktop notification. That person opens the
    change in Gerrit, votes +2 and submits it there; the application has no
    merge button. Nobody else is asked; if the merger cannot merge, the author
@@ -192,6 +191,18 @@ change on one branch is a card with one row, so both read the same way.
 `docs/mockups/change-id-groups/` has five mockups of ways to show a group.
 The application uses mockup 3.
 
+## Settings
+
+The gear at the right of the tab row opens the settings in place of the
+board, like a tab; any tab click closes them. The page has one section per
+entry in its left column (Team, Mergers, Scope, App icon, Window, Menu bar,
+About), and "Connection" at the bottom, which opens the connection window.
+There is no Save button: every control is written as soon as it changes, and
+the board follows at once. A "Saved" or "Saving…" pill in the section
+header shows the state of the last write. Text fields are written when they
+lose focus or on Enter. In the compact window the column is a picker above
+the section.
+
 ## Teams
 
 In "Settings", under "Team", add the people on your team. Enter a username
@@ -209,7 +220,7 @@ that (refer to "The workflow"). When the team list has one or more entries:
   belong there.
 - The "External Reviews" tab lists every open change owned by someone
   outside the team, in groups by state. Those changes are not on "Needs
-  Review", "Reviewing", "Ready to Merge" or "Recently Merged", and the counts
+  Review", "Reviewing" or "Merged", and the counts
   on those tabs and in the tray leave them out. Only the owner decides this:
   your own changes stay on "My Changes" even when CI or a maintainers list
   adds reviewers from outside the team.
@@ -239,7 +250,7 @@ to the row for the project. The list only fills the menu: a wrong or empty
 list costs one search. It is a setting of your computer, and it does not
 have to match anyone else's.
 
-The person who was asked sees the change on the "Ready to Merge" tab under
+The person who was asked sees the change on the "Merged" tab under
 "Asked of you", and nowhere else on that tab: a request for somebody else is
 not listed. A person without +2 rights who was asked by mistake sees the
 change with a hint to tell the author.
@@ -326,7 +337,10 @@ command that corrects the Electron sandbox.
 The packaged AppImage has the same requirement on these systems. The usual
 correction there is `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`.
 
-At the first start, enter the server URL, your username and an HTTP password.
+At the first start, a "Connection" window opens. Enter the server URL, your
+username and an HTTP password, and press "Test and save". The same window
+opens later from "Connection" at the bottom of the settings page; it is the
+only place that tests the connection and reloads the board.
 Make the HTTP password in Gerrit under "Settings", "HTTP Credentials". The
 server URL is the base URL of Gerrit. Include the path prefix. For example,
 enter `https://host/gerrit1`, not only the host. You can also paste the URL of

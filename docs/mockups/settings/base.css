@@ -45,27 +45,17 @@
 body { margin: 0; font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--fg); }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
 .app { display: flex; flex-direction: column; min-height: 100vh; }
-/*
- * One row: the tabs on the left, the controls (update, View, Refresh,
- * Compact, Settings) on the right. When the full tab labels would not fit
- * next to the controls the strip switches to the short labels (measured
- * against a hidden copy, `.tabs.ghost`); only if even those do not fit do the
- * controls wrap to a second line.
- */
-.topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 6px 12px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 5; }
-.topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
-.tabs { display: flex; gap: 2px; }
-.tabs.ghost { position: absolute; visibility: hidden; pointer-events: none; left: 0; top: 0; }
-.btn.icon.on { background: var(--panel); border-color: var(--muted); color: var(--fg); }
-.tab { white-space: nowrap; background: none; border: none; color: var(--muted); padding: 7px 10px; border-radius: 6px; cursor: pointer; font: inherit; display: flex; gap: 6px; align-items: center; }
+.topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 5; }
+/* Six tabs plus the controls do not fit a 1200px window; the controls then drop to a second row, still right-aligned. */
+.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; }
+.topbar-right .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.tabs { display: flex; gap: 4px; }
+.status-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.tab { white-space: nowrap; background: none; border: none; color: var(--muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font: inherit; display: flex; gap: 6px; align-items: center; }
 .tab:hover { background: var(--panel); }
 .tab.active { color: var(--fg); background: var(--panel); font-weight: 600; }
 .count { font-size: 11px; background: var(--border); border-radius: 999px; padding: 1px 7px; color: var(--fg); font-weight: 600; }
 .count.hot { background: var(--accent); color: var(--accent-fg); }
-.count.split { display: inline-flex; padding: 0; overflow: hidden; }
-.count.split > span { padding: 1px 7px; }
-.count.split > .pos { background: var(--pos-bg); color: var(--pos); }
-.count.split > .neg { background: var(--neg-bg); color: var(--neg); }
 .btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--fg); cursor: pointer; white-space: nowrap; }
 .btn:hover:not(:disabled) { border-color: var(--muted); }
 .btn:disabled { opacity: 0.5; cursor: default; }
@@ -85,42 +75,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .banner.warn { background: var(--warn-bg); color: var(--warn); }
 .panel { max-width: 640px; margin: 24px auto; padding: 24px; }
 .panel.empty { text-align: center; color: var(--muted); padding-top: 80px; }
-.not-connected .btn { display: inline-flex; gap: 6px; align-items: center; margin-top: 8px; }
-/*
- * Settings page: a nav of sections on the left, one section on the right.
- * No Save button; the pill in the section header says whether the last
- * change is written. The connection has its own window, opened from the
- * last nav entry.
- */
-.settings-page { display: flex; gap: 32px; max-width: 980px; margin: 20px auto; padding: 0 24px; width: 100%; }
-.section-nav { width: 190px; flex: 0 0 auto; position: sticky; top: 60px; align-self: flex-start; display: flex; flex-direction: column; gap: 2px; }
-.section-nav button { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: none; border-radius: 6px; background: none; color: var(--muted); font: inherit; font-weight: 500; text-align: left; cursor: pointer; }
-.section-nav button:hover { color: var(--fg); background: var(--panel); }
-.section-nav button.active { background: var(--panel); color: var(--fg); font-weight: 600; }
-.section-nav .sep { border-top: 1px solid var(--border); margin: 8px 0; }
-.conn-link { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 10px; border: none; border-radius: 6px; background: none; color: var(--fg); font: inherit; font-weight: 500; text-align: left; cursor: pointer; }
-.section-nav .conn-link:hover { background: var(--panel); }
-.conn-link .arrow { font-size: 12px; opacity: 0.7; }
-.conn-link .conn-who { flex-basis: 100%; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.section-body { flex: 1; min-width: 0; max-width: 640px; }
-.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
-.section-head h1 { font-size: 20px; margin: 0; }
-.section-body > p:first-of-type { margin-top: 4px; }
-.sync { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
-.sync .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pos); }
-.sync.saving .dot { background: var(--warn); }
-.sync.error { color: var(--neg); white-space: normal; }
-/* Compact window: the nav becomes a picker row above the section. */
-.settings-page.compact { display: block; padding: 0; margin: 0; }
-.section-pick { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-.section-pick select { font: inherit; font-weight: 600; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
-.section-pick .sync { margin-left: auto; }
-.section-pick .conn-link { padding: 4px 8px; font-size: 13px; border: 1px solid var(--border); background: var(--panel); }
-.section-pick .conn-link .conn-who { display: none; }
-.settings-page.compact .section-body { padding: 12px; max-width: none; }
-/* The connection window. */
-.connection .panel { margin: 8px auto; }
-.connection h2 { margin-top: 0; }
 .settings label { display: block; margin: 12px 0 4px; font-weight: 600; }
 .settings label.check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
 .settings label.check input { display: inline; width: auto; margin: 0; }
@@ -323,9 +277,10 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .compact .tab:hover { background: none; color: var(--fg); }
 .compact .tab.active { background: none; border-bottom-color: var(--accent); }
 .compact .tab .count { padding: 0 5px; }
-.compact .tab .count.split { padding: 0; }
-.compact .tab .count.split > span { padding: 0 5px; }
 .compact .topbar-right { flex: 0 0 100%; gap: 6px; }
+.compact .status-line { max-width: none; font-size: 12px; }
+.compact .status-line .who { display: none; }
+@media (max-width: 399px) { .compact .status-line { display: none; } }
 .compact .btn.icon { padding: 5px 7px; }
 .compact .btn.view-btn { padding: 5px 7px; }
 /* The panel spans the window; it is placed against the sticky top bar, not the button. */

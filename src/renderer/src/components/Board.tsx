@@ -39,8 +39,7 @@ export const TABS: Tab[] = [
   { id: 'needs-my-review', label: 'Needs Review', short: 'To review' },
   { id: 'reviewing', label: 'Reviewing', short: 'Reviewing' },
   { id: 'mine', label: 'My Changes', short: 'Mine' },
-  { id: 'ready-to-merge', label: 'Ready to Merge', short: 'Ready' },
-  { id: 'merged', label: 'Recently Merged', short: 'Merged' },
+  { id: 'merged', label: 'Merged', short: 'Merged' },
   { id: 'team-reviews', label: 'Team Reviews', short: 'Team' },
   { id: 'external-reviews', label: 'External Reviews', short: 'External' },
 ]
@@ -62,8 +61,7 @@ export type Section = Group & { rows: Row[] }
 const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
   reviewing: 'You are not a reviewer on any open change.',
   mine: 'You have no open changes.',
-  'ready-to-merge': 'Nobody has asked you to merge anything.',
-  merged: 'Nothing merged recently.',
+  merged: 'Nobody has asked you to merge anything, and nothing merged recently.',
   'team-reviews': 'Nobody else on the team has an open change.',
   'external-reviews': 'No open change is owned by someone outside the team.',
 }

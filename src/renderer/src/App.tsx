@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, classifyAll, tabCounts, totalActions, type SortId, type ViewFilter } from '../../shared/model.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, classifyAll, tabCounts, tabSegments, totalActions, type SortId, type TabSegment, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
 import { ViewMenu } from './components/ViewMenu.tsx'
 import { ago } from './time.ts'
 import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
-import { ExpandIcon, GearIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
+import { ExpandIcon, GearIcon, PlugIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
 import { api, isBrowserMode } from './api.ts'
 import { UpdatePill, useUpdateState } from './components/Update.tsx'
 import { rememberAccounts } from './names.ts'
@@ -29,6 +29,11 @@ export function App() {
   const seenNeedsReview = useRef<Set<number> | null>(null)
   const seenMergeRequests = useRef<Set<number> | null>(null)
   const tabsRef = useRef<HTMLElement>(null)
+  const topbarRef = useRef<HTMLElement>(null)
+  const ghostRef = useRef<HTMLElement>(null)
+  const rightRef = useRef<HTMLDivElement>(null)
+  // Full tab labels when they fit on the one row with the controls; the short ones otherwise.
+  const [shortTabs, setShortTabs] = useState(false)
 
   const configured = Boolean(settings?.serverUrl && settings?.username && settings?.hasPassword)
 
@@ -48,23 +53,46 @@ export function App() {
     }
   }, [])
 
+  // New credentials from the connection window: forget the old server's board and start over.
+  const reconnect = useCallback(async () => {
+    setSettings(await api.getSettings())
+    setData(null)
+    setError(null)
+    seenNeedsReview.current = null
+    seenMergeRequests.current = null
+  }, [])
+
   useEffect(() => {
-    void api.getSettings().then((s) => {
-      setSettings(s)
-      if (!(s.serverUrl && s.username && s.hasPassword)) setShowSettings(true)
-    })
+    void api.getSettings().then(setSettings)
     void api.getUi().then((u) => setCompact(u.compact))
     const offCompact = api.onCompactChanged(setCompact)
     const offSettings = api.onSettingsChanged(() => void api.getSettings().then(setSettings))
     const offRefresh = api.onRefreshRequested(() => void refresh())
     const offTab = api.onTabRequested(setTab)
+    const offConnection = api.onConnectionChanged(() => void reconnect())
     return () => {
       offCompact()
       offSettings()
       offRefresh()
       offTab()
+      offConnection()
     }
-  }, [refresh])
+  }, [refresh, reconnect])
+
+  // Browser mode has no push channel from the connection tab; re-read the settings when this tab is back.
+  useEffect(() => {
+    if (!isBrowserMode) return
+    const onFocus = () => {
+      void api.getSettings().then((s) => {
+        setSettings((prev) => {
+          if (prev && (prev.serverUrl !== s.serverUrl || prev.username !== s.username || prev.hasPassword !== s.hasPassword)) void reconnect()
+          return s
+        })
+      })
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [reconnect])
 
   // The compact tab strip scrolls sideways; keep the active tab in view.
   useEffect(() => {
@@ -85,6 +113,15 @@ export function App() {
       window.removeEventListener('focus', onFocus)
     }
   }, [configured, refresh])
+
+  // The project scope changes what is fetched, so a change to it reloads the board.
+  const projectsKey = settings?.projects.join(',')
+  const lastProjects = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (projectsKey === undefined) return
+    if (lastProjects.current !== undefined && lastProjects.current !== projectsKey && configured) void refresh()
+    lastProjects.current = projectsKey
+  }, [projectsKey, configured, refresh])
 
   const team = settings?.team ?? NO_TEAM
   const views = useMemo<ChangeView[]>(
@@ -128,6 +165,26 @@ export function App() {
   )
 
   const counts = useMemo(() => tabCounts(views), [views])
+  const segments = useMemo(() => tabSegments(views), [views])
+  // One row: the tabs and the controls. A hidden copy of the strip with the full labels is measured
+  // against the room left of the controls; when it does not fit, the tabs use their short labels.
+  useLayoutEffect(() => {
+    if (compact) return
+    const bar = topbarRef.current
+    const ghost = ghostRef.current
+    const right = rightRef.current
+    if (!bar || !ghost || !right) return
+    const measure = () => {
+      const style = getComputedStyle(bar)
+      const room = bar.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - right.offsetWidth - parseFloat(style.columnGap || '0')
+      setShortTabs(ghost.scrollWidth > room)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(bar)
+    ro.observe(right)
+    return () => ro.disconnect()
+  }, [compact, tabs, counts, segments, data, update])
 
   useEffect(() => {
     try {
@@ -158,33 +215,36 @@ export function App() {
   return (
     <SettingsContext.Provider value={settingsHandle}>
     <div className={'app' + (compact ? ' compact' : '')}>
-      <header className="topbar">
-        <nav className="tabs" role="tablist" ref={tabsRef}>
+      <header className="topbar" ref={topbarRef}>
+        <nav className={'tabs' + (shortTabs ? ' short' : '')} role="tablist" ref={tabsRef}>
           {tabs.map((t) => (
             <button
               key={t.id}
               role="tab"
-              aria-selected={tab === t.id}
+              aria-selected={tab === t.id && !showSettings}
               aria-label={t.label}
-              className={'tab' + (tab === t.id ? ' active' : '')}
-              onClick={() => setTab(t.id)}
+              className={'tab' + (tab === t.id && !showSettings ? ' active' : '')}
+              onClick={() => {
+                setTab(t.id)
+                setShowSettings(false)
+              }}
             >
-              {compact ? t.short : t.label}
-              <span className={'count' + (t.id === 'needs-my-review' && counts[t.id] > 0 ? ' hot' : '')}>
-                {counts[t.id]}
-              </span>
+              {compact || shortTabs ? t.short : t.label}
+              <TabCount total={counts[t.id]} hot={t.id === 'needs-my-review'} segments={segments[t.id] ?? []} />
             </button>
           ))}
         </nav>
-        <div className="topbar-right">
-          {data && (
-            <span className="muted status-line" title={data.fetchedAt}>
-              <span className="status-text">
-                <span className="who">{data.self.name ?? data.self.username} · </span>
-                updated {ago(new Date(data.fetchedAt))}
+        {!compact && (
+          <nav className="tabs ghost" aria-hidden="true" ref={ghostRef}>
+            {tabs.map((t) => (
+              <span key={t.id} className="tab">
+                {t.label}
+                <TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />
               </span>
-            </span>
-          )}
+            ))}
+          </nav>
+        )}
+        <div className="topbar-right" ref={rightRef}>
           <UpdatePill state={update} />
           <ViewMenu
             sort={sort}
@@ -194,7 +254,13 @@ export function App() {
             tabViews={tabViews}
             compact={compact}
           />
-          <button className={'btn icon' + (busy ? ' spinning' : '')} onClick={() => void refresh()} disabled={busy || !configured} title="Refresh" aria-label="Refresh">
+          <button
+            className={'btn icon' + (busy ? ' spinning' : '')}
+            onClick={() => void refresh()}
+            disabled={busy || !configured}
+            title={data ? `${data.self.name ?? data.self.username} · updated ${ago(new Date(data.fetchedAt))}. Refresh` : 'Refresh'}
+            aria-label="Refresh"
+          >
             <RefreshIcon />
           </button>
           <button
@@ -205,7 +271,13 @@ export function App() {
           >
             {compact ? <ExpandIcon /> : <ShrinkIcon />}
           </button>
-          <button className="btn icon" onClick={() => setShowSettings(true)} title="Settings" aria-label="Settings">
+          <button
+            className={'btn icon' + (showSettings ? ' on' : '')}
+            aria-pressed={showSettings}
+            onClick={() => setShowSettings((v) => !v)}
+            title="Settings"
+            aria-label="Settings"
+          >
             <GearIcon />
           </button>
         </div>
@@ -228,21 +300,15 @@ export function App() {
         </div>
       )}
 
-      {showSettings || !settings ? (
-        settings && (
-          <SettingsPanel
-            initial={settings}
-            onClose={() => setShowSettings(false)}
-            onSaved={async () => {
-              const s = await api.getSettings()
-              setSettings(s)
-              setShowSettings(false)
-              setData(null)
-              seenNeedsReview.current = null
-              seenMergeRequests.current = null
-            }}
-          />
-        )
+      {!settings ? null : showSettings ? (
+        <SettingsPanel settings={settings} compact={compact} save={settingsHandle.save} />
+      ) : !configured ? (
+        <div className="panel empty not-connected">
+          <p>Not connected to Gerrit yet.</p>
+          <button className="btn primary" onClick={() => void api.openConnection()}>
+            <PlugIcon /> Set up the connection
+          </button>
+        </div>
       ) : (
         <Board
           tab={tab}
@@ -254,7 +320,10 @@ export function App() {
           loading={!data && busy}
           compact={compact}
           onAct={act}
-          onGoTo={setTab}
+          onGoTo={(t) => {
+            setTab(t)
+            setShowSettings(false)
+          }}
         />
       )}
     </div>
@@ -273,6 +342,33 @@ function initialSort(): SortId {
   } catch {
     return DEFAULT_SORT
   }
+}
+
+/**
+ * The count beside a tab label. Colored segments sit to the left of the grey
+ * total, so the pill splits into "what waits on someone" and "everything";
+ * with no segment it is the plain pill.
+ */
+function TabCount(props: {
+  total: number
+  /** Accent the plain pill when non-zero: the tab that waits on the user. */
+  hot: boolean
+  segments: TabSegment[]
+}) {
+  if (props.segments.length === 0) {
+    return <span className={'count' + (props.hot && props.total > 0 ? ' hot' : '')}>{props.total}</span>
+  }
+  const title = [...props.segments.map((s) => `${s.n} ${s.label}`), `${props.total} total`].join(' · ')
+  return (
+    <span className="count split" title={title}>
+      {props.segments.map((s) => (
+        <span key={s.label} className={s.tone}>
+          {s.n}
+        </span>
+      ))}
+      <span>{props.total}</span>
+    </span>
+  )
 }
 
 function initialTab(): TabId {

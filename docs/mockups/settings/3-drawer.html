@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"><script src="mock.js"></script><script src="settings.js"></script><style>
+/* Design 3: settings is a drawer over the board. The board stays live, so a change shows its effect at once. */
+.frame-full.tall { height: 720px; }
+.drawer h2:first-of-type { margin-top: 8px; }
+.compact .drawer { top: 78px; }
+</style></head><body>
+
+<div class="cap">Full window · gear lit; the drawer covers the right side and the board stays visible behind it</div>
+<div class="app frame-full tall" id="full"></div>
+
+<div class="cap">Compact window · the drawer is the whole window below the header &nbsp;·&nbsp; Connection window</div>
+<div class="frames">
+  <div class="app compact frame-compact" id="cmp"></div>
+  <div class="frame-win" style="width:520px"><div class="titlebar"><span class="dots"><i></i><i></i><i></i></span><span class="title">Gerrit Review Board · Connection</span></div>
+    <div class="settings" style="padding:18px 22px" id="conn"></div></div>
+</div>
+
+<div class="mock-note"><b>3 · Drawer.</b> The gear opens a drawer on the right, under the tab row; the board keeps showing on the left and keeps refreshing. That is what makes instant apply worth having: add "erin" to the team and the External Reviews count drops and Team Reviews rises while the drawer is open. The gear is lit while the drawer is open; clicking a tab, the gear again, Escape or the X closes it. No Save, no Cancel; a "Saved" flash beside the control that changed.
+<ul><li><b>Connection:</b> a status line at the top of the drawer with a "Change…" button that opens a separate small window. Same window on first launch.</li>
+<li><b>Compact:</b> there is no side to slide from, so the drawer takes the whole window below the two header rows, like a sheet. Tab tap closes it.</li>
+<li>The one design where you can see a setting act. The drawer is 460px wide, so the board behind it is narrowed; wide boards get a horizontal squeeze.</li></ul></div>
+
+<script>
+const drawer = (o = {}) => `<aside class="drawer settings"><div class="drawer-head"><h1>Settings</h1><button class="btn icon subtle" title="Close">${I.x}</button></div>${connectionSummary({ label: 'Change…' })}${teamSection({ members: ['alice', 'bob', 'carol', 'dave', 'erin'], saved: true })}${o.short ? '' : mergersSection() + appIconSection() + windowSection() + menubarSection() + aboutSection()}</aside>`
+document.getElementById('full').innerHTML = topbar({ settings: 'icon', open: true, active: 'Reviewing' }) + `<main class="board dim-board"><div class="sections" id="rows"></div></main>` + drawer()
+renderFull(document.getElementById('rows'), {})
+document.getElementById('cmp').innerHTML = topbar({ compact: true, settings: 'icon', open: true, active: 'Reviewing' }) + `<main class="board"><div id="led"></div></main>` + drawer({ short: true })
+renderLedger(document.getElementById('led'), {})
+document.getElementById('conn').innerHTML = `${connectionForm()}<div class="row" style="justify-content:flex-end"><button class="btn primary">Test and save</button></div><p class="status ok">Connected as Alice Ahlgren (alice@example.com)</p>`
+</script></body></html>

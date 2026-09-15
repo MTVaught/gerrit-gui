@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"><script src="settings.js"></script><style>
+/* Design 5: Settings is a tab whose page has its own tab row, like the board's sections; Connection is a launcher at the far right of that row. */
+.subtabs .tab.launch { margin-left: auto; color: var(--muted); }
+.subtabs .tab.launch svg { margin-left: 2px; }
+.compact .subtabs { top: 76px; }
+.frame-compact .toast { bottom: 12px; font-size: 12.5px; }
+</style></head><body>
+
+<div class="cap">Full window · Settings tab selected, its own sub-tab row underneath; the last change shows as an undo toast</div>
+<div class="app frame-full" id="full" style="min-height:520px"></div>
+
+<div class="cap">Compact window · sub-tabs scroll like the main strip &nbsp;·&nbsp; the Connection window, also the first-run screen</div>
+<div class="frames">
+  <div class="app compact frame-compact" id="cmp"></div>
+  <div class="frame-win" style="width:520px"><div class="titlebar"><span class="dots"><i></i><i></i><i></i></span><span class="title">Gerrit Review Board</span></div>
+    <div class="firstrun settings" id="conn"></div></div>
+</div>
+
+<div class="mock-note"><b>5 · Sub-tabs.</b> Settings is a tab at the right end of the strip, and its page borrows the board's own structure: a second, lighter tab row for Team, Mergers, Scope, App icon, Menu bar, Window and About. Each sub-tab is one short page, so nothing scrolls far. Changes apply on the spot; instead of a "Saved" mark beside each control, one toast at the bottom names what just happened and offers Undo for a few seconds ("Added dave to the team · Undo"), which is what a Cancel button used to give you.
+<ul><li><b>Connection:</b> not a sub-tab with fields but a launcher at the far right of the sub-tab row ("Connection ↗") that opens the sign-in window. That window is the same screen the app shows on first launch, so there is one sign-in form, not two.</li>
+<li><b>Compact:</b> both tab rows scroll sideways; the sub-tab row sits directly under the toolbar.</li>
+<li>Most tab-like of the five, which is what was asked for; the undo toast is the only new widget. Two tab rows on top can look busy on small windows.</li></ul></div>
+
+<script>
+const SUB = ['Team', 'Mergers', 'Scope', 'App icon', 'Menu bar', 'Window', 'About']
+const subtabs = `<nav class="subtabs">${SUB.map((n) => `<button class="tab${n === 'Team' ? ' active' : ''}">${n}</button>`).join('')}<button class="tab launch">${I.plug} Connection ${I.ext}</button></nav>`
+document.getElementById('full').innerHTML = topbar({ settings: 'tab', open: true, active: '' }) + subtabs +
+  `<main class="panel settings">${teamSection({ members: ['alice', 'bob', 'carol', 'dave'] })}</main><div class="toast">Added <b>dave</b> to the team <button class="link">Undo</button></div>`
+document.getElementById('cmp').innerHTML = topbar({ compact: true, settings: 'tab', open: true, active: '' }) + subtabs +
+  `<main class="panel settings">${teamSection({ members: ['alice', 'bob', 'carol', 'dave'] })}</main><div class="toast">Added <b>dave</b> <button class="link">Undo</button></div>`
+document.getElementById('conn').innerHTML = `<div class="logo">G</div><h1>Sign in to Gerrit</h1><p class="muted">Where your reviews live. You can change this later from Settings.</p><form>${connectionForm({ hasPassword: false })}<div class="row"><button class="btn primary">Connect</button></div></form>`
+</script></body></html>

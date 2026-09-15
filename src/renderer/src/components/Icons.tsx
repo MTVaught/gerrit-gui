@@ -79,3 +79,12 @@ export const SlidersIcon = () => (
     <circle cx="9" cy="17" r="2" />
   </svg>
 )
+
+/** A plug: the connection window. */
+export const PlugIcon = () => (
+  <svg {...common} width={14} height={14}>
+    <path d="M9 2v6M15 2v6" />
+    <path d="M6 8h12v4a6 6 0 0 1-12 0z" />
+    <path d="M12 18v4" />
+  </svg>
+)
