@@ -7,7 +7,7 @@ import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Bo
 import { ViewMenu } from './components/ViewMenu.tsx'
 import { ago } from './time.ts'
 import { renderBadgeIcon, renderTrayStrip } from './badge.ts'
-import { ExpandIcon, GearIcon, PlugIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
+import { ExpandIcon, GearIcon, LockIcon, PlugIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
 import { api, isBrowserMode } from './api.ts'
 import { UpdatePill, useUpdateState } from './components/Update.tsx'
 import { rememberAccounts } from './names.ts'
@@ -346,8 +346,9 @@ function initialSort(): SortId {
 
 /**
  * The count beside a tab label. Colored segments sit to the left of the grey
- * total, so the pill splits into "what waits on someone" and "everything";
- * with no segment it is the plain pill.
+ * total: first what waits on the user, then, after a gap, what waits on
+ * others in muted tones; with no segment it is the plain pill. A private
+ * count is a lock pill after the capsule, since private is not a state.
  */
 function TabCount(props: {
   total: number
@@ -355,19 +356,40 @@ function TabCount(props: {
   hot: boolean
   segments: TabSegment[]
 }) {
-  if (props.segments.length === 0) {
-    return <span className={'count' + (props.hot && props.total > 0 ? ' hot' : '')}>{props.total}</span>
-  }
-  const title = [...props.segments.map((s) => `${s.n} ${s.label}`), `${props.total} total`].join(' · ')
-  return (
-    <span className="count split" title={title}>
-      {props.segments.map((s) => (
-        <span key={s.label} className={s.tone}>
-          {s.n}
-        </span>
-      ))}
-      <span>{props.total}</span>
+  const priv = props.segments.find((s) => s.tone === 'private')
+  const segs = props.segments.filter((s) => s.tone !== 'private')
+  const lock = priv && (
+    <span className="count private" title={`${priv.n} private`}>
+      <LockIcon />
+      {priv.n}
     </span>
+  )
+  if (segs.length === 0) {
+    return (
+      <>
+        <span className={'count' + (props.hot && props.total > 0 ? ' hot' : '')}>{props.total}</span>
+        {lock}
+      </>
+    )
+  }
+  const title = [...segs.map((s) => `${s.n} ${s.label}`), `${props.total} total`].join(' · ')
+  const mine = segs.filter((s) => s.tone === 'pos' || s.tone === 'neg')
+  const others = segs.filter((s) => s.tone !== 'pos' && s.tone !== 'neg')
+  const seg = (s: TabSegment) => (
+    <span key={s.label} className={s.tone}>
+      {s.n}
+    </span>
+  )
+  return (
+    <>
+      <span className="count split" title={title}>
+        {mine.map(seg)}
+        {mine.length > 0 && others.length > 0 && <span className="gap" />}
+        {others.map(seg)}
+        <span>{props.total}</span>
+      </span>
+      {lock}
+    </>
   )
 }
 

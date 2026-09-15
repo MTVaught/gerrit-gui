@@ -1,0 +1,25 @@
+/* Mockup-only additions on top of the real app stylesheet. */
+body { padding-bottom: 24px; }
+.topbar { position: static; }
+.note { max-width: 1400px; margin: 0 auto; padding: 8px 16px 0; font-size: 13px; color: var(--muted); }
+.note b { color: var(--fg); }
+.state { padding: 14px 16px 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+.legend { margin: 18px 16px 0; padding: 10px 14px; border: 1px dashed var(--border); border-radius: 8px; max-width: 900px; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.legend .count { margin-right: 4px; }
+.mock-note { margin: 18px 16px 8px; padding: 10px 14px; border: 1px dashed var(--border); border-radius: 8px; max-width: 900px; font-size: 13px; color: var(--muted); }
+.mock-note b { color: var(--fg); }
+/* Candidate tones for the new segments. */
+.count.split > .pending { background: var(--pending-bg); color: var(--pending); }
+.count.split > .wip { background: var(--panel); color: var(--muted); }
+.count.split > .priv { background: transparent; color: var(--muted); display: inline-flex; align-items: center; gap: 3px; }
+.count.split > .priv svg { width: 9px; height: 9px; }
+.count.split > .total { background: var(--border); }
+/* Hairlines so two light segments next to each other still read as two. */
+.count.split.lined > span + span { border-left: 1px solid var(--bg); }
+/* Variant 3: a gap between the "waits on someone" half and the rest. */
+.count.split > .gap { width: 3px; padding: 0; background: var(--bg); }
+/* Variant 4: a glyph before each number. */
+.count.split > span .g { font-size: 9px; margin-right: 2px; opacity: .85; }
+/* Variant 5: private as its own small pill after the main one. */
+.count.priv-pill { display: inline-flex; align-items: center; gap: 3px; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0 6px; margin-left: -2px; }
+.count.priv-pill svg { width: 9px; height: 9px; }

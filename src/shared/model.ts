@@ -474,15 +474,22 @@ const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'merg
 /** One colored part of a tab's count pill, left of the grey total. */
 export interface TabSegment {
   n: number
-  tone: 'pos' | 'neg'
+  /**
+   * pos/neg: waits on the user. pending/wip: waits on others, shown after a
+   * gap in muted tones. private: not a state; drawn as a lock beside the pill.
+   */
+  tone: 'pos' | 'neg' | 'pending' | 'wip' | 'private'
   /** Names the count in the pill's tooltip: "3 ready to merge". */
   label: string
 }
 
 /**
  * The colored segments of the count pills: on Merged, what waits to be
- * merged; on My Changes, what needs work and what is approved. Cards, like
- * the totals, so a family counts once. A segment at zero is left out.
+ * merged; on My Changes, one per section: what needs work, what is approved,
+ * then what is out for review and what is still in progress, and the private
+ * ones apart. Cards, like the totals, so a family counts once. A segment at
+ * zero is left out, as is in progress when it is the only state: then it is
+ * the whole tab and the plain total says as much.
  */
 export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegment[]>> {
   const bySection = (tab: TabId, title: string) =>
@@ -493,9 +500,13 @@ export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegme
     mine: [
       { n: bySection('mine', STATE_LABEL['needs-changes']), tone: 'neg', label: 'need changes' },
       { n: bySection('mine', STATE_LABEL['approved']), tone: 'pos', label: 'approved' },
+      { n: bySection('mine', 'Out for review'), tone: 'pending', label: 'out for review' },
+      { n: bySection('mine', 'In Progress, review not requested'), tone: 'wip', label: 'in progress' },
+      { n: bySection('mine', 'Private'), tone: 'private', label: 'private' },
     ],
   }
   for (const tab of Object.keys(segments) as TabId[]) segments[tab] = segments[tab]!.filter((s) => s.n > 0)
+  if (!segments.mine!.some((s) => s.tone !== 'wip' && s.tone !== 'private')) segments.mine = segments.mine!.filter((s) => s.tone !== 'wip')
   return segments
 }
 

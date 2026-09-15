@@ -362,7 +362,7 @@ test('team: an external change is on the External Reviews tab and on no other; a
   )
   assert.deepEqual(on('external-reviews'), [1, 2])
   assert.deepEqual(tabCounts(views), { 'needs-my-review': 1, reviewing: 1, mine: 1, merged: 1, 'team-reviews': 2, 'external-reviews': 2 })
-  assert.deepEqual(tabSegments(views), { merged: [], mine: [] }, 'nothing colored: Erin\'s ready change is external')
+  assert.deepEqual(tabSegments(views), { merged: [], mine: [{ n: 1, tone: 'pending', label: 'out for review' }] }, 'nothing waits on Bob: Erin\'s ready change is external')
   // The tray counts follow the regular tabs, so Erin's request and her ready change are left out.
   assert.deepEqual(actionCounts(views), { review: 1, fix: 0, ready: 0, merge: 0 })
   // Without a team the same changes are all internal and both team tabs are empty.
@@ -394,6 +394,14 @@ test('groupsFor: the tabs are sectioned by state and empty sections are left out
       ['In Progress, review not requested', [3]],
     ],
   )
+  // The pill: one segment per section, private apart; in progress is dropped once it is the only state.
+  assert.deepEqual(tabSegments(views).mine, [
+    { n: 1, tone: 'neg', label: 'need changes' },
+    { n: 1, tone: 'pending', label: 'out for review' },
+    { n: 1, tone: 'wip', label: 'in progress' },
+  ])
+  const quiet = classifyAll([change({ number: 1, reviewers: [bob] }), change({ number: 2, reviewers: [bob], private: true })], alice._account_id)
+  assert.deepEqual(tabSegments(quiet).mine, [{ n: 1, tone: 'private', label: 'private' }])
   const asBob = classifyAll(
     [
       change({ number: 1, reviewers: [bob], requested: 3 }),
