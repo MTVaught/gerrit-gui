@@ -132,6 +132,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .badge.stale { background: var(--warn-bg); color: var(--warn); }
 .badge.private { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--muted); }
 .badge.private svg { width: 10px; height: 10px; }
+.badge.tally { font-weight: 600; }
+.ledger .fh .tally.needs-changes { color: var(--neg); }
+.ledger .fh .tally.needs-review { color: var(--pending); }
+.ledger .fh .tally.approved, .ledger .fh .tally.ready-to-merge { color: var(--pos); }
 .badge.branch { display: inline-flex; gap: 4px; align-items: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
 .btn.subtle { border-color: transparent; background: none; color: var(--muted); font-size: 12px; }
 .btn.subtle:hover:not(:disabled) { color: var(--fg); border-color: var(--border); }

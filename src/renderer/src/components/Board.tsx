@@ -5,6 +5,7 @@ import {
   DEFAULT_SORT,
   EMPTY_FILTER,
   SORT_OPTIONS,
+  countFamilies,
   displayName,
   familyKey,
   filterViews,
@@ -131,13 +132,15 @@ export function Board(props: {
   if (props.loading || !props.self) return <div className="panel muted">Loading...</div>
   const all = groupsFor(props.tab, props.views)
   const groups = all.map((g) => ({ ...g, items: filterViews(g.items, props.filter) })).filter((g) => g.items.length > 0)
-  const total = all.reduce((n, g) => n + g.items.length, 0)
-  const shown = groups.reduce((n, g) => n + g.items.length, 0)
+  // The counts are cards: a family counts once, however many branches.
+  const total = countFamilies(all.flatMap((g) => g.items))
+  const shown = countFamilies(groups.flatMap((g) => g.items))
   // A family is one card, led by its most urgent branch on this tab (see
   // URGENCY). It sits in that branch's section, at that branch's sort
   // position. A tie goes to the earliest section, so on Reviewing a branch
-  // waiting on you beats one you already reviewed. Section counts still count
-  // the changes in that state.
+  // waiting on you beats one you already reviewed. A section whose only
+  // changes are branches of a card led elsewhere is dropped: the header
+  // counts the cards under it, and nothing would be under it.
   const sorted = groups.map((g) => sortViews(g.items, props.sort))
   const lead = new Map<string, { section: number; view: ChangeView }>()
   sorted.forEach((items, section) => {
@@ -148,15 +151,17 @@ export function Board(props: {
       if (!cur || urgency(view.state) < urgency(cur.view.state)) lead.set(key, { section, view })
     }
   })
-  const sections: Section[] = groups.map((g, section) => ({
-    ...g,
-    rows: sorted[section]!.flatMap((v): Row[] => {
-      const key = familyKey(v.change)
-      const f = families.get(key)
-      if (!f || f.members.length === 1) return [{ view: v, family: null }]
-      return lead.get(key)?.view === v ? [{ view: v, family: f }] : []
-    }),
-  }))
+  const sections: Section[] = groups
+    .map((g, section) => ({
+      ...g,
+      rows: sorted[section]!.flatMap((v): Row[] => {
+        const key = familyKey(v.change)
+        const f = families.get(key)
+        if (!f || f.members.length === 1) return [{ view: v, family: null }]
+        return lead.get(key)?.view === v ? [{ view: v, family: f }] : []
+      }),
+    }))
+    .filter((g) => g.rows.length > 0)
   if (all.length === 0) {
     if (props.tab === 'needs-my-review') return <NeedsReviewEmpty views={props.views} onGoTo={props.onGoTo} />
     return <div className="panel empty">{EMPTY[props.tab]}</div>
@@ -212,7 +217,7 @@ export function Board(props: {
         {sections.map((g) => (
           <section key={g.title} className="group">
             <h3>
-              {g.title} <span className="count">{g.items.length}</span>
+              {g.title} <span className="count">{g.rows.length}</span>
             </h3>
             {g.hint && <p className="muted small">{g.hint}</p>}
             <ul className="changes">

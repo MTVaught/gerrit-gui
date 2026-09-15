@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, accountKeys, displayName, reviewerTag, reviewerTagsFor, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, accountKeys, displayName, reviewerTag, reviewerTagsFor, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
 import { ForkIcon, LockIcon } from './Icons.tsx'
@@ -73,6 +73,12 @@ function CardHead(props: { view: ChangeView; family?: ChangeFamily; search: stri
           <ForkIcon /> {f.members.length} branches
         </span>
       )}
+      {f &&
+        stateTally(f.members).map((t) => (
+          <span key={t.state} className={`badge tally ${t.state}`} title={`${t.count} of the ${f.members.length} branches: ${STATE_LABEL[t.state]}`}>
+            {t.count} {STATE_LABEL[t.state]}
+          </span>
+        ))}
       <span className="muted small origin">
         {c.project} · {v.isMine ? 'you' : displayName(c.owner)}
       </span>
