@@ -40,6 +40,16 @@ export interface Api {
   /** The tray menu asked for a specific board tab. */
   onTabRequested(cb: (tab: TabId) => void): () => void
 
+  // The connection (server, account, password) is edited in its own window.
+  /** Open or raise the connection window. */
+  openConnection(): Promise<void>
+  /** From the connection window: the credentials were saved and tested; the board should reload. */
+  connectionChanged(): Promise<void>
+  /** From the connection window: close it. */
+  closeConnection(): Promise<void>
+  /** The connection window saved new credentials. */
+  onConnectionChanged(cb: () => void): () => void
+
   // Application updates from GitHub releases. Each call resolves with the
   // state once the step has run; progress arrives through onUpdateState.
   getUpdateState(): Promise<UpdateState>

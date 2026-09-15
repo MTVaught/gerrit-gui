@@ -1,0 +1,132 @@
+/* Mockup-only: frames, captions, static stand-ins for open menus, windows and toasts. */
+body { padding: 12px; }
+.compact .tab.gear { margin-left: 0; }
+.cap { margin: 14px 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.frame-full { width: 1280px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; }
+.frame-compact { width: 460px; height: 640px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; }
+.frame-win { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); box-shadow: 0 10px 30px #0004; }
+.frame-win .titlebar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+.frame-win .titlebar .dots { display: inline-flex; gap: 5px; }
+.frame-win .titlebar .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--border); display: inline-block; }
+.frame-win .titlebar .title { margin: 0 auto; font-weight: 600; color: var(--fg); }
+.frames { display: flex; gap: 24px; align-items: flex-start; }
+.mock-note { margin: 16px 0 0; padding: 10px 14px; border: 1px dashed var(--border); border-radius: 8px; font-size: 12.5px; color: var(--muted); max-width: 1280px; line-height: 1.5; }
+.mock-note b { color: var(--fg); }
+.mock-note ul { margin: 4px 0 0; padding-left: 18px; }
+i[class^="i-"] { display: inline-flex; align-items: center; }
+/* One row: tabs on the left, the controls on the right, on the same line. The old status text leaves the row. */
+.topbar { flex-wrap: nowrap; gap: 8px; padding: 6px 12px; }
+.tabs { gap: 2px; min-width: 0; }
+.tab { padding: 7px 10px; }
+.topbar-right { gap: 6px; }
+.btn.icon { padding: 6px 8px; }
+.btn.icon.on { background: var(--panel); color: var(--fg); border-color: var(--border); }
+.btn.icon.on.tabbed { border-color: transparent; font-weight: 600; }
+.btn.icon.spin svg { animation: spin 1s linear infinite; }
+.compact .topbar { flex-wrap: wrap; }
+/* Settings pages. */
+.settings h2 { font-size: 17px; margin: 22px 0 4px; }
+.settings h2:first-child { margin-top: 0; }
+.settings p { margin: 4px 0 8px; }
+.settings input { margin-top: 4px; }
+.settings .row { margin-top: 12px; }
+/* A "saved" flash beside a control that was just changed. */
+.saved { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--pos); margin-left: 10px; font-weight: 500; }
+.saved.fade { opacity: .55; }
+label.check .saved { margin-left: 4px; }
+/* iOS-style switch: on/off applies at once. */
+.sw { position: relative; width: 34px; height: 20px; border-radius: 999px; background: var(--border); flex: 0 0 auto; transition: background .15s; }
+.sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; transition: left .15s; }
+.sw.on { background: var(--accent); }
+.sw.on::after { left: 16px; }
+.sw.dim { opacity: .5; }
+label.switch { display: flex; align-items: center; gap: 10px; font-weight: 500; margin: 10px 0 2px; }
+label.switch .sw { order: -1; }
+/* Chips for team and mergers, as in TeamEditor. */
+.team-members { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 24px; }
+.chip.member { background: var(--panel); font-size: 13px; padding: 3px 10px; }
+.chip.member .chip-x { opacity: .6; }
+.team-add { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.team-add .field { flex: 1; }
+.rule { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
+.rule .head { display: flex; gap: 8px; align-items: center; }
+.rule .head .field { flex: 1; }
+.rule .head code { font-weight: 600; }
+/* Connection summary line with a "Change" action. */
+.conn { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.conn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pos); flex: 0 0 auto; }
+.conn .who { font-weight: 600; }
+.conn .btn { margin-left: auto; }
+.avatar { width: 24px; height: 24px; border-radius: 50%; background: #d97706; color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+/* Modal and popover stand-ins. */
+.scrim { position: absolute; inset: 0; background: #0006; z-index: 20; display: flex; align-items: flex-start; justify-content: center; padding-top: 60px; }
+.dialog { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; width: 520px; padding: 20px 22px; box-shadow: 0 16px 40px #0005; }
+.dialog h2 { margin: 0 0 4px; font-size: 17px; }
+.pop { position: absolute; z-index: 40; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px #0003; padding: 6px; font-size: 13px; }
+.pop h4 { margin: 8px 10px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
+.pop .item { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 5px; white-space: nowrap; }
+.pop .item:hover { background: var(--panel); }
+.pop .item .k { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 12px; }
+.pop hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+.field { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 6px; padding: 7px 8px; background: var(--bg); font-size: 13px; color: var(--fg); white-space: nowrap; min-width: 0; }
+.field .ph { color: var(--muted); }
+.field.block { display: flex; margin-top: 4px; }
+.field .caret { display: inline-block; width: 1px; height: 14px; background: var(--fg); }
+.field.focus { border-color: var(--accent); box-shadow: 0 0 0 2px #2563eb22; }
+/* Toasts. */
+.toast { position: absolute; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 30; background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; display: flex; gap: 14px; align-items: center; box-shadow: 0 6px 20px #0004; white-space: nowrap; }
+.toast .link { color: inherit; text-decoration: underline; font-weight: 600; }
+.sync { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.sync .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pos); }
+/* Tab-strip settings tab. */
+.tab.gear { margin-left: auto; }
+.tab svg { width: 15px; height: 15px; }
+/* Section nav for design 2. */
+.sidebar-layout { display: flex; gap: 32px; max-width: 980px; margin: 20px auto; padding: 0 24px; }
+.sidenav { width: 190px; flex: 0 0 auto; position: sticky; top: 60px; align-self: flex-start; }
+.sidenav a { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; color: var(--muted); font-weight: 500; text-decoration: none; }
+.sidenav a.active { background: var(--panel); color: var(--fg); font-weight: 600; }
+.sidenav .sep { border-top: 1px solid var(--border); margin: 8px 0; }
+.sidenav .foot { padding: 8px 10px; font-size: 12px; }
+.sidebar-layout .content { flex: 1; min-width: 0; max-width: 640px; }
+/* Card grid for design 4. */
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 1100px; margin: 20px auto; padding: 0 20px; }
+.card { border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.card h2 { margin: 0 0 4px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.card h2 .saved { margin-left: auto; }
+.card p.muted { margin: 0 0 8px; }
+.card.wide { grid-column: 1 / -1; }
+.compact .cards { grid-template-columns: 1fr; padding: 0 10px; margin: 12px auto; gap: 10px; }
+.compact .card { padding: 12px; }
+/* Second-level tab row for design 5. */
+.subtabs { display: flex; gap: 2px; padding: 6px 16px; border-bottom: 1px solid var(--border); background: var(--panel); position: sticky; top: 49px; z-index: 4; }
+.subtabs .tab { padding: 5px 10px; font-size: 13px; }
+.subtabs .tab.active { background: var(--bg); box-shadow: inset 0 0 0 1px var(--border); }
+.compact .subtabs { padding: 4px 6px; overflow-x: auto; scrollbar-width: none; gap: 0; }
+.compact .subtabs .tab { border-radius: 0; border-bottom: 2px solid transparent; }
+.compact .subtabs .tab.active { background: none; box-shadow: none; border-bottom-color: var(--accent); }
+/* Drawer for design 3. */
+.drawer { position: absolute; top: 49px; right: 0; bottom: 0; width: 460px; background: var(--bg); border-left: 1px solid var(--border); box-shadow: -8px 0 24px #0003; z-index: 15; overflow: auto; padding: 18px 22px 28px; }
+.drawer .settings { max-width: none; margin: 0; padding: 0; }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.drawer-head h1 { font-size: 16px; margin: 0; }
+.compact .drawer { left: 0; width: auto; top: 76px; padding: 12px; }
+.frame-full.tall { height: 760px; overflow: hidden; }
+.frame-full.tall .board { overflow: hidden; }
+.dim-board { pointer-events: none; }
+/* First run. */
+.firstrun { max-width: 480px; margin: 60px auto; text-align: center; }
+.firstrun .logo { width: 56px; height: 56px; border-radius: 14px; background: var(--accent); margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 22px; }
+.firstrun h1 { font-size: 20px; margin: 0 0 4px; }
+.firstrun form { text-align: left; margin-top: 20px; }
+.firstrun .row { justify-content: flex-end; }
+mark { background: transparent; color: inherit; }
+.status.ok { margin: 8px 0 0; font-size: 13px; }
+/* Frames size to their content, not the viewport. */
+.app { min-height: 0; }
+.frame-full { width: 1320px; }
+.mock-note { max-width: 1320px; }
+.tabs { flex: 0 1 auto; }
+.tab { flex: 0 0 auto; }
+.tab.gear { margin-left: auto; }
+.frame-full .topbar { overflow: hidden; }
