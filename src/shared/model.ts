@@ -370,6 +370,23 @@ function reviewerGroups(items: ChangeView[]): Group[] {
   ].filter((g) => g.items.length > 0)
 }
 
+/** What the author asked of this user, and nothing asked of somebody else. */
+function mergeQueueGroups(open: ChangeView[]): Group[] {
+  return [
+    { title: 'Asked of you', items: open.filter((v) => v.state === 'ready-to-merge' && v.mergeRequestedFromMe) },
+    {
+      title: 'Tagged without a merger',
+      hint: 'Tagged by an older version of the application, which named nobody. Anyone who can vote +2 may merge these.',
+      items: open.filter((v) => v.state === 'ready-to-merge' && v.requestedMerger === null && v.canMerge),
+    },
+    {
+      title: 'Tagged but no longer approved',
+      hint: 'A new patch set reset the votes. The owner should request review again or clear the tag.',
+      items: open.filter((v) => v.staleReadyToMerge && (v.isMine || v.mergeRequestedFromMe)),
+    },
+  ].filter((g) => g.items.length > 0)
+}
+
 /**
  * The sections of one tab, before the View filter. Every tab except External
  * Reviews lists internal changes only (see isInternal); External Reviews
@@ -402,23 +419,9 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
         },
       ].filter((g) => g.items.length > 0)
     }
-    case 'ready-to-merge':
-      // The merger's queue: what the author asked of this user, and nothing asked of somebody else.
-      return [
-        { title: 'Asked of you', items: open.filter((v) => v.state === 'ready-to-merge' && v.mergeRequestedFromMe) },
-        {
-          title: 'Tagged without a merger',
-          hint: 'Tagged by an older version of the application, which named nobody. Anyone who can vote +2 may merge these.',
-          items: open.filter((v) => v.state === 'ready-to-merge' && v.requestedMerger === null && v.canMerge),
-        },
-        {
-          title: 'Tagged but no longer approved',
-          hint: 'A new patch set reset the votes. The owner should request review again or clear the tag.',
-          items: open.filter((v) => v.staleReadyToMerge && (v.isMine || v.mergeRequestedFromMe)),
-        },
-      ].filter((g) => g.items.length > 0)
     case 'merged':
-      return [{ title: 'Merged in the last 14 days', items: internal.filter((v) => v.change.status === 'MERGED') }]
+      // The merger's queue above the history: what waits to be merged, then what already was.
+      return [...mergeQueueGroups(open), { title: 'Merged in the last 14 days', items: internal.filter((v) => v.change.status === 'MERGED') }]
     case 'team-reviews':
       return reviewerGroups(views.filter(isTeamReview))
     case 'external-reviews':
@@ -436,7 +439,35 @@ export function tabCounts(views: ChangeView[]): Record<TabId, number> {
   return c
 }
 
-const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'ready-to-merge', 'merged', 'team-reviews', 'external-reviews']
+const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'merged', 'team-reviews', 'external-reviews']
+
+/** One colored part of a tab's count pill, left of the grey total. */
+export interface TabSegment {
+  n: number
+  tone: 'pos' | 'neg'
+  /** Names the count in the pill's tooltip: "3 ready to merge". */
+  label: string
+}
+
+/**
+ * The colored segments of the count pills: on Merged, what waits to be
+ * merged; on My Changes, what needs work and what is approved. Cards, like
+ * the totals, so a family counts once. A segment at zero is left out.
+ */
+export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegment[]>> {
+  const bySection = (tab: TabId, title: string) =>
+    countFamilies(groupsFor(tab, views).filter((g) => g.title === title).flatMap((g) => g.items))
+  const merged = groupsFor('merged', views)
+  const segments: Partial<Record<TabId, TabSegment[]>> = {
+    merged: [{ n: countFamilies(merged.filter((g) => g.title !== 'Merged in the last 14 days').flatMap((g) => g.items)), tone: 'pos', label: 'ready to merge' }],
+    mine: [
+      { n: bySection('mine', STATE_LABEL['needs-changes']), tone: 'neg', label: 'need changes' },
+      { n: bySection('mine', STATE_LABEL['approved']), tone: 'pos', label: 'approved' },
+    ],
+  }
+  for (const tab of Object.keys(segments) as TabId[]) segments[tab] = segments[tab]!.filter((s) => s.n > 0)
+  return segments
+}
 
 /** How many cards a list of changes makes: each Change-Id once. */
 export function countFamilies(views: ChangeView[]): number {
@@ -460,7 +491,7 @@ export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
   { id: 'review', label: 'Needs Review', color: '#2563eb', glyph: '\u25c9', tab: 'needs-my-review' },
   { id: 'fix', label: 'Needs Changes', color: '#dc2626', glyph: '\u270e', tab: 'mine' },
   { id: 'ready', label: 'Approved', color: '#15803d', glyph: '\u25c6', tab: 'mine' },
-  { id: 'merge', label: 'Ready to Merge', color: '#7c3aed', glyph: '\u21e7', tab: 'ready-to-merge' },
+  { id: 'merge', label: 'Ready to Merge', color: '#7c3aed', glyph: '\u21e7', tab: 'merged' },
 ]
 
 /**

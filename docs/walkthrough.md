@@ -105,7 +105,7 @@ one person, and nobody else is prompted.
 
 ## 7. Merged
 
-After Dave submits, the change is on everyone's **Recently Merged** tab for
+After Dave submits, the change is on everyone's **Merged** tab for
 14 days.
 
 ![Alice: merged](walkthrough/13-dev-merged.png)
