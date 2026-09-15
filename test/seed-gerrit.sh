@@ -62,6 +62,8 @@ reviewers() { as "$1" POST "/changes/$2/reviewers" "{\"reviewer\":\"$3\"}" >/dev
 primary() { reviewers "$1" "$2" "$3"; as "$1" POST "/changes/$2/hashtags" "{\"add\":[\"reviewer:$3\"]}" >/dev/null; }
 vote() { as "$1" POST "/changes/$2/revisions/current/review" "{\"labels\":{\"Code-Review\":$3},\"message\":\"$4\"}" >/dev/null; }
 request() { as "$1" POST "/changes/$2/custom_keyed_values" "{\"add\":{\"review-requested-ps\":\"$3\"}}" >/dev/null; }
+# Ready to merge: the tag plus the patch set it is for, as the app writes them.
+ready() { as "$1" POST "/changes/$2/hashtags" '{"add":["ready-to-merge"]}' >/dev/null; as "$1" POST "/changes/$2/custom_keyed_values" "{\"add\":{\"ready-to-merge-ps\":\"$3\"}}" >/dev/null; }
 
 echo "== changes"
 C1=$(mk alice "C1 in progress, no reviewers, nothing requested"); echo "C1=$C1"
@@ -69,7 +71,7 @@ C2=$(mk alice "C2 review requested, nobody has reviewed"); primary alice $C2 bob
 C3=$(mk alice "C3 bob reviewed, carol pending"); primary alice $C3 bob; primary alice $C3 carol; request alice $C3 1; vote bob $C3 1 "LGTM"; echo "C3=$C3"
 C4=$(mk alice "C4 needs changes (carol -1)"); primary alice $C4 bob; primary alice $C4 carol; request alice $C4 1; vote bob $C4 1 "ok"; vote carol $C4 -1 "please rename"; echo "C4=$C4"
 C5=$(mk alice "C5 approved by everyone, still WIP"); primary alice $C5 bob; primary alice $C5 carol; request alice $C5 1; vote bob $C5 1 "ok"; vote carol $C5 1 "ship it"; echo "C5=$C5"
-C6=$(mk alice "C6 ready-to-merge and active (CI running)"); primary alice $C6 bob; request alice $C6 1; vote bob $C6 1 "ok"; as alice POST "/changes/$C6/hashtags" '{"add":["ready-to-merge"]}' >/dev/null; as alice POST "/changes/$C6/ready" '{}' >/dev/null; echo "C6=$C6"
+C6=$(mk alice "C6 ready-to-merge and active (CI running)"); primary alice $C6 bob; request alice $C6 1; vote bob $C6 1 "ok"; ready alice $C6 1; as alice POST "/changes/$C6/ready" '{}' >/dev/null; echo "C6=$C6"
 C7=$(mk alice "C7 bob +1 on PS1, then PS2 pushed without re-request"); primary alice $C7 bob; request alice $C7 1; vote bob $C7 1 "ok v1"; newps alice $C7; echo "C7=$C7"
 C8=$(mk alice "C8 carol -1 on PS1, author pushed PS2 and PS3 (fixing)"); primary alice $C8 carol; request alice $C8 1; vote carol $C8 -1 "fix"; newps alice $C8; newps alice $C8; echo "C8=$C8"
 C9=$(mk alice "C9 bot is a reviewer, bob (primary) pending"); primary alice $C9 bob; reviewers alice $C9 ci-bot; request alice $C9 1; echo "C9=$C9"
@@ -102,6 +104,6 @@ P1=$(cp alice $C5 release-2.0); primary alice $P1 bob; primary alice $P1 carol; 
 P2=$(cp alice $C5 release-1.0); primary alice $P2 bob; primary alice $P2 carol; request alice $P2 1; echo "C5->release-1.0=$P2 (out for review)"
 P3=$(cp alice $C4 release-2.0); primary alice $P3 bob; primary alice $P3 carol; request alice $P3 1; vote bob $P3 1 "ok"; vote carol $P3 -1 "same rename here"; echo "C4->release-2.0=$P3 (needs changes)"
 P4=$(cp alice $C2 release-2.0); echo "C2->release-2.0=$P4 (in progress)"
-P5=$(cp alice $C6 release-1.0); primary alice $P5 bob; request alice $P5 1; vote bob $P5 1 "ok"; as alice POST "/changes/$P5/hashtags" '{"add":["ready-to-merge"]}' >/dev/null; as alice POST "/changes/$P5/ready" '{}' >/dev/null; echo "C6->release-1.0=$P5 (ready to merge)"
+P5=$(cp alice $C6 release-1.0); primary alice $P5 bob; request alice $P5 1; vote bob $P5 1 "ok"; ready alice $P5 1; as alice POST "/changes/$P5/ready" '{}' >/dev/null; echo "C6->release-1.0=$P5 (ready to merge)"
 vote dave $C6 2 "merging"; as dave POST "/changes/$C6/submit" '{}' >/dev/null; echo "C6 merged on master"
 echo "== done"

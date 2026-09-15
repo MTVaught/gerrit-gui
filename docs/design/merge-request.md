@@ -49,6 +49,11 @@ Why a hashtag and not a custom keyed value:
 | Who can write it | Owner, and anyone with Edit Hashtags (same as `ready-to-merge` today) | Owner and admins only |
 | Cleared by a new patch set | No (same as `ready-to-merge`) | No |
 
+A new patch set does not clear either, so the patch set the request was for
+is recorded separately, in the custom keyed value `ready-to-merge-ps`, the
+way `review-requested-ps` records the review request. The tag counts only
+while the value matches the current patch set; otherwise it is stale.
+
 `ready-to-merge` stays. It is the state, `merger:` is the addressee. The
 application always writes both, in one request. One `merger:` tag per
 change; "Change merger" replaces it.

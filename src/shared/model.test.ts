@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { accountKeys, accountMatches, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, urgency, type ViewFilter } from './model.ts'
-import { REVIEW_REQUESTED_KEY } from './constants.ts'
+import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
 const alice: AccountInfo = { _account_id: 1, name: 'Alice', username: 'alice', email: 'alice@example.com' }
@@ -38,12 +38,18 @@ function change(opts: {
   subject?: string
   messages?: ChangeMessageInfo[]
   branch?: string
+  /** Patch set recorded with the ready-to-merge tag; the current one when a tagged fixture leaves it out. */
+  readyPs?: number | null
   /** Verified votes on the current patch set, by account id. */
   verified?: Record<number, number>
   /** Change-Id shared by cherry-picks; left out to mimic a server that does not send it. */
   changeId?: string
 }): ChangeInfo {
   const reviewers = opts.reviewers ?? []
+  const keyed: Record<string, string> = {}
+  if (opts.requested) keyed[REVIEW_REQUESTED_KEY] = String(opts.requested)
+  const readyPs = opts.readyPs === undefined ? (opts.hashtags?.includes('ready-to-merge') ? (opts.patchSet ?? 3) : null) : opts.readyPs
+  if (readyPs !== null) keyed[READY_TO_MERGE_KEY] = String(readyPs)
   const primary = (opts.primary ?? reviewers).filter((a) => !a.tags?.includes('SERVICE_USER')).map((a) => `reviewer:${a.username ?? a.email}`)
   return {
     id: `demo~${opts.number ?? 1}`,
@@ -57,7 +63,7 @@ function change(opts: {
     work_in_progress: opts.wip,
     is_private: opts.private,
     hashtags: [...primary, ...(opts.hashtags ?? [])],
-    custom_keyed_values: opts.requested ? { [REVIEW_REQUESTED_KEY]: String(opts.requested) } : {},
+    custom_keyed_values: keyed,
     created: opts.created ?? '',
     updated: opts.updated ?? '',
     reviewers: { REVIEWER: reviewers },
@@ -139,8 +145,25 @@ test('all positive votes means approved; hashtag promotes to ready-to-merge', ()
   const c = change({ reviewers: [bob, carol], votes: { 2: 1, 3: 2 }, requested: 3 })
   assert.equal(classify(c, 1).state, 'approved')
   c.hashtags!.push('ready-to-merge')
+  assert.equal(classify(c, 1).state, 'approved', 'the tag alone is not enough')
+  c.custom_keyed_values![READY_TO_MERGE_KEY] = '3'
   assert.equal(classify(c, 1).state, 'ready-to-merge')
+  assert.equal(classify(c, 1).readyPatchSet, 3)
   assert.equal(classify(c, 1).staleReadyToMerge, false)
+})
+
+test('ready-to-merge tag for an earlier patch set is stale even when copied votes keep the change approved', () => {
+  const v = classify(change({ reviewers: [bob], votes: { 2: 2 }, requested: 2, patchSet: 3, hashtags: ['ready-to-merge', 'merger:dave'], readyPs: 2 }), 1)
+  assert.equal(v.state, 'approved')
+  assert.equal(v.readyPatchSet, 2)
+  assert.equal(v.staleReadyToMerge, true)
+})
+
+test('ready-to-merge tag without a recorded patch set (older version) is stale', () => {
+  const v = classify(change({ reviewers: [bob], votes: { 2: 1 }, requested: 3, hashtags: ['ready-to-merge'], readyPs: null }), 1)
+  assert.equal(v.state, 'approved')
+  assert.equal(v.readyPatchSet, null)
+  assert.equal(v.staleReadyToMerge, true)
 })
 
 test('verified: a Verified +1 on the current patch set, unless someone voted it down', () => {

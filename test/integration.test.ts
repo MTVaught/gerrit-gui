@@ -145,12 +145,13 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   assert.notEqual(v.change.submittable, true, 'Gerrit itself does not consider +1s submittable')
 
   // The author asks dave in particular. Both tags go in one request.
-  await serviceAs('alice').act({ type: 'requestMerge', id, merger: 'Dave', replace: [] })
+  await serviceAs('alice').act({ type: 'requestMerge', id, merger: 'Dave', patchSet: v.patchSet, replace: [] })
   await alice.setReady(id) // now let CI run
   v = await view('dave', id)
   assert.equal(v.state, 'ready-to-merge')
   assert.equal(v.wip, false)
   assert.equal(v.requestedMerger, 'dave')
+  assert.equal(v.readyPatchSet, v.patchSet)
   assert.equal(v.mergeRequestedFromMe, true)
   assert.equal(v.canMerge, true, 'dave is in the Mergers group (+2 permission)')
   assert.deepEqual(v.change.hashtags?.slice().sort(), ['merger:dave', READY_TO_MERGE_TAG, 'reviewer:bob', 'reviewer:carol'])
@@ -158,12 +159,12 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   assert.equal((await view('bob', id)).mergeRequestedFromMe, false)
 
   // The author changes their mind: the old merger tag leaves with the new one arriving.
-  await serviceAs('alice').act({ type: 'requestMerge', id, merger: 'bob', replace: mergerTags(v.change) })
+  await serviceAs('alice').act({ type: 'requestMerge', id, merger: 'bob', patchSet: v.patchSet, replace: mergerTags(v.change) })
   v = await view('bob', id)
   assert.equal(v.requestedMerger, 'bob')
   assert.equal(v.mergeRequestedFromMe, true)
   assert.deepEqual(mergerTags(v.change), ['merger:bob'])
-  await serviceAs('alice').act({ type: 'requestMerge', id, merger: 'dave', replace: mergerTags(v.change) })
+  await serviceAs('alice').act({ type: 'requestMerge', id, merger: 'dave', patchSet: v.patchSet, replace: mergerTags(v.change) })
   v = await view('dave', id)
   assert.equal(v.mergeRequestedFromMe, true)
 
@@ -229,8 +230,10 @@ test('re-requesting review drops a ready-to-merge tag and its merger left over f
   await service.act({ type: 'addPrimaryReviewer', id, reviewer: 'bob' })
   await service.act({ type: 'requestReview', id, patchSet: 1 })
   await user('bob').vote(id, 'Code-Review', 1, 'ok')
-  await service.act({ type: 'requestMerge', id, merger: 'dave' })
+  const ps1 = (await view('alice', id)).patchSet
+  await service.act({ type: 'requestMerge', id, merger: 'dave', patchSet: ps1 })
   assert.equal((await view('alice', id)).state, 'ready-to-merge')
+  assert.equal((await view('alice', id)).readyPatchSet, ps1)
 
   // A new patch set resets the votes; the tag stays behind in Gerrit and is now stale.
   await pushPatchSet('alice', id, 'v2')

@@ -122,7 +122,7 @@ export function MergerPicker(props: { view: ChangeView; spec: ActionSpec; onAct:
     setOpen(false)
     rememberLast(c.project, chosen)
     if (remember && otherKey === chosen) await save({ mergers: addMerger(rules, c.project, chosen) })
-    await props.onAct({ type: 'requestMerge', id: c._number, merger: chosen, replace: mergerTags(c) })
+    await props.onAct({ type: 'requestMerge', id: c._number, merger: chosen, patchSet: v.patchSet, replace: mergerTags(c) })
   }
 
   const cls = ['btn', spec.primary ? 'primary' : '', props.small ? 'sm' : ''].filter(Boolean).join(' ')
