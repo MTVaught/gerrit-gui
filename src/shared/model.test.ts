@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, tabCounts, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, urgency, type ViewFilter } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -600,6 +600,30 @@ test('groupByChangeId: cherry-picks share a family, in the order given', () => {
   )
   // Input is not mutated.
   assert.deepEqual(views.map((v) => v.change._number), [1, 2, 3, 4, 5])
+})
+
+test('tabCounts: a Change-Id family counts once per tab; stateTally lists its states, most urgent first', () => {
+  const views = [
+    // Alice's change on three branches: one approved, two out for review. One card on My Changes.
+    change({ number: 1, changeId: 'Iaaa', branch: 'master', reviewers: [bob], requested: 3 }),
+    change({ number: 2, changeId: 'Iaaa', branch: 'release-1.0', reviewers: [bob], requested: 3, votes: { 2: 1 } }),
+    change({ number: 3, changeId: 'Iaaa', branch: 'release-2.0', reviewers: [bob], requested: 3 }),
+    change({ number: 4, reviewers: [bob], requested: 3 }),
+  ].map((c) => classify(c, alice._account_id))
+  assert.equal(tabCounts(views).mine, 2)
+  // The tray counts cards as well: one approved card, however many approved branches.
+  const twoApproved = [
+    change({ number: 5, changeId: 'Ibbb', branch: 'master', reviewers: [bob], requested: 3, votes: { 2: 1 } }),
+    change({ number: 6, changeId: 'Ibbb', branch: 'release-1.0', reviewers: [bob], requested: 3, votes: { 2: 1 } }),
+    // A third branch of the same change needs a fix: the card is in both categories.
+    change({ number: 7, changeId: 'Ibbb', branch: 'release-2.0', reviewers: [bob], requested: 3, votes: { 2: -1 } }),
+  ].map((c) => classify(c, alice._account_id))
+  assert.deepEqual(actionCounts(twoApproved), { review: 0, fix: 1, ready: 1, merge: 0 })
+  assert.deepEqual(stateTally(views.slice(0, 3)), [
+    { state: 'needs-review', count: 2 },
+    { state: 'approved', count: 1 },
+  ])
+  assert.deepEqual(stateTally([]), [])
 })
 
 test('sortByBranch: project, then branch, then number; input untouched', () => {

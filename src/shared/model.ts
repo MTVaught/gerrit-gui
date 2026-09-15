@@ -426,33 +426,22 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
   }
 }
 
-/** The number on each tab: how many changes its sections list before the View filter. */
+/**
+ * The number on each tab: how many cards its sections list before the View
+ * filter. A Change-Id family is one card wherever it is, so it counts once.
+ */
 export function tabCounts(views: ChangeView[]): Record<TabId, number> {
-  const c: Record<TabId, number> = {
-    'needs-my-review': 0,
-    reviewing: 0,
-    mine: 0,
-    'ready-to-merge': 0,
-    merged: 0,
-    'team-reviews': 0,
-    'external-reviews': 0,
-  }
-  for (const v of views) {
-    if (!isInternal(v)) {
-      if (isExternalReview(v)) c['external-reviews']++
-      continue
-    }
-    if (v.change.status === 'MERGED') c.merged++
-    if (v.change.status !== 'NEW') continue
-    if (v.needsMyReview) c['needs-my-review']++
-    if (v.iAmReviewer && !v.isMine) c.reviewing++
-    if (v.isMine) c.mine++
-    if (isTeamReview(v)) c['team-reviews']++
-    if (mergeWaitsOnMe(v) || (v.staleReadyToMerge && (v.isMine || v.mergeRequestedFromMe))) c['ready-to-merge']++
-  }
+  const c = {} as Record<TabId, number>
+  for (const tab of TAB_IDS) c[tab] = countFamilies(groupsFor(tab, views).flatMap((g) => g.items))
   return c
 }
 
+const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'ready-to-merge', 'merged', 'team-reviews', 'external-reviews']
+
+/** How many cards a list of changes makes: each Change-Id once. */
+export function countFamilies(views: ChangeView[]): number {
+  return new Set(views.map((v) => familyKey(v.change))).size
+}
 
 export interface ActionCategoryInfo {
   id: ActionCategory
@@ -475,23 +464,27 @@ export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
 ]
 
 /**
- * How many changes wait on this user, by the action they need to take:
+ * How many cards wait on this user, by the action they need to take:
  *  review  I am a primary reviewer and the author asked for a review of the current patch set
  *  fix     my change got a negative outcome; push corrections
  *  ready   my change is approved; mark it ready to merge
  *  merge   the author asked me to merge (or nobody was named and I may +2)
+ * A Change-Id family is one card, so it counts once per category however
+ * many of its branches need that action, the same as the tabs and sections.
+ * A family with a branch to fix and another to mark ready is in both.
  */
 export function actionCounts(views: ChangeView[]): ActionCounts {
-  const c: ActionCounts = { review: 0, fix: 0, ready: 0, merge: 0 }
+  const keys: Record<ActionCategory, Set<string>> = { review: new Set(), fix: new Set(), ready: new Set(), merge: new Set() }
   for (const v of views) {
     // Each category opens a regular tab, and those list internal changes only.
     if (v.change.status !== 'NEW' || !isInternal(v)) continue
-    if (v.needsMyReview) c.review++
-    if (v.isMine && v.state === 'needs-changes') c.fix++
-    if (v.isMine && v.state === 'approved') c.ready++
-    if (mergeWaitsOnMe(v)) c.merge++
+    const key = familyKey(v.change)
+    if (v.needsMyReview) keys.review.add(key)
+    if (v.isMine && v.state === 'needs-changes') keys.fix.add(key)
+    if (v.isMine && v.state === 'approved') keys.ready.add(key)
+    if (mergeWaitsOnMe(v)) keys.merge.add(key)
   }
-  return c
+  return { review: keys.review.size, fix: keys.fix.size, ready: keys.ready.size, merge: keys.merge.size }
 }
 
 export function totalActions(c: ActionCounts): number {
@@ -639,6 +632,16 @@ export const URGENCY: readonly ReviewState[] = [
 
 export function urgency(state: ReviewState): number {
   return URGENCY.indexOf(state)
+}
+
+/**
+ * How many members of a family are in each state, most urgent state first.
+ * Shown on the card header, since the section only says where the lead is.
+ */
+export function stateTally(members: ChangeView[]): { state: ReviewState; count: number }[] {
+  const n = new Map<ReviewState, number>()
+  for (const v of members) n.set(v.state, (n.get(v.state) ?? 0) + 1)
+  return URGENCY.filter((st) => n.has(st)).map((state) => ({ state, count: n.get(state)! }))
 }
 
 /** Short form of a Change-Id for labels: "I3f2a91c…". */

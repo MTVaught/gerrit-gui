@@ -177,8 +177,10 @@ change on one branch is a card with one row, so both read the same way.
   you can see that the change is already in on master. On the "Recently
   Merged" tab, the merged branch leads the card and the open branches are
   below it.
-- The counts on the tabs and on the sections count changes, not cards. A
-  section counts only the changes that are in that state.
+- The counts on the tabs and on the sections count cards, not changes. A
+  family is one card, so it counts once however many branches it has, and
+  a section counts only the cards under it. The card header says how many
+  branches are in each state, for example "1 Approved · 2 Needs Review".
 - In the compact window the card is a box in the section: a header line
   with the subject and the number of branches, then one line per branch,
   titled by the branch. Each line opens like any other line of the ledger.
@@ -247,7 +249,8 @@ change with a hint to tell the author.
 The application stays open. It is independent of the browser.
 
 The tray icon shows what waits on you, in four categories and always in this
-order:
+order. The counts are cards, as on the tabs: a change on several branches
+counts once per category, however many of its branches need that action.
 
 | Category | Color | Glyph | Meaning |
 | --- | --- | --- | --- |

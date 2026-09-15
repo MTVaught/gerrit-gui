@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, reviewLink, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, displayName, reviewLink, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { PrivateBadge, Reviewers, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
@@ -52,7 +52,7 @@ export function Ledger(props: {
         <tbody key={g.title}>
           <tr className="g">
             <td colSpan={columns}>
-              {g.title} <span className="count">{g.items.length}</span>
+              {g.title} <span className="count">{g.rows.length}</span>
               {g.hint && <span className="hint">{g.hint}</span>}
             </td>
           </tr>
@@ -89,7 +89,17 @@ function FamilyBox(props: { family: ChangeFamily; lead: ChangeView } & LineProps
               <Highlight text={lead.change.subject} term={line.search} />
             </span>
           </span>
-          <span className="n muted">{f.members.length} branches</span>
+          <span className="n muted">
+            {f.members.length} branches
+            {stateTally(f.members).map((t) => (
+              <Fragment key={t.state}>
+                {' · '}
+                <span className={`tally ${t.state}`}>
+                  {t.count} {STATE_LABEL[t.state].toLowerCase()}
+                </span>
+              </Fragment>
+            ))}
+          </span>
         </td>
       </tr>
       {f.members.map((v, i) => (
