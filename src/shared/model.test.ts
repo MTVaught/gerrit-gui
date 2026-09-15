@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, urgency, type ViewFilter } from './model.ts'
 import { REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -405,18 +405,25 @@ test('private: My Changes lists private changes in one section at the bottom, wh
   // Only private changes: the Private section alone, no empty state sections.
   const onlyPrivate = classifyAll([change({ number: 5, private: true })], alice._account_id)
   assert.deepEqual(groupsFor('mine', onlyPrivate).map((g) => g.title), ['Private'])
-  // A reviewer sees a private change in its state section, like any other.
-  const asBob = classifyAll([change({ number: 2, reviewers: [bob], requested: 3, private: true })], bob._account_id)
-  assert.deepEqual(groupsFor('reviewing', asBob).map((g) => g.title), ['Waiting on you'])
   assert.deepEqual(tabCounts(views).mine, 4)
+})
+
+test('a private change of another author is never visible, reviewer or not', () => {
+  const theirs = change({ number: 2, reviewers: [bob], requested: 3, private: true })
+  assert.equal(isVisibleOnBoard(theirs, bob._account_id), false, 'reviewer on it')
+  assert.equal(isVisibleOnBoard({ ...theirs, reviewers: { CC: [bob] } }, bob._account_id), false, 'CC on it')
+  assert.equal(isVisibleOnBoard(theirs, alice._account_id), true, 'the owner')
+  assert.equal(isVisibleOnBoard(change({ number: 3, reviewers: [bob] }), bob._account_id), true, 'not private')
 })
 
 test('dashboard queries search for my reviewer tags and for the team\'s changes', () => {
   const q = dashboardQueries(['platform/*'], accountKeys(bob), ['Carol@Example.com', 'dave', ''])
-  assert.equal(q.direct, 'is:open (owner:self OR reviewer:self OR hashtag:ready-to-merge OR hashtag:reviewer:bob OR hashtag:reviewer:bob@example.com)')
-  assert.equal(q.team, 'is:open -owner:self (owner:carol@example.com OR owner:dave) (projects:platform/)')
+  assert.equal(q.direct, 'is:open (owner:self OR reviewer:self OR hashtag:ready-to-merge OR hashtag:reviewer:bob OR hashtag:reviewer:bob@example.com) (owner:self OR -is:private)')
+  assert.equal(q.wipScan, 'is:open is:wip -owner:self -is:private (projects:platform/)')
+  assert.equal(q.merged, 'is:merged (owner:self OR reviewer:self) -age:14d (owner:self OR -is:private)')
+  assert.equal(q.team, 'is:open -owner:self -is:private (owner:carol@example.com OR owner:dave) (projects:platform/)')
   assert.equal(dashboardQueries().team, '', 'no team, no team query')
-  assert.equal(dashboardQueries().direct, 'is:open (owner:self OR reviewer:self OR hashtag:ready-to-merge)')
+  assert.equal(dashboardQueries().direct, 'is:open (owner:self OR reviewer:self OR hashtag:ready-to-merge) (owner:self OR -is:private)')
 })
 
 test('normalizeTeam trims, lower-cases and de-duplicates', () => {

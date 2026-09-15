@@ -80,7 +80,7 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   assert.equal(v.state, 'needs-review')
   assert.equal(v.needsMyReview, true, 'requested on a WIP change still counts')
 
-  // The owner hides the change and shows it again; a reviewer sees it either way.
+  // The owner hides the change and shows it again; read directly, the flag is on the change (the board hides it: see below).
   await serviceAs('alice').act({ type: 'setPrivate', id, private: true })
   assert.equal((await view('bob', id)).isPrivate, true)
   await serviceAs('alice').act({ type: 'setPrivate', id, private: false })
@@ -277,6 +277,36 @@ test('dashboard fetch includes WIP changes the user reviews, which reviewer: can
   assert.equal(d.open.filter(notInvolved).length, 0, 'without a team, only what concerns bob')
   assert.ok(withTeam.open.filter(notInvolved).length > 0, 'the seeded C1 has no reviewers at all')
   assert.equal(new Set(withTeam.open.map((c) => c.id)).size, withTeam.open.length, 'no duplicates')
+})
+
+test('a private change of another author is on nobody else\'s board, reviewer, CC or teammate', { skip: !reachable && 'no local Gerrit' }, async () => {
+  const alice = user('alice')
+  const c = await raw('alice', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `private ${Date.now()}`, is_private: true })
+  const id: number = c._number
+  await pushPatchSet('alice', id, 'v1')
+  await serviceAs('alice').act({ type: 'addPrimaryReviewer', id, reviewer: 'bob' })
+  await raw('alice', 'POST', `/changes/${id}/reviewers`, { reviewer: 'carol', state: 'CC' })
+  await alice.setCustomKeyedValues(id, { [REVIEW_REQUESTED_KEY]: '1' })
+  assert.equal((await view('bob', id)).isPrivate, true, 'sanity: Gerrit lets the reviewer read it')
+
+  // The owner's board lists it; wait for the index, which can lag the writes.
+  const onBoard = async (u: string, team: string[] = []) => (await fetchDashboard(user(u), [], team)).open.some((x) => x._number === id)
+  for (let i = 0; i < 20 && !(await onBoard('alice')); i++) await new Promise((r) => setTimeout(r, 500))
+  assert.equal(await onBoard('alice'), true, 'the owner sees their own private change')
+
+  // Gerrit would return it to bob (reviewer, tagged, review requested) and to carol (CC), and to a teammate.
+  const [raw1] = await user('bob').queryChanges([`change:${id} reviewer:self`])
+  assert.equal(raw1.length, 1, 'sanity: reviewer:self finds it in Gerrit')
+  assert.equal(await onBoard('bob'), false, 'not for the reviewer')
+  assert.equal(await onBoard('bob', ['alice']), false, 'not for the reviewer with the owner on the team')
+  assert.equal(await onBoard('carol', ['alice']), false, 'not for the CC')
+  assert.equal(await onBoard('dave', ['alice']), false, 'not for a teammate')
+
+  // Made public, the same change reaches everyone as usual.
+  await serviceAs('alice').act({ type: 'setPrivate', id, private: false })
+  for (let i = 0; i < 20 && !(await onBoard('bob')); i++) await new Promise((r) => setTimeout(r, 500))
+  assert.equal(await onBoard('bob'), true, 'public again: the reviewer sees it')
+  assert.equal(await onBoard('carol', ['alice']), true, 'public again: the teammate sees it')
 })
 
 test('reviewers cannot forge a review request', { skip: !reachable && 'no local Gerrit' }, async () => {
