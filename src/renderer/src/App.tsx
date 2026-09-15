@@ -353,10 +353,12 @@ function initialSort(): SortId {
 }
 
 /**
- * The count beside a tab label. Colored segments sit to the left of the grey
- * total: first what waits on the user, then, after a gap, what waits on
- * others in muted tones; with no segment it is the plain pill. A private
- * count is a lock pill after the capsule, since private is not a state.
+ * The count beside a tab label. Colored segments sit to the left of a grey
+ * remainder: first what waits on the user, then, after a gap, what waits on
+ * others in muted tones; with no segment it is the plain pill. Each card is
+ * counted once: the grey part is what no segment covers, and it is left out
+ * when the segments cover everything. A private count is a lock pill after
+ * the capsule, since private is not a state.
  */
 function TabCount(props: {
   total: number
@@ -373,14 +375,18 @@ function TabCount(props: {
     </span>
   )
   if (segs.length === 0) {
+    const shown = Math.max(0, props.total - (priv?.n ?? 0))
     return (
       <>
-        <span className={'count' + (props.hot && props.total > 0 ? ' hot' : '')}>{props.total}</span>
+        <span className={'count' + (props.hot && shown > 0 ? ' hot' : '')}>{shown}</span>
         {lock}
       </>
     )
   }
-  const title = [...segs.map((s) => `${s.n} ${s.label}`), `${props.total} total`].join(' · ')
+  // What no segment (nor the lock) covers. A family with branches in two
+  // sections is in both, so the sum can pass the total; clamp at zero.
+  const rest = Math.max(0, props.total - props.segments.reduce((sum, s) => sum + s.n, 0))
+  const title = [...segs.map((s) => `${s.n} ${s.label}`), ...(rest > 0 ? [`${rest} other`] : []), `${props.total} total`].join(' · ')
   const mine = segs.filter((s) => s.tone === 'pos' || s.tone === 'neg')
   const others = segs.filter((s) => s.tone !== 'pos' && s.tone !== 'neg')
   const seg = (s: TabSegment) => (
@@ -394,7 +400,7 @@ function TabCount(props: {
         {mine.map(seg)}
         {mine.length > 0 && others.length > 0 && <span className="gap" />}
         {others.map(seg)}
-        <span>{props.total}</span>
+        {rest > 0 && <span>{rest}</span>}
       </span>
       {lock}
     </>
