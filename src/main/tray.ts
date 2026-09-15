@@ -1,7 +1,7 @@
-import { app, BrowserWindow, Menu, Tray, nativeImage } from 'electron'
+import { app, BrowserWindow, Menu, Tray, nativeImage, nativeTheme } from 'electron'
 import trayTemplatePath from '../../resources/trayTemplate.png?asset'
 import trayPath from '../../resources/tray.png?asset'
-import type { ActionCounts, BadgePayload, BadgeStyle, TabId, UpdateState } from '../shared/types.ts'
+import type { ActionCounts, BadgePayload, BadgeStyle, TabId, TrayStrip, UpdateState } from '../shared/types.ts'
 import { ACTION_CATEGORIES, describeActions, glyphTitle, totalActions } from '../shared/model.ts'
 import { updateAction, updateMenuLabel } from '../shared/update.ts'
 
@@ -36,6 +36,8 @@ export class TrayController {
   private counts: ActionCounts = NO_ACTIONS
   private style: BadgeStyle = 'color'
   private updateRow: { label: string; enabled: boolean } | null = null
+  /** The strip currently in the menu bar, kept so a theme change can swap appearances without a round trip. */
+  private strip: BadgePayload['strip'] = null
   private readonly base: Electron.NativeImage
   private readonly handlers: TrayHandlers
 
@@ -48,6 +50,7 @@ export class TrayController {
       this.tray = new Tray(this.base)
       this.tray.setToolTip('Gerrit Review Board')
       this.tray.on('click', () => handlers.show())
+      nativeTheme.on('updated', () => this.applyStrip())
       this.rebuildMenu()
     } catch (e) {
       // No system tray (e.g. bare X server); the app still works without one.
@@ -91,6 +94,7 @@ export class TrayController {
     }
     if (!this.tray) return
     this.tray.setToolTip(`Gerrit Review Board: ${summary}`)
+    this.strip = null
     if (!payload.showTrayCounts) {
       this.tray.setImage(this.base)
       if (process.platform === 'darwin') this.tray.setTitle('')
@@ -99,7 +103,8 @@ export class TrayController {
       const title = payload.style === 'glyph' ? glyphTitle(payload.counts, payload.showZeroCounts) : ''
       if (payload.style === 'color' && payload.strip) {
         this.tray.setTitle('')
-        this.tray.setImage(stripImage(payload.strip))
+        this.strip = payload.strip
+        this.applyStrip()
       } else if (title) {
         this.tray.setImage(nativeImage.createEmpty())
         this.tray.setTitle(title)
@@ -111,6 +116,12 @@ export class TrayController {
       this.tray.setImage(total > 0 ? nativeImage.createFromDataURL(payload.iconDataUrl) : this.base)
     }
     this.rebuildMenu()
+  }
+
+  /** Put up the strip for the current menu bar appearance. macOS is the authority on which one that is. */
+  private applyStrip(): void {
+    if (!this.tray || !this.strip) return
+    this.tray.setImage(stripImage(nativeTheme.shouldUseDarkColors ? this.strip.dark : this.strip.light))
   }
 
   private rebuildMenu(): void {
@@ -157,7 +168,7 @@ export class TrayController {
 }
 
 /** Retina strip from the renderer plus a downscaled 1x representation for non-Retina displays. */
-function stripImage(strip: NonNullable<BadgePayload['strip']>): Electron.NativeImage {
+function stripImage(strip: TrayStrip): Electron.NativeImage {
   const hi = nativeImage.createFromDataURL(strip.dataUrl)
   const img = nativeImage.createEmpty()
   img.addRepresentation({ scaleFactor: 2, buffer: hi.toPNG() })
