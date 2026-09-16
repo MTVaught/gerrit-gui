@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, preferredKey, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, preferredKey, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
 import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -795,6 +795,18 @@ test('mergers settings: the list for a project is the union, most specific rule 
   assert.deepEqual(mergersFor('platform/ui', rules), ['bob', 'alice', 'dave'])
   assert.deepEqual(mergersFor('tools/build', rules), ['alice', 'dave'])
   assert.deepEqual(mergersFor('x', []), [])
+})
+
+test('mergersReflect: a saved list that matches the edited rows once normalized keeps rows still being filled in', () => {
+  const saved = normalizeMergers([{ project: 'platform/*', people: ['alice'] }])
+  // A row just added with Add project: no people yet, so the save drops it, but the editor must keep it.
+  assert.equal(mergersReflect([{ project: 'platform/*', people: ['alice'] }, { project: '', people: [] }], saved), true)
+  assert.equal(mergersReflect([{ project: '*', people: [] }], []), true)
+  // The same rows, only spelled differently, still reflect the save.
+  assert.equal(mergersReflect([{ project: ' platform/* ', people: ['Alice'] }], saved), true)
+  // A change made elsewhere does not.
+  assert.equal(mergersReflect([{ project: 'platform/*', people: ['alice'] }], normalizeMergers([{ project: 'platform/*', people: ['bob'] }])), false)
+  assert.equal(mergersReflect([{ project: '', people: [] }], saved), false)
 })
 
 test('mergers settings: a one-off pick can be added to the row for that project, or a new exact row', () => {

@@ -79,6 +79,17 @@ export function normalizeMergers(rules: MergerRule[]): MergerRule[] {
 }
 
 /**
+ * Does a saved mergers list reflect the rows being edited? The editor keeps
+ * rows the save path drops (no project yet, nobody yet), so the two are
+ * compared after normalizing the edited rows. True means the saved list is
+ * the editor's own write coming back and the edited rows should stay; false
+ * means the list changed elsewhere and the editor should show it.
+ */
+export function mergersReflect(edited: MergerRule[], saved: MergerRule[]): boolean {
+  return JSON.stringify(normalizeMergers(edited)) === JSON.stringify(normalizeMergers(saved))
+}
+
+/**
  * The people to offer as mergers for a project: every matching rule, the
  * most specific first (exact name, then the longest prefix, then "*"), each
  * person once.
