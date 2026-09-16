@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MergerRule, SettingsInput, SettingsStatus } from '../../../shared/types.ts'
+import { mergersReflect } from '../../../shared/model.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
 import { ago } from '../time.ts'
@@ -240,14 +241,19 @@ function TextField(props: { value: string; placeholder?: string; onSave: (value:
 
 /**
  * The mergers editor edits a list with text fields in it, so its changes are
- * written a moment after the last keystroke rather than on each one.
+ * written a moment after the last keystroke rather than on each one. The
+ * save drops rows that are not complete yet (a project with nobody on it, or
+ * no project), so when the saved list comes back it is only adopted when it
+ * says something else than the rows on screen; otherwise a row just added
+ * with Add project would vanish before anyone could be put on it.
  */
 function MergersSection(props: { rules: MergerRule[]; onSave: (rules: MergerRule[]) => void; canSearch: boolean }) {
   const [rules, setRules] = useState(props.rules)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dirty = useRef(false)
   useEffect(() => {
-    if (!dirty.current) setRules(props.rules)
+    if (dirty.current) return
+    setRules((cur) => (mergersReflect(cur, props.rules) ? cur : props.rules))
   }, [props.rules])
   const change = (next: MergerRule[]) => {
     setRules(next)
