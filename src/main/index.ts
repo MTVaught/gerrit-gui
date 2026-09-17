@@ -261,6 +261,9 @@ if (!app.requestSingleInstanceLock()) {
         show: showWindow,
         showTab,
         refresh: () => mainWindow?.webContents.send('app:refresh'),
+        openChange: (link) => {
+          service.changeUrl(link).then((url) => shell.openExternal(url), (e: Error) => console.warn('Open change:', e.message))
+        },
         setCompact: (on) => void setCompact(on),
         setCompactOnTop: (on) => void setCompactOnTop(on),
         update: () => {

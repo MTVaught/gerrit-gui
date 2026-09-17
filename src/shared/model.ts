@@ -2,6 +2,7 @@ import type {
   AccountInfo,
   ActionCategory,
   ActionCounts,
+  ActionMenu,
   ChangeInfo,
   ChangeLink,
   ChangeView,
@@ -559,15 +560,67 @@ export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
 export function actionCounts(views: ChangeView[]): ActionCounts {
   const keys: Record<ActionCategory, Set<string>> = { review: new Set(), fix: new Set(), ready: new Set(), merge: new Set() }
   for (const v of views) {
-    // Each category opens a regular tab, and those list internal changes only.
-    if (v.change.status !== 'NEW' || !isInternal(v)) continue
+    if (!countsForActions(v)) continue
     const key = familyKey(v.change)
-    if (v.needsMyReview) keys.review.add(key)
-    if (v.isMine && v.state === 'needs-changes') keys.fix.add(key)
-    if (v.isMine && v.state === 'approved') keys.ready.add(key)
-    if (mergeWaitsOnMe(v)) keys.merge.add(key)
+    for (const k of ACTION_CATEGORIES) if (needsAction(v, k.id)) keys[k.id].add(key)
   }
   return { review: keys.review.size, fix: keys.fix.size, ready: keys.ready.size, merge: keys.merge.size }
+}
+
+/** Each category opens a regular tab, and those list open internal changes only. */
+function countsForActions(v: ChangeView): boolean {
+  return v.change.status === 'NEW' && isInternal(v)
+}
+
+/** This change needs the category's action from the user. */
+export function needsAction(v: ChangeView, category: ActionCategory): boolean {
+  switch (category) {
+    case 'review':
+      return v.needsMyReview
+    case 'fix':
+      return v.isMine && v.state === 'needs-changes'
+    case 'ready':
+      return v.isMine && v.state === 'approved'
+    case 'merge':
+      return mergeWaitsOnMe(v)
+  }
+}
+
+/**
+ * The changes behind each count, for the tray menu: one entry per family, so
+ * the entries match the count. A family is listed whole, and a branch that
+ * does not need the action carries a note saying why (the user already
+ * voted, or the branch is in another state), so the family reads as it does
+ * on its card. A review opens the diff the Review button opens; the other
+ * categories open the change page.
+ */
+export function actionMenu(views: ChangeView[]): ActionMenu {
+  const menu: ActionMenu = { review: [], fix: [], ready: [], merge: [] }
+  for (const f of groupByChangeId(views.filter(countsForActions))) {
+    for (const k of ACTION_CATEGORIES) {
+      const needs = f.members.map((v) => needsAction(v, k.id))
+      if (!needs.includes(true)) continue
+      const lead = f.members[0]
+      menu[k.id].push({
+        subject: lead.change.subject,
+        owner: displayName(lead.change.owner),
+        members: f.members.map((v, i) => ({
+          number: v.change._number,
+          branch: v.change.branch,
+          link: k.id === 'review' ? reviewLink(v) : { id: v.change._number, project: v.change.project },
+          actionable: needs[i],
+          note: needs[i] ? '' : memberNote(v, k.id),
+        })),
+      })
+    }
+  }
+  return menu
+}
+
+/** Why a branch of a listed family does not need the action itself. */
+function memberNote(v: ChangeView, category: ActionCategory): string {
+  if (category === 'review' && v.myVote !== 0) return `you voted ${v.myVote > 0 ? '+' : ''}${v.myVote}`
+  return STATE_LABEL[v.state].toLowerCase()
 }
 
 export function totalActions(c: ActionCounts): number {

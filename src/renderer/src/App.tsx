@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, classifyAll, tabCounts, tabSegments, totalActions, type SortId, type TabSegment, type ViewFilter } from '../../shared/model.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, tabCounts, tabSegments, totalActions, type SortId, type TabSegment, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
@@ -195,6 +195,7 @@ export function App() {
   }, [sort])
 
   const actions = useMemo(() => actionCounts(views), [views])
+  const menu = useMemo(() => actionMenu(views), [views])
   const badgeStyle = settings?.badgeStyle ?? 'color'
   const showZeroCounts = settings?.showZeroCounts ?? false
   const showAppBadge = settings?.showAppBadge ?? true
@@ -203,6 +204,7 @@ export function App() {
     if (!data) return
     api.setBadge({
       counts: actions,
+      menu,
       style: badgeStyle,
       showZeroCounts,
       showAppBadge,
@@ -210,7 +212,7 @@ export function App() {
       iconDataUrl: renderBadgeIcon(totalActions(actions)),
       strip: showTrayCounts && badgeStyle === 'color' ? trayStrips(actions, showZeroCounts) : null,
     })
-  }, [actions, badgeStyle, showZeroCounts, showAppBadge, showTrayCounts, data])
+  }, [actions, menu, badgeStyle, showZeroCounts, showAppBadge, showTrayCounts, data])
 
   return (
     <SettingsContext.Provider value={settingsHandle}>

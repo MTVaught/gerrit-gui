@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Tray popover: ledger with branch chips</title>
+<link rel="stylesheet" href="mock.css"></head><body>
+<div class="desk tall"><div class="menubar"><span class="apple">&#63743;</span><span class="app">Finder</span><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span>
+<div class="right"><span class="strip active"><span class="pill review">3</span><span class="pill fix">1</span><span class="pill ready">1</span><span class="pill merge">1</span></span><span>&#9889;</span><span>Wed 10:42</span></div></div><div class="board-win"><div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:auto;margin-right:auto;color:#6b7280;font-size:12px">Gerrit Review Board</span></div>
+<div class="tabs"><b>Needs Review 3</b><span>Reviewing 5</span><span>My Changes 4</span><span>Merged 2</span><span>Team Reviews 6</span></div>
+<div class="line"></div><div class="line w"></div><div class="line"></div><div class="line w"></div><div class="line"></div>
+<div class="win-note">The board stays where it was, behind whatever you were working in.<br>The tray click only opens the menu.</div></div>
+<div class="pop arr-right" style="left:580px;top:34px">
+<div class="sec"><div class="sec-h"><span class="tri">&#9660;</span><span class="name">Needs Review</span><span class="pill review">3</span><span class="go">tab &#8599;</span></div>
+<div class="rows">
+<div class="row"><div class="main"><span class="subj">Retry on 502 from the artifact store</span><span class="meta">#41 &middot; <code>master</code> &middot; Bob</span></div><span class="age">2h</span></div>
+<div class="row"><div class="main"><span class="subj">Cap the log line length</span><span class="meta">#38 &middot; <code>release-2.0</code> &middot; Carol</span></div><span class="age">1d</span></div>
+<div class="row"><div class="main"><span class="subj">Rotate the API keys nightly</span><span class="chips"><span class="chip review hov">master #44</span><span class="chip review">release-2.0 #45</span><span class="chip other">release-1.0 &#10003;</span></span></div><span class="age">2h</span></div>
+</div></div>
+<div class="sec"><div class="sec-h"><span class="tri">&#9660;</span><span class="name">Needs Changes</span><span class="pill fix">1</span><span class="go">tab &#8599;</span></div>
+<div class="rows">
+<div class="row"><div class="main"><span class="subj">Speed up the index rebuild</span><span class="chips"><span class="chip fix">master #17</span><span class="chip fix">release-2.0 #18</span></span></div><span class="age">3d</span></div>
+</div></div>
+<div class="sec"><div class="sec-h"><span class="tri">&#9660;</span><span class="name">Approved</span><span class="pill ready">1</span><span class="go">tab &#8599;</span></div>
+<div class="rows">
+<div class="row"><div class="main"><span class="subj">Allow uploads over 2 GB</span><span class="chips"><span class="chip ready">master #22</span><span class="chip other">release-1.0 &middot; out for review</span><span class="chip ready">release-2.0 #24</span></span></div><span class="age">5h</span></div>
+</div></div>
+<div class="sec"><div class="sec-h"><span class="tri">&#9660;</span><span class="name">Ready to Merge</span><span class="pill merge">1</span><span class="go">tab &#8599;</span></div>
+<div class="rows">
+<div class="row"><div class="main"><span class="subj">Drop the legacy TOML loader</span><span class="meta">#25 &middot; <code>release-1.0</code> &middot; Dave asked you &middot; merged on <code>master</code></span></div><span class="age">20m</span></div>
+</div></div>
+<div class="ftr"><span class="b">Open board</span><span class="b">Refresh</span><span class="b">&#9881;</span><span class="sp"></span><span class="ver">0.1.0 &middot; add67ac &middot; updated 1m ago</span></div></div></div>
+<p class="mock-note"><b>5 &middot; Popover ledger, one line per family with branch chips.</b> The same popover window as design 4, but every section starts open and every change or family is exactly one line, so the panel is as short as it can be and the line count matches the pills. A single change has its branch in the grey line. A family has a chip per branch, coloured by the section it is in, grey when the branch does not need the action (a tick for "you already voted", or its state in words). Clicking a chip opens that branch; clicking the line elsewhere opens the first chip. Sections still collapse from the header. Cost: chips make a line two lines tall anyway, three long branch names wrap, and the chip is a small target.</p>
+</body></html>

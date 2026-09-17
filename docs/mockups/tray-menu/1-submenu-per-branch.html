@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Tray menu: submenu, row per branch</title>
+<link rel="stylesheet" href="mock.css"></head><body>
+<div class="desk"><div class="menubar"><span class="apple">&#63743;</span><span class="app">Finder</span><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span>
+<div class="right"><span class="strip active"><span class="pill review">3</span><span class="pill fix">1</span><span class="pill ready">1</span><span class="pill merge">1</span></span><span>&#9889;</span><span>Wed 10:42</span></div></div><div class="board-win"><div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:auto;margin-right:auto;color:#6b7280;font-size:12px">Gerrit Review Board</span></div>
+<div class="tabs"><b>Needs Review 3</b><span>Reviewing 5</span><span>My Changes 4</span><span>Merged 2</span><span>Team Reviews 6</span></div>
+<div class="line"></div><div class="line w"></div><div class="line"></div><div class="line w"></div><div class="line"></div>
+<div class="win-note">The board stays where it was, behind whatever you were working in.<br>The tray click only opens the menu.</div></div>
+<div class="menu" style="left:700px;top:27px">
+<div class="mi hi"><span class="dotc review"></span><span class="txt">Needs Review</span><span class="sub">3</span><span class="arrow">&#9656;</span></div>
+<div class="mi "><span class="dotc fix"></span><span class="txt">Needs Changes</span><span class="sub">1</span><span class="arrow">&#9656;</span></div>
+<div class="mi "><span class="dotc ready"></span><span class="txt">Approved</span><span class="sub">1</span><span class="arrow">&#9656;</span></div>
+<div class="mi "><span class="dotc merge"></span><span class="txt">Ready to Merge</span><span class="sub">1</span><span class="arrow">&#9656;</span></div>
+<div class="sep"></div>
+<div class="mi"><span class="txt">Open board</span></div>
+<div class="mi"><span class="txt">Refresh now</span></div>
+<div class="mi"><span class="check">&#10003;</span><span class="txt">Compact window</span></div>
+<div class="mi"><span class="txt">Compact window stays on top</span></div>
+<div class="sep"></div>
+<div class="mi dis"><span class="txt">Version 0.1.0, build add67ac</span></div>
+<div class="mi"><span class="txt">Check for updates</span></div>
+<div class="mi"><span class="txt">Quit</span></div></div>
+<div class="menu wider" style="left:326px;top:27px">
+<div class="mi"><span class="txt">#41 Retry on 502 from the artifact store</span><span class="sub">master &middot; Bob</span></div>
+<div class="mi"><span class="txt">#38 Cap the log line length</span><span class="sub">release-2.0 &middot; Carol</span></div>
+<div class="mi hi"><span class="txt">#44 Rotate the API keys nightly</span><span class="sub">master &middot; Bob</span></div>
+<div class="mi"><span class="txt">#45 Rotate the API keys nightly</span><span class="sub">release-2.0 &middot; Bob</span></div>
+<div class="sep"></div>
+<div class="mi"><span class="txt">Open the Needs Review tab</span></div>
+</div></div>
+<p class="mock-note"><b>1 &middot; Submenu, one row per branch.</b> Each section row stays as it is, with the count, and gains a submenu (a plain Electron <code>submenu</code>, no custom window). The submenu lists every change in the section, one row per Gerrit change, with the number, the subject and the branch and owner in grey. A family is not special: its branches are adjacent rows that repeat the subject. Clicking a row opens that change in the browser. The last row opens the tab in the board, which is what the section row itself does today. Cost: the pill says 3 but the submenu has 4 rows, because a family counts once on the pill and the tabs.</p>
+</body></html>
