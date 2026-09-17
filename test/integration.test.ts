@@ -114,9 +114,10 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   // Author pushes fixes over two patch sets; nobody is asked to look at either.
   await pushPatchSet('alice', id, 'v2')
   v = await view('bob', id)
-  assert.equal(v.state, 'in-progress', 'votes cleared and request is for an older patch set')
+  assert.equal(v.state, 'iterating', 'votes cleared and request is for an older patch set, which was reviewed')
   assert.equal(v.needsMyReview, false)
   assert.equal(v.requestedPatchSet, 2)
+  assert.deepEqual(v.reviewedPatchSets, [2], 'the votes on patch set 2 are read from the messages')
   await pushPatchSet('alice', id, 'v3')
   v = await view('carol', id)
   assert.equal(v.patchSet, 4)
@@ -185,7 +186,7 @@ test('primary reviewer tags: anyone may tag and untag; the removal in Gerrit is 
   const id: number = c._number
   await pushPatchSet('alice', id, 'v1')
   await serviceAs('alice').act({ type: 'addPrimaryReviewer', id, reviewer: 'bob' })
-  await serviceAs('alice').act({ type: 'requestReview', id, patchSet: (await view('alice', id)).patchSet })
+  await serviceAs('alice').act({ type: 'requestReview', id, patchSet: (await view('alice', id)).patchSet, history: [] })
 
   // Bob, not the owner, adds carol as primary and then takes her off again.
   await serviceAs('bob').act({ type: 'addPrimaryReviewer', id, reviewer: 'carol' })
@@ -228,9 +229,9 @@ test('re-requesting review drops a ready-to-merge tag and its merger left over f
   const id: number = c._number
   await pushPatchSet('alice', id, 'v1')
   await service.act({ type: 'addPrimaryReviewer', id, reviewer: 'bob' })
-  await service.act({ type: 'requestReview', id, patchSet: 1 })
-  await user('bob').vote(id, 'Code-Review', 1, 'ok')
   const ps1 = (await view('alice', id)).patchSet
+  await service.act({ type: 'requestReview', id, patchSet: ps1, history: [] })
+  await user('bob').vote(id, 'Code-Review', 1, 'ok')
   await service.act({ type: 'requestMerge', id, merger: 'dave', patchSet: ps1 })
   assert.equal((await view('alice', id)).state, 'ready-to-merge')
   assert.equal((await view('alice', id)).readyPatchSet, ps1)
@@ -238,17 +239,19 @@ test('re-requesting review drops a ready-to-merge tag and its merger left over f
   // A new patch set resets the votes; the tag stays behind in Gerrit and is now stale.
   await pushPatchSet('alice', id, 'v2')
   let v = await view('alice', id)
-  assert.equal(v.state, 'in-progress')
+  assert.equal(v.state, 'iterating', "bob's vote on patch set 1 makes the new one an iteration")
   assert.equal(v.staleReadyToMerge, true)
 
   // Without the flag the request leaves the tag alone (it is the user's call, not the app's).
-  await service.act({ type: 'requestReview', id, patchSet: v.patchSet })
+  await service.act({ type: 'requestReview', id, patchSet: v.patchSet, history: v.requestedPatchSets })
   v = await view('alice', id)
   assert.equal(v.state, 'needs-review')
   assert.equal(v.staleReadyToMerge, true)
+  assert.deepEqual(v.requestedPatchSets, [ps1, v.patchSet], 'the request appended to the list')
+  assert.equal(v.canWithdrawReview, false, 'the first round was answered')
   await alice.setCustomKeyedValues(id, {}, [REVIEW_REQUESTED_KEY])
 
-  await service.act({ type: 'requestReview', id, patchSet: v.patchSet, clearTags: [READY_TO_MERGE_TAG, ...mergerTags(v.change)] })
+  await service.act({ type: 'requestReview', id, patchSet: v.patchSet, history: [], clearTags: [READY_TO_MERGE_TAG, ...mergerTags(v.change)] })
   v = await view('alice', id)
   assert.equal(v.state, 'needs-review')
   assert.equal(v.staleReadyToMerge, false, 'the tag went with the request')
