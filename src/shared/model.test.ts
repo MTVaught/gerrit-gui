@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, preferredKey, actionCounts, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, preferredKey, actionCounts, actionMenu, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
 import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -825,4 +825,44 @@ test('preferredKey writes the username, or the email of an account without one',
   assert.equal(preferredKey({ _account_id: 1, username: 'Alice', email: 'alice@example.com' }), 'alice')
   assert.equal(preferredKey({ _account_id: 2, email: 'Bob@example.com' }), 'bob@example.com')
   assert.equal(preferredKey({ _account_id: 3 }), null)
+})
+
+test('actionMenu: one entry per family, every branch listed, the others with a note', () => {
+  // Bob asked Alice to review a change on three branches; she already voted on one.
+  const asked = { owner: bob, reviewers: [alice], requested: 3, changeId: 'Iabc', subject: 'Rotate the API keys nightly' }
+  const single = change({ owner: carol, reviewers: [alice], requested: 3, number: 41, subject: 'Retry on 502', updated: '2026-01-02 00:00:00.000000000' })
+  const master = change({ ...asked, number: 44, branch: 'master' })
+  const rel2 = change({ ...asked, number: 45, branch: 'release-2.0' })
+  const rel1 = change({ ...asked, number: 43, branch: 'release-1.0', votes: { 1: 1 } })
+  // Her own approved change, two branches, one still out for review.
+  const mine = { owner: alice, reviewers: [bob], changeId: 'Idef', subject: 'Allow uploads over 2 GB' }
+  const approved = change({ ...mine, number: 22, branch: 'master', requested: 3, votes: { 2: 1 } })
+  const waiting = change({ ...mine, number: 23, branch: 'release-1.0', requested: 3 })
+  const views = classifyAll([single, master, rel2, rel1, approved, waiting], alice._account_id)
+  const menu = actionMenu(views)
+  assert.deepEqual(actionCounts(views), { review: 2, fix: 0, ready: 1, merge: 0 })
+  assert.equal(menu.review.length, 2, 'as many entries as the count')
+  assert.deepEqual(menu.review[0], {
+    subject: 'Retry on 502',
+    owner: 'Carol',
+    members: [{ number: 41, branch: 'master', link: { id: 41, project: 'demo', patchSet: 3 }, actionable: true, note: '' }],
+  })
+  assert.equal(menu.review[1].subject, 'Rotate the API keys nightly')
+  assert.equal(menu.review[1].owner, 'Bob')
+  assert.deepEqual(
+    menu.review[1].members.map((m) => [m.number, m.branch, m.actionable, m.note]),
+    [
+      [44, 'master', true, ''],
+      [45, 'release-2.0', true, ''],
+      [43, 'release-1.0', false, 'you voted +1'],
+    ],
+  )
+  assert.deepEqual(menu.review[1].members[0].link, { id: 44, project: 'demo', patchSet: 3 }, 'a review opens the diff')
+  assert.deepEqual(
+    menu.ready.map((f) => [f.subject, f.members.map((m) => [m.number, m.actionable, m.note])]),
+    [['Allow uploads over 2 GB', [[22, true, ''], [23, false, 'needs review']]]],
+  )
+  assert.deepEqual(menu.ready[0].members[0].link, { id: 22, project: 'demo' }, 'the other categories open the change page')
+  assert.deepEqual(menu.fix, [])
+  assert.deepEqual(menu.merge, [])
 })

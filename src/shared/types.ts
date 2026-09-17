@@ -280,9 +280,34 @@ export type TabId = 'needs-my-review' | 'reviewing' | 'mine' | 'merged' | 'team-
 export type ActionCategory = 'review' | 'fix' | 'ready' | 'merge'
 export type ActionCounts = Record<ActionCategory, number>
 
+/** One branch of a change in the tray menu. */
+export interface ActionMenuMember {
+  number: number
+  branch: string
+  /** Where a click goes: the diff to review, or the change page. */
+  link: ChangeLink
+  /** This branch needs the category's action. Otherwise it is listed greyed out with the note. */
+  actionable: boolean
+  /** For a branch that does not need the action: why not ("you voted +1", "in progress"). Empty otherwise. */
+  note: string
+}
+
+/** A Change-Id family, or a single change, in one category of the tray menu. */
+export interface ActionMenuFamily {
+  subject: string
+  owner: string
+  /** In the family's order; at least one is actionable. */
+  members: ActionMenuMember[]
+}
+
+/** What each category of the tray menu lists: one entry per card, as the counts count. */
+export type ActionMenu = Record<ActionCategory, ActionMenuFamily[]>
+
 /** What the renderer hands the tray after each refresh. */
 export interface BadgePayload {
   counts: ActionCounts
+  /** The changes behind the counts, for the tray menu. */
+  menu: ActionMenu
   style: BadgeStyle
   showZeroCounts: boolean
   showAppBadge: boolean

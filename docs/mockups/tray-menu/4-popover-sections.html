@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Tray popover: sections and family cards</title>
+<link rel="stylesheet" href="mock.css"></head><body>
+<div class="desk"><div class="menubar"><span class="apple">&#63743;</span><span class="app">Finder</span><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span>
+<div class="right"><span class="strip active"><span class="pill review">3</span><span class="pill fix">1</span><span class="pill ready">1</span><span class="pill merge">1</span></span><span>&#9889;</span><span>Wed 10:42</span></div></div><div class="board-win"><div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:auto;margin-right:auto;color:#6b7280;font-size:12px">Gerrit Review Board</span></div>
+<div class="tabs"><b>Needs Review 3</b><span>Reviewing 5</span><span>My Changes 4</span><span>Merged 2</span><span>Team Reviews 6</span></div>
+<div class="line"></div><div class="line w"></div><div class="line"></div><div class="line w"></div><div class="line"></div>
+<div class="win-note">The board stays where it was, behind whatever you were working in.<br>The tray click only opens the menu.</div></div>
+<div class="pop arr-right" style="left:580px;top:34px">
+<div class="sec"><div class="sec-h"><span class="tri">&#9660;</span><span class="name">Needs Review</span><span class="pill review">3</span><span class="go">tab &#8599;</span></div>
+<div class="rows">
+<div class="row"><div class="main"><span class="subj">Retry on 502 from the artifact store</span><span class="meta">#41 &middot; <code>master</code> &middot; Bob &middot; asked 2h ago</span></div><span class="ext">&#8599;</span></div>
+<div class="row"><div class="main"><span class="subj">Cap the log line length</span><span class="meta">#38 &middot; <code>release-2.0</code> &middot; Carol &middot; asked 1d ago</span></div><span class="ext">&#8599;</span></div>
+<div class="fam"><div class="fam-h"><span class="fork">&#8916;</span>Rotate the API keys nightly<span class="meta">Bob &middot; 3 branches</span></div>
+<div class="br hov"><code>master</code><span class="st review">#44 &middot; asked 2h ago &#8599;</span></div>
+<div class="br"><code>release-2.0</code><span class="st review">#45 &middot; asked 2h ago</span></div>
+<div class="br other"><code>release-1.0</code><span class="st">#43 &middot; you voted +1</span></div>
+</div></div></div>
+<div class="sec"><div class="sec-h"><span class="tri">&#9654;</span><span class="name">Needs Changes</span><span class="pill fix">1</span><span class="go">tab &#8599;</span></div></div>
+<div class="sec"><div class="sec-h"><span class="tri">&#9654;</span><span class="name">Approved</span><span class="pill ready">1</span><span class="go">tab &#8599;</span></div></div>
+<div class="sec"><div class="sec-h"><span class="tri">&#9654;</span><span class="name">Ready to Merge</span><span class="pill merge">1</span><span class="go">tab &#8599;</span></div></div>
+<div class="ftr"><span class="b">Open board</span><span class="b">Refresh</span><span class="b">&#9881;</span><span class="sp"></span><span class="ver">0.1.0 &middot; add67ac &middot; updated 1m ago</span></div></div></div>
+<p class="mock-note"><b>4 &middot; Popover window with disclosure sections.</b> The tray click opens a small frameless window under the icon instead of a native menu, as 1Password or Dropbox do. Every section is a header with a triangle, the count in the colour of its pill, and a "tab" link that opens the board on that tab; clicking the header opens or closes the section in place, without the panel closing. Singles are two-line rows (subject, then number, branch, owner, age). A family is a small card, as on the board: the subject once, then a line per branch with its number and its reason for being here, greyed when the branch does not need the action. Clicking a row or a branch line opens that change in the browser. The footer holds what is under the separator in today's menu. Cost: a second window to build and keep in sync, the panel must close on outside clicks and on Escape, and it does not look like the other menus in the menu bar.</p>
+</body></html>

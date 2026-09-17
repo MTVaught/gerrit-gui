@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Tray menu: inline accordion</title>
+<link rel="stylesheet" href="mock.css"></head><body>
+<div class="desk"><div class="menubar"><span class="apple">&#63743;</span><span class="app">Finder</span><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span>
+<div class="right"><span class="strip active"><span class="pill review">3</span><span class="pill fix">1</span><span class="pill ready">1</span><span class="pill merge">1</span></span><span>&#9889;</span><span>Wed 10:42</span></div></div><div class="board-win"><div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:auto;margin-right:auto;color:#6b7280;font-size:12px">Gerrit Review Board</span></div>
+<div class="tabs"><b>Needs Review 3</b><span>Reviewing 5</span><span>My Changes 4</span><span>Merged 2</span><span>Team Reviews 6</span></div>
+<div class="line"></div><div class="line w"></div><div class="line"></div><div class="line w"></div><div class="line"></div>
+<div class="win-note">The board stays where it was, behind whatever you were working in.<br>The tray click only opens the menu.</div></div>
+<div class="menu wider" style="left:588px;top:27px">
+<div class="mi head"><span class="dotc review"></span><span class="txt">&#9662;&nbsp; Needs Review</span><span class="sub">3</span></div>
+<div class="mi indent"><span class="txt">#41 Retry on 502 from the artifact store</span><span class="sub">master &middot; Bob</span></div>
+<div class="mi indent"><span class="txt">#38 Cap the log line length</span><span class="sub">release-2.0 &middot; Carol</span></div>
+<div class="mi indent dis"><span class="txt">Rotate the API keys nightly</span><span class="sub">Bob</span></div>
+<div class="mi indent2 hi"><span class="tree">&#9492;</span><span class="txt"><code>master</code></span><span class="sub">#44</span></div>
+<div class="mi indent2"><span class="tree">&#9492;</span><span class="txt"><code>release-2.0</code></span><span class="sub">#45</span></div>
+<div class="mi indent2 dis"><span class="tree">&#9492;</span><span class="txt"><code>release-1.0</code></span><span class="sub">#43 &middot; you voted +1</span></div>
+<div class="mi head"><span class="dotc fix"></span><span class="txt">&#9656;&nbsp; Needs Changes</span><span class="sub">1</span></div>
+<div class="mi head"><span class="dotc ready"></span><span class="txt">&#9656;&nbsp; Approved</span><span class="sub">1</span></div>
+<div class="mi head"><span class="dotc merge"></span><span class="txt">&#9656;&nbsp; Ready to Merge</span><span class="sub">1</span></div>
+<div class="sep"></div>
+<div class="mi"><span class="txt">Open board</span></div>
+<div class="mi"><span class="txt">Refresh now</span></div>
+<div class="mi"><span class="check">&#10003;</span><span class="txt">Compact window</span></div>
+<div class="mi"><span class="txt">Compact window stays on top</span></div>
+<div class="sep"></div>
+<div class="mi dis"><span class="txt">Version 0.1.0, build add67ac</span></div>
+<div class="mi"><span class="txt">Check for updates</span></div>
+<div class="mi"><span class="txt">Quit</span></div></div></div>
+<p class="mock-note"><b>3 &middot; Inline accordion in the native menu.</b> Still an Electron menu, one level deep. Each section row carries a disclosure triangle; clicking it flips the section open or closed, the app rebuilds the menu and pops it straight back up (<code>tray.popUpContextMenu()</code>), so it feels like it never closed. The open state is remembered. Open sections list their changes indented under the header. A family is a subject line that is a label only, with a branch line under it for each branch; branches that do not need the action are greyed out. Clicking a change or a branch opens it in the browser. Cost: the menu gets tall when several sections are open, and the reopen after a toggle flickers on some platforms; the section row no longer opens the board tab (that moves to a row at the end of each section, or to the "Open board" row).</p>
+</body></html>

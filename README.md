@@ -282,9 +282,16 @@ someone asked you to merge, because most users never are. On Windows and Linux, 
 the icon image, because these trays cannot show text. Clear "Show counts on
 the menu bar icon" in the settings to keep the plain icon on every platform.
 The tooltip and the tray menu show the counts by category on all platforms,
-also with the counts off; a category in the tray menu opens the tab that
-lists those changes. The tray menu also has
-Open, Refresh, Compact window, Compact window stays on top, and Quit, and a
+also with the counts off. A category in the tray menu opens a submenu with
+one row per card: the number, the subject, the branch and, on Needs Review
+and Ready to Merge, the owner. A row opens the change in the browser; on
+Needs Review it opens the diff the Review button opens. A change on several
+branches is one row that opens a submenu of its branches; a branch that does
+not need the action is greyed out with the reason, so the family reads whole.
+The last row of a submenu opens the tab that lists those changes, and a
+category at zero opens its tab directly. Clicking the tray icon opens the
+menu only; it does not raise the board window. The tray menu also has
+Open board, Refresh, Compact window, Compact window stays on top, and Quit, and a
 disabled row with the version and the
 short git commit the build was made from (a trailing `+` means the working
 tree had uncommitted changes). The total goes to the macOS dock, the Linux
