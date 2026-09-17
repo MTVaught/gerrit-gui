@@ -16,6 +16,10 @@
 #   TARGET      commit the tag should point at
 #   ASSETS_DIR  directory whose files become the release assets
 #   KEEP_DRAFT  "true" leaves the release as a draft (manual runs)
+#   DRY_RUN     "true" stops after listing the files it would upload. CI runs
+#               the script this way on every pull request, with the artifacts
+#               laid out as the Release workflow lays them out, so a broken
+#               job wiring (no files, wrong directory) fails there.
 #   ATTEMPTS    upload attempts per asset (default 5)
 #   TIMEOUT     seconds allowed per upload attempt (default 900)
 #   GH_TOKEN    token with contents:write; GH_REPO the owner/repo
@@ -23,6 +27,7 @@ set -euo pipefail
 
 : "${TAG:?}" "${TARGET:?}" "${ASSETS_DIR:?}" "${GH_TOKEN:?}" "${GH_REPO:?}"
 KEEP_DRAFT="${KEEP_DRAFT:-false}"
+DRY_RUN="${DRY_RUN:-false}"
 ATTEMPTS="${ATTEMPTS:-5}"
 TIMEOUT="${TIMEOUT:-900}"
 
@@ -31,6 +36,18 @@ files=("$ASSETS_DIR"/*)
 if [ "${#files[@]}" -eq 0 ]; then
   echo "no files in $ASSETS_DIR" >&2
   exit 1
+fi
+for file in "${files[@]}"; do
+  if [ ! -f "$file" ]; then
+    echo "$file is not a regular file; the artifacts were not merged into one directory" >&2
+    exit 1
+  fi
+done
+echo "release $TAG at $TARGET with ${#files[@]} files:"
+printf '  %s\n' "${files[@]##*/}"
+if [ "$DRY_RUN" = "true" ]; then
+  echo "dry run: not touching GitHub"
+  exit 0
 fi
 
 # gh release view also finds draft releases by tag name, which the REST
