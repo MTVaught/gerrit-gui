@@ -11,6 +11,8 @@ import { ReviewButton } from './ReviewButton.tsx'
 import { actionClass, changeActions } from './actions.ts'
 import type { Section } from './Board.tsx'
 import { api } from '../api.ts'
+import { TagsButton } from './TagsButton.tsx'
+import { commitMessage } from '../../../shared/trailers.ts'
 
 /**
  * Compact layout: a ledger with one line per change. Columns are fixed so
@@ -156,6 +158,7 @@ function LedgerRow(
   // The line is clipped at the right, so the age, which carries the sort order, comes early and the diff last.
   const age = ageCell(v, props.sort, true)
   const sub: ReactNode[] = [`#${id}`]
+  if (commitMessage(c) !== undefined) sub.push(<TagsButton message={commitMessage(c)} small />)
   sub.push(<span title={age.title}>{age.text}</span>)
   if (!v.isMine) sub.push(displayName(c.owner))
   sub.push(`PS ${v.patchSet}`)

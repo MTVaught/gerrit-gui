@@ -33,8 +33,16 @@ export interface RevisionInfo {
   _number: number
   created: string
   uploader?: AccountInfo
+  /** Present with CURRENT_COMMIT: the commit of this patch set, with its full message. */
+  commit?: CommitInfo
   /** Present with CURRENT_ACTIONS; a key exists only if the calling user may perform it. */
   actions?: Record<string, ActionInfo>
+}
+
+export interface CommitInfo {
+  subject: string
+  /** The whole commit message: subject, body and the trailers at the end. */
+  message: string
 }
 
 export interface ChangeMessageInfo {
