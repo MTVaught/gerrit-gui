@@ -330,10 +330,9 @@ pnpm build && pnpm start
 pnpm dist          # packaged application in dist/ (AppImage, dmg, nsis)
 ```
 
-On macOS, `pnpm run install:mac` builds the application and copies it to
-`/Applications`. If a copy of the application runs, the script stops it
-first. To install in a different folder, set `INSTALL_DIR`. For example, set
-`INSTALL_DIR=~/Applications` if you are not an administrator.
+To install the application, download the signed build for your platform
+from the GitHub releases page rather than packaging it yourself: only the
+signed release build can update itself.
 
 The `electron` package does not download the Electron binary at install time.
 The `dev`, `build`, `start` and `dist` scripts download the binary first if it
@@ -410,8 +409,8 @@ The updater reads the files the release workflow attaches next to the
 installers: the `latest*.yml` manifests, the macOS `.zip` archives and the
 `.blockmap` files. A release made by hand needs them too. On macOS the
 application must be signed to update itself; the workflow signs it, a local
-`pnpm run install:mac` build does not, and that build reports an error on
-download instead. Refer to `docs/testing.md` to try the flow from the source
+`pnpm dist` build does not, and that build reports an error on download
+instead. Refer to `docs/testing.md` to try the flow from the source
 tree.
 
 The macOS build is signed with a Developer ID certificate and notarized with
