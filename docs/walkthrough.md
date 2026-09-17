@@ -60,9 +60,12 @@ would have been "Approved" on Bob's vote alone; the tags are the whole rule.
 
 ## 4. Alice pushes a fix
 
-Alice pushes patch set 2. Gerrit clears the votes. The change goes back to
-"In Progress": the request was for patch set 1, so nobody is asked to look
-at patch set 2 until Alice says so. The reviewer chips are grey again.
+Alice pushes patch set 2. Gerrit clears the votes. The change goes to
+"Iterating": the request was for patch set 1, so nobody is asked to look at
+patch set 2 until Alice says so, and Bob's vote on patch set 1 says the
+change is being worked through a review rather than still being prepared.
+Had nobody voted on patch set 1, it would be "In Progress" again. The
+reviewer chips are grey again.
 
 ![Alice: new patch set](walkthrough/06-dev-new-patch-set.png)
 
@@ -118,7 +121,7 @@ After Dave submits, the change is on everyone's **Merged** tab for
 | "+" with Other | For each person checked: adds the reviewer only; owner's choice |
 | "↑" or "↓" on a chip | Adds or removes the `reviewer:` hashtag |
 | "×" on a primary chip | Removes the `reviewer:` hashtag, then the reviewer where Gerrit allows it |
-| Request review | Custom value `review-requested-ps` = the patch set number. Off until a primary reviewer is tagged |
+| Request review | Appends the patch set number to the custom value `review-requested-ps`. Off until a primary reviewer is tagged |
 | Review | Opens Gerrit; the vote is Gerrit's own Code-Review +1 or -1 |
 | Ready to Merge | Hashtags `ready-to-merge` and `merger:dave`; custom value `ready-to-merge-ps` = the patch set number |
 | Change merger | Replaces the `merger:` hashtag |

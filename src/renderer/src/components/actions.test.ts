@@ -32,6 +32,37 @@ function approved(opts: { wip?: boolean; verified?: number }): ChangeInfo {
   }
 }
 
+/** Alice's change with Bob as primary reviewer, patch set `ps`, review requested on `requested`, and Gerrit's messages. */
+function requested(ps: number, requested: number[], messages: ChangeInfo['messages'] = []): ChangeInfo {
+  const c = approved({})
+  c.labels = { 'Code-Review': { all: [{ ...bob, value: 0 }] } }
+  c.revisions = { abc: { _number: ps, created: '' } }
+  c.custom_keyed_values = { 'review-requested-ps': requested.join(',') }
+  c.messages = messages
+  return c
+}
+const bobVoted = (ps: number) => ({ id: `b${ps}`, author: bob, date: '', message: `Patch Set ${ps}: Code-Review-1`, _revision_number: ps })
+
+test('Withdraw is offered on a first request nobody answered, and on no later round', () => {
+  const acts = (c: ChangeInfo) => changeActions(classify(c, alice._account_id), () => Promise.resolve()).map((a) => a.key)
+  assert.ok(acts(requested(1, [1])).includes('withdraw'))
+  assert.ok(!acts(requested(3, [1, 3], [bobVoted(1)])).includes('withdraw'), 'the first round was answered')
+  assert.ok(!acts(requested(2, [1, 2])).includes('withdraw'), 'a second request, even unanswered')
+})
+
+test('Request review carries the earlier requests along and says Re-request only after a round was answered', () => {
+  const sent: unknown[] = []
+  const spec = (c: ChangeInfo) => changeActions(classify(c, alice._account_id), async (a) => void sent.push(a)).find((a) => a.key === 'request')!
+  const fresh = spec(requested(2, [1]))
+  assert.equal(fresh.label, 'Request review (PS 2)', 'nobody voted on patch set 1, so this is still the first round')
+  fresh.run()
+  assert.deepEqual(sent[0], { type: 'requestReview', id: 1, patchSet: 2, history: [1], clearTags: undefined })
+  const again = spec(requested(3, [1, 2], [bobVoted(2)]))
+  assert.equal(again.label, 'Re-request review (PS 3)')
+  again.run()
+  assert.deepEqual(sent[1], { type: 'requestReview', id: 1, patchSet: 3, history: [1, 2], clearTags: undefined })
+})
+
 function ready(c: ChangeInfo) {
   const v = classify(c, alice._account_id)
   assert.equal(v.state, 'approved')

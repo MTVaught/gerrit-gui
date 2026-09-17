@@ -13,9 +13,13 @@ export const MERGER_TAG_PREFIX = 'merger:'
  */
 export const REVIEWER_TAG_PREFIX = 'reviewer:'
 /**
- * Custom keyed value holding the patch set number the author asked to have
- * reviewed. Only the change owner (or an admin) can write it. When it does not
- * match the current patch set, no review is outstanding.
+ * Custom keyed value listing every patch set the author asked to have
+ * reviewed, comma-separated in the order asked: "2,4,5". Each request appends;
+ * only the last entry can be the open request, and only when it equals the
+ * current patch set. The earlier entries say which rounds the change has been
+ * through, so a change pushed after a review is told from one nobody has
+ * looked at. Only the change owner (or an admin) can write it. An older
+ * version wrote a single number, which reads as a one-entry list.
  */
 export const REVIEW_REQUESTED_KEY = 'review-requested-ps'
 /**

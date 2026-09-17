@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, preferredKey, actionCounts, actionMenu, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
 import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -26,7 +26,8 @@ function change(opts: {
   hashtags?: string[]
   status?: ChangeInfo['status']
   patchSet?: number
-  requested?: number
+  /** The patch sets requested, in order; a number is one entry, as an older version wrote it. */
+  requested?: number | number[]
   owner?: AccountInfo
   number?: number
   /** Highest Code-Review vote the caller may cast. */
@@ -47,7 +48,7 @@ function change(opts: {
 }): ChangeInfo {
   const reviewers = opts.reviewers ?? []
   const keyed: Record<string, string> = {}
-  if (opts.requested) keyed[REVIEW_REQUESTED_KEY] = String(opts.requested)
+  if (opts.requested) keyed[REVIEW_REQUESTED_KEY] = Array.isArray(opts.requested) ? opts.requested.join(',') : String(opts.requested)
   const readyPs = opts.readyPs === undefined ? (opts.hashtags?.includes('ready-to-merge') ? (opts.patchSet ?? 3) : null) : opts.readyPs
   if (readyPs !== null) keyed[READY_TO_MERGE_KEY] = String(readyPs)
   const primary = (opts.primary ?? reviewers).filter((a) => !a.tags?.includes('SERVICE_USER')).map((a) => `reviewer:${a.username ?? a.email}`)
@@ -85,6 +86,81 @@ function change(opts: {
 function msg(author: AccountInfo, ps: number, tag?: string): ChangeMessageInfo {
   return { id: `${author._account_id}-${ps}-${tag ?? ''}`, author, date: '', message: '', _revision_number: ps, tag }
 }
+
+/** The message Gerrit writes when `author` votes on patch set `ps`. */
+function vote(author: AccountInfo, ps: number, value: number): ChangeMessageInfo {
+  return { ...msg(author, ps), id: `${author._account_id}-${ps}-vote`, message: `Patch Set ${ps}: Code-Review${value > 0 ? '+' : ''}${value}\n\n(1 comment)` }
+}
+
+test('requested patch sets: a list in the order asked, a bare number from an older version, junk dropped', () => {
+  assert.deepEqual(requestedPatchSets(change({ requested: [2, 4, 5] })), [2, 4, 5])
+  assert.deepEqual(requestedPatchSets(change({ requested: 2 })), [2])
+  assert.deepEqual(requestedPatchSets(change({})), [])
+  const c = change({})
+  c.custom_keyed_values = { [REVIEW_REQUESTED_KEY]: ' 2, x,0,4,4 ' }
+  assert.deepEqual(requestedPatchSets(c), [2, 4])
+  assert.equal(requestedPatchSetsValue([2, 4], 5), '2,4,5')
+  assert.equal(requestedPatchSetsValue([2, 4], 4), '2,4', 'asking again for the same patch set does not duplicate it')
+})
+
+test('iterating: a new patch set after a primary reviewer voted on a requested one', () => {
+  // Bob voted -1 on patch set 2, which Alice had asked about; patch set 3 is up and not yet requested.
+  const c = change({ reviewers: [bob, carol], requested: [1, 2], patchSet: 3, messages: [vote(bob, 2, -1)] })
+  const v = classify(c, alice._account_id)
+  assert.equal(v.state, 'iterating')
+  assert.deepEqual(v.requestedPatchSets, [1, 2])
+  assert.deepEqual(v.reviewedPatchSets, [2])
+  assert.equal(v.requestedPatchSet, 2)
+  assert.equal(v.reviewRequested, false)
+  assert.equal(v.canWithdrawReview, false)
+})
+
+test('a request nobody answered before the next push leaves the change in progress, not iterating', () => {
+  const v = classify(change({ reviewers: [bob], requested: 1, patchSet: 2, messages: [msg(bob, 1)] }), alice._account_id)
+  assert.equal(v.state, 'in-progress', 'a comment without a vote is not a review')
+  assert.deepEqual(v.reviewedPatchSets, [])
+})
+
+test('reviewed: only a primary reviewer counts, and not Gerrit\'s own messages or a removed vote', () => {
+  const ci = { ...bot }
+  const base = { reviewers: [bob, carol], primary: [bob], requested: [1, 2], patchSet: 3 }
+  assert.equal(classify(change({ ...base, messages: [vote(carol, 2, 1)] }), 1).state, 'in-progress', 'Carol is not primary')
+  assert.equal(classify(change({ ...base, messages: [{ ...vote(bob, 2, 1), tag: 'autogenerated:gerrit:newPatchSet' }] }), 1).state, 'in-progress')
+  assert.equal(classify(change({ ...base, messages: [{ ...vote(bob, 2, 1), message: 'Patch Set 2: -Code-Review' }] }), 1).state, 'in-progress')
+  assert.equal(classify(change({ ...base, messages: [vote(ci, 2, 1)] }), 1).state, 'in-progress')
+  assert.equal(classify(change({ ...base, messages: [vote(bob, 2, 1)] }), 1).state, 'iterating')
+  assert.equal(classify(change({ ...base, messages: [vote(bob, 3, 1)] }), 1).state, 'in-progress', 'a vote on a patch set that was never requested is not a round')
+})
+
+test('a re-requested patch set is needs-review; once every reviewer voted the outcome decides, iterating or not', () => {
+  const history = { reviewers: [bob], requested: [1, 3], patchSet: 3, messages: [vote(bob, 1, -1)] }
+  const open = classify(change(history), 1)
+  assert.equal(open.state, 'needs-review')
+  assert.equal(open.canWithdrawReview, false, 'the first round is on record')
+  assert.equal(classify(change({ ...history, votes: { 2: 1 } }), 1).state, 'approved')
+  assert.deepEqual(classify(change({ ...history, votes: { 2: 1 } }), 1).reviewedPatchSets, [1, 3], 'the current vote comes from the labels')
+})
+
+test('withdraw: only the owner\'s first request, on the current patch set, before anyone voted', () => {
+  const first = change({ reviewers: [bob, carol], requested: 3 })
+  assert.equal(classify(first, alice._account_id).canWithdrawReview, true)
+  assert.equal(classify(first, bob._account_id).canWithdrawReview, false, 'not the owner')
+  assert.equal(classify(change({ reviewers: [bob, carol], requested: 3, votes: { 2: 1 } }), 1).canWithdrawReview, false, 'Bob voted')
+  assert.equal(classify(change({ reviewers: [bob, carol], requested: [2, 3] }), 1).canWithdrawReview, false, 'second request')
+  assert.equal(classify(change({ reviewers: [bob, carol], requested: 2, patchSet: 3 }), 1).canWithdrawReview, false, 'request is stale')
+})
+
+test('groupsFor: My Changes lists iterating above in progress; reviewer tabs fold both into one section', () => {
+  const iter = change({ number: 1, reviewers: [bob], requested: [1, 2], patchSet: 3, messages: [vote(bob, 2, -1)] })
+  const fresh = change({ number: 2, reviewers: [bob], patchSet: 1 })
+  const views = classifyAll([iter, fresh], alice._account_id)
+  assert.deepEqual(groupsFor('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Iterating', [1]], ['In Progress', [2]]])
+  const bobs = classifyAll([iter, fresh], bob._account_id)
+  assert.deepEqual(groupsFor('reviewing', bobs).map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Author iterating, no review requested', [1, 2]]])
+  assert.deepEqual(tabSegments(views).mine, [{ n: 2, tone: 'wip', label: 'in progress' }].filter(() => false), 'in progress alone is the whole tab, so no segment')
+  const withReview = classifyAll([iter, fresh, change({ number: 3, reviewers: [bob], requested: 3 })], alice._account_id)
+  assert.deepEqual(tabSegments(withReview).mine, [{ n: 1, tone: 'pending', label: 'out for review' }, { n: 2, tone: 'wip', label: 'in progress' }])
+})
 
 test('reviewers with no request are in-progress, nobody is asked, WIP or not', () => {
   for (const wip of [true, false]) {
@@ -391,7 +467,7 @@ test('groupsFor: the tabs are sectioned by state and empty sections are left out
     [
       ['Needs Changes', [2]],
       ['Out for review', [1]],
-      ['In Progress, review not requested', [3]],
+      ['In Progress', [3]],
     ],
   )
   // The pill: one segment per section, private apart; in progress is dropped once it is the only state.
@@ -442,7 +518,7 @@ test('private: My Changes lists private changes in one section at the bottom, wh
     groupsFor('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]),
     [
       ['Out for review', [1]],
-      ['In Progress, review not requested', [4]],
+      ['In Progress', [4]],
       ['Private', [2, 3]],
     ],
   )
