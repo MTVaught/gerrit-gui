@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
 import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -941,4 +941,31 @@ test('actionMenu: one entry per family, every branch listed, the others with a n
   assert.deepEqual(menu.ready[0].members[0].link, { id: 22, project: 'demo' }, 'the other categories open the change page')
   assert.deepEqual(menu.fix, [])
   assert.deepEqual(menu.merge, [])
+})
+
+test('slackUrl accepts a Slack permalink and refuses anything else', () => {
+  const link = 'https://acme.slack.com/archives/C04ABCD1234/p1726500000123456'
+  assert.equal(slackUrl(link), link)
+  assert.equal(slackUrl(`  ${link}?thread_ts=1726500000.123456&cid=C04ABCD1234 `), `${link}?thread_ts=1726500000.123456&cid=C04ABCD1234`)
+  assert.equal(slackUrl('https://slack.com/app_redirect?channel=C04'), 'https://slack.com/app_redirect?channel=C04')
+  assert.equal(slackUrl('http://acme.slack.com/archives/C04'), null, 'https only')
+  assert.equal(slackUrl('https://evil.example/acme.slack.com'), null, 'the host must be Slack')
+  assert.equal(slackUrl('https://notslack.com/x'), null)
+  assert.equal(slackUrl('javascript:alert(1)'), null)
+  assert.equal(slackUrl('acme.slack.com/archives/C04'), null, 'a bare host is not a link')
+  assert.equal(slackUrl(''), null)
+})
+
+test('slackTag and linkedSlackUrl round-trip through the hashtag', () => {
+  const link = 'https://acme.slack.com/archives/C04ABCD1234/p1726500000123456'
+  assert.equal(slackTag(` ${link} `), `slack:${link}`)
+  const c = change({ hashtags: ['reviewer:bob', slackTag(link)] })
+  assert.deepEqual(slackTags(c), [`slack:${link}`])
+  assert.equal(linkedSlackUrl(c), link)
+  assert.equal(classify(c, alice._account_id).slackUrl, link)
+  assert.equal(classify(change({ hashtags: ['reviewer:bob'] }), alice._account_id).slackUrl, null)
+  // A tag written by hand with something that is not a Slack link is ignored, and the first good one wins.
+  const mixed = change({ hashtags: ['slack:', 'slack:ftp://x', `slack:${link}`, 'slack:https://acme.slack.com/other'] })
+  assert.equal(linkedSlackUrl(mixed), link)
+  assert.equal(slackTags(mixed).length, 3)
 })

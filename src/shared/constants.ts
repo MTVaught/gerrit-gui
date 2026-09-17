@@ -13,6 +13,12 @@ export const MERGER_TAG_PREFIX = 'merger:'
  */
 export const REVIEWER_TAG_PREFIX = 'reviewer:'
 /**
+ * Hashtag prefix carrying the link to a Slack conversation about the change:
+ * `slack:https://team.slack.com/archives/C0123/p1726500000123456`. One per
+ * change; the board shows it as a link and anyone on the change may set it.
+ */
+export const SLACK_TAG_PREFIX = 'slack:'
+/**
  * Custom keyed value listing every patch set the author asked to have
  * reviewed, comma-separated in the order asked: "2,4,5". Each request appends;
  * only the last entry can be the open request, and only when it equals the

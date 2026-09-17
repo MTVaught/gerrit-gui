@@ -32,6 +32,9 @@ function browserApi(): Api {
       window.open(await call<string>('changeUrl', [link]), '_blank', 'noopener')
     },
     changeUrl: (link) => call('changeUrl', [link]),
+    openUrl: async (url) => {
+      if (/^https:\/\//i.test(url)) window.open(url, '_blank', 'noopener')
+    },
     // Window/tray features have no browser equivalent.
     getUi: async () => ui,
     setCompact: async () => undefined,
