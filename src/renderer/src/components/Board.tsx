@@ -68,7 +68,7 @@ const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
 
 function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => void }) {
   const reviewing = props.views.filter((v) => v.change.status === 'NEW' && v.iAmReviewer && !v.isMine && isInternal(v))
-  const unrequested = reviewing.filter((v) => v.state === 'in-progress').length
+  const unrequested = reviewing.filter((v) => v.state === 'in-progress' || v.state === 'iterating').length
   return (
     <div className="panel empty-explain">
       <h2>Nothing needs your review</h2>
@@ -192,13 +192,6 @@ export function Board(props: {
   return (
     <main className="board">
       {summary}
-      {props.tab === 'mine' && (
-        <p className="muted small">
-          Signed in as {displayName(props.self)}. Push as many patch sets as you like; reviewers are only asked to look
-          when you press Request review, and only for that patch set. Private changes are listed last, in a section of
-          their own.
-        </p>
-      )}
       {props.tab === 'team-reviews' && (
         <p className="muted small">
           Every open change owned by someone else on the team you set in Settings, whether or not you review it. The ones

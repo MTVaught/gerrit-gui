@@ -158,7 +158,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .change.state-needs-review { border-left-color: var(--pending); }
 .change.state-needs-changes { border-left-color: var(--neg); }
 .change.state-approved, .change.state-ready-to-merge { border-left-color: var(--pos); }
-.change.state-in-progress, .change.state-iterating { border-left-color: var(--muted); }
+.change.state-in-progress { border-left-color: var(--muted); }
 .change-head { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 2px; }
 .subject { font-weight: 600; font-size: 15px; }
 .origin { white-space: nowrap; }
@@ -212,23 +212,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .chip.ext { border: 1px dashed var(--muted); color: var(--muted); background: none; }
 .chip.ext.pos { color: var(--pos); border-color: var(--pos); }
 .chip.ext.neg { color: var(--neg); border-color: var(--neg); }
-/*
- * Commit message tags: a tag icon with the count of trailers beside the
- * change number, red with "no tags" when the message has none. Click opens
- * the message body and the trailers as written, the noise ones faded.
- */
-.tags { display: inline-flex; }
-.tagbtn { font: inherit; font-size: 11px; display: inline-flex; gap: 3px; align-items: center; padding: 1px 6px 1px 5px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; white-space: nowrap; }
-.tagbtn:hover, .tagbtn.open { color: var(--fg); border-color: var(--muted); background: var(--panel); }
-.tagbtn.none, .tagbtn.none:hover, .tagbtn.none.open { color: #fff; border-color: var(--neg); background: var(--neg); font-weight: 600; }
-.tagbtn.sm { padding: 0 5px 0 4px; font-size: 10.5px; vertical-align: 1px; }
-.menu.tags-pop { width: 520px; max-width: calc(100vw - 8px); padding: 4px; }
-.menu.tags-pop.sm { width: 380px; }
-.footer-block { padding: 8px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; color: var(--fg); }
-.menu.tags-pop.sm .footer-block { font-size: 11px; }
-.footer-block .k { color: var(--muted); }
-.footer-block .noise { color: var(--muted); opacity: 0.6; }
-.footer-block .body { color: var(--muted); margin-bottom: 6px; }
 /* View menu: search, author filter and sort in one panel under a top bar button. */
 .view { position: relative; }
 .btn.view-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 13px; }
@@ -377,7 +360,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .ledger tr.state-needs-review td.c { border-left-color: var(--pending); }
 .ledger tr.state-needs-changes td.c { border-left-color: var(--neg); }
 .ledger tr.state-approved td.c, .ledger tr.state-ready-to-merge td.c { border-left-color: var(--pos); }
-.ledger tr.state-in-progress td.c, .ledger tr.state-iterating td.c { border-left-color: var(--muted); }
+.ledger tr.state-in-progress td.c { border-left-color: var(--muted); }
 .ledger .t { display: block; width: 100%; font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ledger .t:hover { text-decoration: none; color: var(--accent); }
 .ledger .s { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

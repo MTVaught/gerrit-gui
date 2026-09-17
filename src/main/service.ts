@@ -4,7 +4,7 @@
 import { GerritClient, GerritError, type FetchLike } from './gerrit.ts'
 import { fetchDashboard } from './dashboard.ts'
 import { READY_TO_MERGE_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
-import { mergerTag, preferredKey, reviewerTag } from '../shared/model.ts'
+import { mergerTag, preferredKey, requestedPatchSetsValue, reviewerTag } from '../shared/model.ts'
 import type {
   AccountInfo,
   ChangeAction,
@@ -108,7 +108,8 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
           // patch set has no meaning once the author restarts the review, so
           // it goes with the request.
           if (action.clearTags?.length) await g.setHashtags(action.id, undefined, action.clearTags)
-          await g.setCustomKeyedValues(action.id, { [REVIEW_REQUESTED_KEY]: String(action.patchSet) }, action.clearTags?.length ? [READY_TO_MERGE_KEY] : undefined)
+          // The patch set joins the ones asked before, so the rounds stay on record.
+          await g.setCustomKeyedValues(action.id, { [REVIEW_REQUESTED_KEY]: requestedPatchSetsValue(action.history, action.patchSet) }, action.clearTags?.length ? [READY_TO_MERGE_KEY] : undefined)
           return
         case 'requestMerge': {
           // The state tag and the addressee go in one request; a previous
@@ -122,6 +123,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
           return
         }
         case 'withdrawReview':
+          // Only a first, unanswered request is withdrawn (see canWithdrawReview), so the whole value goes.
           await g.setCustomKeyedValues(action.id, {}, [REVIEW_REQUESTED_KEY])
           return
         case 'setWip':

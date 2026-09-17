@@ -1,0 +1,87 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Review rounds: 4-words</title><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"></head><body><div class="app">
+<div class="note"><b>4 · Words in the PS cell, marker hashtag.</b> No badge, no new section. The PS cell of an In Progress row says "reviewed on PS 2" in the request colour, or "asked PS 1, unreviewed" in grey. The button already says Re-request only after a review.</div>
+<div class="shape"><div class="shape-title">Storage: keyed list plus a marker hashtag</div>
+<div class="shape-row"><span class="k">Hashtags</span><span><span class="tag">iterating</span><span class="tag">reviewer:carol</span><span class="tag">reviewer:dave</span></span></div>
+<div class="shape-row"><span class="k">Custom keyed values</span><span><code>review-requested-ps</code> = <code>2,4,5</code></span></div>
+<div class="shape-why muted small">The list is the source of truth, as in 1. The app also adds <code>iterating</code> the first time a request follows a vote, so <code>hashtag:iterating</code> works in Gerrit. Cleared on merge or abandon.</div></div>
+<header class="topbar"><nav class="tabs"><button class="tab">Needs Review <span class="count hot">2</span></button><button class="tab">Reviewing <span class="count">3</span></button><button class="tab active">My Changes <span class="count split"><span class="neg">1</span><span class="pos">1</span><span>7</span></span></button><button class="tab">Merged <span class="count">7</span></button><button class="tab">Team Reviews <span class="count">4</span></button></nav><div class="topbar-right"><span class="muted small">updated just now</span><button class="btn">View ▾</button><button class="btn icon">⟳</button><button class="btn icon">⚙</button></div></header>
+<div class="board"><div class="sections"><div class="group"><h3>Needs Changes</h3><ul class="changes"><li class="change state-needs-changes"><div class="change-head"><span class="link subject">Add Prometheus exporter</span><span class="muted small origin">demo · you</span></div><div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge needs-changes">Needs Changes</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#22</span></span>
+<span class="cell c-ps"><span>PS 4</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pos" title="">Carol <b>+1</b></span><span class="chip neg" title="">Dave <b>-1</b></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+210</span> <span class="del">−3</span></span><span class="muted">4 unresolved</span></span>
+<span class="cell c-updated muted">3h</span>
+<div class="cell c-actions actions"></div>
+<div class="cell c-wip actions"><button class="btn subtle">Mark WIP</button></div>
+</div></li></ul></div><div class="group"><h3>Approved</h3><ul class="changes"><li class="change state-approved"><div class="change-head"><span class="link subject">Rename Storage helpers</span><span class="muted small origin">demo · you</span></div><div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge approved">Approved</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#8</span></span>
+<span class="cell c-ps"><span>PS 3</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pos" title="earlier: -1 on PS 1">Carol <b>+1</b></span><span class="chip pos" title="">Dave <b>+1</b></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+41</span> <span class="del">−41</span></span></span>
+<span class="cell c-updated muted">1d</span>
+<div class="cell c-actions actions"><button class="btn primary">Ready to Merge ▾</button></div>
+<div class="cell c-wip actions"><button class="btn subtle">Mark WIP</button></div>
+</div></li></ul></div><div class="group"><h3>Out for review</h3><ul class="changes"><li class="change state-needs-review"><div class="change-head"><span class="link subject">Add retry to upload client</span><span class="muted small origin">demo · you</span></div><div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#31</span></span>
+<span class="cell c-ps"><span>PS 1</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending" title="">Carol</span><span class="chip pending" title="">Dave</span></div></div>
+<span class="cell c-diff"><span><span class="ins">+84</span> <span class="del">−12</span></span></span>
+<span class="cell c-updated muted">20m</span>
+<div class="cell c-actions actions"><button class="btn" title="Nobody has looked yet, so the request can be taken back entirely">Withdraw request</button></div>
+<div class="cell c-wip actions"><button class="btn subtle">Mark WIP</button></div>
+</div></li><li class="change state-needs-review"><div class="change-head"><span class="link subject">Fix flaky scheduler test</span><span class="muted small origin">demo · you</span></div><div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#27</span></span>
+<span class="cell c-ps"><span>PS 5</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending" title="earlier: -1 on PS 2, -1 on PS 4">Carol</span><span class="chip pending" title="earlier: +1 on PS 4">Dave</span></div></div>
+<span class="cell c-diff"><span><span class="ins">+23</span> <span class="del">−9</span></span><span class="muted">2 unresolved</span></span>
+<span class="cell c-updated muted">1h</span>
+<div class="cell c-actions actions"></div>
+<div class="cell c-wip actions"><button class="btn subtle">Mark WIP</button></div>
+</div></li></ul></div><div class="group"><h3>In Progress, review not requested</h3><ul class="changes"><li class="change state-in-progress"><div class="change-head"><span class="link subject">Migrate config to TOML</span><span class="muted small origin">demo · you</span></div><div class="change-row">
+<span class="cell c-branch"><span class="link"><code>release-2.4</code></span></span>
+<span class="cell c-state"><span class="badge in-progress">In Progress</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#19</span></span>
+<span class="cell c-ps"><span>PS 3</span><span class="req iter" title="Reviewed on PS 2">reviewed on PS 2</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip " title="earlier: -1 on PS 2">Carol</span></div></div>
+<span class="cell c-diff"><span><span class="ins">+310</span> <span class="del">−198</span></span><span class="muted">1 unresolved</span></span>
+<span class="cell c-updated muted">2d</span>
+<div class="cell c-actions actions"><button class="btn primary" title="Ask every primary reviewer to look at this patch set again">Re-request review (PS 3)</button></div>
+<div class="cell c-wip actions"><button class="btn subtle">Mark WIP</button></div>
+</div></li><li class="change state-in-progress"><div class="change-head"><span class="link subject">Cap cache sizes</span><span class="muted small origin">demo · you</span></div><div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge in-progress">In Progress</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#40</span></span>
+<span class="cell c-ps"><span>PS 2</span><span class="req stale" title="Asked, but nobody voted before the next push">asked PS 1, unreviewed</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip " title="">Carol</span><span class="chip " title="">Dave</span></div></div>
+<span class="cell c-diff"><span><span class="ins">+12</span> <span class="del">−4</span></span></span>
+<span class="cell c-updated muted">2d</span>
+<div class="cell c-actions actions"><button class="btn primary" title="Ask every primary reviewer to look at this patch set">Request review (PS 2)</button></div>
+<div class="cell c-wip actions"><button class="btn subtle">Mark WIP</button></div>
+</div></li><li class="change state-in-progress"><div class="change-head"><span class="link subject">Bump build dependencies</span><span class="muted small origin">demo · you</span></div><div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge in-progress">In Progress</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#12</span></span>
+<span class="cell c-ps"><span>PS 1</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip " title="">Carol</span></div></div>
+<span class="cell c-diff"><span><span class="ins">+6</span> <span class="del">−6</span></span></span>
+<span class="cell c-updated muted">3d</span>
+<div class="cell c-actions actions"><button class="btn primary" title="Ask every primary reviewer to look at this patch set">Request review (PS 1)</button></div>
+<div class="cell c-wip actions"><button class="btn subtle">Mark WIP</button></div>
+</div></li></ul></div></div></div>
+<div class="mock-note">#27 is out for review on PS 5 after votes on PS 2 and 4; it sits with #31 in one section, since the review phase is not split. #19 got a −1 on PS 2 and PS 3 is up: iterating. #40 asked on PS 1, nobody voted, PS 2 is up: not reviewed. #31 alone may withdraw.</div>
+</div></body></html>

@@ -95,9 +95,11 @@ the same votes, hashtags and WIP flags.
 
 | Workflow item | Gerrit data |
 | --- | --- |
-| Request review | The application writes the number of the current patch set to the custom keyed value `review-requested-ps` of the change. |
+| Request review | The application appends the number of the current patch set to the custom keyed value `review-requested-ps` of the change, a comma-separated list of every patch set asked about, in order: `2,4,5`. |
+| Withdraw request | Removes `review-requested-ps`. Offered only for a first request on the current patch set that no primary reviewer has voted on; later rounds stay on record. |
 | Primary reviewer X | The change has the hashtag `reviewer:<username>`, with the Gerrit username of X in lower case, or the email address for an account with no username. One tag per primary reviewer. |
-| Needs Review by X | The number in `review-requested-ps` is the same as the number of the current patch set. X is a primary reviewer. X has no Code-Review vote on the current patch set. |
+| Needs Review by X | The last number in `review-requested-ps` is the same as the number of the current patch set. X is a primary reviewer. X has no Code-Review vote on the current patch set. |
+| Iterating | No review is requested for the current patch set, and a primary reviewer voted on an earlier patch set listed in `review-requested-ps`. The vote is read from the change messages, since Gerrit drops the votes of earlier patch sets from the labels. Shown on My Changes only; a reviewer sees these as In Progress. |
 | Reviewer finished | X has a Code-Review vote (+1 or -1) on the current patch set. |
 | "+" button, "Primary" | For each person checked: adds them as a reviewer of the change in Gerrit, when they are not one yet, then adds the `reviewer:` tag. One account per tag; a group is refused. |
 | "×" on a primary reviewer | Removes the `reviewer:` tag, then tries to remove the reviewer in Gerrit. Gerrit lets only the owner, an administrator or the person themself do the second part; for anyone else the tag goes and the person stays on the change as an other reviewer. |
@@ -114,11 +116,12 @@ the same votes, hashtags and WIP flags.
 These rules have these effects:
 
 - When a user pushes a new patch set, Gerrit removes the votes that are not
-  sticky. The number in `review-requested-ps` is then different from the
-  number of the current patch set. Thus, a new push puts the change back in
-  the "In Progress" state. The application does not ask a reviewer. A trivial
-  rebase keeps the copied votes. Thus, an approved change stays approved after
-  a trivial rebase.
+  sticky. The last number in `review-requested-ps` is then different from
+  the number of the current patch set. Thus, a new push puts the change back
+  in the "In Progress" state, or in "Iterating" when a reviewer had voted on
+  a patch set that was asked about. The application does not ask a reviewer.
+  A trivial rebase keeps the copied votes. Thus, an approved change stays
+  approved after a trivial rebase.
 - A +2 vote does not count for the "Approved" state. Gerrit has no query that
   tells if a user can submit a change before the change is submittable. The
   application cannot warn the author that the person picked has no +2; the
@@ -162,7 +165,7 @@ change on one branch is a card with one row, so both read the same way.
 
 - The card is in the section of its most urgent branch. The order of
   urgency is the same for the owner and for a reviewer: Needs Changes, Needs
-  Review, In Progress, Approved, Ready to Merge. If two branches have the
+  Review, Iterating, In Progress, Approved, Ready to Merge. If two branches have the
   same state, the card goes to the earlier section. Thus, on "Reviewing", a
   branch that waits on you comes before a branch that you reviewed.
 - Each row shows the branch, the state, a "Private" badge on a change that

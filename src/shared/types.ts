@@ -108,6 +108,7 @@ export interface SuggestedReviewerInfo {
 /** Workflow state, derived purely from Gerrit data. */
 export type ReviewState =
   | 'in-progress'
+  | 'iterating'
   | 'needs-review'
   | 'needs-changes'
   | 'approved'
@@ -158,6 +159,15 @@ export interface ChangeView {
   verified: boolean
   /** Patch set the author last requested review on, or null if never. */
   requestedPatchSet: number | null
+  /** Every patch set the author requested review on, in the order asked. */
+  requestedPatchSets: number[]
+  /** The requested patch sets a primary reviewer voted on: the rounds that were answered. */
+  reviewedPatchSets: number[]
+  /**
+   * The owner may take the request back entirely: it is the first and only
+   * one, it is for the current patch set, and nobody has voted on it yet.
+   */
+  canWithdrawReview: boolean
   /** The request is for the current patch set, so reviews are outstanding. */
   reviewRequested: boolean
   isMine: boolean
@@ -347,7 +357,14 @@ export interface DashboardData {
 
 export type ChangeAction =
   /** Owner's action. `clearTags` drops a ready-to-merge and merger tag left over from an earlier patch set. */
-  | { type: 'requestReview'; id: number; patchSet: number; clearTags?: string[] }
+  | {
+      type: 'requestReview'
+      id: number
+      patchSet: number
+      /** The patch sets requested before; `patchSet` is appended to them. */
+      history: number[]
+      clearTags?: string[]
+    }
   /**
    * Owner's action: tag the change ready-to-merge for one person, recording
    * `patchSet` as the one it is for. `merger` is a username or email; `replace` lists the merger tags already on the change,

@@ -43,7 +43,8 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
   const out: ActionSpec[] = []
 
   if (owner && !v.reviewRequested && v.state !== 'approved' && v.state !== 'ready-to-merge') {
-    const again = v.requestedPatchSet !== null && v.requestedPatchSet < v.patchSet
+    // "Re-request" once a round was answered; a request nobody voted on before the next push is not a round.
+    const again = v.state === 'iterating'
     // Nobody tagged means nobody to decide: the request is refused until someone is.
     const nobody = v.reviewers.length === 0
     out.push({
@@ -59,11 +60,12 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
         : v.staleReadyToMerge
           ? 'Ask every primary reviewer to look at this patch set. Also clears the ready-to-merge tag, which was for an earlier patch set.'
           : 'Ask every primary reviewer to look at this patch set',
-      run: () => void act({ type: 'requestReview', id, patchSet: v.patchSet, clearTags: v.staleReadyToMerge ? readyTags : undefined }),
+      run: () => void act({ type: 'requestReview', id, patchSet: v.patchSet, history: v.requestedPatchSets, clearTags: v.staleReadyToMerge ? readyTags : undefined }),
     })
   }
-  if (owner && v.reviewRequested && v.state === 'needs-review') {
-    out.push({ key: 'withdraw', label: 'Withdraw request', short: 'Withdraw', run: () => void act({ type: 'withdrawReview', id }) })
+  // Only a first request nobody has answered can be taken back; later rounds are on record.
+  if (v.canWithdrawReview && v.state === 'needs-review') {
+    out.push({ key: 'withdraw', label: 'Withdraw request', short: 'Withdraw', title: 'Nobody has voted yet, so the request is removed entirely', run: () => void act({ type: 'withdrawReview', id }) })
   }
   // The merger votes +2 and submits, so the change must be mergeable before
   // they are asked: active (CI runs) and verified (CI passed), on top of approved.
