@@ -1,0 +1,126 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Commit tags mockup</title>
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"></head>
+<body class="v10"><div class="app">
+<div class="topbar"><div class="tabs">
+<button class="tab">Needs Review <span class="count hot">2</span></button><button class="tab active">Reviewing <span class="count">4</span></button><button class="tab">My Changes <span class="count">3</span></button><button class="tab">Ready to Merge <span class="count">0</span></button><button class="tab">Recently Merged <span class="count">1</span></button><button class="tab">Team Reviews <span class="count">2</span></button><button class="tab">External Reviews <span class="count">0</span></button>
+</div><div class="topbar-right"><span class="muted status-line">Bob · updated just now</span><button class="btn view-btn">View <span class="arrow">▾</span></button><button class="btn icon">⟳</button><button class="btn icon">⚙</button></div></div>
+<div class="board with-pane"><div class="sections">
+<div class="group"><h3>Waiting on you <span class="count">2</span></h3><ul class="changes">
+<li class="change state-needs-review selected">
+<div class="change-head"><button class="link subject">Add retries to the S3 uploader</button><span class="muted small origin">demo · Alice</span><span class="head-right"><button class="btn subtle det">Details ›</button></span></div>
+<div class="change-row"><span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#4127</button></span>
+<span class="cell c-ps"><span>PS 3<span class="req">asked</span></span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">Carol</span><span class="chip pos">Dave <b>+1</b></span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+212</span> <span class="del">−40</span></span></span>
+<span class="cell c-updated muted">1h ago</span>
+<span class="cell c-actions actions"><button class="btn primary">Review ↗</button></span>
+<span class="cell c-wip actions"></span></div></li>
+<li class="change family state-needs-review">
+<div class="change-head"><button class="link subject">Fix crash on an empty config file</button><span class="badge branch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="4" r="2"/><circle cx="18" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6 6v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V6M12 12v6"/></svg> 2 branches</span><span class="badge tally merged">1 Merged</span><span class="badge tally needs-review">1 Needs Review</span><span class="muted small origin">demo · Alice</span><span class="head-right"><button class="btn subtle det">Details ›</button></span></div>
+<div class="change-row closed"><span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge merged">Merged 2d ago</span></span>
+<span class="cell c-ci"></span>
+<span class="cell c-num"><button class="link">#4051</button></span>
+<span class="cell c-ps"><span>PS 2</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pos">Bob <b>+2</b></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+4</span> <span class="del">−1</span></span></span>
+<span class="cell c-updated muted">2d ago</span>
+<span class="cell c-actions actions"></span>
+<span class="cell c-wip actions"></span></div>
+<div class="change-row"><span class="cell c-branch"><button class="link"><code>release-2.0</code></button></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#4130</button></span>
+<span class="cell c-ps"><span>PS 1<span class="req">asked</span></span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">Bob</span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+4</span> <span class="del">−1</span></span></span>
+<span class="cell c-updated muted">40m ago</span>
+<span class="cell c-actions actions"><button class="btn primary">Review ↗</button></span>
+<span class="cell c-wip actions"></span></div></li>
+</ul></div>
+<div class="group"><h3>Reviewed, waiting on others <span class="count">2</span></h3><ul class="changes">
+<li class="change state-approved">
+<div class="change-head"><button class="link subject">Drop the legacy TOML loader</button><span class="muted small origin">demo · Alice</span><span class="head-right"><button class="btn subtle det">Details ›</button></span></div>
+<div class="change-row"><span class="cell c-branch"><button class="link"><code>release-2.0</code></button></span>
+<span class="cell c-state"><span class="badge approved">Approved</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#4102</button></span>
+<span class="cell c-ps"><span>PS 5</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pos">Bob <b>+2</b></span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+8</span> <span class="del">−310</span></span></span>
+<span class="cell c-updated muted">3h ago</span>
+<span class="cell c-actions actions"><button class="btn">Submit</button></span>
+<span class="cell c-wip actions"></span></div></li>
+<li class="change state-in-progress">
+<div class="change-head"><button class="link subject">Bump build dependencies</button><span class="muted small origin">demo · Alice</span><span class="head-right"><button class="btn subtle det">Details ›</button></span></div>
+<div class="change-row"><span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge in-progress">In progress</span></span>
+<span class="cell c-ci"><span class="badge wip">WIP</span></span>
+<span class="cell c-num"><button class="link">#4088</button></span>
+<span class="cell c-ps"><span>PS 1</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip">Bob</span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+61</span> <span class="del">−61</span></span></span>
+<span class="cell c-updated muted">2d ago</span>
+<span class="cell c-actions actions"><button class="btn" disabled>Request review</button></span>
+<span class="cell c-wip actions"><button class="btn subtle">Mark active (runs CI)</button></span></div></li>
+</ul></div>
+</div><aside class="pane"><div class="pane-body ">
+<div class="pane-title">Add retries to the S3 uploader</div>
+<div class="pane-sub muted">#4127 · demo · master · PS 3 · Alice</div>
+<div class="ldet-badges"><span class="badge needs-review">Needs Review</span><span class="badge active">Active</span></div>
+<h5>Commit message</h5>
+<div class="pane-msg">Uploads over a flaky link gave up on the first 5xx. Retry three
+times with jitter, and log the final failure with the request id.</div>
+<h5>Tags</h5>
+<table class="ldet-table"><tr class=""><td class="k">Bug</td><td class="v"><a href="#">4821</a></td></tr><tr class=""><td class="k">Test</td><td class="v">unit; manual against minio</td></tr><tr class=""><td class="k">Depends-On</td><td class="v"><a href="#">I7c3e2f1a9b4d0e6f5a1c2b3d4e5f60718293a4b5</a></td></tr><tr class="noise"><td class="k">Change-Id</td><td class="v">I2f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e</td></tr></table>
+<div class="ldet-actions"><button class="btn sm">Open in Gerrit ↗</button></div>
+</div></aside></div>
+<div class="mock-split"><div class="mock-frame"><p class="lbl">Compact window · 440px</p><div class="win compact"><div class="board"><table class="ledger">
+<colgroup><col><col class="ci"><col class="rv"><col class="ac"></colgroup>
+<thead><tr><th>Change</th><th>CI</th><th>Reviewers</th><th aria-label="Action"></th></tr></thead>
+<tbody>
+<tr class="g"><td colspan="4">Waiting on you <span class="count">2</span></td></tr>
+<tr class="lrow state-needs-review">
+<td class="c"><button class="link t">Add retries to the S3 uploader</button><div class="s">#4127<span class="sep">·</span>1h ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 3<span class="sep">·</span><span class="ins">+212</span> <span class="del">−40</span></div></td>
+<td class="ci"><span class="badge active">Active</span></td>
+<td class="r"><span class="stack"><span class="av h3">C<i class="v pend"></i></span><span class="av h1">D<i class="v pos">+1</i></span></span></td>
+<td class="a"><button class="btn sm primary">Review ↗</button></td></tr>
+<tr class="fsp"><td colspan="4"></td></tr>
+<tr class="fh"><td colspan="4"><span class="t"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="4" r="2"/><circle cx="18" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6 6v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V6M12 12v6"/></svg><span class="txt">Fix crash on an empty config file</span></span><span class="n muted">2 branches</span></td></tr>
+<tr class="lrow state-merged mem closed">
+<td class="c"><button class="link t"><code>master</code></button><div class="s">#4051<span class="sep">·</span>2d ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 2<span class="sep">·</span><span class="ins">+4</span> <span class="del">−1</span></div></td>
+<td class="ci"></td>
+<td class="r"><span class="stack"><span class="av h0">B<i class="v pos">+2</i></span></span></td>
+<td class="a"></td></tr>
+<tr class="lrow state-needs-review mem end">
+<td class="c"><button class="link t"><code>release-2.0</code></button><div class="s">#4130<span class="sep">·</span>40m ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 1<span class="sep">·</span><span class="ins">+4</span> <span class="del">−1</span></div></td>
+<td class="ci"><span class="badge active">Active</span></td>
+<td class="r"><span class="stack"><span class="av h0">B<i class="v pend"></i></span></span></td>
+<td class="a"><button class="btn sm primary">Review ↗</button></td></tr>
+<tr class="fsp"><td colspan="4"></td></tr>
+<tr class="g"><td colspan="4">Reviewed, waiting on others <span class="count">2</span></td></tr>
+<tr class="lrow state-approved">
+<td class="c"><button class="link t">Drop the legacy TOML loader</button><div class="s">#4102<span class="sep">·</span>3h ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 5<span class="sep">·</span><span class="ins">+8</span> <span class="del">−310</span></div></td>
+<td class="ci"><span class="badge active">Active</span></td>
+<td class="r"><span class="stack"><span class="av h0">B<i class="v pos">+2</i></span></span></td>
+<td class="a"><button class="btn sm">Submit</button></td></tr>
+<tr class="lrow state-in-progress">
+<td class="c"><button class="link t">Bump build dependencies</button><div class="s">#4088<span class="sep">·</span>2d ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 1<span class="sep">·</span><span class="ins">+61</span> <span class="del">−61</span></div></td>
+<td class="ci"><span class="badge wip">WIP</span></td>
+<td class="r"><span class="stack"><span class="av h0">B</span></span></td>
+<td class="a"><button class="btn sm more">···</button></td></tr>
+</tbody></table></div><div class="sheet-back"></div><div class="sheet"><div class="pane-body sheet-body">
+<div class="pane-title">Add retries to the S3 uploader</div>
+<div class="pane-sub muted">#4127 · demo · master · PS 3 · Alice</div>
+<div class="ldet-badges"><span class="badge needs-review">Needs Review</span><span class="badge active">Active</span></div>
+<h5>Commit message</h5>
+<div class="pane-msg">Uploads over a flaky link gave up on the first 5xx. Retry three
+times with jitter, and log the final failure with the request id.</div>
+<h5>Tags</h5>
+<table class="ldet-table"><tr class=""><td class="k">Bug</td><td class="v"><a href="#">4821</a></td></tr><tr class=""><td class="k">Test</td><td class="v">unit; manual against minio</td></tr><tr class=""><td class="k">Depends-On</td><td class="v"><a href="#">I7c3e2f1a9b4d0e6f5a1c2b3d4e5f60718293a4b5</a></td></tr><tr class="noise"><td class="k">Change-Id</td><td class="v">I2f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e</td></tr></table>
+<div class="ldet-actions"><button class="btn sm">Open in Gerrit ↗</button></div>
+</div></div></div></div></div><p class="mock-note"><b>10 · A details pane.</b> Nothing about the trailers on the cards at all. A subtle Details button on the title line (or clicking the card) opens a pane on the right that shows the whole change: subject, state, the commit message body, the trailers as a table with Bug and Depends-On as links, and Open in Gerrit. The selected card is outlined. The pane could later carry more that does not fit a row: the file list, the last comments, the CI links. <b>Compact:</b> the same content as a sheet that slides up over the ledger, dismissed by a tap outside it. Most room for the tags of any idea and no cost on the rows, but the tags are a click away, and the full window needs to be wide (this page is 1400px) for the pane to sit beside the cards rather than over them.</p>
+</div></body></html>

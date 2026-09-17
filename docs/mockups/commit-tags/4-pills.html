@@ -1,0 +1,111 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Commit tags mockup</title>
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"></head>
+<body class=""><div class="app">
+<div class="topbar"><div class="tabs">
+<button class="tab">Needs Review <span class="count hot">2</span></button><button class="tab active">Reviewing <span class="count">4</span></button><button class="tab">My Changes <span class="count">3</span></button><button class="tab">Ready to Merge <span class="count">0</span></button><button class="tab">Recently Merged <span class="count">1</span></button><button class="tab">Team Reviews <span class="count">2</span></button><button class="tab">External Reviews <span class="count">0</span></button>
+</div><div class="topbar-right"><span class="muted status-line">Bob · updated just now</span><button class="btn view-btn">View <span class="arrow">▾</span></button><button class="btn icon">⟳</button><button class="btn icon">⚙</button></div></div>
+<div class="board"><div class="sections">
+<div class="group"><h3>Waiting on you <span class="count">2</span></h3><ul class="changes">
+<li class="change state-needs-review">
+<div class="change-head"><button class="link subject">Add retries to the S3 uploader</button><span class="pills"><span class="pill bug" title="Bug 4821: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg>4821</span><span class="pill test" title="Test: unit; manual against minio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>unit; manual against minio</span><span class="pill dep" title="Depends on I7c3e2f1a9b4d0e6f5a1c2b3d4e5f60718293a4b5: opens that change"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>I7c3e2f1a9…</span></span><span class="muted small origin">demo · Alice</span></div>
+<div class="change-row"><span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#4127</button></span>
+<span class="cell c-ps"><span>PS 3<span class="req">asked</span></span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">Carol</span><span class="chip pos">Dave <b>+1</b></span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+212</span> <span class="del">−40</span></span></span>
+<span class="cell c-updated muted">1h ago</span>
+<span class="cell c-actions actions"><button class="btn primary">Review ↗</button></span>
+<span class="cell c-wip actions"></span></div></li>
+<li class="change family state-needs-review">
+<div class="change-head"><button class="link subject">Fix crash on an empty config file</button><span class="pills"><span class="pill bug" title="Bug 5120: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg>5120</span><span class="pill test" title="Test: manual: start with 0-byte config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>manual: start with 0-byte config</span></span><span class="badge branch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="4" r="2"/><circle cx="18" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6 6v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V6M12 12v6"/></svg> 2 branches</span><span class="badge tally merged">1 Merged</span><span class="badge tally needs-review">1 Needs Review</span><span class="muted small origin">demo · Alice</span></div>
+<div class="change-row closed"><span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge merged">Merged 2d ago</span></span>
+<span class="cell c-ci"></span>
+<span class="cell c-num"><button class="link">#4051</button></span>
+<span class="cell c-ps"><span>PS 2</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pos">Bob <b>+2</b></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+4</span> <span class="del">−1</span></span></span>
+<span class="cell c-updated muted">2d ago</span>
+<span class="cell c-actions actions"></span>
+<span class="cell c-wip actions"></span></div>
+<div class="change-row"><span class="cell c-branch"><button class="link"><code>release-2.0</code></button></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#4130</button></span>
+<span class="cell c-ps"><span>PS 1<span class="req">asked</span></span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">Bob</span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+4</span> <span class="del">−1</span></span></span>
+<span class="cell c-updated muted">40m ago</span>
+<span class="cell c-actions actions"><button class="btn primary">Review ↗</button></span>
+<span class="cell c-wip actions"></span></div></li>
+</ul></div>
+<div class="group"><h3>Reviewed, waiting on others <span class="count">2</span></h3><ul class="changes">
+<li class="change state-approved">
+<div class="change-head"><button class="link subject">Drop the legacy TOML loader</button><span class="pills"><span class="pill bug" title="Bug 3390: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg>3390</span><span class="pill bug" title="Bug 3391: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg>3391</span><span class="pill test" title="Test: pytest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>pytest</span></span><span class="muted small origin">demo · Alice</span></div>
+<div class="change-row"><span class="cell c-branch"><button class="link"><code>release-2.0</code></button></span>
+<span class="cell c-state"><span class="badge approved">Approved</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#4102</button></span>
+<span class="cell c-ps"><span>PS 5</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pos">Bob <b>+2</b></span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+8</span> <span class="del">−310</span></span></span>
+<span class="cell c-updated muted">3h ago</span>
+<span class="cell c-actions actions"><button class="btn">Submit</button></span>
+<span class="cell c-wip actions"></span></div></li>
+<li class="change state-in-progress">
+<div class="change-head"><button class="link subject">Bump build dependencies</button><span class="pills"><span class="pill test none" title="Test: none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>none</span><span class="pill bug" title="Relates-To 4102: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg>rel 4102</span><span class="pill rest" title="Cq-Include-Trybots: luci.chromium.try:win-rel,mac-rel">+1 other</span></span><span class="muted small origin">demo · Alice</span></div>
+<div class="change-row"><span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge in-progress">In progress</span></span>
+<span class="cell c-ci"><span class="badge wip">WIP</span></span>
+<span class="cell c-num"><button class="link">#4088</button></span>
+<span class="cell c-ps"><span>PS 1</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip">Bob</span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+61</span> <span class="del">−61</span></span></span>
+<span class="cell c-updated muted">2d ago</span>
+<span class="cell c-actions actions"><button class="btn" disabled>Request review</button></span>
+<span class="cell c-wip actions"><button class="btn subtle">Mark active (runs CI)</button></span></div></li>
+</ul></div>
+</div></div>
+<div class="mock-split"><div class="mock-frame"><p class="lbl">Compact window · 440px</p><div class="win compact"><div class="board"><table class="ledger">
+<colgroup><col><col class="ci"><col class="rv"><col class="ac"></colgroup>
+<thead><tr><th>Change</th><th>CI</th><th>Reviewers</th><th aria-label="Action"></th></tr></thead>
+<tbody>
+<tr class="g"><td colspan="4">Waiting on you <span class="count">2</span></td></tr>
+<tr class="lrow state-needs-review open">
+<td class="c"><button class="link t">Add retries to the S3 uploader</button><div class="s">#4127<span class="sep">·</span><span class="pills" style="margin:0;vertical-align:-3px"><span class="pill bug dot" title="Bug 4821: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg></span><span class="pill test dot" title="Test: unit; manual against minio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><span class="pill dep dot" title="Depends on I7c3e2f1a9b4d0e6f5a1c2b3d4e5f60718293a4b5: opens that change"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span></span><span class="sep">·</span>1h ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 3<span class="sep">·</span><span class="ins">+212</span> <span class="del">−40</span></div></td>
+<td class="ci"><span class="badge active">Active</span></td>
+<td class="r"><span class="stack"><span class="av h3">C<i class="v pend"></i></span><span class="av h1">D<i class="v pos">+1</i></span></span></td>
+<td class="a"><button class="btn sm primary">Review ↗</button></td></tr><tr class="ldetail"><td colspan="4">
+<div class="ldet-badges"><span class="badge needs-review">Needs Review</span><span class="muted">demo · master · review requested for PS 3</span></div>
+<div class="pills" style="margin-top:6px"><span class="pill bug" title="Bug 4821: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg>4821</span><span class="pill test" title="Test: unit; manual against minio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>unit; manual against minio</span><span class="pill dep" title="Depends on I7c3e2f1a9b4d0e6f5a1c2b3d4e5f60718293a4b5: opens that change"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>I7c3e2f1a9…</span></div>
+<div class="reviewers"><span class="chip pending">Carol</span><span class="chip pos">Dave <b>+1</b></span><span class="trailing"><button class="chip add">+</button></span></div>
+<div class="ldet-actions"><button class="btn sm">Open in Gerrit ↗</button></div>
+</td></tr>
+<tr class="fsp"><td colspan="4"></td></tr>
+<tr class="fh"><td colspan="4"><span class="t"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="4" r="2"/><circle cx="18" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6 6v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V6M12 12v6"/></svg><span class="txt">Fix crash on an empty config file</span></span><span class="n muted">2 branches</span></td></tr>
+<tr class="lrow state-merged mem closed">
+<td class="c"><button class="link t"><code>master</code></button><div class="s">#4051<span class="sep">·</span><span class="pills" style="margin:0;vertical-align:-3px"><span class="pill bug dot" title="Bug 5120: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg></span><span class="pill test dot" title="Test: manual: start with 0-byte config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span></span><span class="sep">·</span>2d ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 2<span class="sep">·</span><span class="ins">+4</span> <span class="del">−1</span></div></td>
+<td class="ci"></td>
+<td class="r"><span class="stack"><span class="av h0">B<i class="v pos">+2</i></span></span></td>
+<td class="a"></td></tr>
+<tr class="lrow state-needs-review mem end">
+<td class="c"><button class="link t"><code>release-2.0</code></button><div class="s">#4130<span class="sep">·</span><span class="pills" style="margin:0;vertical-align:-3px"><span class="pill bug dot" title="Bug 5120: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg></span><span class="pill test dot" title="Test: manual: start with 0-byte config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span></span><span class="sep">·</span>40m ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 1<span class="sep">·</span><span class="ins">+4</span> <span class="del">−1</span></div></td>
+<td class="ci"><span class="badge active">Active</span></td>
+<td class="r"><span class="stack"><span class="av h0">B<i class="v pend"></i></span></span></td>
+<td class="a"><button class="btn sm primary">Review ↗</button></td></tr>
+<tr class="fsp"><td colspan="4"></td></tr>
+<tr class="g"><td colspan="4">Reviewed, waiting on others <span class="count">2</span></td></tr>
+<tr class="lrow state-approved">
+<td class="c"><button class="link t">Drop the legacy TOML loader</button><div class="s">#4102<span class="sep">·</span><span class="pills" style="margin:0;vertical-align:-3px"><span class="pill bug dot" title="Bug 3390: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg></span><span class="pill bug dot" title="Bug 3391: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg></span><span class="pill test dot" title="Test: pytest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span></span><span class="sep">·</span>3h ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 5<span class="sep">·</span><span class="ins">+8</span> <span class="del">−310</span></div></td>
+<td class="ci"><span class="badge active">Active</span></td>
+<td class="r"><span class="stack"><span class="av h0">B<i class="v pos">+2</i></span></span></td>
+<td class="a"><button class="btn sm">Submit</button></td></tr>
+<tr class="lrow state-in-progress">
+<td class="c"><button class="link t">Bump build dependencies</button><div class="s">#4088<span class="sep">·</span><span class="pills" style="margin:0;vertical-align:-3px"><span class="pill test none dot" title="Test: none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><span class="pill bug dot" title="Relates-To 4102: opens the tracker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2l1.9 1.9M16 2l-1.9 1.9M9 7a3 3 0 0 1 6 0"/><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M3 13h4M17 13h4M4 20l3-2M20 20l-3-2M4 6l3 2M20 6l-3 2"/></svg></span></span><span class="sep">·</span>2d ago<span class="sep">·</span>Alice<span class="sep">·</span>PS 1<span class="sep">·</span><span class="ins">+61</span> <span class="del">−61</span></div></td>
+<td class="ci"><span class="badge wip">WIP</span></td>
+<td class="r"><span class="stack"><span class="av h0">B</span></span></td>
+<td class="a"><button class="btn sm more">···</button></td></tr>
+</tbody></table></div></div></div></div><p class="mock-note"><b>4 · Semantic pills.</b> Known trailers get a colour and an icon and sit on the subject line: Bug is red and opens the tracker, Test is green (amber when it says none), Depends-On is blue and opens that change; anything else is a grey pill, or folded into "+N other". The value alone, no key, since the icon says which it is. <b>Compact:</b> the same pills shrink to icon-only dots after the number on the meta line, with the value in the tooltip, and appear in full in the detail row. Richest reading and the only one that makes the trailers clickable, but it needs a per-key config (which keys, which colour, what URL a bug number opens), and unknown keys look second-class.</p>
+</div></body></html>

@@ -10,6 +10,8 @@ import { ReviewButton } from './ReviewButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
 import { FlagsMenu } from './FlagsMenu.tsx'
+import { TagsButton } from './TagsButton.tsx'
+import { commitMessage } from '../../../shared/trailers.ts'
 import { api } from '../api.ts'
 import { useNames } from '../names.ts'
 
@@ -88,7 +90,7 @@ function CardHead(props: { view: ChangeView; family?: ChangeFamily; search: stri
 }
 
 /**
- * The cells of one branch: branch, state, CI, number, patch set, reviewers,
+ * The cells of one branch: branch, state, CI, number with its tags, patch set, reviewers,
  * diff, age, buttons, WIP toggle. The card is a subgrid of its list, so every card in a
  * section lines these up in the same columns.
  */
@@ -129,6 +131,7 @@ function BranchRow(props: RowProps) {
         <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title="Open in Gerrit">
           #{c._number}
         </button>
+        <TagsButton message={commitMessage(c)} />
       </span>
       <span className="cell c-ps">
         <span>PS {v.patchSet}</span>
