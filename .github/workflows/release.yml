@@ -181,9 +181,16 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: artifacts/*
+          # Upload one asset at a time. The action otherwise uploads every
+          # file at once; the six ~130 MB installers then share the runner's
+          # bandwidth and each one takes longer than the HTTP client's
+          # five-minute wait for a response, which fails the step with
+          # "Headers Timeout Error" even though the assets land. Uploaded
+          # one at a time, each finishes in a fraction of that.
+          preserve_order: true
           tag_name: ${{ needs.version.outputs.tag }}
           # Creates the tag at this commit when it does not exist yet (push
           # to main). For a tag push the tag already points here.
