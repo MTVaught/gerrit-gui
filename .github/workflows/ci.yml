@@ -3,11 +3,19 @@
 # the merge. Secrets are never used, so the workflow is safe on pull
 # requests from forks.
 #
-# Two jobs:
-#   checks   - typecheck, unit tests, electron-vite build, and the integration
-#              test against a real Gerrit 3.11 in a service container.
-#   package  - electron-builder on Linux, macOS and Windows, unsigned, so a
-#              change that breaks packaging fails here and not in the release.
+# Jobs:
+#   checks       - typecheck, unit tests, electron-vite build, the integration
+#                  test against a real Gerrit 3.11 in a service container, and
+#                  lint of the workflows and release scripts.
+#   version      - the package.json version, so the build runs with an explicit
+#                  version like the Release workflow does. (No pull-request
+#                  suffix: electron-builder turns a prerelease part into an
+#                  update channel and renames the latest*.yml manifests.)
+#   build        - the same reusable Build workflow the Release workflow uses,
+#                  unsigned, on Linux, macOS and Windows.
+#   publish-dry-run - the Release workflow's release job up to the point where
+#                  it would talk to GitHub: download the artifacts, check the
+#                  file set and run the publish script with DRY_RUN=true.
 #
 # GitHub does not run this workflow on a pull request with a merge conflict;
 # merge-check.yml reports that case as a failure.
@@ -37,11 +45,20 @@ jobs:
         ports:
           - 8080:8080
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+
+      # Workflow files and the release scripts are only ever exercised on
+      # main, so a syntax or shell mistake in them must be caught here.
+      - name: Lint workflows
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+      - name: Lint shell scripts
+        run: shellcheck -S warning scripts/*.sh test/*.sh
+      - name: Test version picking
+        run: test/pick-version.test.sh
 
       - run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -72,42 +89,48 @@ jobs:
         env:
           GERRIT_TEST_URL: http://localhost:8080
 
-  package:
-    needs: checks
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            args: --linux
-          - os: macos-latest
-            args: --mac
-          - os: windows-latest
-            args: --win
-    runs-on: ${{ matrix.os }}
-    # Git Bash on Windows too, as in release.yml.
-    defaults:
-      run:
-        shell: bash
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pick.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - id: pick
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - run: corepack enable
+  build:
+    needs: [checks, version]
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      sign: false
 
-      - uses: actions/setup-node@v4
+  publish-dry-run:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      # Same order as the release job in release.yml: checkout first, because
+      # checkout empties the workspace and would delete downloaded artifacts.
+      - uses: actions/checkout@v7
         with:
-          node-version: 22
-          cache: pnpm
+          sparse-checkout: scripts
+          sparse-checkout-cone-mode: false
 
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
 
-      # Unsigned build. CSC_IDENTITY_AUTO_DISCOVERY=false stops electron-builder
-      # from looking for a signing identity on the macOS runner; with no
-      # Apple credentials in the environment it also skips notarization.
-      - name: Package
-        run: pnpm dist ${{ matrix.args }} --publish never
+      - name: Check release files
+        run: scripts/check-release-assets.sh --exact '${{ needs.version.outputs.version }}' artifacts
+
+      - name: Publish release (dry run)
+        run: scripts/publish-release.sh
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-
-      - name: List artifacts
-        run: ls -la dist/
+          DRY_RUN: 'true'
+          GH_TOKEN: none
+          GH_REPO: ${{ github.repository }}
+          TAG: v${{ needs.version.outputs.version }}
+          TARGET: ${{ github.sha }}
+          ASSETS_DIR: artifacts
+          KEEP_DRAFT: 'true'

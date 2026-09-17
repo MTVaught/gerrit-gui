@@ -372,9 +372,14 @@ To see if the network stack of the application trusts a server, run
 
 Every pull request runs the "CI" workflow in GitHub Actions. It runs the
 typecheck, the unit tests and the build, then the integration test against a
-Gerrit 3.11 container, and last an unsigned packaging on Linux, macOS and
-Windows. The workflow uses no secrets, so it also runs on pull requests from
-forks.
+Gerrit 3.11 container, and lints the workflow files and the release scripts.
+It then runs the same "Build" workflow the release uses, unsigned, on Linux,
+macOS and Windows, checks that every release file is there (installers,
+`latest*.yml` manifests, macOS `.zip` archives and `.blockmap` files), and
+runs the publish script as a dry run against the downloaded artifacts. So a
+change that breaks packaging, drops a release file or breaks the release
+job's wiring fails on the pull request, not after the merge. The workflow
+uses no secrets, so it also runs on pull requests from forks.
 
 GitHub runs no CI on a pull request that has a merge conflict; the checks
 just do not appear. The "Merge check" workflow fills that gap. It runs when
@@ -387,10 +392,13 @@ runs code from the pull request.
 
 Every push to `main` (a merged pull request) runs the "Release" workflow in
 GitHub Actions. The workflow builds the AppImage, the macOS DMG for Intel and
-Apple silicon, and the Windows installer, creates a `v` tag at that commit
-and attaches the installers to a GitHub release for it. The version is the
-one in `package.json` when no tag for it exists yet; otherwise the workflow
-bumps the patch number of the newest `vX.Y.Z` tag. To release a new minor or
+Apple silicon, and the Windows installer, uploads them one at a time to a
+draft release, checks that every file landed, and publishes it; GitHub
+creates the `v` tag at that commit on publish. A failed run leaves the draft
+behind, and the next run reuses it. The version comes from
+`scripts/pick-version.sh` (tested by `test/pick-version.test.sh`): the one in
+`package.json` when it is newer than every `vX.Y.Z` tag; otherwise the
+workflow bumps the patch number of the newest tag. To release a new minor or
 major version, raise the version in `package.json` in the pull request.
 
 A push of a tag that starts with `v` (for example `v0.2.0`) releases that
