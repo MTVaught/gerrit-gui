@@ -159,7 +159,7 @@ function LedgerRow(
   // The line is clipped at the right, so the age, which carries the sort order, comes early and the diff last.
   const age = ageCell(v, props.sort, true)
   const sub: ReactNode[] = [`#${id}`]
-  if (commitMessage(c) !== undefined) sub.push(<TagsButton message={commitMessage(c)} small />)
+  if (commitMessage(c) !== undefined) sub.push(<TagsButton message={commitMessage(c)} state={v.state} small />)
   sub.push(<span title={age.title}>{age.text}</span>)
   if (!v.isMine) sub.push(displayName(c.owner))
   sub.push(`PS ${v.patchSet}`)

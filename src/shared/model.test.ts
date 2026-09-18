@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, pastDraft, type ViewFilter } from './model.ts'
 import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -783,6 +783,12 @@ test('urgency: fix first, then look, then iterate, then mark, then wait on the m
     [...states].sort((a, b) => urgency(a) - urgency(b)),
     ['needs-changes', 'needs-review', 'in-progress', 'approved', 'ready-to-merge', 'merged'],
   )
+})
+
+test('pastDraft: a change still being worked on is not held to its tags; one up for review or beyond is', () => {
+  assert.equal(pastDraft('in-progress'), false)
+  assert.equal(pastDraft('iterating'), false)
+  for (const s of ['needs-review', 'needs-changes', 'approved', 'ready-to-merge', 'merged', 'abandoned'] as const) assert.equal(pastDraft(s), true, s)
 })
 
 // ---- Merge requests: the author names one person with a merger: hashtag.

@@ -987,6 +987,14 @@ export function urgency(state: ReviewState): number {
   return URGENCY.indexOf(state)
 }
 
+/** The states before a review is asked for: the owner is still working on the change. */
+const DRAFT_STATES: readonly ReviewState[] = ['in-progress', 'iterating']
+
+/** Whether the change has reached Needs Review or gone past it, so its commit message is expected to be in order. */
+export function pastDraft(state: ReviewState): boolean {
+  return !DRAFT_STATES.includes(state)
+}
+
 /**
  * How many members of a family are in each state, most urgent state first.
  * Shown on the card header, since the section only says where the lead is.
