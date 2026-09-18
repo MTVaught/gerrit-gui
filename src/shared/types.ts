@@ -198,6 +198,8 @@ export interface ChangeView {
   requestedMerger: string | null
   /** `requestedMerger` is the signed-in user. */
   mergeRequestedFromMe: boolean
+  /** The Slack conversation linked with the `slack:` hashtag, or null. */
+  slackUrl: string | null
   /**
    * This user may vote +2, which in this workflow is the merger's act:
    * reviewers only +1, and the merger's +2 and submit happen together.

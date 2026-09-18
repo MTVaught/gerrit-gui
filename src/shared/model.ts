@@ -11,7 +11,7 @@ import type {
   ReviewerStatus,
   TabId,
 } from './types.ts'
-import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, READY_TO_MERGE_KEY, VERIFIED } from './constants.ts'
+import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, READY_TO_MERGE_KEY, SLACK_TAG_PREFIX, VERIFIED } from './constants.ts'
 
 export function isBot(a: AccountInfo): boolean {
   return a.tags?.includes('SERVICE_USER') ?? false
@@ -150,6 +150,44 @@ export function primaryReviewerKeys(change: ChangeInfo): string[] {
     if (!out.includes(k)) out.push(k)
   }
   return out
+}
+
+/** The `slack:` hashtags on a change, as written; usually none or one. */
+export function slackTags(change: ChangeInfo): string[] {
+  return (change.hashtags ?? []).filter((t) => t.startsWith(SLACK_TAG_PREFIX) && t.length > SLACK_TAG_PREFIX.length)
+}
+
+/**
+ * A link to a Slack conversation, as "Copy link" on a message gives it: an
+ * https URL on slack.com or a workspace under it. Trimmed, or null when the
+ * text is anything else, so a tag written by hand cannot open another site.
+ */
+export function slackUrl(text: string): string | null {
+  const s = text.trim()
+  let u: URL
+  try {
+    u = new URL(s)
+  } catch {
+    return null
+  }
+  if (u.protocol !== 'https:') return null
+  const host = u.hostname.toLowerCase()
+  if (host !== 'slack.com' && !host.endsWith('.slack.com')) return null
+  return s
+}
+
+/** The tag for one conversation: `slack:https://…`. */
+export function slackTag(url: string): string {
+  return SLACK_TAG_PREFIX + url.trim()
+}
+
+/** The Slack conversation linked to the change: the first `slack:` tag that holds a Slack link, or null. */
+export function linkedSlackUrl(change: ChangeInfo): string | null {
+  for (const t of slackTags(change)) {
+    const url = slackUrl(t.slice(SLACK_TAG_PREFIX.length))
+    if (url) return url
+  }
+  return null
 }
 
 /** The tags on a change that name this account, by username or email: what a demotion removes. */
@@ -387,6 +425,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     staleReadyToMerge: open && hasReadyTag && state !== 'ready-to-merge',
     requestedMerger: merger,
     mergeRequestedFromMe: merger !== null && selfKeys.includes(merger),
+    slackUrl: linkedSlackUrl(change),
     canMerge: open && maxPermittedVote(change) >= 2,
   }
 }

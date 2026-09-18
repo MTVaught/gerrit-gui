@@ -96,3 +96,10 @@ export const TagIcon = () => (
     <circle cx="7.5" cy="8.5" r="1.2" fill="currentColor" />
   </svg>
 )
+
+/** A speech bubble: the Slack conversation linked to a change. */
+export const ChatIcon = () => (
+  <svg {...common} width={13} height={13}>
+    <path d="M21 12a8 8 0 0 1-8 8H8l-5 3 1.5-4.5A8 8 0 1 1 21 12z" />
+  </svg>
+)

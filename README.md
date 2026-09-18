@@ -110,6 +110,7 @@ the same votes, hashtags and WIP flags.
 | Ready to Merge | The state is Approved, the change has the hashtag `ready-to-merge`, and the custom value `ready-to-merge-ps` equals the current patch set number. A tag for an earlier patch set (or without the value, from an older version) is shown as stale and the change stays Approved. |
 | Ready to Merge button | Enabled when the state is Approved, the change is not WIP, and the `Verified` label has a +1 (or higher) vote and no negative vote on the current patch set. The application adds the hashtags `ready-to-merge` and `merger:<username>` in one request, then sets the custom value `ready-to-merge-ps` to the current patch set number. The username is the Gerrit username of the person asked, in lower case; the email address for an account with no username. A change has one `merger:` tag; "Change merger" replaces it. |
 | Asked of you | The change is Ready to Merge and the `merger:` tag names your username or email address. |
+| Slack thread | The change has the hashtag `slack:<url>`, where `<url>` is an https link on `slack.com` or a workspace under it. The board shows it as "Slack ↗" and opens it in the browser. One per change; a tag whose value is not a Slack link is ignored. |
 | Tagged without a merger | The change is Ready to Merge and has no `merger:` tag. Only an older version of the application makes this. Every user with +2 sees it. |
 | Merge | Done in the Gerrit web UI: the merger votes +2 and submits there. The application only lists the change. |
 
@@ -193,6 +194,28 @@ change on one branch is a card with one row, so both read the same way.
 
 `docs/mockups/change-id-groups/` has five mockups of ways to show a group.
 The application uses mockup 3.
+
+## Slack threads
+
+A review sometimes has a conversation on Slack. To keep it with the change,
+link it: point at the card, and a dashed "+ Slack" tab hangs from its top
+edge at the right; it opens a panel with one field. Paste the link from "Copy link" on
+the Slack message. The application stores it as the hashtag `slack:<url>` on
+the change, so Gerrit shows it too, as a hashtag chip on the change page.
+The tab then reads "Slack ↗" and opens the conversation in the
+browser; its "×", shown on hover, removes the tag. In the compact window the
+same tab hangs from the top edge of the line, over the right end of the
+subject, and opens the conversation without opening the line; the detail
+row has the link as a pill. The owner and every reviewer of an open change
+may link or unlink; a change has one link, a new one replaces it. Only https links on `slack.com` or a workspace under it are accepted, so
+a tag written by hand cannot open another site.
+
+![Slack thread on a card](docs/screenshots/slack-tab.png)
+
+![Slack thread in the compact window](docs/screenshots/slack-tab-compact.png)
+
+`docs/mockups/slack-link/` has five mockups of ways to show the link, and a
+screenshot of the tag in the Gerrit web UI. The application uses mockup 7.
 
 ## Settings
 

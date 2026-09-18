@@ -8,6 +8,7 @@ import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
 import { ForkIcon } from './Icons.tsx'
 import { ReviewButton } from './ReviewButton.tsx'
+import { SlackLink } from './SlackLink.tsx'
 import { actionClass, changeActions } from './actions.ts'
 import type { Section } from './Board.tsx'
 import { api } from '../api.ts'
@@ -177,6 +178,8 @@ function LedgerRow(
     <>
       <tr className={`lrow state-${v.state}${expanded ? ' open' : ''}${mem}`}>
         <td className="c" onClick={toggle}>
+          {/* The conversation's tab hangs from the top edge of the line, over the right end of the subject. */}
+          <SlackLink view={v} onAct={props.onAct} variant="tab" />
           {props.member ? (
             // A member line is titled by its branch; the title opens that branch's change, the rest of the cell toggles the details.
             <button
@@ -245,6 +248,7 @@ function LedgerRow(
               {open && !props.showCi && <CiBadge wip={v.wip} />}
               {open && v.isPrivate && <PrivateBadge />}
               {v.staleReadyToMerge && <span className="badge stale">ready-to-merge tag is stale</span>}
+              <SlackLink view={v} onAct={props.onAct} variant="pill" />
               <span className="muted">
                 {c.project} · {c.branch}
                 {open && v.reviewRequested && ` · review requested for PS ${v.patchSet}`}

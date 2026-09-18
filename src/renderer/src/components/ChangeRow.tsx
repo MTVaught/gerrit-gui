@@ -12,6 +12,7 @@ import { MergerPicker } from './MergerPicker.tsx'
 import { FlagsMenu } from './FlagsMenu.tsx'
 import { TagsButton } from './TagsButton.tsx'
 import { commitMessage } from '../../../shared/trailers.ts'
+import { SlackLink } from './SlackLink.tsx'
 import { api } from '../api.ts'
 import { useNames } from '../names.ts'
 
@@ -38,6 +39,7 @@ export function ChangeRow(props: RowProps) {
   const { view: v } = props
   return (
     <li className={`change state-${v.state}`}>
+      <SlackLink view={v} onAct={props.onAct} variant="tab" />
       <CardHead view={v} search={props.search} />
       <BranchRow {...props} />
     </li>
@@ -54,6 +56,8 @@ export function FamilyCard(props: { family: ChangeFamily; lead: ChangeView; self
   const { family: f, lead } = props
   return (
     <li className={`change family state-${lead.state}`}>
+      {/* A family keeps one conversation, on its lead change; the tag is on that change alone. */}
+      <SlackLink view={lead} onAct={props.onAct} variant="tab" />
       <CardHead view={lead} family={f} search={props.search} />
       {f.members.map((v) => (
         <BranchRow key={v.change.id} view={v} self={props.self} onAct={props.onAct} sort={props.sort} search={props.search} />

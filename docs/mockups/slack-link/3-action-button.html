@@ -1,0 +1,44 @@
+<!doctype html><html><head><meta charset="utf-8"><title>3 Button among the actions</title><link rel="stylesheet" href="base.css"><style>
+.app{min-height:0}
+.menu{position:absolute}.picker-wrap{position:relative}.menu.picker{top:calc(100% + 4px);left:0}
+.mock-h{margin:18px 16px 0;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.mock-compact{width:460px;margin:8px 16px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 2px 12px #0002}
+.mock-note{margin:18px 16px 4px;padding:8px 10px;border:1px dashed var(--border);border-radius:6px;font-size:12px;color:var(--muted)}
+.chip .chip-x,.badge .chip-x{opacity:.7;max-width:1.4em;padding-left:2px}
+.menu.flags{top:calc(100% + 4px);right:0;left:auto}.flags-menu{position:relative}.board{padding-bottom:110px}</style></head><body>
+<div class="mock-h">Full window</div>
+<div class="app"><header class="topbar"><nav class="tabs"><button class="tab">To review <span class="count">0</span></button><button class="tab">Reviewing <span class="count">2</span></button><button class="tab active">Mine <span class="count">4</span></button><button class="tab">Merged <span class="count">5</span></button></nav><div class="topbar-right"><span class="btn view-btn">View <span class="arrow">▾</span></span><span class="btn icon">⟳</span><span class="btn icon">⤡</span><span class="btn icon">⚙</span></div></header><main class="board"><div class="sections"><section class="group"><h3>Out for review <span class="count">2</span></h3><ul class="changes"><li class="change state-needs-review">
+  <div class="change-head"><button class="link subject">Fix token refresh race in session store</button><span class="muted small origin">platform/core · you</span></div>
+  <div class="change-row">
+    <span class="cell c-branch"><button class="link"><code>master</code></button></span>
+    <span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+    <span class="cell c-ci"><span class="badge active">Active</span></span>
+    <span class="cell c-num"><button class="link">#48</button></span>
+    <span class="cell c-ps"><span>PS 3</span><span class="req">asked</span></span>
+    <div class="cell c-reviewers"><div class="reviewers"><span class="chip pos">Bob <b>+1</b></span><span class="chip pending">Carol</span><span class="trailing"><button class="chip add">+</button></span></div></div>
+    <span class="cell c-diff"><span><span class="ins">+42</span> <span class="del">−7</span></span></span>
+    <span class="cell c-updated muted">20m ago</span>
+    <div class="cell c-actions actions"><button class="btn" title="https://acme.slack.com/archives/C04ABCD1234/p1726500000123456"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H8l-5 3 1.5-4.5A8 8 0 1 1 21 12z"/></svg> Slack ↗</button><button class="btn">Withdraw request</button></div>
+    <div class="cell c-wip actions"><div class="flags-menu"><button class="btn subtle">Mark WIP<span class="arrow">▾</span></button></div></div>
+  </div>
+</li><li class="change state-needs-review">
+  <div class="change-head"><button class="link subject">Bump protobuf to 4.25.3</button><span class="muted small origin">platform/core · you</span></div>
+  <div class="change-row">
+    <span class="cell c-branch"><button class="link"><code>master</code></button></span>
+    <span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+    <span class="cell c-ci"><span class="badge active">Active</span></span>
+    <span class="cell c-num"><button class="link">#51</button></span>
+    <span class="cell c-ps"><span>PS 1</span><span class="req">asked</span></span>
+    <div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">Bob</span><span class="chip pending">Dave</span><span class="trailing"><button class="chip add">+</button></span></div></div>
+    <span class="cell c-diff"><span><span class="ins">+3</span> <span class="del">−3</span></span></span>
+    <span class="cell c-updated muted">2h ago</span>
+    <div class="cell c-actions actions"><button class="btn">Withdraw request</button></div>
+    <div class="cell c-wip actions"><div class="flags-menu"><button class="btn subtle" aria-expanded="true">Mark WIP<span class="arrow">▾</span></button><div class="menu flags" role="menu"><button class="menu-item"><span>Mark WIP</span><span class="muted">stops CI</span></button><button class="menu-item"><span>Make private</span><span class="muted">hides it from others</span></button><hr><button class="menu-item"><span>Link Slack thread…</span><span class="muted">adds a slack: tag</span></button></div></div></div>
+  </div>
+</li></ul></section></div></main></div>
+<div class="mock-h">Compact window</div>
+<div class="mock-compact"><div class="app compact"><header class="topbar"><nav class="tabs"><button class="tab">To review <span class="count">0</span></button><button class="tab">Reviewing <span class="count">2</span></button><button class="tab active">Mine <span class="count">4</span></button><button class="tab">Merged <span class="count">5</span></button></nav><div class="topbar-right"><span class="btn view-btn">⚟ <span class="arrow">▾</span></span><span class="btn icon">⟳</span><span class="btn icon on">⤢</span><span class="btn icon">⚙</span></div></header><main class="board"><table class="ledger"><colgroup><col><col class="ci"><col class="rv"><col class="ac"></colgroup><thead><tr><th>Change</th><th>CI</th><th>Reviewers</th><th></th></tr></thead><tbody><tr class="g"><td colspan="4">Out for review <span class="count">2</span></td></tr><tr class="lrow state-needs-review open"><td class="c"><button class="link t"><span class="txt">Fix token refresh race in session store</span></button><div class="s">#48<span class="sep">·</span>20m ago<span class="sep">·</span>PS 3<span class="sep">·</span><span class="ins">+42</span> <span class="del">−7</span></div></td><td class="ci"><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av h0">B<i class="v pos">+1</i></span><span class="av h3">C<i class="v pend"></i></span></span></td><td class="a"><button class="btn sm more">···</button></td></tr>
+<tr class="ldetail"><td colspan="4"><div class="ldet-badges"><span class="badge needs-review">Needs Review</span><span class="muted">platform/core · master · review requested for PS 3</span></div><div class="reviewers"><span class="chip pos">Bob <b>+1</b></span><span class="chip pending">Carol</span><span class="trailing"><button class="chip add">+</button></span></div><div class="ldet-actions"><button class="btn sm subtle">Mark WIP</button><button class="btn sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H8l-5 3 1.5-4.5A8 8 0 1 1 21 12z"/></svg> Slack ↗</button><button class="btn sm">Withdraw request</button><button class="btn sm">Open in Gerrit ↗</button></div></td></tr><tr class="lrow state-needs-review open"><td class="c"><button class="link t"><span class="txt">Bump protobuf to 4.25.3</span></button><div class="s">#51<span class="sep">·</span>2h ago<span class="sep">·</span>PS 1<span class="sep">·</span><span class="ins">+3</span> <span class="del">−3</span></div></td><td class="ci"><span class="badge active">Active</span></td><td class="r"><span class="stack"><span class="av h0">B<i class="v pend"></i></span><span class="av h4">D<i class="v pend"></i></span></span></td><td class="a"><button class="btn sm more">···</button></td></tr>
+<tr class="ldetail"><td colspan="4"><div class="ldet-badges"><span class="badge needs-review">Needs Review</span><span class="muted">platform/core · master · review requested for PS 1</span></div><div class="reviewers"><span class="chip pending">Bob</span><span class="chip pending">Dave</span><span class="trailing"><button class="chip add">+</button></span></div><div class="ldet-actions"><button class="btn sm subtle">Mark WIP</button><button class="btn sm">Link Slack thread…</button><button class="btn sm">Withdraw request</button><button class="btn sm">Open in Gerrit ↗</button></div></td></tr></tbody></table></main></div></div>
+<div class="mock-note">Design 3 · A button "Slack ↗" among the actions of the row, in the full window and in the detail row of the compact window. Nothing is added to a change without a conversation: the owner links one from the WIP menu in the last column ("Link Slack thread…"), and in the compact detail row from a plain button. The line itself does not say whether a conversation exists, so the reviewer has to open the line to find out.</div>
+</body></html>

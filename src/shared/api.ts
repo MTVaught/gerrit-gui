@@ -29,6 +29,8 @@ export interface Api {
   openChange(link: ChangeLink): Promise<void>
   /** The same URL as a string, for copying. */
   changeUrl(link: ChangeLink): Promise<string>
+  /** Open an https link (a Slack conversation) in the browser. */
+  openUrl(url: string): Promise<void>
   getUi(): Promise<UiState>
   setCompact(on: boolean): Promise<void>
   /** Tray/dock badge: what waits on me, by category, plus pre-rendered images for the trays that need them. */

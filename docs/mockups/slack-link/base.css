@@ -158,7 +158,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .change.state-needs-review { border-left-color: var(--pending); }
 .change.state-needs-changes { border-left-color: var(--neg); }
 .change.state-approved, .change.state-ready-to-merge { border-left-color: var(--pos); }
-.change.state-in-progress, .change.state-iterating { border-left-color: var(--muted); }
+.change.state-in-progress { border-left-color: var(--muted); }
 .change-head { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 2px; }
 .subject { font-weight: 600; font-size: 15px; }
 .origin { white-space: nowrap; }
@@ -207,21 +207,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .chip.add:hover, .chip.more:hover { color: var(--fg); }
 .chip.add { padding: 2px 7px; }
 .chip.ghost { position: absolute; visibility: hidden; pointer-events: none; }
-/*
- * The Slack conversation. On a card it is a tab hanging from the top edge, at
- * the right, out of every column: linked, an accent-bordered tab that opens
- * the conversation. Without a link, a dashed "+ Slack" tab opens the panel;
- * it shows only while the card is hovered or has focus, so a board of
- * changes without conversations stays clean. The title line keeps clear of
- * the tab. In the compact detail row the same thing is a pill among the badges.
- */
-.tabmark { position: absolute; top: -1px; right: 14px; display: inline-flex; gap: 4px; align-items: center; padding: 1px 8px 2px; border: 1px solid var(--accent); border-top: none; border-radius: 0 0 6px 6px; background: var(--pending-bg); color: var(--accent); font-size: 11px; line-height: 1.4; font-weight: 500; }
-.tabmark .link { display: inline-flex; gap: 4px; align-items: center; color: inherit; }
-.tabmark.add { color: var(--muted); border: 1px dashed var(--border); border-top: none; background: var(--panel); font-weight: 400; opacity: 0; transition: opacity 0.12s; }
-.change:hover > .tabmark.add, .change:focus-within > .tabmark.add, .tabmark.add:focus-within, .tabmark.add:has(.link[aria-expanded='true']) { opacity: 1; }
-.tabmark.add .link[aria-expanded='true'], .tabmark.add:hover { color: var(--fg); }
-.tabmark:hover .chip-x, .tabmark:focus-within .chip-x { opacity: 0.7; max-width: 1.4em; padding-left: 2px; }
-.change:has(> .tabmark) > .change-head { padding-right: 120px; }
+/* The Slack conversation: a pill in the card head that opens the link; its remove button shows on hover, like a chip's. */
 .badge.slack { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--fg); padding: 2px 8px; }
 .badge.slack .link { display: inline-flex; gap: 4px; align-items: center; color: inherit; }
 .badge.slack .link svg { color: var(--accent); }
@@ -229,35 +215,14 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .slack-add .link { white-space: nowrap; }
 .slack-add .link[aria-expanded='true'] { color: var(--fg); }
 .menu.picker.slack .error { margin: 6px 4px 0; }
-/* On a compact line the tab is smaller, says only "Slack" (or "+"), and the subject stops short of it. */
-.ledger td.c { position: relative; }
-.ledger tr:hover > td.c > .tabmark.add, .ledger tr:focus-within > td.c > .tabmark.add { opacity: 1; }
-.ledger .tabmark { top: 0; right: 0; padding: 0 6px 1px; font-size: 10px; }
-.ledger .tabmark .long { display: none; }
-.ledger td.c:has(> .tabmark) > .t { padding-right: 58px; }
-.ledger td.c:has(> .tabmark.add) > .t { padding-right: 30px; }
+/* In the compact sub-line the conversation is a bubble that opens it without opening the line. */
+.ledger .slack-mark { display: inline-flex; vertical-align: -2px; color: var(--accent); }
+.ledger .slack-mark svg { width: 12px; height: 12px; }
 /* Reviewers outside the team: dashed outline, and only a tint for a vote, so they read as advisory. */
 .chip.tagonly { border: 1px dotted currentColor; }
 .chip.ext { border: 1px dashed var(--muted); color: var(--muted); background: none; }
 .chip.ext.pos { color: var(--pos); border-color: var(--pos); }
 .chip.ext.neg { color: var(--neg); border-color: var(--neg); }
-/*
- * Commit message tags: a tag icon with the count of trailers beside the
- * change number, red with "no tags" when the message has none. Click opens
- * the message body and the trailers as written, the noise ones faded.
- */
-.tags { display: inline-flex; }
-.tagbtn { font: inherit; font-size: 11px; display: inline-flex; gap: 3px; align-items: center; padding: 1px 6px 1px 5px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; white-space: nowrap; }
-.tagbtn:hover, .tagbtn.open { color: var(--fg); border-color: var(--muted); background: var(--panel); }
-.tagbtn.none, .tagbtn.none:hover, .tagbtn.none.open { color: #fff; border-color: var(--neg); background: var(--neg); font-weight: 600; }
-.tagbtn.sm { padding: 0 5px 0 4px; font-size: 10.5px; vertical-align: 1px; }
-.menu.tags-pop { width: 520px; max-width: calc(100vw - 8px); padding: 4px; }
-.menu.tags-pop.sm { width: 380px; }
-.footer-block { padding: 8px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; color: var(--fg); }
-.menu.tags-pop.sm .footer-block { font-size: 11px; }
-.footer-block .k { color: var(--muted); }
-.footer-block .noise { color: var(--muted); opacity: 0.6; }
-.footer-block .body { color: var(--muted); margin-bottom: 6px; }
 /* View menu: search, author filter and sort in one panel under a top bar button. */
 .view { position: relative; }
 .btn.view-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 13px; }
@@ -406,7 +371,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .ledger tr.state-needs-review td.c { border-left-color: var(--pending); }
 .ledger tr.state-needs-changes td.c { border-left-color: var(--neg); }
 .ledger tr.state-approved td.c, .ledger tr.state-ready-to-merge td.c { border-left-color: var(--pos); }
-.ledger tr.state-in-progress td.c, .ledger tr.state-iterating td.c { border-left-color: var(--muted); }
+.ledger tr.state-in-progress td.c { border-left-color: var(--muted); }
 .ledger .t { display: block; width: 100%; font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ledger .t:hover { text-decoration: none; color: var(--accent); }
 .ledger .s { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
