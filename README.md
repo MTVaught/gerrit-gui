@@ -110,7 +110,7 @@ the same votes, hashtags and WIP flags.
 | Ready to Merge | The state is Approved, the change has the hashtag `ready-to-merge`, and the custom value `ready-to-merge-ps` equals the current patch set number. A tag for an earlier patch set (or without the value, from an older version) is shown as stale and the change stays Approved. |
 | Ready to Merge button | Enabled when the state is Approved, the change is not WIP, and the `Verified` label has a +1 (or higher) vote and no negative vote on the current patch set. The application adds the hashtags `ready-to-merge` and `merger:<username>` in one request, then sets the custom value `ready-to-merge-ps` to the current patch set number. The username is the Gerrit username of the person asked, in lower case; the email address for an account with no username. A change has one `merger:` tag; "Change merger" replaces it. |
 | Asked of you | The change is Ready to Merge and the `merger:` tag names your username or email address. |
-| Slack thread | The change has the hashtag `slack:<url>`, where `<url>` is an https link on `slack.com` or a workspace under it. The board shows it as "Slack ↗" and opens it in the browser. One per change; a tag whose value is not a Slack link is ignored. |
+| Slack thread | The change has the hashtag `slack:<url>`, where `<url>` is an https link on `slack.com` or a workspace under it. The board shows it as "Slack ↗" and opens it in the browser, or in the Slack app when Settings knows the workspace. One per change; a tag whose value is not a Slack link is ignored. |
 | Tagged without a merger | The change is Ready to Merge and has no `merger:` tag. Only an older version of the application makes this. Every user with +2 sees it. |
 | Merge | Done in the Gerrit web UI: the merger votes +2 and submits there. The application only lists the change. |
 
@@ -202,13 +202,26 @@ link it: point at the card, and a dashed "+ Slack" tab hangs from its top
 edge at the right; it opens a panel with one field. Paste the link from "Copy link" on
 the Slack message. The application stores it as the hashtag `slack:<url>` on
 the change, so Gerrit shows it too, as a hashtag chip on the change page.
-The tab then reads "Slack ↗" and opens the conversation in the
-browser; its "×", shown on hover, removes the tag. In the compact window the
+The tab then reads "Slack ↗" and opens the conversation; its "×", shown on
+hover, removes the tag. In the compact window the
 same tab hangs from the top edge of the line, over the right end of the
 subject, and opens the conversation without opening the line; the detail
 row has the link as a pill. The owner and every reviewer of an open change
 may link or unlink; a change has one link, a new one replaces it. Only https links on `slack.com` or a workspace under it are accepted, so
 a tag written by hand cannot open another site.
+
+The conversation opens in the browser, unless "Slack" in Settings lists the
+workspace. Slack's "Copy link" names the workspace by its subdomain
+(`acme` in `acme.slack.com`), but the Slack app opens a message only by the
+workspace's team ID (`T0123ABCD`), which the link does not carry; the
+settings page says where to read it off. With the row present, the tab
+turns the https link into `slack://channel?team=…&id=…&message=…` (with the
+`thread_ts` of a reply) and opens that, so the Slack app comes to the
+front on the message. The change keeps the https link, so Gerrit and
+anyone without the setting open it in a browser; and so does the board when
+the workspace is not listed, the link is not to a channel or message, or
+the Slack app cannot be opened. The browser build of the board always uses
+the browser.
 
 ![Slack thread on a card](docs/screenshots/slack-tab.png)
 
@@ -221,8 +234,8 @@ screenshot of the tag in the Gerrit web UI. The application uses mockup 7.
 
 The gear at the right of the tab row opens the settings in place of the
 board, like a tab; any tab click closes them. The page has one section per
-entry in its left column (Team, Mergers, Scope, App icon, Window, Menu bar,
-About), and "Connection" at the bottom, which opens the connection window.
+entry in its left column (Team, Mergers, Scope, Slack, App icon, Window,
+Menu bar, About), and "Connection" at the bottom, which opens the connection window.
 There is no Save button: every control is written as soon as it changes, and
 the board follows at once. A "Saved" or "Saving…" pill in the section
 header shows the state of the last write. Text fields are written when they

@@ -29,7 +29,7 @@ export interface Api {
   openChange(link: ChangeLink): Promise<void>
   /** The same URL as a string, for copying. */
   changeUrl(link: ChangeLink): Promise<string>
-  /** Open an https link (a Slack conversation) in the browser. */
+  /** Open an https link (a Slack conversation) in the browser, or in the Slack app when Settings knows the workspace. */
   openUrl(url: string): Promise<void>
   getUi(): Promise<UiState>
   setCompact(on: boolean): Promise<void>

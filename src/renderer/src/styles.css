@@ -341,6 +341,12 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .merger-rule .team-editor { margin-top: 8px; }
 .merger-rule .chip.member { background: var(--bg); }
 .merger-rule .team-add input { background: var(--bg); }
+/* Slack workspaces in Settings: subdomain and team ID side by side; the ID takes less room. */
+.slack-workspaces .merger-project input:nth-child(2) { flex: 0 1 200px; }
+.slack-workspaces .error { margin: 6px 0 0; }
+.settings ol.steps { padding-left: 20px; }
+.settings ol.steps li { margin: 4px 0; }
+.settings h3 { font-size: 13px; margin: 16px 0 4px; }
 /* Reviewer's split button: main part opens the diff since their last review, caret lists other views. */
 .split { display: inline-flex; }
 .btn.split-main { flex: 1; border-radius: 6px 0 0 6px; text-align: left; }

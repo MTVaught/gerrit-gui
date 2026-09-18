@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { MergerRule, SettingsInput, SettingsStatus } from '../../../shared/types.ts'
-import { mergersReflect } from '../../../shared/model.ts'
+import type { MergerRule, SettingsInput, SettingsStatus, SlackWorkspace } from '../../../shared/types.ts'
+import { isSlackTeamId, mergersReflect, slackWorkspacesReflect } from '../../../shared/model.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
 import { ago } from '../time.ts'
@@ -9,12 +9,13 @@ import { TeamEditor } from './TeamEditor.tsx'
 import { MergersEditor } from './MergersEditor.tsx'
 import { PlugIcon } from './Icons.tsx'
 
-type SectionId = 'team' | 'mergers' | 'scope' | 'app-icon' | 'window' | 'menu-bar' | 'about'
+type SectionId = 'team' | 'mergers' | 'scope' | 'slack' | 'app-icon' | 'window' | 'menu-bar' | 'about'
 
 const SECTIONS: { id: SectionId; label: string; desktopOnly?: boolean }[] = [
   { id: 'team', label: 'Team' },
   { id: 'mergers', label: 'Mergers' },
   { id: 'scope', label: 'Scope' },
+  { id: 'slack', label: 'Slack', desktopOnly: true },
   { id: 'app-icon', label: 'App icon', desktopOnly: true },
   { id: 'window', label: 'Window', desktopOnly: true },
   { id: 'menu-bar', label: 'Menu bar', desktopOnly: true },
@@ -131,6 +132,36 @@ export function SettingsPanel(props: {
               Gerrit cannot search for WIP changes by reviewer, so the app scans open WIP changes and keeps the ones you are
               on. Leave empty on a small server. Comma-separated; a trailing * matches a prefix. A change here reloads the
               board.
+            </p>
+          </>
+        )}
+        {section === 'slack' && (
+          <>
+            <p className="muted">
+              A Slack link on a change opens in the browser unless its workspace is listed here. Slack's "Copy link" names
+              the workspace by its subdomain, but the Slack app needs the workspace's <b>team ID</b>, which the link does
+              not carry. One row per workspace; a link to a workspace not listed keeps opening in the browser.
+            </p>
+            <SlackWorkspacesSection rows={s.slackWorkspaces} onSave={(slackWorkspaces) => void apply({ slackWorkspaces })} />
+            <h3>Finding the team ID</h3>
+            <ol className="muted small steps">
+              <li>
+                Open the workspace in a web browser at <code>app.slack.com</code>, or in the Slack app click the workspace name
+                at the top left and choose <b>Tools &amp; settings</b> then <b>Workspace settings</b>, which opens the browser.
+              </li>
+              <li>
+                Look at the address bar. The client shows <code>app.slack.com/client/T0123ABCD/C…</code>; the first segment,
+                starting with <code>T</code>, is the team ID. The settings pages carry the same ID in their address.
+              </li>
+              <li>
+                Enter it next to the subdomain, the part before <code>.slack.com</code> in the workspace's links: for{' '}
+                <code>https://acme.slack.com/archives/…</code> the subdomain is <code>acme</code>.
+              </li>
+            </ol>
+            <p className="muted small">
+              The Slack app must be installed and signed in to that workspace. If it cannot open the link, the browser
+              gets it as before. The change itself keeps the https link, so Gerrit and anyone without this setting still
+              open the thread in a browser.
             </p>
           </>
         )}
@@ -271,6 +302,63 @@ function MergersSection(props: { rules: MergerRule[]; onSave: (rules: MergerRule
     [],
   )
   return <MergersEditor rules={rules} onChange={change} canSearch={props.canSearch} />
+}
+
+/** The Slack workspaces list: rows of text fields, written a moment after the last keystroke, as the mergers list. */
+function SlackWorkspacesSection(props: { rows: SlackWorkspace[]; onSave: (rows: SlackWorkspace[]) => void }) {
+  const [rows, setRows] = useState(props.rows)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dirty = useRef(false)
+  useEffect(() => {
+    if (dirty.current) return
+    setRows((cur) => (slackWorkspacesReflect(cur, props.rows) ? cur : props.rows))
+  }, [props.rows])
+  const change = (next: SlackWorkspace[]) => {
+    setRows(next)
+    dirty.current = true
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => {
+      dirty.current = false
+      props.onSave(next)
+    }, 400)
+  }
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    [],
+  )
+  const update = (i: number, patch: Partial<SlackWorkspace>) => change(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)))
+  return (
+    <div className="mergers-editor slack-workspaces">
+      {rows.length === 0 && <p className="muted small">No workspaces yet: Slack links open in the browser.</p>}
+      {rows.map((r, i) => {
+        const bad = r.teamId.trim() !== '' && !isSlackTeamId(r.teamId)
+        return (
+          <div key={i} className="merger-rule">
+            <div className="merger-project">
+              <input value={r.domain} placeholder="Subdomain: acme (from acme.slack.com)" aria-label="Workspace subdomain" onChange={(e) => update(i, { domain: e.target.value })} />
+              <input
+                value={r.teamId}
+                placeholder="Team ID: T0123ABCD"
+                aria-label="Team ID"
+                aria-invalid={bad}
+                title={bad ? 'A team ID starts with T, followed by letters and digits' : undefined}
+                onChange={(e) => update(i, { teamId: e.target.value })}
+              />
+              <button type="button" className="btn subtle" title="Remove this workspace" onClick={() => change(rows.filter((_, j) => j !== i))}>
+                Remove
+              </button>
+            </div>
+            {bad && <p className="error small">Not a team ID: it starts with T, followed by letters and digits.</p>}
+          </div>
+        )
+      })}
+      <button type="button" className="btn" onClick={() => change([...rows, { domain: '', teamId: '' }])}>
+        Add workspace
+      </button>
+    </div>
+  )
 }
 
 /** Version, update status and the manual check; the same steps as the top bar button and the tray. */
