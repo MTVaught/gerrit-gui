@@ -260,6 +260,20 @@ export interface Settings {
   mergers: MergerRule[]
   /** Keep the compact window above other windows and on every workspace. */
   compactOnTop: boolean
+  /**
+   * Slack workspaces whose links open in the Slack desktop app rather than
+   * the browser. A link names its workspace by subdomain; the app wants the
+   * team ID, which the link does not carry, so each workspace is one row.
+   */
+  slackWorkspaces: SlackWorkspace[]
+}
+
+/** One Slack workspace: its subdomain and the team ID the desktop app knows it by. */
+export interface SlackWorkspace {
+  /** The part before `.slack.com` in the workspace's links, lower-case: `acme`. */
+  domain: string
+  /** The workspace's ID, `T` followed by letters and digits: `T0123ABCD`. */
+  teamId: string
 }
 
 /** The people to offer as mergers for the projects matching `project`. */

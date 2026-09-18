@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
 import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -976,4 +976,60 @@ test('slackTag and linkedSlackUrl round-trip through the hashtag', () => {
   const mixed = change({ hashtags: ['slack:', 'slack:ftp://x', `slack:${link}`, 'slack:https://acme.slack.com/other'] })
   assert.equal(linkedSlackUrl(mixed), link)
   assert.equal(slackTags(mixed).length, 3)
+})
+
+test('slackDeepLink turns a Copy link URL into a slack:// link for a known workspace', () => {
+  const acme = [{ domain: 'acme', teamId: 'T0123ABCD' }]
+  assert.equal(slackDeepLink('https://acme.slack.com/archives/C04ABCD1234/p1726500000123456', acme), 'slack://channel?team=T0123ABCD&id=C04ABCD1234&message=1726500000.123456')
+  assert.equal(slackDeepLink('https://acme.slack.com/archives/C04ABCD1234', acme), 'slack://channel?team=T0123ABCD&id=C04ABCD1234', 'a channel link')
+  assert.equal(
+    slackDeepLink('https://acme.slack.com/archives/C04ABCD1234/p1726500000123456?thread_ts=1726400000.111111&cid=C04ABCD1234', acme),
+    'slack://channel?team=T0123ABCD&id=C04ABCD1234&message=1726500000.123456&thread_ts=1726400000.111111',
+    'a reply carries its thread; cid repeats the channel and is dropped',
+  )
+  assert.equal(slackDeepLink('https://ACME.slack.com/archives/C04ABCD1234', acme), 'slack://channel?team=T0123ABCD&id=C04ABCD1234', 'the host is matched without case')
+  assert.equal(slackDeepLink('https://acme.slack.com/archives/C04ABCD1234/p1726500000123456?thread_ts=x', acme), 'slack://channel?team=T0123ABCD&id=C04ABCD1234&message=1726500000.123456', 'a thread_ts that is not a timestamp is left out')
+})
+
+test('slackDeepLink is null when the app cannot be told where to go, so the browser gets the link', () => {
+  const acme = [{ domain: 'acme', teamId: 'T0123ABCD' }]
+  const link = 'https://acme.slack.com/archives/C04ABCD1234/p1726500000123456'
+  assert.equal(slackDeepLink(link, []), null, 'no workspaces')
+  assert.equal(slackDeepLink(link, [{ domain: 'other', teamId: 'T0123ABCD' }]), null, 'another workspace')
+  assert.equal(slackDeepLink(link, [{ domain: 'acme', teamId: 'acme' }]), null, 'the team ID is not one')
+  assert.equal(slackDeepLink('https://slack.com/app_redirect?channel=C04ABCD1234', acme), null, 'no workspace in the host')
+  assert.equal(slackDeepLink('https://acme.slack.com/canvas/F0123', acme), null, 'not an archive link')
+  assert.equal(slackDeepLink('https://acme.slack.com/archives/C04ABCD1234/p123', acme), null, 'a message segment that is not p + 16 digits')
+  assert.equal(slackDeepLink('https://acme.slack.com/archives/C04ABCD1234/p1726500000123456/extra', acme), null, 'a longer path')
+  assert.equal(slackDeepLink('https://acme.slack.com/archives/c04abcd1234', acme), null, 'a channel ID is upper-case')
+  assert.equal(slackDeepLink('http://acme.slack.com/archives/C04ABCD1234', acme), null, 'not a Slack link at all')
+})
+
+test('normalizeSlackWorkspaces accepts a domain, a host or a link and keeps one row per workspace', () => {
+  assert.deepEqual(
+    normalizeSlackWorkspaces([
+      { domain: ' Acme ', teamId: ' t0123abcd ' },
+      { domain: 'beta.slack.com', teamId: 'T0BETA' },
+      { domain: 'https://gamma.slack.com/archives/C01', teamId: 'T0GAMMA' },
+      { domain: 'acme', teamId: 'T0OTHER' },
+      { domain: '', teamId: 'T0EMPTY' },
+      { domain: 'delta', teamId: '' },
+      { domain: 'slack.com', teamId: 'T0BARE' },
+    ]),
+    [
+      { domain: 'acme', teamId: 'T0123ABCD' },
+      { domain: 'beta', teamId: 'T0BETA' },
+      { domain: 'gamma', teamId: 'T0GAMMA' },
+    ],
+  )
+  assert.equal(slackWorkspacesReflect([{ domain: 'Acme', teamId: 't01' }, { domain: '', teamId: '' }], [{ domain: 'acme', teamId: 'T01' }]), true)
+  assert.equal(slackWorkspacesReflect([{ domain: 'acme', teamId: 'T01' }], [{ domain: 'acme', teamId: 'T02' }]), false)
+})
+
+test('isSlackTeamId', () => {
+  assert.equal(isSlackTeamId('T0123ABCD'), true)
+  assert.equal(isSlackTeamId(' t0123abcd '), true)
+  assert.equal(isSlackTeamId('C0123ABCD'), false)
+  assert.equal(isSlackTeamId('T'), false)
+  assert.equal(isSlackTeamId('acme'), false)
 })

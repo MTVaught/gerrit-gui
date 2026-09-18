@@ -6,6 +6,7 @@ import { createService } from './service.ts'
 import { TrayController } from './tray.ts'
 import { createUpdater, type Updater } from './updater.ts'
 import { RELEASES_URL, updateAction } from '../shared/update.ts'
+import { slackDeepLink } from '../shared/model.ts'
 import type { BadgePayload, ChangeAction, ChangeLink, SettingsInput, TabId, UiState, WindowBounds } from '../shared/types.ts'
 import appIconPath from '../../resources/icon.png?asset'
 
@@ -126,6 +127,18 @@ function registerIpc(): void {
   ipcMain.handle('app:openUrl', async (_e, url: string) => {
     // The renderer only hands over links it built from a Slack tag; the check keeps any other scheme out of the shell.
     if (!/^https:\/\//i.test(url)) throw new Error('Only https links can be opened')
+    // A Slack link opens in the Slack app when Settings knows the workspace's team ID; the slack:// link is
+    // built here from the stored ID, never taken from the renderer. Without Slack installed the open fails
+    // (or on macOS does nothing), so the browser gets the https link then.
+    const deep = slackDeepLink(url, (await service.getSettings()).slackWorkspaces)
+    if (deep) {
+      try {
+        await shell.openExternal(deep)
+        return
+      } catch (e) {
+        console.warn('Open in Slack:', (e as Error).message)
+      }
+    }
     await shell.openExternal(url)
   })
 

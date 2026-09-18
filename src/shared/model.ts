@@ -9,6 +9,7 @@ import type {
   MergerRule,
   ReviewState,
   ReviewerStatus,
+  SlackWorkspace,
   TabId,
 } from './types.ts'
 import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, READY_TO_MERGE_KEY, SLACK_TAG_PREFIX, VERIFIED } from './constants.ts'
@@ -179,6 +180,71 @@ export function slackUrl(text: string): string | null {
 /** The tag for one conversation: `slack:https://…`. */
 export function slackTag(url: string): string {
   return SLACK_TAG_PREFIX + url.trim()
+}
+
+/** `acme` from `acme.slack.com`, or from `acme`, `https://acme.slack.com/…`; lower-case. Empty when there is nothing to keep. */
+function slackDomain(text: string): string {
+  let s = text.trim().toLowerCase()
+  if (/^https?:\/\//.test(s)) {
+    try {
+      s = new URL(s).hostname
+    } catch {
+      return ''
+    }
+  }
+  s = s.replace(/\/.*$/, '')
+  if (s === 'slack.com') return ''
+  return s.endsWith('.slack.com') ? s.slice(0, -'.slack.com'.length) : s
+}
+
+/** Trim both fields, lower-case the domain, upper-case the ID, drop rows missing one, keep the first row per domain. */
+export function normalizeSlackWorkspaces(rows: SlackWorkspace[]): SlackWorkspace[] {
+  const out: SlackWorkspace[] = []
+  for (const r of rows) {
+    const domain = slackDomain(r.domain)
+    const teamId = r.teamId.trim().toUpperCase()
+    if (!domain || !teamId || out.some((w) => w.domain === domain)) continue
+    out.push({ domain, teamId })
+  }
+  return out
+}
+
+/** As mergersReflect, for the Slack workspaces list. */
+export function slackWorkspacesReflect(edited: SlackWorkspace[], saved: SlackWorkspace[]): boolean {
+  return JSON.stringify(normalizeSlackWorkspaces(edited)) === JSON.stringify(normalizeSlackWorkspaces(saved))
+}
+
+/** A team ID as Slack writes it: `T` and letters or digits. */
+export function isSlackTeamId(text: string): boolean {
+  return /^T[A-Z0-9]{2,}$/.test(text.trim().toUpperCase())
+}
+
+/**
+ * The `slack://` link that opens a Slack "Copy link" URL in the desktop app:
+ * `slack://channel?team=T…&id=C…&message=1726500000.123456`, with the
+ * `thread_ts` of a reply carried over. Null when the app cannot be told
+ * where to go: the workspace of the link has no row in `workspaces`, the
+ * link is not to a channel or message (a canvas, an app_redirect), or the
+ * team ID is not one. The caller then opens the https link in the browser.
+ */
+export function slackDeepLink(url: string, workspaces: SlackWorkspace[]): string | null {
+  const s = slackUrl(url)
+  if (!s) return null
+  const u = new URL(s)
+  const domain = slackDomain(u.hostname)
+  const teamId = workspaces.find((w) => w.domain === domain)?.teamId ?? ''
+  if (!domain || !isSlackTeamId(teamId)) return null
+  const [archives, channel, message, ...rest] = u.pathname.split('/').filter(Boolean)
+  if (archives !== 'archives' || !channel || !/^[A-Z][A-Z0-9]+$/.test(channel) || rest.length > 0) return null
+  const q = new URLSearchParams({ team: teamId, id: channel })
+  if (message !== undefined) {
+    const m = /^p(\d{10})(\d{6})$/.exec(message)
+    if (!m) return null
+    q.set('message', `${m[1]}.${m[2]}`)
+  }
+  const thread = u.searchParams.get('thread_ts')
+  if (thread && /^\d+\.\d+$/.test(thread)) q.set('thread_ts', thread)
+  return `slack://channel?${q.toString()}`
 }
 
 /** The Slack conversation linked to the change: the first `slack:` tag that holds a Slack link, or null. */

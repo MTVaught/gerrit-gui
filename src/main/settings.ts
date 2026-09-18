@@ -1,9 +1,9 @@
 import { app, safeStorage } from 'electron'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus, UiState } from '../shared/types.ts'
+import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, UiState } from '../shared/types.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
-import { normalizeMergers, normalizeTeam } from '../shared/model.ts'
+import { normalizeMergers, normalizeSlackWorkspaces, normalizeTeam } from '../shared/model.ts'
 
 interface StoredSettings {
   serverUrl: string
@@ -14,6 +14,7 @@ interface StoredSettings {
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
   compactOnTop?: boolean
+  slackWorkspaces?: SlackWorkspace[]
   showAppBadge?: boolean
   showTrayCounts?: boolean
   /** base64 of safeStorage ciphertext, or plaintext when no keychain is available. */
@@ -45,6 +46,7 @@ export async function getStatus(): Promise<SettingsStatus> {
     badgeStyle: s.badgeStyle ?? 'color',
     showZeroCounts: s.showZeroCounts ?? false,
     compactOnTop: s.compactOnTop ?? true,
+    slackWorkspaces: s.slackWorkspaces ?? [],
     showAppBadge: s.showAppBadge ?? true,
     showTrayCounts: s.showTrayCounts ?? true,
     hasPassword: Boolean(s.password),
@@ -72,6 +74,7 @@ export async function save(input: SettingsInput): Promise<void> {
     badgeStyle: input.badgeStyle,
     showZeroCounts: input.showZeroCounts,
     compactOnTop: input.compactOnTop,
+    slackWorkspaces: normalizeSlackWorkspaces(input.slackWorkspaces ?? []),
     showAppBadge: input.showAppBadge,
     showTrayCounts: input.showTrayCounts,
     password: prev.password,
