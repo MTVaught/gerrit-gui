@@ -11,6 +11,8 @@
   --pos-bg: #dcfce7;
   --neg: #b91c1c;
   --neg-bg: #fee2e2;
+  /* A saturated red for a solid badge with white text; --neg is too pale for that in dark mode. */
+  --badge-red: #dc2626;
   --warn: #b45309;
   --warn-bg: #fef3c7;
   --pending-bg: #eef2ff;
@@ -242,13 +244,14 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .chip.ext.neg { color: var(--neg); border-color: var(--neg); }
 /*
  * Commit message tags: a tag icon with the count of trailers beside the
- * change number, red with "no tags" when the message has none. Click opens
+ * change number, "no tags" when the message has none: grey while the change
+ * is still being worked on, solid red once it is up for review. Click opens
  * the message body and the trailers as written, the noise ones faded.
  */
 .tags { display: inline-flex; }
 .tagbtn { font: inherit; font-size: 11px; display: inline-flex; gap: 3px; align-items: center; padding: 1px 6px 1px 5px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; white-space: nowrap; }
 .tagbtn:hover, .tagbtn.open { color: var(--fg); border-color: var(--muted); background: var(--panel); }
-.tagbtn.none, .tagbtn.none:hover, .tagbtn.none.open { color: #fff; border-color: var(--neg); background: var(--neg); font-weight: 600; }
+.tagbtn.missing, .tagbtn.missing:hover, .tagbtn.missing.open { color: #fff; border-color: var(--badge-red); background: var(--badge-red); font-weight: 600; }
 .tagbtn.sm { padding: 0 5px 0 4px; font-size: 10.5px; vertical-align: 1px; }
 .menu.tags-pop { width: 520px; max-width: calc(100vw - 8px); padding: 4px; }
 .menu.tags-pop.sm { width: 380px; }

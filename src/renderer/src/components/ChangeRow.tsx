@@ -135,7 +135,7 @@ function BranchRow(props: RowProps) {
         <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title="Open in Gerrit">
           #{c._number}
         </button>
-        <TagsButton message={commitMessage(c)} />
+        <TagsButton message={commitMessage(c)} state={v.state} />
       </span>
       <span className="cell c-ps">
         <span>PS {v.patchSet}</span>
