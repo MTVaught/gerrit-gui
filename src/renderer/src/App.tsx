@@ -348,8 +348,8 @@ function initialSort(): SortId {
 
 /**
  * The count beside a tab label. Colored segments sit to the left of a grey
- * remainder: first what waits on the user, then, after a gap, what waits on
- * others in muted tones; with no segment it is the plain pill. Each card is
+ * remainder: first what waits on the user, then what waits on others in
+ * muted tones; with no segment it is the plain pill. Each card is
  * counted once: the grey part is what no segment covers, and it is left out
  * when the segments cover everything. A private count is a lock pill after
  * the capsule, since private is not a state.
@@ -391,7 +391,6 @@ function TabCount(props: {
     <>
       <span className="count split" title={title}>
         {mine.map(seg)}
-        {mine.length > 0 && others.length > 0 && <span className="gap" />}
         {others.map(seg)}
         {rest > 0 && <span>{rest}</span>}
       </span>
