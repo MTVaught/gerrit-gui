@@ -150,8 +150,9 @@ export function SettingsPanel(props: {
                 at the top left and choose <b>Tools &amp; settings</b> then <b>Workspace settings</b>, which opens the browser.
               </li>
               <li>
-                Look at the address bar. The client shows <code>app.slack.com/client/T0123ABCD/C…</code>; the first segment,
-                starting with <code>T</code>, is the team ID. The settings pages carry the same ID in their address.
+                Look at the address bar. The client shows <code>app.slack.com/client/T0123ABCD/C…</code>; the first segment
+                is the team ID. It starts with <code>T</code>, or with <code>E</code> on Enterprise Grid, where it is the
+                org's ID; either works. The settings pages carry the same ID in their address.
               </li>
               <li>
                 Enter it next to the subdomain, the part before <code>.slack.com</code> in the workspace's links: for{' '}
@@ -340,17 +341,17 @@ function SlackWorkspacesSection(props: { rows: SlackWorkspace[]; onSave: (rows: 
               <input value={r.domain} placeholder="Subdomain: acme (from acme.slack.com)" aria-label="Workspace subdomain" onChange={(e) => update(i, { domain: e.target.value })} />
               <input
                 value={r.teamId}
-                placeholder="Team ID: T0123ABCD"
+                placeholder="Team ID: T0123ABCD or E0123ABCD"
                 aria-label="Team ID"
                 aria-invalid={bad}
-                title={bad ? 'A team ID starts with T, followed by letters and digits' : undefined}
+                title={bad ? 'A team ID starts with T or E, followed by letters and digits' : undefined}
                 onChange={(e) => update(i, { teamId: e.target.value })}
               />
               <button type="button" className="btn subtle" title="Remove this workspace" onClick={() => change(rows.filter((_, j) => j !== i))}>
                 Remove
               </button>
             </div>
-            {bad && <p className="error small">Not a team ID: it starts with T, followed by letters and digits.</p>}
+            {bad && <p className="error small">Not a team ID: it starts with T or E, followed by letters and digits.</p>}
           </div>
         )
       })}

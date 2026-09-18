@@ -213,7 +213,8 @@ a tag written by hand cannot open another site.
 The conversation opens in the browser, unless "Slack" in Settings lists the
 workspace. Slack's "Copy link" names the workspace by its subdomain
 (`acme` in `acme.slack.com`), but the Slack app opens a message only by the
-workspace's team ID (`T0123ABCD`), which the link does not carry; the
+workspace's team ID (`T0123ABCD`, or the org's `E…` ID on Enterprise
+Grid), which the link does not carry; the
 settings page says where to read it off. With the row present, the tab
 turns the https link into `slack://channel?team=…&id=…&message=…` (with the
 `thread_ts` of a reply) and opens that, so the Slack app comes to the
