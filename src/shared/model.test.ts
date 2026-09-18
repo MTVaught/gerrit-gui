@@ -1003,6 +1003,7 @@ test('slackDeepLink is null when the app cannot be told where to go, so the brow
   assert.equal(slackDeepLink(link, []), null, 'no workspaces')
   assert.equal(slackDeepLink(link, [{ domain: 'other', teamId: 'T0123ABCD' }]), null, 'another workspace')
   assert.equal(slackDeepLink(link, [{ domain: 'acme', teamId: 'acme' }]), null, 'the team ID is not one')
+  assert.equal(slackDeepLink(link, [{ domain: 'acme', teamId: 'E0123ABCD' }]), 'slack://channel?team=E0123ABCD&id=C04ABCD1234&message=1726500000.123456', 'an org ID is passed through')
   assert.equal(slackDeepLink('https://slack.com/app_redirect?channel=C04ABCD1234', acme), null, 'no workspace in the host')
   assert.equal(slackDeepLink('https://acme.slack.com/canvas/F0123', acme), null, 'not an archive link')
   assert.equal(slackDeepLink('https://acme.slack.com/archives/C04ABCD1234/p123', acme), null, 'a message segment that is not p + 16 digits')
@@ -1035,6 +1036,7 @@ test('normalizeSlackWorkspaces accepts a domain, a host or a link and keeps one 
 test('isSlackTeamId', () => {
   assert.equal(isSlackTeamId('T0123ABCD'), true)
   assert.equal(isSlackTeamId(' t0123abcd '), true)
+  assert.equal(isSlackTeamId('E0123ABCD'), true, 'an Enterprise Grid org ID')
   assert.equal(isSlackTeamId('C0123ABCD'), false)
   assert.equal(isSlackTeamId('T'), false)
   assert.equal(isSlackTeamId('acme'), false)

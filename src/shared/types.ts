@@ -272,7 +272,7 @@ export interface Settings {
 export interface SlackWorkspace {
   /** The part before `.slack.com` in the workspace's links, lower-case: `acme`. */
   domain: string
-  /** The workspace's ID, `T` followed by letters and digits: `T0123ABCD`. */
+  /** The workspace's ID, `T` followed by letters and digits (`T0123ABCD`), or on Enterprise Grid the org ID, `E…`. */
   teamId: string
 }
 

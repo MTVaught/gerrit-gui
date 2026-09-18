@@ -214,9 +214,9 @@ export function slackWorkspacesReflect(edited: SlackWorkspace[], saved: SlackWor
   return JSON.stringify(normalizeSlackWorkspaces(edited)) === JSON.stringify(normalizeSlackWorkspaces(saved))
 }
 
-/** A team ID as Slack writes it: `T` and letters or digits. */
+/** A team ID as Slack writes it: `T` and letters or digits; on Enterprise Grid the org ID, `E` and the same. */
 export function isSlackTeamId(text: string): boolean {
-  return /^T[A-Z0-9]{2,}$/.test(text.trim().toUpperCase())
+  return /^[TE][A-Z0-9]{2,}$/.test(text.trim().toUpperCase())
 }
 
 /**
