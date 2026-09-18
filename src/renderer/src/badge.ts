@@ -61,18 +61,8 @@ const SCALE = 2
  * Retina; the main process adds the 1x representation. Returns null when
  * there is nothing to draw, so the tray shows the plain template icon
  * instead.
- *
- * The pills are tinted rather than solid, like the count segments on the
- * board: a pale wash of the category color with the digit in the full color.
- * Solid fills of these four hues sit at near-equal luminance, and side by
- * side in the menu bar that makes red seem to float in front of blue and
- * the shared edges shimmer (chromostereopsis). Thin colored digits on a
- * near-neutral wash are too small for either effect. The digit is pushed
- * away from the bar, darker on light and lighter on dark, so it still reads
- * after the 1x downscale blurs it into the wash. A dark menu bar gets a
- * stronger wash so the pills keep the same weight.
  */
-export function renderTrayStrip(counts: ActionCounts, showZero = false, dark = false): TrayStrip | null {
+export function renderTrayStrip(counts: ActionCounts, showZero = false): TrayStrip | null {
   const active = visibleCategories(counts, showZero)
   if (active.length === 0) return null
 
@@ -97,41 +87,23 @@ export function renderTrayStrip(counts: ActionCounts, showZero = false, dark = f
   let x = -GAP
   for (const p of pills) {
     x += GAP
-    ctx.fillStyle = withAlpha(p.color, dark ? 0.32 : 0.18)
+    ctx.fillStyle = p.color
     ctx.beginPath()
     ctx.roundRect(x, (STRIP_H - PILL_H) / 2, p.w, PILL_H, PILL_H / 2)
     ctx.fill()
-    ctx.fillStyle = dark ? lighten(p.color, 0.45) : darken(p.color, 0.25)
+    ctx.fillStyle = '#fff'
     ctx.fillText(p.text, x + p.w / 2, STRIP_H / 2 + 0.5)
     x += p.w
   }
   return { dataUrl: canvas.toDataURL('image/png'), width, height: STRIP_H }
 }
 
-/** Both appearances of the strip, or null when there is nothing to draw. */
+/**
+ * Both appearances of the strip, or null when there is nothing to draw. The
+ * solid pills with white digits read the same on a light and a dark menu
+ * bar, so one rendering serves both.
+ */
 export function trayStrips(counts: ActionCounts, showZero = false): { light: TrayStrip; dark: TrayStrip } | null {
-  const light = renderTrayStrip(counts, showZero, false)
-  if (!light) return null
-  return { light, dark: renderTrayStrip(counts, showZero, true)! }
-}
-
-function rgb(hex: string): [number, number, number] {
-  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number]
-}
-
-function withAlpha(hex: string, alpha: number): string {
-  const [r, g, b] = rgb(hex)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
-
-/** Move the color the given fraction of the way to black. */
-function darken(hex: string, amount: number): string {
-  const [r, g, b] = rgb(hex).map((v) => Math.round(v * (1 - amount)))
-  return `rgb(${r}, ${g}, ${b})`
-}
-
-/** Move the color the given fraction of the way to white. */
-function lighten(hex: string, amount: number): string {
-  const [r, g, b] = rgb(hex).map((v) => Math.round(v + (255 - v) * amount))
-  return `rgb(${r}, ${g}, ${b})`
+  const strip = renderTrayStrip(counts, showZero)
+  return strip ? { light: strip, dark: strip } : null
 }
