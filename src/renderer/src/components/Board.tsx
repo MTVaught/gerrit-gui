@@ -8,6 +8,7 @@ import {
   countFamilies,
   displayName,
   familyKey,
+  familyLeads,
   filterViews,
   groupByChangeId,
   groupsFor,
@@ -16,7 +17,6 @@ import {
   isInternal,
   sortByBranch,
   sortViews,
-  urgency,
   type ChangeFamily,
   type Group,
   type SortId,
@@ -140,15 +140,7 @@ export function Board(props: {
   // changes are branches of a card led elsewhere is dropped: the header
   // counts the cards under it, and nothing would be under it.
   const sorted = groups.map((g) => sortViews(g.items, props.sort))
-  const lead = new Map<string, { section: number; view: ChangeView }>()
-  sorted.forEach((items, section) => {
-    for (const view of items) {
-      const key = familyKey(view.change)
-      if ((families.get(key)?.members.length ?? 1) === 1) continue
-      const cur = lead.get(key)
-      if (!cur || urgency(view.state) < urgency(cur.view.state)) lead.set(key, { section, view })
-    }
-  })
+  const lead = familyLeads(groups, props.views)
   const sections: Section[] = groups
     .map((g, section) => ({
       ...g,
@@ -156,7 +148,7 @@ export function Board(props: {
         const key = familyKey(v.change)
         const f = families.get(key)
         if (!f || f.members.length === 1) return [{ view: v, family: null }]
-        return lead.get(key)?.view === v ? [{ view: v, family: f }] : []
+        return lead.get(key) === v ? [{ view: v, family: f }] : []
       }),
     }))
     .filter((g) => g.rows.length > 0)

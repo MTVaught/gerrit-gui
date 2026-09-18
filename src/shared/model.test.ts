@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, type ViewFilter } from './model.ts'
 import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -738,6 +738,12 @@ test('tabCounts: a Change-Id family counts once per tab; stateTally lists its st
     change({ number: 4, reviewers: [bob], requested: 3 }),
   ].map((c) => classify(c, alice._account_id))
   assert.equal(tabCounts(views).mine, 2)
+  // The card sits in the section of its most urgent branch, and the pill counts it there only: no approved segment.
+  assert.deepEqual(
+    cardGroups('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]),
+    [['Out for review', [1, 4]]],
+  )
+  assert.deepEqual(tabSegments(views).mine, [{ n: 2, tone: 'pending', label: 'out for review' }])
   // The tray counts cards as well: one approved card, however many approved branches.
   const twoApproved = [
     change({ number: 5, changeId: 'Ibbb', branch: 'master', reviewers: [bob], requested: 3, votes: { 2: 1 } }),
@@ -746,6 +752,8 @@ test('tabCounts: a Change-Id family counts once per tab; stateTally lists its st
     change({ number: 7, changeId: 'Ibbb', branch: 'release-2.0', reviewers: [bob], requested: 3, votes: { 2: -1 } }),
   ].map((c) => classify(c, alice._account_id))
   assert.deepEqual(actionCounts(twoApproved), { review: 0, fix: 1, ready: 1, merge: 0 })
+  // The pill, like the board, has the card under Needs Changes alone.
+  assert.deepEqual(tabSegments(twoApproved).mine, [{ n: 1, tone: 'neg', label: 'need changes' }])
   assert.deepEqual(stateTally(views.slice(0, 3)), [
     { state: 'needs-review', count: 2 },
     { state: 'approved', count: 1 },

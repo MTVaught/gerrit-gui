@@ -377,8 +377,7 @@ function TabCount(props: {
       </>
     )
   }
-  // What no segment (nor the lock) covers. A family with branches in two
-  // sections is in both, so the sum can pass the total; clamp at zero.
+  // What no segment (nor the lock) covers: on My Changes, the cards waiting on the merger.
   const rest = Math.max(0, props.total - props.segments.reduce((sum, s) => sum + s.n, 0))
   const title = [...segs.map((s) => `${s.n} ${s.label}`), ...(rest > 0 ? [`${rest} other`] : []), `${props.total} total`].join(' · ')
   const mine = segs.filter((s) => s.tone === 'pos' || s.tone === 'neg')

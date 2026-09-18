@@ -596,14 +596,16 @@ export interface TabSegment {
  * The colored segments of the count pills: on Merged, what waits to be
  * merged; on My Changes, one per section: what needs work, what is approved,
  * then what is out for review and what is still in progress, and the private
- * ones apart. Cards, like the totals, so a family counts once. A segment at
- * zero is left out, as is in progress when it is the only state: then it is
- * the whole tab and the plain total says as much.
+ * ones apart. Cards, like the totals, so a family counts once: in the section
+ * its card is under, the same as the section headers, however many other
+ * sections its branches touch. A segment at zero is left out, as is in
+ * progress when it is the only state: then it is the whole tab and the plain
+ * total says as much.
  */
 export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegment[]>> {
   const bySection = (tab: TabId, title: string) =>
-    countFamilies(groupsFor(tab, views).filter((g) => g.title === title).flatMap((g) => g.items))
-  const merged = groupsFor('merged', views)
+    countFamilies(cardGroups(tab, views).filter((g) => g.title === title).flatMap((g) => g.items))
+  const merged = cardGroups('merged', views)
   const segments: Partial<Record<TabId, TabSegment[]>> = {
     merged: [{ n: countFamilies(merged.filter((g) => g.title !== 'Merged in the last 14 days').flatMap((g) => g.items)), tone: 'pos', label: 'ready to merge' }],
     mine: [
@@ -622,6 +624,41 @@ export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegme
 /** How many cards a list of changes makes: each Change-Id once. */
 export function countFamilies(views: ChangeView[]): number {
   return new Set(views.map((v) => familyKey(v.change))).size
+}
+
+/**
+ * The branch that leads each family card on a tab, by family key: the most
+ * urgent branch among the sections (see URGENCY), a tie going to the
+ * earliest section. A family of one member is not listed; it is its own
+ * card. `views` is the whole data set, merged members included, so a family
+ * is sized by everything on the board, not by what this tab lists.
+ */
+export function familyLeads(groups: Group[], views: ChangeView[]): Map<string, ChangeView> {
+  const size = new Map<string, number>()
+  for (const v of views) size.set(familyKey(v.change), (size.get(familyKey(v.change)) ?? 0) + 1)
+  const lead = new Map<string, ChangeView>()
+  for (const g of groups) {
+    for (const v of g.items) {
+      const key = familyKey(v.change)
+      if ((size.get(key) ?? 1) === 1) continue
+      const cur = lead.get(key)
+      if (!cur || urgency(v.state) < urgency(cur.state)) lead.set(key, v)
+    }
+  }
+  return lead
+}
+
+/**
+ * The sections of a tab as the board lays them out: a family is one card,
+ * in the section of its lead branch only, so a card is under one header.
+ * A section left with nothing under it is dropped.
+ */
+export function cardGroups(tab: TabId, views: ChangeView[]): Group[] {
+  const groups = groupsFor(tab, views)
+  const lead = familyLeads(groups, views)
+  return groups
+    .map((g) => ({ ...g, items: g.items.filter((v) => (lead.get(familyKey(v.change)) ?? v) === v) }))
+    .filter((g) => g.items.length > 0)
 }
 
 export interface ActionCategoryInfo {
