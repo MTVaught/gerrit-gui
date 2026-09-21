@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, SuggestedReviewerInfo } from '../../../shared/types.ts'
 import { accountKey, accountKeys, displayName, normalizeTeam } from '../../../shared/model.ts'
 import { api } from '../api.ts'
@@ -34,12 +34,14 @@ export function AddReviewer(props: { view: ChangeView; self: AccountInfo; allowO
   const nameFor = useNames(team)
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+  const [anchor, setAnchor] = useState<{ top: number; bottom: number } | null>(null)
   const [primary, setPrimary] = useState(true)
   const [checked, setChecked] = useState<Set<string>>(new Set())
   const [extra, setExtra] = useState<Pick[]>([])
   const [q, setQ] = useState('')
   const [suggestions, setSuggestions] = useState<SuggestedReviewerInfo[]>([])
   const wrap = useRef<HTMLSpanElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -83,7 +85,8 @@ export function AddReviewer(props: { view: ChangeView; self: AccountInfo; allowO
   function toggle() {
     if (!open && wrap.current) {
       const r = wrap.current.getBoundingClientRect()
-      // Under the "+", kept inside the window on the right.
+      // Under the "+", kept inside the window on the right; flipped above once its height is known.
+      setAnchor({ top: r.top, bottom: r.bottom })
       setPos({ top: r.bottom + 4, left: Math.max(8, Math.min(r.left, document.documentElement.clientWidth - 348)) })
       setPrimary(true)
       setChecked(new Set())
@@ -93,6 +96,22 @@ export function AddReviewer(props: { view: ChangeView; self: AccountInfo; allowO
     }
     setOpen((o) => !o)
   }
+
+  // The panel is position: fixed, so page scrolling never reveals it. When it would run off the
+  // bottom of the window, put it above the "+" instead; when it fits neither way, pin it to the top
+  // and let it scroll (max-height in CSS).
+  useLayoutEffect(() => {
+    if (!open || !anchor || !panel.current) return
+    const h = panel.current.offsetHeight
+    const room = document.documentElement.clientHeight
+    setPos((p) => {
+      if (!p) return p
+      let top = anchor.bottom + 4
+      if (top + h > room - 8) top = anchor.top - 4 - h
+      if (top < 8) top = 8
+      return top === p.top ? p : { ...p, top }
+    })
+  }, [open, anchor, extra.length, suggestions.length, primary])
 
   // Who is on the change already: primary reviewers by their tag key, everyone by account.
   const primaryKeys = new Set(v.reviewers.flatMap((r) => (r.key ? [r.key] : accountKeys(r.account))))
@@ -168,7 +187,7 @@ export function AddReviewer(props: { view: ChangeView; self: AccountInfo; allowO
         +
       </button>
       {open && pos && (
-        <div className="menu picker" role="dialog" aria-label="Add reviewers" style={{ top: pos.top, left: pos.left }}>
+        <div className="menu picker" role="dialog" aria-label="Add reviewers" ref={panel} style={{ top: pos.top, left: pos.left }}>
           <h4>Add reviewers</h4>
           {team.length === 0 && extra.length === 0 && <p className="muted small">No team is set in Settings. Search for the person to add.</p>}
           <div className="picker-list">
