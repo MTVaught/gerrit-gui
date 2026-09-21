@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, pastDraft, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, type ViewFilter } from './model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -696,6 +696,19 @@ test('sortViews: oldest current patch set first', () => {
   assert.deepEqual(sortViews(views, 'patchset').map((v) => v.change._number), [3, 1, 2])
   // A change whose only patch set is the first one is as old as the change.
   assert.equal(views[2]!.patchSetCreated, '2026-09-04 10:00:00.000')
+})
+
+test('sortViews: smallest change first, and fewest unseen lines first', () => {
+  const sized = (number: number, ins: number, del: number, extra: Partial<ChangeInfo> = {}) => ({ ...change({ number, reviewers: [bob], patchSet: 5, messages: [msg(bob, 3)] }), insertions: ins, deletions: del, ...extra })
+  const views = [
+    sized(1, 100, 50), // never fetched a delta: all 150 count as unseen
+    sized(2, 30, 30, { review_delta: { basePatchSet: 3, patchSet: 5, insertions: 40, deletions: 5 } }), // 60 total, 45 new
+    sized(3, 200, 0, { review_delta: { basePatchSet: 3, patchSet: 5, insertions: 2, deletions: 1 } }), // 200 total, 3 new
+    sized(4, 10, 0, { messages: [msg(bob, 5)] }), // up to date: nothing new
+  ].map((c) => classify(c, bob._account_id))
+  assert.deepEqual(sortViews(views, 'size').map((v) => v.change._number), [4, 2, 1, 3])
+  assert.deepEqual(sortViews(views, 'new').map((v) => v.change._number), [4, 3, 2, 1])
+  assert.deepEqual(views.map(unseenLines), [150, 45, 3, 0])
 })
 
 test('the patch set date falls back to the change date when Gerrit sent no revision', () => {

@@ -1076,12 +1076,14 @@ export function shortChangeId(key: string): string {
 }
 
 /** Row order inside each group. Applies to every tab. */
-export type SortId = 'updated' | 'age' | 'patchset'
+export type SortId = 'updated' | 'age' | 'patchset' | 'size' | 'new'
 
 export const SORT_OPTIONS: { id: SortId; label: string; title: string }[] = [
   { id: 'updated', label: 'Most recent update', title: 'Changes with the newest activity first' },
   { id: 'age', label: 'Overall age, oldest first', title: 'Oldest changes first, by the date the change was created' },
   { id: 'patchset', label: 'Last patch set, oldest first', title: 'Changes whose current patch set has waited longest first, by the date it was pushed' },
+  { id: 'size', label: 'Size, smallest first', title: 'Smallest changes first, by lines added and removed against base' },
+  { id: 'new', label: 'New to you, smallest first', title: 'Fewest lines you have not seen first: the whole change if you never reviewed it, the lines since your last review otherwise, nothing if you are up to date' },
 ]
 
 export const DEFAULT_SORT: SortId = 'updated'
@@ -1096,8 +1098,31 @@ export function sortViews(views: ChangeView[], sort: SortId): ChangeView[] {
     if (sort === 'patchset') {
       return a.patchSetCreated.localeCompare(b.patchSetCreated) || byNumber(a, b)
     }
+    if (sort === 'size') {
+      return totalLines(a) - totalLines(b) || byNumber(a, b)
+    }
+    if (sort === 'new') {
+      return unseenLines(a) - unseenLines(b) || totalLines(a) - totalLines(b) || byNumber(a, b)
+    }
     return b.change.updated.localeCompare(a.change.updated) || byNumber(b, a)
   })
+}
+
+/** Lines the whole change adds and removes against base. */
+export function totalLines(v: ChangeView): number {
+  return (v.change.insertions ?? 0) + (v.change.deletions ?? 0)
+}
+
+/**
+ * Lines the user has not looked at: the whole change if they never reviewed
+ * it, the lines since their last review when the fetch found them, nothing
+ * once they reviewed the current patch set. Without a delta for a partly
+ * reviewed change the whole change counts, the safe overestimate.
+ */
+export function unseenLines(v: ChangeView): number {
+  if (v.lastReviewedPatchSet !== null && v.lastReviewedPatchSet >= v.patchSet) return 0
+  if (v.sinceReview) return v.sinceReview.insertions + v.sinceReview.deletions
+  return totalLines(v)
 }
 
 /**
