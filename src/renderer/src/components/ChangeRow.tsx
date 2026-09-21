@@ -3,7 +3,7 @@ import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../.
 import { STATE_LABEL, accountKeys, displayName, preferredKey, reviewerTag, reviewerTagsFor, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
-import { ForkIcon, LockIcon } from './Icons.tsx'
+import { CommentIcon, ForkIcon, LockIcon } from './Icons.tsx'
 import { actionClass, changeActions, type ActionSpec } from './actions.ts'
 import { ago } from '../time.ts'
 import { ReviewButton } from './ReviewButton.tsx'
@@ -141,6 +141,7 @@ function BranchRow(props: RowProps) {
       </span>
       <span className="cell c-tags">
         <TagsButton message={commitMessage(c)} state={v.state} />
+        <Unresolved count={c.unresolved_comment_count} />
       </span>
       <span className="cell c-ps">
         <span>PS {v.patchSet}</span>
@@ -156,23 +157,73 @@ function BranchRow(props: RowProps) {
             asked PS {v.requestedPatchSet}
           </span>
         )}
+        <MyLastReview view={v} />
       </span>
       <div className="cell c-reviewers">
         <Reviewers {...props} />
       </div>
       <span className="cell c-diff">
         {c.insertions !== undefined && (
-          <span>
+          <span title="Lines the whole change adds and removes">
             <span className="ins">+{c.insertions}</span> <span className="del">−{c.deletions}</span>
+            <SinceReview view={v} />
           </span>
         )}
-        {(c.unresolved_comment_count ?? 0) > 0 && <span className="muted">{c.unresolved_comment_count} unresolved</span>}
       </span>
       <span className="cell c-updated muted" title={age.title}>
         {age.text}
       </span>
       <Actions {...props} />
     </div>
+  )
+}
+
+/** Lines changed since the patch set the user last reviewed, in brackets after the whole change's counts: the size of the re-review. */
+export function SinceReview(props: { view: ChangeView }) {
+  const d = props.view.sinceReview
+  if (!d) return null
+  return (
+    <span className="since" title={`Lines changed from patch set ${d.basePatchSet}, the last one you reviewed, to patch set ${d.patchSet}`}>
+      {' '}
+      (<span className="ins">+{d.insertions}</span> <span className="del">−{d.deletions}</span> new)
+    </span>
+  )
+}
+
+/**
+ * The user's part of the review rounds, under the request note: the vote they
+ * cast on the last patch set they reviewed, so they know whether the
+ * re-review starts from a +1 or a −1. Nothing when they never reviewed the
+ * change or already reviewed this patch set.
+ */
+export function MyLastReview(props: { view: ChangeView }) {
+  const { view: v } = props
+  const last = v.lastReviewedPatchSet
+  if (v.change.status !== 'NEW' || v.isMine || last === null || last >= v.patchSet) return null
+  const vote = v.lastReviewedVote
+  const title = vote === null ? `You replied on patch set ${last} without voting` : vote === 0 ? `You took your vote on patch set ${last} back` : `You voted ${fmtVote(vote)} on patch set ${last}`
+  return (
+    <span className="mine" title={title}>
+      {vote ? (
+        <>
+          you <b className={vote > 0 ? 'pos' : 'neg'}>{fmtVote(vote)}</b> on PS {last}
+        </>
+      ) : (
+        `you commented on PS ${last}`
+      )}
+    </span>
+  )
+}
+
+/** Unresolved comment threads, as a speech bubble with the count beside the tags pill. */
+export function Unresolved(props: { count: number | undefined }) {
+  const n = props.count ?? 0
+  if (n === 0) return null
+  return (
+    <span className="unresolved" title={`${n} unresolved comment ${n === 1 ? 'thread' : 'threads'}`}>
+      <CommentIcon />
+      {n}
+    </span>
   )
 }
 
@@ -220,6 +271,7 @@ export function SizerRow() {
       </span>
       <span className="cell c-req">
         <span className="req stale">asked PS 00</span>
+        <span className="mine">you commented on PS 00</span>
       </span>
       <div className="cell c-reviewers" />
       <span className="cell c-diff">
@@ -499,5 +551,5 @@ function Actions(props: ActProps) {
 }
 
 function fmtVote(v: number): string {
-  return v > 0 ? `+${v}` : String(v)
+  return v > 0 ? `+${v}` : `−${-v}`
 }

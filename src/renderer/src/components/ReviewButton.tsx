@@ -20,6 +20,7 @@ export function ReviewButton(props: { view: ChangeView }) {
   const main = reviewLink(v)
   const last = v.lastReviewedPatchSet
   const upToDate = last !== null && last >= v.patchSet
+  const prev = v.lastReviewedVote
   const label = upToDate
     ? `Open PS ${v.patchSet}`
     : main.basePatchSet !== undefined
@@ -28,14 +29,15 @@ export function ReviewButton(props: { view: ChangeView }) {
   const title = upToDate
     ? `You already reviewed patch set ${v.patchSet}. Opens it in Gerrit.`
     : main.basePatchSet !== undefined
-      ? `Opens the diff from patch set ${main.basePatchSet}, the last one you reviewed, to patch set ${v.patchSet}`
+      ? `Opens the diff from patch set ${main.basePatchSet}, the last one you reviewed, to patch set ${v.patchSet}. ${previousVote(prev, main.basePatchSet)}`
       : `Opens patch set ${v.patchSet} against base in Gerrit. You have not reviewed this change yet.`
 
   const id = v.change._number
   const project = v.change.project
   const options: { label: string; detail: string; link: ChangeLink; selected?: boolean }[] = []
   if (main.basePatchSet !== undefined) {
-    options.push({ label: 'Since my last review', detail: `PS ${main.basePatchSet} → ${v.patchSet}`, link: main, selected: true })
+    const voted = prev !== null && prev !== 0 ? ` (${fmtVote(prev)})` : ''
+    options.push({ label: 'Since my last review', detail: `PS ${main.basePatchSet}${voted} → ${v.patchSet}`, link: main, selected: true })
   }
   options.push({
     label: 'Since base',
@@ -131,4 +133,15 @@ export function ReviewButton(props: { view: ChangeView }) {
       )}
     </div>
   )
+}
+
+function fmtVote(v: number): string {
+  return v > 0 ? `+${v}` : `−${-v}`
+}
+
+/** One sentence on what the user did on the patch set they last reviewed, for the tooltips. */
+export function previousVote(vote: number | null, ps: number): string {
+  if (vote === null) return `You replied on patch set ${ps} without voting.`
+  if (vote === 0) return `You took your vote on patch set ${ps} back.`
+  return `You voted ${fmtVote(vote)} on patch set ${ps}.`
 }

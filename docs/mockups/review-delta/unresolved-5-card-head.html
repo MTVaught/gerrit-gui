@@ -1,0 +1,83 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+body { padding: 14px; }
+.sections { grid-template-columns: max-content max-content max-content max-content max-content minmax(140px, 1fr) max-content max-content max-content max-content; }
+.split-wrap { display: inline-flex; flex-direction: column; align-items: stretch; }
+.mock-note { max-width: 900px; margin: 18px 4px 0; font-size: 13px; color: var(--muted); }
+
+</style></head><body><div class="sections"><div class="group"><h3>Pass around <span class="count">5</span></h3><ul class="changes">
+<li class="change state-needs-review">
+<div class="change-head"><button class="link subject">Add retry to upload client</button><span class="muted small origin">demo · Alice</span></div>
+<div class="change-row">
+<span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#31</button></span>
+<span class="cell c-ps"><span>PS 5</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">you</span><span class="chip pos">Carol <b>+1</b></span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+84</span> <span class="del">−12</span></span></span>
+
+<span class="cell c-updated muted">2h ago</span>
+<div class="cell c-actions actions"><div class="split-wrap"><div class="split"><button class="btn split-main primary">Review PS 5<span class="arrow">↗</span></button><button class="btn split-caret primary">▾</button></div></div></div>
+<div class="cell c-wip actions"></div>
+</div></li>
+<li class="change state-needs-review">
+<div class="change-head"><button class="link subject">Fix flaky scheduler test</button><span class="badge stale">2 unresolved</span><span class="muted small origin">demo · Alice</span></div>
+<div class="change-row">
+<span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#27</button></span>
+<span class="cell c-ps"><span>PS 5</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">you</span><span class="chip pos">Carol <b>+1</b></span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+23</span> <span class="del">−9</span></span></span>
+
+<span class="cell c-updated muted">2h ago</span>
+<div class="cell c-actions actions"><div class="split-wrap"><div class="split"><button class="btn split-main primary">Review PS 3 → 5<span class="arrow">↗</span></button><button class="btn split-caret primary">▾</button></div></div></div>
+<div class="cell c-wip actions"></div>
+</div></li>
+<li class="change state-needs-review">
+<div class="change-head"><button class="link subject">Migrate config to TOML</button><span class="badge stale">11 unresolved</span><span class="muted small origin">demo · Alice</span></div>
+<div class="change-row">
+<span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#19</button></span>
+<span class="cell c-ps"><span>PS 2</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">you</span><span class="chip pos">Carol <b>+1</b></span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+310</span> <span class="del">−198</span></span></span>
+
+<span class="cell c-updated muted">2h ago</span>
+<div class="cell c-actions actions"><div class="split-wrap"><div class="split"><button class="btn split-main primary">Review PS 1 → 2<span class="arrow">↗</span></button><button class="btn split-caret primary">▾</button></div></div></div>
+<div class="cell c-wip actions"></div>
+</div></li>
+<li class="change state-needs-review">
+<div class="change-head"><button class="link subject">Rename Storage helpers</button><span class="badge stale">1 unresolved</span><span class="muted small origin">demo · Alice</span></div>
+<div class="change-row">
+<span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#24</button></span>
+<span class="cell c-ps"><span>PS 4</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">you</span><span class="chip pos">Carol <b>+1</b></span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+41</span> <span class="del">−41</span></span></span>
+
+<span class="cell c-updated muted">2h ago</span>
+<div class="cell c-actions actions"><div class="split-wrap"><div class="split"><button class="btn split-main primary">Review PS 2 → 4<span class="arrow">↗</span></button><button class="btn split-caret primary">▾</button></div></div></div>
+<div class="cell c-wip actions"></div>
+</div></li>
+<li class="change state-approved">
+<div class="change-head"><button class="link subject">Bump build dependencies</button><span class="muted small origin">demo · Alice</span></div>
+<div class="change-row">
+<span class="cell c-branch"><button class="link"><code>master</code></button></span>
+<span class="cell c-state"><span class="badge approved">Approved</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><button class="link">#12</button></span>
+<span class="cell c-ps"><span>PS 3</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip ">you</span><span class="chip pos">Carol <b>+1</b></span><span class="trailing"><button class="chip add">+</button></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+6</span> <span class="del">−6</span></span></span>
+
+<span class="cell c-updated muted">2h ago</span>
+<div class="cell c-actions actions"><div class="split-wrap"><div class="split"><button class="btn split-main">Open PS 3<span class="arrow">↗</span></button><button class="btn split-caret">▾</button></div></div></div>
+<div class="cell c-wip actions"></div>
+</div></li>
+</ul></div></div><p class="mock-note"><b>Unresolved 5 · On the title line.</b> A pill on the card's title line, next to the subject, like the "3 branches" badge on a family. It is out of the row grid entirely, so no column moves.</p></body></html>
