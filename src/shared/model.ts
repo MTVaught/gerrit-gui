@@ -1083,7 +1083,7 @@ export const SORT_OPTIONS: { id: SortId; label: string; title: string }[] = [
   { id: 'age', label: 'Overall age, oldest first', title: 'Oldest changes first, by the date the change was created' },
   { id: 'patchset', label: 'Last patch set, oldest first', title: 'Changes whose current patch set has waited longest first, by the date it was pushed' },
   { id: 'size', label: 'Total size, smallest first', title: 'Smallest changes first, by the lines added and removed against base' },
-  { id: 'new', label: 'Unreviewed size, smallest first', title: 'Smallest amount left for you to read first: the whole change if you never reviewed it, only the lines since your last review if you did, nothing once you reviewed the current patch set' },
+  { id: 'new', label: 'Patch size, smallest first', title: 'Smallest patch for you to read first: the lines since the patch set you last reviewed, the whole change if you never reviewed it, nothing once you reviewed the current patch set' },
 ]
 
 export const DEFAULT_SORT: SortId = 'updated'
