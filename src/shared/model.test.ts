@@ -115,7 +115,7 @@ test('iterating: a new patch set after a primary reviewer voted on a requested o
   assert.deepEqual(v.reviewedPatchSets, [2])
   assert.equal(v.requestedPatchSet, 2)
   assert.equal(v.reviewRequested, false)
-  assert.equal(v.canWithdrawReview, false)
+  assert.equal(v.canWithdrawReview, false, 'no request is open on this patch set')
 })
 
 test('a request nobody answered before the next push leaves the change in progress, not iterating', () => {
@@ -139,18 +139,19 @@ test('a re-requested patch set is needs-review; once every reviewer voted the ou
   const history = { reviewers: [bob], requested: [1, 3], patchSet: 3, messages: [vote(bob, 1, -1)] }
   const open = classify(change(history), 1)
   assert.equal(open.state, 'needs-review')
-  assert.equal(open.canWithdrawReview, false, 'the first round is on record')
+  assert.equal(open.canWithdrawReview, true, 'a later round can be taken back too; the first stays on record')
   assert.equal(classify(change({ ...history, votes: { 2: 1 } }), 1).state, 'approved')
   assert.deepEqual(classify(change({ ...history, votes: { 2: 1 } }), 1).reviewedPatchSets, [1, 3], 'the current vote comes from the labels')
 })
 
-test('withdraw: only the owner\'s first request, on the current patch set, before anyone voted', () => {
+test('withdraw: the owner\'s open request on the current patch set, whichever round and whoever has voted', () => {
   const first = change({ reviewers: [bob, carol], requested: 3 })
   assert.equal(classify(first, alice._account_id).canWithdrawReview, true)
   assert.equal(classify(first, bob._account_id).canWithdrawReview, false, 'not the owner')
-  assert.equal(classify(change({ reviewers: [bob, carol], requested: 3, votes: { 2: 1 } }), 1).canWithdrawReview, false, 'Bob voted')
-  assert.equal(classify(change({ reviewers: [bob, carol], requested: [2, 3] }), 1).canWithdrawReview, false, 'second request')
+  assert.equal(classify(change({ reviewers: [bob, carol], requested: 3, votes: { 2: 1 } }), 1).canWithdrawReview, true, 'Bob voted; his vote stays')
+  assert.equal(classify(change({ reviewers: [bob, carol], requested: [2, 3] }), 1).canWithdrawReview, true, 'second request')
   assert.equal(classify(change({ reviewers: [bob, carol], requested: 2, patchSet: 3 }), 1).canWithdrawReview, false, 'request is stale')
+  assert.equal(classify(change({ reviewers: [bob, carol], requested: 3, votes: { 2: 1, 3: 1 } }), 1).canWithdrawReview, true, 'everyone voted')
 })
 
 test('groupsFor: My Changes lists iterating above in progress; reviewer tabs fold both into one section', () => {

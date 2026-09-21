@@ -53,7 +53,7 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
     const request = (inPerson: boolean) => void act({ type: 'requestReview', id, patchSet: v.patchSet, history: v.requestedPatchSets, clearTags: v.staleReadyToMerge ? readyTags : undefined, inPerson })
     out.push({
       key: 'request',
-      label: `${again ? 'Re-request' : 'Request'} review (PS ${v.patchSet})`,
+      label: `${again ? 'Re-request' : 'Request'} (PS ${v.patchSet})`,
       short: again ? 'Re-request' : 'Request',
       primary: true,
       disabled: nobody,
@@ -79,12 +79,16 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
     run: () => void act({ type: 'setReviewKind', id, patchSet: v.patchSet, inPerson: !v.inPerson }),
   }
   const requestOpen = owner && v.reviewRequested && (v.state === 'needs-review' || v.state === 'in-person-review')
-  // Only a first request nobody has answered can be taken back; later rounds are on record.
   if (v.canWithdrawReview && requestOpen) {
-    out.push({ key: 'withdraw', label: 'Withdraw request', short: 'Withdraw', title: 'Nobody has voted yet, so the request is removed entirely', split: [switchKind], run: () => void act({ type: 'withdrawReview', id }) })
-  } else if (requestOpen) {
-    // No withdraw on a later round, so the kind gets a button of its own.
-    out.push({ key: 'kind', label: v.inPerson ? 'In person' : 'Pass around', short: v.inPerson ? 'In person' : 'Pass around', title: 'The kind of review asked for; change it here', menu: [switchKind], run: () => undefined })
+    const answered = v.reviewedPatchSets.includes(v.patchSet)
+    out.push({
+      key: 'withdraw',
+      label: 'Withdraw request',
+      short: 'Withdraw',
+      title: answered ? 'Take back the request; the votes already given stay on the change' : 'Take back the request before anyone has voted',
+      split: [switchKind],
+      run: () => void act({ type: 'withdrawReview', id, history: v.requestedPatchSets }),
+    })
   }
   // The merger votes +2 and submits, so the change must be mergeable before
   // they are asked: active (CI runs) and verified (CI passed), on top of approved.
@@ -143,7 +147,7 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
   }
   if (flags.length === 1) {
     const f = flags[0]!
-    out.push({ key: f.key, label: f.key === 'wip' && v.wip ? 'Mark active (runs CI)' : f.label, short: f.label, subtle: true, title: f.title, run: f.run })
+    out.push({ key: f.key, label: f.label, short: f.label, subtle: true, title: f.title, run: f.run })
   } else if (flags.length > 1) {
     out.push({ key: 'flags', label: flags[0]!.label, short: flags[0]!.label, subtle: true, title: 'WIP and private flags', menu: flags, run: () => undefined })
   }

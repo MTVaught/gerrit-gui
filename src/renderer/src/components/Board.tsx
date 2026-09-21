@@ -22,7 +22,7 @@ import {
   type SortId,
   type ViewFilter,
 } from '../../../shared/model.ts'
-import { ChangeRow, FamilyCard } from './ChangeRow.tsx'
+import { ChangeRow, FamilyCard, SizerRow } from './ChangeRow.tsx'
 import { Ledger } from './Ledger.tsx'
 
 export type { Group, TabId }
@@ -197,6 +197,7 @@ export function Board(props: {
         </p>
       )}
       <div className="sections">
+        <SizerRow />
         {sections.map((g) => (
           <section key={g.title} className="group">
             <h3>

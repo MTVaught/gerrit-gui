@@ -131,10 +131,13 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
           await g.setCustomKeyedValues(action.id, { [READY_TO_MERGE_KEY]: String(action.patchSet) })
           return
         }
-        case 'withdrawReview':
-          // Only a first, unanswered request is withdrawn (see canWithdrawReview), so the whole value goes.
-          await g.setCustomKeyedValues(action.id, {}, [REVIEW_REQUESTED_KEY, IN_PERSON_REVIEW_KEY])
+        case 'withdrawReview': {
+          // The latest round comes off the list; earlier ones stay on record.
+          // The kind marker is for the open request only, so it goes too.
+          const keep = action.history.slice(0, -1)
+          await g.setCustomKeyedValues(action.id, keep.length > 0 ? { [REVIEW_REQUESTED_KEY]: keep.join(',') } : {}, [...(keep.length > 0 ? [] : [REVIEW_REQUESTED_KEY]), IN_PERSON_REVIEW_KEY])
           return
+        }
         case 'setWip':
           await (action.wip ? g.setWip(action.id) : g.setReady(action.id))
           return

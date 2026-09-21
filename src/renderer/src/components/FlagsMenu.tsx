@@ -39,13 +39,16 @@ export function FlagsMenu(props: { spec: ActionSpec; small?: boolean }) {
     setOpen((o) => !o)
   }
 
+  const size = props.small ? 'sm' : ''
+  // The same two-part shape as every other button with a menu; both parts
+  // open the menu, as there is no default action.
   return (
-    <div className="flags-menu" ref={wrap}>
-      <button className={actionClass(spec, props.small ? 'sm' : '')} title={spec.title} aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
+    <div className="split flags-menu" ref={wrap}>
+      <button className={actionClass(spec, `split-main ${size}`)} title={spec.title} aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
         {spec.label}
-        <span className="arrow" aria-hidden="true">
-          ▾
-        </span>
+      </button>
+      <button className={actionClass(spec, `split-caret ${size}`)} title={spec.title} aria-label={spec.title} aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
+        ▾
       </button>
       {open && pos && (
         <div className="menu flags" role="menu" style={{ top: pos.top, right: pos.right }}>

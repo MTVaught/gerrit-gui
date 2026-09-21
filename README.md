@@ -502,6 +502,7 @@ mode do not operate in a browser. All other functions operate.
 pnpm test                                # unit tests of the classifier
 docker run -d --name gerrit-test -p 8080:8080 gerritcodereview/gerrit:3.11.2
 ./test/seed-gerrit.sh                    # users alice/bob/carol/dave, erin from another team, primary reviewers tagged, changes in each state
+./test/seed-more-states.sh               # the rest: in-person and second-round requests, stale tags, Verified, a named merger, tagged commit messages
 node --test test/integration.test.ts     # runs the real REST client through the full workflow
 ```
 
