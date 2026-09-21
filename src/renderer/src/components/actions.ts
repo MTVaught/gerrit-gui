@@ -59,8 +59,8 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
       disabled: nobody,
       title: nobody
         ? v.otherReviewers.length > 0
-          ? 'Tag a primary reviewer first: the people on this change are not waited for until one of them is made primary'
-          : 'Add a primary reviewer first'
+          ? 'A primary reviewer must be assigned first: use ↑ on one of the reviewers, or add one with +'
+          : 'A primary reviewer must be assigned first: add one with + in the reviewers column'
         : `Ask every primary reviewer to look at this patch set on their own (pass around).${stale}`,
       // The default is a pass-around review; the caret offers the in-person kind.
       split: [
@@ -101,7 +101,7 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
       primary: true,
       picker: 'merger',
       disabled: blocked !== null,
-      title: blocked ?? 'Pick the person to ask for the merge',
+      title: blocked ?? (v.staleReadyToMerge ? 'Pick the person to ask for the merge; the tag for the earlier patch set is replaced' : 'Pick the person to ask for the merge'),
       run: () => undefined,
     })
   }
@@ -116,11 +116,12 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
     })
   }
   // The owner does not get a separate "clear" when another button already
-  // covers it: re-requesting review clears a stale tag, and the merger picker
-  // offers the clear in its menu. So the row keeps one button.
-  const covered = out.some((a) => a.key === 'request' || a.key === 'change-merger')
+  // covers it: re-requesting review clears a stale tag, Ready to Merge writes
+  // the tag afresh for the current patch set over a stale one, and the merger
+  // picker offers the clear in its menu. So the row keeps one button.
+  const covered = out.some((a) => a.key === 'request' || a.key === 'ready' || a.key === 'change-merger')
   if (open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && ((v.isMine && !covered) || merger)) {
-    out.push({ key: 'clear', label: 'Clear ready-to-merge', short: 'Clear tag', run: () => void act({ type: 'hashtag', id, remove: readyTags }) })
+    out.push({ key: 'clear', label: 'Clear tag', short: 'Clear tag', run: () => void act({ type: 'hashtag', id, remove: readyTags }) })
   }
   // The subtle button in the last column. The owner gets a menu with the WIP
   // and private toggles; a merger only clears WIP, so theirs is a plain button.
