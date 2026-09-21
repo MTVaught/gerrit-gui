@@ -380,8 +380,8 @@ function TabCount(props: {
   // What no segment (nor the lock) covers: on My Changes, the cards waiting on the merger.
   const rest = Math.max(0, props.total - props.segments.reduce((sum, s) => sum + s.n, 0))
   const title = [...segs.map((s) => `${s.n} ${s.label}`), ...(rest > 0 ? [`${rest} other`] : []), `${props.total} total`].join(' · ')
-  const mine = segs.filter((s) => s.tone === 'pos' || s.tone === 'neg')
-  const others = segs.filter((s) => s.tone !== 'pos' && s.tone !== 'neg')
+  const mine = segs.filter((s) => s.tone === 'hot' || s.tone === 'pos' || s.tone === 'neg')
+  const others = segs.filter((s) => !mine.includes(s))
   const seg = (s: TabSegment) => (
     <span key={s.label} className={s.tone}>
       {s.n}
@@ -426,16 +426,14 @@ function notifyMergeRequests(d: DashboardData, seen: React.RefObject<Set<number>
   seen.current = now
 }
 
+/** A desktop notification for each change the author just asked this user to review, of either kind. */
 function notifyNewReviews(d: DashboardData, seen: React.RefObject<Set<number> | null>) {
-  const now = new Set(
-    classifyAll(d.open, d.self._account_id)
-      .filter((v) => v.needsMyReview)
-      .map((v) => v.change._number),
-  )
+  const waiting = classifyAll(d.open, d.self._account_id).filter((v) => v.needsMyReview)
+  const now = new Set(waiting.map((v) => v.change._number))
   if (seen.current && typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
-    const fresh = d.open.filter((c) => now.has(c._number) && !seen.current!.has(c._number))
-    for (const c of fresh) {
-      new Notification(`Review requested: ${c.subject}`, { body: `${c.project} · ${c.owner.name ?? ''}` })
+    const fresh = waiting.filter((v) => !seen.current!.has(v.change._number))
+    for (const { change: c, inPerson } of fresh) {
+      new Notification(`${inPerson ? 'In-person review' : 'Review'} requested: ${c.subject}`, { body: `${c.project} · ${c.owner.name ?? ''}` })
     }
   }
   seen.current = now

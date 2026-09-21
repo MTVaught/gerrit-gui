@@ -8,6 +8,7 @@ import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
 import { ForkIcon } from './Icons.tsx'
 import { ReviewButton } from './ReviewButton.tsx'
+import { SplitButton } from './SplitButton.tsx'
 import { SlackLink } from './SlackLink.tsx'
 import { actionClass, changeActions } from './actions.ts'
 import type { Section } from './Board.tsx'
@@ -224,6 +225,8 @@ function LedgerRow(
         <td className="a">
           {primary?.picker ? (
             <MergerPicker view={v} spec={primary} onAct={props.onAct} small />
+          ) : primary?.split ? (
+            <SplitButton spec={primary} small />
           ) : primary ? (
             <button className={actionClass(primary, 'sm')} disabled={primary.disabled} title={primary.title ?? primary.label} onClick={primary.run}>
               {primary.short}
@@ -260,6 +263,8 @@ function LedgerRow(
               {rest.flatMap((a) =>
                 a.picker ? (
                   <MergerPicker key={a.key} view={v} spec={a} onAct={props.onAct} small />
+                ) : a.split ? (
+                  <SplitButton key={a.key} spec={a} small />
                 ) : a.menu ? (
                   // The detail row has room, so the menu's items are plain buttons here.
                   a.menu.map((m) => (

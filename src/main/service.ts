@@ -3,7 +3,7 @@
 // running the UI in a browser (e.g. over VS Code port forwarding).
 import { GerritClient, GerritError, type FetchLike } from './gerrit.ts'
 import { fetchDashboard } from './dashboard.ts'
-import { READY_TO_MERGE_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
+import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
 import { mergerTag, preferredKey, requestedPatchSetsValue, reviewerTag } from '../shared/model.ts'
 import type {
   AccountInfo,
@@ -109,7 +109,16 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
           // it goes with the request.
           if (action.clearTags?.length) await g.setHashtags(action.id, undefined, action.clearTags)
           // The patch set joins the ones asked before, so the rounds stay on record.
-          await g.setCustomKeyedValues(action.id, { [REVIEW_REQUESTED_KEY]: requestedPatchSetsValue(action.history, action.patchSet) }, action.clearTags?.length ? [READY_TO_MERGE_KEY] : undefined)
+          // The kind goes with the request: an in-person one records its patch set, a pass-around one drops any earlier record.
+          await g.setCustomKeyedValues(
+            action.id,
+            { [REVIEW_REQUESTED_KEY]: requestedPatchSetsValue(action.history, action.patchSet), ...(action.inPerson ? { [IN_PERSON_REVIEW_KEY]: String(action.patchSet) } : {}) },
+            [...(action.inPerson ? [] : [IN_PERSON_REVIEW_KEY]), ...(action.clearTags?.length ? [READY_TO_MERGE_KEY] : [])],
+          )
+          return
+        case 'setReviewKind':
+          // The round stays as it is; only the kind of the open request changes.
+          await g.setCustomKeyedValues(action.id, action.inPerson ? { [IN_PERSON_REVIEW_KEY]: String(action.patchSet) } : {}, action.inPerson ? [] : [IN_PERSON_REVIEW_KEY])
           return
         case 'requestMerge': {
           // The state tag and the addressee go in one request; a previous
@@ -124,7 +133,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
         }
         case 'withdrawReview':
           // Only a first, unanswered request is withdrawn (see canWithdrawReview), so the whole value goes.
-          await g.setCustomKeyedValues(action.id, {}, [REVIEW_REQUESTED_KEY])
+          await g.setCustomKeyedValues(action.id, {}, [REVIEW_REQUESTED_KEY, IN_PERSON_REVIEW_KEY])
           return
         case 'setWip':
           await (action.wip ? g.setWip(action.id) : g.setReady(action.id))

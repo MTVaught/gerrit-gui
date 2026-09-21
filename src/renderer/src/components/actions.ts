@@ -20,6 +20,8 @@ export interface ActionSpec {
   picker?: 'merger'
   /** Rendered as a button that opens a menu of these; `run` is then unused. The ledger shows them as plain buttons. */
   menu?: MenuItem[]
+  /** Rendered as a split button: the main part runs `run`, the caret opens a menu of these other choices. */
+  split?: MenuItem[]
   run: () => void
 }
 
@@ -47,6 +49,8 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
     const again = v.state === 'iterating'
     // Nobody tagged means nobody to decide: the request is refused until someone is.
     const nobody = v.reviewers.length === 0
+    const stale = v.staleReadyToMerge ? ' Also clears the ready-to-merge tag, which was for an earlier patch set.' : ''
+    const request = (inPerson: boolean) => void act({ type: 'requestReview', id, patchSet: v.patchSet, history: v.requestedPatchSets, clearTags: v.staleReadyToMerge ? readyTags : undefined, inPerson })
     out.push({
       key: 'request',
       label: `${again ? 'Re-request' : 'Request'} review (PS ${v.patchSet})`,
@@ -57,15 +61,30 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
         ? v.otherReviewers.length > 0
           ? 'Tag a primary reviewer first: the people on this change are not waited for until one of them is made primary'
           : 'Add a primary reviewer first'
-        : v.staleReadyToMerge
-          ? 'Ask every primary reviewer to look at this patch set. Also clears the ready-to-merge tag, which was for an earlier patch set.'
-          : 'Ask every primary reviewer to look at this patch set',
-      run: () => void act({ type: 'requestReview', id, patchSet: v.patchSet, history: v.requestedPatchSets, clearTags: v.staleReadyToMerge ? readyTags : undefined }),
+        : `Ask every primary reviewer to look at this patch set on their own (pass around).${stale}`,
+      // The default is a pass-around review; the caret offers the in-person kind.
+      split: [
+        { key: 'pass-around', label: 'Pass-around review', detail: 'each reviewer on their own', title: `Ask every primary reviewer to look at this patch set on their own.${stale}`, run: () => request(false) },
+        { key: 'in-person', label: 'In-person review', detail: 'together with you', title: `Ask every primary reviewer to go through this patch set with you, then vote.${stale}`, run: () => request(true) },
+      ],
+      run: () => request(false),
     })
   }
+  // While a request is open, its kind can be changed without starting a new round.
+  const switchKind: MenuItem = {
+    key: v.inPerson ? 'pass-around' : 'in-person',
+    label: v.inPerson ? 'Switch to pass-around review' : 'Switch to in-person review',
+    detail: v.inPerson ? 'each reviewer on their own' : 'together with you',
+    title: v.inPerson ? 'Reviewers look at this patch set on their own; the request stays as it is otherwise' : 'Reviewers go through this patch set with you; the request stays as it is otherwise',
+    run: () => void act({ type: 'setReviewKind', id, patchSet: v.patchSet, inPerson: !v.inPerson }),
+  }
+  const requestOpen = owner && v.reviewRequested && (v.state === 'needs-review' || v.state === 'in-person-review')
   // Only a first request nobody has answered can be taken back; later rounds are on record.
-  if (v.canWithdrawReview && v.state === 'needs-review') {
-    out.push({ key: 'withdraw', label: 'Withdraw request', short: 'Withdraw', title: 'Nobody has voted yet, so the request is removed entirely', run: () => void act({ type: 'withdrawReview', id }) })
+  if (v.canWithdrawReview && requestOpen) {
+    out.push({ key: 'withdraw', label: 'Withdraw request', short: 'Withdraw', title: 'Nobody has voted yet, so the request is removed entirely', split: [switchKind], run: () => void act({ type: 'withdrawReview', id }) })
+  } else if (requestOpen) {
+    // No withdraw on a later round, so the kind gets a button of its own.
+    out.push({ key: 'kind', label: v.inPerson ? 'In person' : 'Pass around', short: v.inPerson ? 'In person' : 'Pass around', title: 'The kind of review asked for; change it here', menu: [switchKind], run: () => undefined })
   }
   // The merger votes +2 and submits, so the change must be mergeable before
   // they are asked: active (CI runs) and verified (CI passed), on top of approved.

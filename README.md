@@ -28,7 +28,7 @@ application remembers the sort; the search and filter last for the session.
 
 | Tab | Contents |
 | --- | --- |
-| Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. |
+| Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. Two sections: "Pass Around" for reviews you do on your own, "In Person" for reviews done together with the author. The count is split the same way; only the pass-around part is in the accent colour. |
 | Reviewing | All open changes on which you are a reviewer, primary or not, in groups by state. |
 | My Changes | Your open changes, in groups by state, with the actions of the owner. The count gains a red segment for changes that need work and a green one for approved changes. Private changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
 | Merged | Approved changes that the author asked you, by name, to merge, above the changes that Gerrit merged in the last 14 days. The count gains a green segment while anything waits on you to merge. |
@@ -50,7 +50,15 @@ application remembers the sort; the search and filter last for the session.
    change. The application does not ask a reviewer to look at the change yet.
 2. When the patch set is ready, the author pushes the "Request review" button.
    The button is off until the change has a primary reviewer. All primary
-   reviewers then see the change on the "Needs Review" tab.
+   reviewers then see the change on the "Needs Review" tab. The button asks
+   for a pass-around review: each reviewer reads the change on their own.
+   The caret next to it offers an in-person review instead: the reviewers
+   go through the change together with the author, then vote in Gerrit the
+   same way. An in-person change is listed in its own "In Person" section
+   on every tab, and it is not counted in the menu bar. While the request
+   is open, the caret on "Withdraw request" (or, on a later round, the
+   "Pass around" / "In person" button) switches the kind without starting
+   a new round.
 3. Each primary reviewer pushes the "Review" button. It opens the change in Gerrit,
    showing the diff from the last patch set that reviewer looked at to the
    current one (or the whole change on a first look). The reviewer votes +1
@@ -96,9 +104,12 @@ the same votes, hashtags and WIP flags.
 | Workflow item | Gerrit data |
 | --- | --- |
 | Request review | The application appends the number of the current patch set to the custom keyed value `review-requested-ps` of the change, a comma-separated list of every patch set asked about, in order: `2,4,5`. |
-| Withdraw request | Removes `review-requested-ps`. Offered only for a first request on the current patch set that no primary reviewer has voted on; later rounds stay on record. |
+| In-person review | The request also sets the custom keyed value `in-person-review-ps` to the number of the current patch set. A pass-around request removes it. The value counts only while it equals the current patch set and a review is requested for that patch set; a push after the request drops the kind with the request. |
+| Withdraw request | Removes `review-requested-ps` and `in-person-review-ps`. Offered only for a first request on the current patch set that no primary reviewer has voted on; later rounds stay on record. |
+| Switch kind | Sets or removes `in-person-review-ps` for the current patch set; `review-requested-ps` is not touched, so the round stays as it is. |
 | Primary reviewer X | The change has the hashtag `reviewer:<username>`, with the Gerrit username of X in lower case, or the email address for an account with no username. One tag per primary reviewer. |
 | Needs Review by X | The last number in `review-requested-ps` is the same as the number of the current patch set. X is a primary reviewer. X has no Code-Review vote on the current patch set. |
+| In-Person Review | As Needs Review, and `in-person-review-ps` is the number of the current patch set. Everything else is the same: the votes of the primary reviewers decide, and the last vote sets Approved or Needs Changes. |
 | Iterating | No review is requested for the current patch set, and a primary reviewer voted on an earlier patch set listed in `review-requested-ps`. The vote is read from the change messages, since Gerrit drops the votes of earlier patch sets from the labels. Shown on My Changes only; a reviewer sees these as In Progress. |
 | Reviewer finished | X has a Code-Review vote (+1 or -1) on the current patch set. |
 | "+" button, "Primary" | For each person checked: adds them as a reviewer of the change in Gerrit, when they are not one yet, then adds the `reviewer:` tag. One account per tag; a group is refused. |

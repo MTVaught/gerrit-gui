@@ -12,7 +12,7 @@ import type {
   SlackWorkspace,
   TabId,
 } from './types.ts'
-import { CODE_REVIEW, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, READY_TO_MERGE_KEY, SLACK_TAG_PREFIX, VERIFIED } from './constants.ts'
+import { CODE_REVIEW, IN_PERSON_REVIEW_KEY, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, READY_TO_MERGE_KEY, SLACK_TAG_PREFIX, VERIFIED } from './constants.ts'
 
 export function isBot(a: AccountInfo): boolean {
   return a.tags?.includes('SERVICE_USER') ?? false
@@ -331,6 +331,11 @@ export function readyPatchSet(change: ChangeInfo): number | null {
   return patchSetValue(change, READY_TO_MERGE_KEY)
 }
 
+/** The patch set the author asked an in-person review for, or null if none. */
+export function inPersonPatchSet(change: ChangeInfo): number | null {
+  return patchSetValue(change, IN_PERSON_REVIEW_KEY)
+}
+
 function patchSetValue(change: ChangeInfo, key: string): number | null {
   const n = parseInt(change.custom_keyed_values?.[key] ?? '', 10)
   return Number.isFinite(n) && n > 0 ? n : null
@@ -382,6 +387,9 @@ export function reviewLink(view: ChangeView): ChangeLink {
  *  needs-review   review requested on this patch set; a primary reviewer has
  *                 not voted yet (early -1s do not change this; the last one
  *                 decides), or nobody is tagged as primary yet
+ *  in-person-review  as needs-review, but the author asked for an in-person
+ *                 review: the reviewers look at the change with the author,
+ *                 then vote in Gerrit the same way. Not counted in the tray.
  *  needs-changes  every primary reviewer has voted and at least one is negative
  *  approved       every primary reviewer voted +1 on the current patch set
  *  ready-to-merge approved and the author tagged this patch set for the
@@ -445,6 +453,10 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
   const requestedAll = requestedPatchSets(change)
   const requested = requestedAll.at(-1) ?? null
   const reviewRequested = requested !== null && requested === patchSet
+  // The kind of the open request. The value is for one patch set, like the
+  // ready-to-merge one, so a request on a later patch set is pass-around
+  // again unless it wrote the value too.
+  const inPerson = reviewRequested && inPersonPatchSet(change) === patchSet
   const reviewed = reviewedPatchSets(change, requestedAll, primaryIds, patchSet, votes)
   const open = change.status === 'NEW'
   const merger = requestedMerger(change)
@@ -459,7 +471,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
   else if (change.status === 'ABANDONED') state = 'abandoned'
   else if (everyoneVoted && negatives.length > 0) state = 'needs-changes'
   else if (everyoneVoted) state = tagged ? 'ready-to-merge' : 'approved'
-  else if (reviewRequested) state = 'needs-review'
+  else if (reviewRequested) state = inPerson ? 'in-person-review' : 'needs-review'
   else if (reviewed.length > 0) state = 'iterating'
   else state = 'in-progress'
 
@@ -479,6 +491,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     reviewedPatchSets: reviewed,
     canWithdrawReview: open && isMine && reviewRequested && requestedAll.length === 1 && reviewed.length === 0,
     reviewRequested,
+    inPerson,
     isMine,
     iAmReviewer,
     iAmPrimary,
@@ -571,6 +584,8 @@ function reviewerGroups(items: ChangeView[]): Group[] {
   return [
     { title: 'Waiting on you', items: items.filter((v) => v.needsMyReview && v.state === 'needs-review') },
     { title: 'Reviewed, waiting on others', items: items.filter((v) => !v.needsMyReview && v.state === 'needs-review') },
+    // An in-person review is not split by vote: whether one has voted matters less than the meeting.
+    { title: 'In Person', items: items.filter((v) => v.state === 'in-person-review') },
     ...byState(items, REVIEWER_ORDER, REVIEWER_TITLES),
   ].filter((g) => g.items.length > 0)
 }
@@ -603,7 +618,11 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
   const open = internal.filter((v) => v.change.status === 'NEW')
   switch (tab) {
     case 'needs-my-review':
-      return [{ title: 'Waiting on you', items: open.filter((v) => v.needsMyReview) }].filter((g) => g.items.length > 0)
+      // Pass-around requests first: those are read alone, at the reviewer's desk. In-person ones wait for the meeting.
+      return [
+        { title: 'Pass Around', items: open.filter((v) => v.needsMyReview && v.state === 'needs-review') },
+        { title: 'In Person', items: open.filter((v) => v.needsMyReview && v.state === 'in-person-review') },
+      ].filter((g) => g.items.length > 0)
     case 'reviewing':
       return reviewerGroups(open.filter((v) => v.iAmReviewer && !v.isMine))
     case 'mine': {
@@ -614,8 +633,8 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
       return [
         ...byState(
           mine.filter((v) => !v.isPrivate),
-          ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'iterating', 'in-progress'],
-          { 'needs-review': 'Out for review' },
+          ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'in-person-review', 'iterating', 'in-progress'],
+          { 'needs-review': 'Pass Around', 'in-person-review': 'In Person' },
         ),
         {
           title: 'Private',
@@ -650,16 +669,20 @@ const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'merg
 export interface TabSegment {
   n: number
   /**
-   * pos/neg: waits on the user. pending/wip: waits on others, shown after a
-   * gap in muted tones. private: not a state; drawn as a lock beside the pill.
+   * hot: waits on the user, in the accent of the plain Needs Review pill.
+   * plain: the grey of an ordinary count. pos/neg: waits on the user.
+   * pending/wip: waits on others, shown after a gap in muted tones. private:
+   * not a state; drawn as a lock beside the pill.
    */
-  tone: 'pos' | 'neg' | 'pending' | 'wip' | 'private'
+  tone: 'hot' | 'plain' | 'pos' | 'neg' | 'pending' | 'wip' | 'private'
   /** Names the count in the pill's tooltip: "3 ready to merge". */
   label: string
 }
 
 /**
- * The colored segments of the count pills: on Merged, what waits to be
+ * The colored segments of the count pills: on Needs Review, the pass-around
+ * requests in the accent and the in-person ones in plain grey, since those
+ * wait for a meeting rather than for the user; on Merged, what waits to be
  * merged; on My Changes, one per section: what needs work, what is approved,
  * then what is out for review and what is still in progress, and the private
  * ones apart. Cards, like the totals, so a family counts once: in the section
@@ -673,11 +696,15 @@ export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegme
     countFamilies(cardGroups(tab, views).filter((g) => g.title === title).flatMap((g) => g.items))
   const merged = cardGroups('merged', views)
   const segments: Partial<Record<TabId, TabSegment[]>> = {
+    'needs-my-review': [
+      { n: bySection('needs-my-review', 'Pass Around'), tone: 'hot', label: 'pass around' },
+      { n: bySection('needs-my-review', 'In Person'), tone: 'plain', label: 'in person' },
+    ],
     merged: [{ n: countFamilies(merged.filter((g) => g.title !== 'Merged in the last 14 days').flatMap((g) => g.items)), tone: 'pos', label: 'ready to merge' }],
     mine: [
       { n: bySection('mine', STATE_LABEL['needs-changes']), tone: 'neg', label: 'need changes' },
       { n: bySection('mine', STATE_LABEL['approved']), tone: 'pos', label: 'approved' },
-      { n: bySection('mine', 'Out for review'), tone: 'pending', label: 'out for review' },
+      { n: bySection('mine', 'Pass Around') + bySection('mine', 'In Person'), tone: 'pending', label: 'out for review' },
       { n: bySection('mine', STATE_LABEL['iterating']) + bySection('mine', STATE_LABEL['in-progress']), tone: 'wip', label: 'in progress' },
       { n: bySection('mine', 'Private'), tone: 'private', label: 'private' },
     ],
@@ -749,7 +776,7 @@ export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
 
 /**
  * How many cards wait on this user, by the action they need to take:
- *  review  I am a primary reviewer and the author asked for a review of the current patch set
+ *  review  I am a primary reviewer and the author asked for a pass-around review of the current patch set
  *  fix     my change got a negative outcome; push corrections
  *  ready   my change is approved; mark it ready to merge
  *  merge   the author asked me to merge (or nobody was named and I may +2)
@@ -776,7 +803,8 @@ function countsForActions(v: ChangeView): boolean {
 export function needsAction(v: ChangeView, category: ActionCategory): boolean {
   switch (category) {
     case 'review':
-      return v.needsMyReview
+      // An in-person review is arranged with the author; the tray does not nag about it.
+      return v.needsMyReview && v.state === 'needs-review'
     case 'fix':
       return v.isMine && v.state === 'needs-changes'
     case 'ready':
@@ -858,6 +886,7 @@ export const STATE_LABEL: Record<ReviewState, string> = {
   'in-progress': 'In Progress',
   iterating: 'Iterating',
   'needs-review': 'Needs Review',
+  'in-person-review': 'In-Person Review',
   'needs-changes': 'Needs Changes',
   approved: 'Approved',
   'ready-to-merge': 'Ready to Merge',
@@ -974,6 +1003,8 @@ export function sortByBranch(views: ChangeView[]): ChangeView[] {
  */
 export const URGENCY: readonly ReviewState[] = [
   'needs-changes',
+  // An in-person request is a meeting to arrange, so it leads a family over a request read alone.
+  'in-person-review',
   'needs-review',
   'iterating',
   'in-progress',

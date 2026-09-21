@@ -38,8 +38,9 @@ Bob's **Needs Review** tab. Alice can push as many patch sets as she likes.
 ## 2. Alice requests review
 
 When patch set 1 is ready, Alice pushes **Request review (PS 1)**. The change
-moves to "Out for review" and both reviewer chips turn blue: asked, not yet
-voted.
+moves to "Pass Around" and both reviewer chips turn blue: asked, not yet
+voted. (Had she picked "In-person review" from the caret, it would be under
+"In Person" instead, for everyone.)
 
 ![Alice: out for review](walkthrough/03-dev-out-for-review.png)
 
@@ -121,7 +122,8 @@ After Dave submits, the change is on everyone's **Merged** tab for
 | "+" with Other | For each person checked: adds the reviewer only; owner's choice |
 | "↑" or "↓" on a chip | Adds or removes the `reviewer:` hashtag |
 | "×" on a primary chip | Removes the `reviewer:` hashtag, then the reviewer where Gerrit allows it |
-| Request review | Appends the patch set number to the custom value `review-requested-ps`. Off until a primary reviewer is tagged |
+| Request review | Appends the patch set number to the custom value `review-requested-ps`. Off until a primary reviewer is tagged. The caret's "In-person review" also sets `in-person-review-ps` to the patch set number; the default pass-around request removes it |
+| Withdraw request caret, "Pass around" / "In person" | Sets or removes `in-person-review-ps` for the current patch set |
 | Review | Opens Gerrit; the vote is Gerrit's own Code-Review +1 or -1 |
 | Ready to Merge | Hashtags `ready-to-merge` and `merger:dave`; custom value `ready-to-merge-ps` = the patch set number |
 | Change merger | Replaces the `merger:` hashtag |
