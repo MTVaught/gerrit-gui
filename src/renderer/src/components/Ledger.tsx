@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName, reviewLink, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
-import { MyLastReview, PrivateBadge, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
+import { FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
 import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
@@ -218,7 +218,7 @@ function LedgerRow(
         </td>
         {props.showCi && (
           <td className="ci" onClick={toggle}>
-            {open && <CiBadge wip={v.wip} />}
+            {open && <FlagBadge view={v} />}
           </td>
         )}
         <td className="r" onClick={toggle}>
@@ -250,9 +250,7 @@ function LedgerRow(
                 {STATE_LABEL[v.state]}
                 {merger && ` · ${merger}`}
               </span>
-              {open && !props.showCi && <CiBadge wip={v.wip} />}
-              {open && v.isPrivate && <PrivateBadge />}
-              {v.staleReadyToMerge && <span className="badge stale">ready-to-merge tag is stale</span>}
+              {open && !props.showCi && <FlagBadge view={v} />}
               <SlackLink view={v} onAct={props.onAct} variant="pill" />
               <span className="muted">
                 {c.project} · {c.branch}
@@ -309,29 +307,14 @@ function ReviewShort(props: { view: ChangeView }) {
   )
 }
 
-function CiBadge(props: { wip: boolean }) {
-  return (
-    <span className={'badge ' + (props.wip ? 'wip' : 'active')} title={props.wip ? 'Work in progress: CI is not running' : 'Active: CI runs on this change'}>
-      {props.wip ? 'WIP' : 'Active'}
-    </span>
-  )
-}
-
 /** The column fits three circles, so four or more reviewers become two plus a "+n". */
 const MAX_AVATARS = 3
 
 function Avatars(props: { reviewers: ReviewerStatus[]; view: ChangeView; self: AccountInfo }) {
   const { view: v } = props
   const open = v.change.status === 'NEW'
-  if (props.reviewers.length === 0) {
-    if (!open) return null
-    const untagged = v.otherReviewers.length > 0
-    return (
-      <span className="none" title={untagged ? 'Nobody is tagged as primary, so nobody is waited for' : 'No primary reviewers yet'}>
-        {untagged ? 'no primary' : 'none'}
-      </span>
-    )
-  }
+  // No primary reviewer: the cell stays empty; the disabled Request button says why.
+  if (props.reviewers.length === 0) return null
   // Pending reviewers first, so what still blocks the change is visible even when the stack is cut.
   const sorted = [...props.reviewers].sort((a, b) => Number(b.vote === 0) - Number(a.vote === 0))
   const shown = sorted.slice(0, sorted.length > MAX_AVATARS ? MAX_AVATARS - 1 : MAX_AVATARS)

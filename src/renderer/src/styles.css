@@ -155,8 +155,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
  * button fills its column, so every row's button in a column is the same
  * width: the widest label on the tab sets it.
  */
-/* branch, state, flags, ci, number, tags, patch set, request note, reviewers, diff, age, wip, main button */
-.sections { display: grid; grid-template-columns: max-content max-content max-content max-content max-content max-content max-content max-content minmax(140px, 1fr) max-content max-content max-content max-content; }
+/* branch, state, flag, number over patch set, tags, reviewers, diff, age, wip, main button */
+.sections { display: grid; grid-template-columns: max-content max-content max-content max-content max-content minmax(150px, 1fr) max-content max-content max-content max-content; }
 .group, .changes { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .group > h3, .group > p { grid-column: 1 / -1; }
 .changes { list-style: none; margin: 0; padding: 0; row-gap: 8px; }
@@ -173,7 +173,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 /* The sizer row takes no height and is never seen; only its cells' widths count. */
 .change-row.sizer > .cell { visibility: hidden; height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
 /* Spacing is padding, not a column gap, so the border between rows runs unbroken. */
-.cell { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 12px 4px 0; white-space: nowrap; font-size: 13px; }
+.cell { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 8px 4px 0; white-space: nowrap; font-size: 13px; }
 .c-wip { padding-right: 6px; }
 .c-actions { padding-right: 0; }
 .c-wip > *, .c-actions > * { flex: 1; }
@@ -183,30 +183,30 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .c-branch code { font-weight: 600; }
 .change-row.closed .c-branch code { font-weight: 500; }
 .c-reviewers { flex-direction: column; align-items: stretch; gap: 3px; }
+.c-reviewers .mine { padding-left: 2px; }
 .c-actions { justify-content: flex-end; }
 .cell.c-wip { justify-content: flex-end; }
 .c-diff, .c-updated { font-size: 12.5px; }
 /* Numbers line up on the right, so the pill or note beside them starts in the same place on every row. */
 .c-num, .c-diff, .c-updated { justify-content: flex-end; }
+/* The patch set sits under the change number, so it costs the row no width. */
+.c-num { flex-direction: column; align-items: flex-end; justify-content: center; gap: 0; }
+.c-num .ps { font-size: 11px; white-space: nowrap; }
 /* The lines since the reviewer's last look, in brackets after the whole change's counts; muted so the total reads first. */
 .since { color: var(--muted); font-size: 12px; }
 .since .ins, .since .del { opacity: 0.8; }
 /* Unresolved comment threads: a bubble with the count, by the change number. */
 .unresolved { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--warn); }
 .unresolved svg { width: 11px; height: 11px; }
-/* The reviewer's own last round, as a second line under the patch set. */
-.c-req { flex-wrap: wrap; row-gap: 0; }
-.c-req .mine { flex-basis: 100%; font-size: 11px; color: var(--muted); white-space: nowrap; }
-.c-req .mine .pos { color: var(--pos); } .c-req .mine .neg { color: var(--neg); }
-.req { font-size: 11px; color: var(--pending); }
-.req.stale { color: var(--muted); }
+/* The reviewer's own last round, as a line under the reviewer chips. */
+.mine { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.mine .pos { color: var(--pos); } .mine .neg { color: var(--neg); }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--border); white-space: nowrap; }
 .badge.needs-review, .badge.in-person-review { background: var(--pending-bg); color: var(--pending); }
 .badge.needs-changes { background: var(--neg-bg); color: var(--neg); }
 .badge.approved, .badge.ready-to-merge, .badge.merged { background: var(--pos-bg); color: var(--pos); }
 .badge.wip { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
 .badge.active { background: var(--warn-bg); color: var(--warn); }
-.badge.stale { background: var(--warn-bg); color: var(--warn); }
 .badge.private { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--muted); }
 .badge.private svg { width: 10px; height: 10px; }
 .badge.tally { font-weight: 600; }
@@ -225,7 +225,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .chip.pending { background: var(--pending-bg); color: var(--pending); border-color: transparent; }
 .chip.pos { background: var(--pos-bg); color: var(--pos); border-color: transparent; }
 .chip.neg { background: var(--neg-bg); color: var(--neg); border-color: transparent; }
-.chip.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
 .chip.add, .chip.more { background: none; cursor: pointer; color: var(--muted); font: inherit; font-size: 12px; }
 .chip.add:hover, .chip.more:hover { color: var(--fg); }
 .chip.add { padding: 2px 7px; }
@@ -442,7 +441,6 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .ledger .s { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ledger .sep { margin: 0 4px; opacity: 0.6; }
 .ledger td.a { text-align: right; white-space: nowrap; padding-right: 6px; }
-.ledger .none { color: var(--warn); font-size: 11px; }
 .ledger tr.g td { padding: 12px 8px 4px; border-bottom: 1px solid var(--border); font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
 .ledger tr.g .hint { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; margin-top: 2px; white-space: normal; }
 .ledger tr.open td { background: var(--panel); border-bottom: none; }

@@ -95,8 +95,8 @@ function CardHead(props: { view: ChangeView; family?: ChangeFamily; search: stri
 }
 
 /**
- * The cells of one branch: branch, state, CI, number with its tags, patch set, reviewers,
- * diff, age, buttons, WIP toggle. The card is a subgrid of its list, so every card in a
+ * The cells of one branch: branch, state, flag (Private, WIP or Active), number over its
+ * patch set, tags, reviewers, diff, age, buttons, WIP toggle. The card is a subgrid of its list, so every card in a
  * section lines these up in the same columns.
  */
 function BranchRow(props: RowProps) {
@@ -119,45 +119,16 @@ function BranchRow(props: RowProps) {
           {c.status === 'MERGED' && ` ${ago(c.submitted ?? c.updated)}`}
         </span>
       </span>
-      <span className="cell c-flags">
-        {v.staleReadyToMerge && (
-          <span className="badge stale" title="Tagged ready-to-merge for an earlier patch set, or the approval no longer holds">
-            stale tag
-          </span>
-        )}
-        {open && v.isPrivate && <PrivateBadge />}
-      </span>
-      <span className="cell c-ci">
-        {open && (
-          <span className={'badge ' + (v.wip ? 'wip' : 'active')} title={v.wip ? 'Work in progress: CI is not running on this change' : 'Active: CI runs on this change'}>
-            {v.wip ? 'WIP' : 'Active'}
-          </span>
-        )}
-      </span>
+      <span className="cell c-ci">{open && <FlagBadge view={v} />}</span>
       <span className="cell c-num">
         <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title="Open in Gerrit">
           #{c._number}
         </button>
+        <span className="ps muted">PS {v.patchSet}</span>
       </span>
       <span className="cell c-tags">
         <TagsButton message={commitMessage(c)} state={v.state} />
         <Unresolved count={c.unresolved_comment_count} />
-      </span>
-      <span className="cell c-ps">
-        <span>PS {v.patchSet}</span>
-      </span>
-      <span className="cell c-req">
-        {open && v.reviewRequested && (
-          <span className="req" title="Review requested for this patch set">
-            asked
-          </span>
-        )}
-        {open && v.requestedPatchSet !== null && !v.reviewRequested && (
-          <span className="req stale" title="Review was requested for an earlier patch set; votes on it no longer apply">
-            asked PS {v.requestedPatchSet}
-          </span>
-        )}
-        <MyLastReview view={v} />
       </span>
       <div className="cell c-reviewers">
         <Reviewers {...props} />
@@ -191,7 +162,7 @@ export function SinceReview(props: { view: ChangeView }) {
 }
 
 /**
- * The user's part of the review rounds, under the request note: the vote they
+ * The user's part of the review rounds, under the reviewer chips: the vote they
  * cast on the last patch set they reviewed, so they know whether the
  * re-review starts from a +1 or a −1. Nothing when they never reviewed the
  * change or already reviewed this patch set.
@@ -251,27 +222,17 @@ export function SizerRow() {
       <span className="cell c-state">
         <span className="badge in-person-review">{STATE_LABEL['in-person-review']}</span>
       </span>
-      <span className="cell c-flags">
-        <span className="badge stale">stale tag</span>
-        <PrivateBadge />
-      </span>
       <span className="cell c-ci">
-        <span className="badge active">Active</span>
+        <PrivateBadge />
       </span>
       <span className="cell c-num">
         <span className="link">#00000</span>
+        <span className="ps muted">PS 00</span>
       </span>
       <span className="cell c-tags">
         <span className="tags">
           <span className="tagbtn missing">no tags</span>
         </span>
-      </span>
-      <span className="cell c-ps">
-        <span>PS 00</span>
-      </span>
-      <span className="cell c-req">
-        <span className="req stale">asked PS 00</span>
-        <span className="mine">you commented on PS 00</span>
       </span>
       <div className="cell c-reviewers" />
       <span className="cell c-diff">
@@ -279,8 +240,23 @@ export function SizerRow() {
       </span>
       <span className="cell c-updated">00mo ago</span>
       <div className="cell c-wip actions">{split('Mark active')}</div>
-      <div className="cell c-actions actions">{split('Clear ready-to-merge')}</div>
+      <div className="cell c-actions actions">{split('Re-request (PS 00)')}</div>
     </div>
+  )
+}
+
+/**
+ * The change's flag, one badge: Private when the change is private, since
+ * that overrides everything else about who sees it; otherwise WIP or Active,
+ * which says whether CI runs.
+ */
+export function FlagBadge(props: { view: ChangeView }) {
+  const { view: v } = props
+  if (v.isPrivate) return <PrivateBadge />
+  return (
+    <span className={'badge ' + (v.wip ? 'wip' : 'active')} title={v.wip ? 'Work in progress: CI is not running on this change' : 'Active: CI runs on this change'}>
+      {v.wip ? 'WIP' : 'Active'}
+    </span>
   )
 }
 
@@ -310,8 +286,10 @@ function byVote(rs: ReviewerStatus[]): ReviewerStatus[] {
  * Reviewer chips with votes: the primary reviewers on the first line, every
  * other reviewer on the change on a second one (dashed, since their votes do
  * not change the state). Each line is one row of chips; what does not fit is
- * behind "+N". Anyone may tag or untag a primary reviewer; only the owner
- * adds or removes plain reviewers, as in Gerrit.
+ * behind "+N". Under the lines, the user's own last round on the change.
+ * With no primary reviewer the first line is just the add button: the
+ * disabled Request button says why. Anyone may tag or untag a primary
+ * reviewer; only the owner adds or removes plain reviewers, as in Gerrit.
  */
 export function Reviewers(props: ActProps) {
   const { view: v, self } = props
@@ -382,18 +360,6 @@ export function Reviewers(props: ActProps) {
     label: label(r),
     children: body(r, demote(r), removePrimary(r)),
   }))
-  if (primary.length === 0 && open) {
-    const untagged = v.otherReviewers.length > 0
-    primary.push({
-      key: 'none',
-      className: 'warn',
-      title: untagged
-        ? 'Nobody is tagged as primary, so nobody is waited for. Use ↑ on a reviewer below, or add one.'
-        : 'Add a primary reviewer to get this change reviewed',
-      label: 'no primary reviewers',
-      children: 'no primary reviewers',
-    })
-  }
   const others: Chip[] = byVote(v.otherReviewers).map((r) => ({
     key: String(r.account._account_id),
     className: 'ext ' + (r.vote > 0 ? 'pos' : r.vote < 0 ? 'neg' : ''),
@@ -407,11 +373,9 @@ export function Reviewers(props: ActProps) {
 
   return (
     <>
-      <ChipRow
-        chips={primary}
-        trailing={open && <AddReviewer view={v} self={self} allowOther={owner} onAct={props.onAct} />}
-      />
+      <ChipRow chips={primary} trailing={open && <AddReviewer view={v} self={self} allowOther={owner} onAct={props.onAct} />} />
       {others.length > 0 && <ChipRow className="others" chips={others} />}
+      <MyLastReview view={v} />
     </>
   )
 }
@@ -469,8 +433,9 @@ function ChipRow(props: { chips: Chip[]; trailing?: ReactNode; className?: strin
     }
     // Room for the "+N" chip after the ones that stay.
     let k = ends.length - 1
-    while (k > 0 && ends[k - 1]! + gap + ghost + reserved > box.width) k--
-    setLimit(k)
+    while (k > 1 && ends[k - 1]! + gap + ghost + reserved > box.width) k--
+    // Never hide every named chip: a lone chip that is too wide is clipped, not replaced by "+1".
+    setLimit(Math.max(k, 1))
   })
 
   const shown = expanded || limit === null ? props.chips : props.chips.slice(0, limit)
@@ -532,18 +497,15 @@ function Actions(props: ActProps) {
         {a.label}
       </button>
     )
-  // One main button, last on the row. A stale ready-to-merge tag has to go
-  // before anything else, so "Clear ready-to-merge" stands in for Ready to
-  // Merge while it is there.
+  // One main button, last on the row. A stale ready-to-merge tag does not
+  // block it: re-requesting review or Ready to Merge writes over the tag.
   const review = open && v.iAmReviewer && !v.isMine
   const buttons = actions.filter((a) => !a.subtle)
-  const clear = buttons.find((a) => a.key === 'clear')
-  const main = clear ? [clear] : buttons
   return (
     <>
       <div className="cell c-wip actions">{actions.filter((a) => a.subtle).map(button)}</div>
       <div className="cell c-actions actions">
-        {main.map(button)}
+        {buttons.map(button)}
         {review && <ReviewButton view={v} />}
       </div>
     </>
