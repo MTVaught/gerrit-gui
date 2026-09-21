@@ -97,7 +97,7 @@ export function ReviewButton(props: { view: ChangeView }) {
   const primary = v.needsMyReview ? ' primary' : ''
   return (
     <div className="split" ref={wrap}>
-      <button className={'btn split-main' + primary} title={title} onClick={() => go(main)}>
+      <button className={'btn split-main review-main' + primary} title={title} onClick={() => go(main)}>
         {label}
         <span className="arrow" aria-hidden="true">
           ↗
