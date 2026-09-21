@@ -11,12 +11,12 @@ The application shows three things:
 - The changes that you review
 - The status of your changes
 
-All users get the same five tabs. Two more tabs, "Team Reviews" and
-"External Reviews", appear when you set a team in the settings (refer to
-"Teams" below). The owner of a change, checked against that team list,
-decides where it is listed: changes owned by the team are on the five tabs
-and on "Team Reviews", changes owned by anyone else are on "External Reviews"
-only. The "View"
+All users get the same five tabs, which go by your part on each change:
+owner, reviewer, tagged primary reviewer or named merger. Two more tabs,
+"Team Reviews" and "External Reviews", appear when you set a team in the
+settings (refer to "Teams" below). They sort other people's open changes by
+owner: on the team or outside it. Neither takes a change off the five tabs.
+The "View"
 button in the top bar (or Ctrl+F) opens the search, filter and sort for every
 tab: a search over the subjects, an author filter, and the row order. The
 author field suggests the owners of the changes on the current tab first,
@@ -33,7 +33,7 @@ application remembers the sort; the search and filter last for the session.
 | My Changes | Your open changes, in groups by state, with the actions of the owner. The count gains a red segment for changes that need work and a green one for approved changes. Private changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
 | Merged | Approved changes that the author asked you, by name, to merge, above the changes that Gerrit merged in the last 14 days. The count gains a green segment while anything waits on you to merge. |
 | Team Reviews | Every open change owned by someone else on your team, in groups by state, whether or not you review it. Only with a team. |
-| External Reviews | Open changes owned by someone outside your team, in groups by state. Only with a team. These changes are on no other tab. |
+| External Reviews | Open changes owned by someone outside your team, in groups by state, whether or not you review them. Only with a team. |
 
 ![Needs Review](docs/screenshots/needs-my-review.png)
 
@@ -261,20 +261,21 @@ or an email address, or start to type and select an account from the server.
 The comparison ignores case. You are always on the team, so you do not need
 to add yourself.
 
-The team decides where a change is listed, by its owner. It has no say in
-the state of a change: the primary reviewers, tagged on each change, decide
-that (refer to "The workflow"). When the team list has one or more entries:
+The team sorts other people's changes between two tabs, by owner. It has
+no say in the state of a change, nor in the five regular tabs and the tray
+counts: the primary reviewers, tagged on each change, decide the state
+(refer to "The workflow"), and your part on a change decides the tabs. A
+request from an owner outside the team is on "Needs Review" like any other.
+When the team list has one or more entries:
 
 - The "Team Reviews" tab lists every open change owned by someone else on
   the team, in groups by state, whether or not you are a reviewer of it.
-  These changes stay on "Needs Review" and "Reviewing" as well, when they
-  belong there.
 - The "External Reviews" tab lists every open change owned by someone
-  outside the team, in groups by state. Those changes are not on "Needs
-  Review", "Reviewing" or "Merged", and the counts
-  on those tabs and in the tray leave them out. Only the owner decides this:
-  your own changes stay on "My Changes" even when CI or a maintainers list
-  adds reviewers from outside the team.
+  outside the team, in the same way. Only the owner decides this: your own
+  changes are on "My Changes" and on neither tab, whoever reviews them.
+
+Both tabs are a second listing: the changes on them that you review, or
+that wait on you, are on "Reviewing", "Needs Review" or "Merged" as well.
 
 When the team list is empty, both tabs are hidden. The team is a setting of
 your computer. Each team member enters the same list.

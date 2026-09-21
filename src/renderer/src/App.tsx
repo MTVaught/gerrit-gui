@@ -428,7 +428,7 @@ function notifyMergeRequests(d: DashboardData, seen: React.RefObject<Set<number>
 
 /** A desktop notification for each change the author just asked this user to review, of either kind. */
 function notifyNewReviews(d: DashboardData, seen: React.RefObject<Set<number> | null>) {
-  const waiting = classifyAll(d.open, d.self._account_id).filter((v) => v.needsMyReview)
+  const waiting = classifyAll(d.open, d.self._account_id, [], accountKeys(d.self)).filter((v) => v.needsMyReview)
   const now = new Set(waiting.map((v) => v.change._number))
   if (seen.current && typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
     const fresh = waiting.filter((v) => !seen.current!.has(v.change._number))
