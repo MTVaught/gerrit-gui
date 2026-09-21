@@ -316,7 +316,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .suggestions li button:hover { background: var(--panel); text-decoration: none; }
 /* Merger picker: the owner's Ready to Merge button opens a menu naming one person. */
 .picker-wrap .btn .arrow { margin-left: 6px; }
-.menu.picker { width: 340px; padding: 10px; }
+.menu.picker { width: 340px; padding: 10px; max-height: calc(100vh - 16px); overflow: auto; }
 .menu.picker h4 { margin: 0 4px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
 .menu.picker .opt { display: flex; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 13px; }
 .menu.picker .opt:hover { background: var(--panel); }
