@@ -460,7 +460,8 @@ exact version. A manual run of the workflow makes a draft release instead.
 
 The desktop application checks the releases of this repository for a newer
 version shortly after it starts and then once an hour. When one exists, a
-button in the top bar offers to download it. The download runs in the
+button in the top bar offers to download it. The download checks once more
+first, so a release published since the last check is the one downloaded. The download runs in the
 background, and the button then offers a restart to finish the install. Nothing is downloaded or installed without a click. Settings has an
 About section with the version, the release notes and a "Check for updates"
 button, and the tray menu has the same action.
