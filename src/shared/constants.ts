@@ -29,6 +29,15 @@ export const SLACK_TAG_PREFIX = 'slack:'
  */
 export const REVIEW_REQUESTED_KEY = 'review-requested-ps'
 /**
+ * Custom keyed value holding the patch set number whose open review request
+ * is for an in-person review: the reviewers look at the change together with
+ * the author instead of on their own. It counts only while it equals the
+ * current patch set and that patch set is the last one in
+ * `review-requested-ps`; a pass-around request removes it. Owner-only, like
+ * the request itself.
+ */
+export const IN_PERSON_REVIEW_KEY = 'in-person-review-ps'
+/**
  * Custom keyed value holding the patch set number the author tagged
  * ready-to-merge. Written with the tag; the tag only counts while it matches
  * the current patch set, so a push after the request (even one that keeps

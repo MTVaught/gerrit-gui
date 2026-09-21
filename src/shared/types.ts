@@ -110,6 +110,8 @@ export type ReviewState =
   | 'in-progress'
   | 'iterating'
   | 'needs-review'
+  /** As needs-review, but the author asked for an in-person review: the reviewers look at the change with the author. */
+  | 'in-person-review'
   | 'needs-changes'
   | 'approved'
   | 'ready-to-merge'
@@ -170,6 +172,8 @@ export interface ChangeView {
   canWithdrawReview: boolean
   /** The request is for the current patch set, so reviews are outstanding. */
   reviewRequested: boolean
+  /** The open request is for an in-person review (state in-person-review). */
+  inPerson: boolean
   isMine: boolean
   /** A reviewer in Gerrit, or tagged as primary. */
   iAmReviewer: boolean
@@ -380,7 +384,11 @@ export type ChangeAction =
       /** The patch sets requested before; `patchSet` is appended to them. */
       history: number[]
       clearTags?: string[]
+      /** Ask for an in-person review instead of a pass-around one. */
+      inPerson?: boolean
     }
+  /** Owner's action: change the kind of the open request on `patchSet` without starting a new round. */
+  | { type: 'setReviewKind'; id: number; patchSet: number; inPerson: boolean }
   /**
    * Owner's action: tag the change ready-to-merge for one person, recording
    * `patchSet` as the one it is for. `merger` is a username or email; `replace` lists the merger tags already on the change,

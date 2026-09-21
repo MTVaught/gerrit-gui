@@ -7,6 +7,7 @@ import { ForkIcon, LockIcon } from './Icons.tsx'
 import { actionClass, changeActions, type ActionSpec } from './actions.ts'
 import { ago } from '../time.ts'
 import { ReviewButton } from './ReviewButton.tsx'
+import { SplitButton } from './SplitButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
 import { FlagsMenu } from './FlagsMenu.tsx'
@@ -411,6 +412,8 @@ function Actions(props: ActProps) {
       <MergerPicker key={a.key} view={v} spec={a} onAct={props.onAct} />
     ) : a.menu ? (
       <FlagsMenu key={a.key} spec={a} />
+    ) : a.split ? (
+      <SplitButton key={a.key} spec={a} />
     ) : (
       <button key={a.key} className={actionClass(a)} disabled={a.disabled} title={a.title} onClick={a.run}>
         {a.label}

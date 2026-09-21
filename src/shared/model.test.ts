@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, tabCounts, tabSegments, urgency, pastDraft, type ViewFilter } from './model.ts'
-import { READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
+import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
 const alice: AccountInfo = { _account_id: 1, name: 'Alice', username: 'alice', email: 'alice@example.com' }
@@ -28,6 +28,8 @@ function change(opts: {
   patchSet?: number
   /** The patch sets requested, in order; a number is one entry, as an older version wrote it. */
   requested?: number | number[]
+  /** Patch set recorded as asked for an in-person review. */
+  inPersonPs?: number
   owner?: AccountInfo
   number?: number
   /** Highest Code-Review vote the caller may cast. */
@@ -51,6 +53,7 @@ function change(opts: {
   if (opts.requested) keyed[REVIEW_REQUESTED_KEY] = Array.isArray(opts.requested) ? opts.requested.join(',') : String(opts.requested)
   const readyPs = opts.readyPs === undefined ? (opts.hashtags?.includes('ready-to-merge') ? (opts.patchSet ?? 3) : null) : opts.readyPs
   if (readyPs !== null) keyed[READY_TO_MERGE_KEY] = String(readyPs)
+  if (opts.inPersonPs !== undefined) keyed[IN_PERSON_REVIEW_KEY] = String(opts.inPersonPs)
   const primary = (opts.primary ?? reviewers).filter((a) => !a.tags?.includes('SERVICE_USER')).map((a) => `reviewer:${a.username ?? a.email}`)
   return {
     id: `demo~${opts.number ?? 1}`,
@@ -438,7 +441,11 @@ test('team: an external change is on the External Reviews tab and on no other; a
   )
   assert.deepEqual(on('external-reviews'), [1, 2])
   assert.deepEqual(tabCounts(views), { 'needs-my-review': 1, reviewing: 1, mine: 1, merged: 1, 'team-reviews': 2, 'external-reviews': 2 })
-  assert.deepEqual(tabSegments(views), { merged: [], mine: [{ n: 1, tone: 'pending', label: 'out for review' }] }, 'nothing waits on Bob: Erin\'s ready change is external')
+  assert.deepEqual(
+    tabSegments(views),
+    { 'needs-my-review': [{ n: 1, tone: 'hot', label: 'pass around' }], merged: [], mine: [{ n: 1, tone: 'pending', label: 'out for review' }] },
+    'nothing waits on Bob: Erin\'s ready change is external',
+  )
   // The tray counts follow the regular tabs, so Erin's request and her ready change are left out.
   assert.deepEqual(actionCounts(views), { review: 1, fix: 0, ready: 0, merge: 0 })
   // Without a team the same changes are all internal and both team tabs are empty.
@@ -466,7 +473,7 @@ test('groupsFor: the tabs are sectioned by state and empty sections are left out
     groupsFor('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]),
     [
       ['Needs Changes', [2]],
-      ['Out for review', [1]],
+      ['Pass Around', [1]],
       ['In Progress', [3]],
     ],
   )
@@ -494,8 +501,83 @@ test('groupsFor: the tabs are sectioned by state and empty sections are left out
       ['Author iterating, no review requested', [3]],
     ],
   )
-  assert.deepEqual(groupsFor('needs-my-review', asBob).map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Waiting on you', [1]]])
+  assert.deepEqual(groupsFor('needs-my-review', asBob).map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Pass Around', [1]]])
   assert.deepEqual(groupsFor('mine', asBob), [])
+})
+
+test('in-person review: its own state while the request on the current patch set is for it; a later pass-around request drops it', () => {
+  const inPerson = classify(change({ reviewers: [bob], requested: 3, inPersonPs: 3 }), alice._account_id)
+  assert.equal(inPerson.state, 'in-person-review')
+  assert.equal(inPerson.inPerson, true)
+  assert.equal(inPerson.reviewRequested, true)
+  assert.equal(inPerson.canWithdrawReview, true, 'a first unanswered request can be taken back whatever its kind')
+  // The record is for one patch set: a request for the next one is pass-around unless it says otherwise.
+  const later = classify(change({ reviewers: [bob], requested: [3, 4], inPersonPs: 3, patchSet: 4 }), alice._account_id)
+  assert.equal(later.state, 'needs-review')
+  assert.equal(later.inPerson, false)
+  // Without an open request the record means nothing.
+  const pushed = classify(change({ reviewers: [bob], requested: 3, inPersonPs: 3, patchSet: 4 }), alice._account_id)
+  assert.equal(pushed.state, 'in-progress')
+  assert.equal(pushed.inPerson, false)
+  // The votes decide the outcome the same way as for a pass-around review.
+  assert.equal(classify(change({ reviewers: [bob], requested: 3, inPersonPs: 3, votes: { 2: 1 } }), alice._account_id).state, 'approved')
+  assert.equal(classify(change({ reviewers: [bob], requested: 3, inPersonPs: 3, votes: { 2: -1 } }), alice._account_id).state, 'needs-changes')
+  // The reviewer is waited for, and the change leads a family: only a branch needing changes comes before it.
+  assert.equal(classify(change({ reviewers: [bob], requested: 3, inPersonPs: 3 }), bob._account_id).needsMyReview, true)
+  assert.ok(urgency('needs-changes') < urgency('in-person-review') && urgency('in-person-review') < urgency('needs-review'))
+  const family = [
+    change({ number: 1, changeId: 'Iaaa', branch: 'master', reviewers: [bob], requested: 3 }),
+    change({ number: 2, changeId: 'Iaaa', branch: 'release-1.0', reviewers: [bob], requested: 3, inPersonPs: 3 }),
+  ].map((c) => classify(c, bob._account_id))
+  assert.deepEqual(cardGroups('needs-my-review', family).map((g) => [g.title, g.items.map((v) => v.change._number)]), [['In Person', [2]]])
+  assert.deepEqual(stateTally(family), [
+    { state: 'in-person-review', count: 1 },
+    { state: 'needs-review', count: 1 },
+  ])
+  assert.equal(pastDraft('in-person-review'), true)
+})
+
+test('in-person review: its own section on each tab, after the pass-around one; plain grey on the Needs Review pill; not in the tray', () => {
+  const changes = [
+    change({ number: 1, reviewers: [bob], requested: 3 }),
+    change({ number: 2, reviewers: [bob], requested: 3, inPersonPs: 3 }),
+    change({ number: 3, reviewers: [bob, carol], requested: 3, inPersonPs: 3, votes: { 2: 1 } }),
+    change({ number: 4, reviewers: [bob, carol], requested: 3, votes: { 2: 1 } }),
+    change({ number: 5, reviewers: [bob] }),
+  ]
+  const asBob = classifyAll(changes, bob._account_id)
+  const titles = (tab: Parameters<typeof groupsFor>[0], views = asBob) => groupsFor(tab, views).map((g) => [g.title, g.items.map((v) => v.change._number)])
+  assert.deepEqual(titles('needs-my-review'), [
+    ['Pass Around', [1]],
+    ['In Person', [2]],
+  ])
+  // Reviewing keeps its pass-around split by vote; in-person changes are one section, voted or not.
+  assert.deepEqual(titles('reviewing'), [
+    ['Waiting on you', [1]],
+    ['Reviewed, waiting on others', [4]],
+    ['In Person', [2, 3]],
+    ['Author iterating, no review requested', [5]],
+  ])
+  assert.deepEqual(tabSegments(asBob)['needs-my-review'], [
+    { n: 1, tone: 'hot', label: 'pass around' },
+    { n: 1, tone: 'plain', label: 'in person' },
+  ])
+  assert.deepEqual(actionCounts(asBob), { review: 1, fix: 0, ready: 0, merge: 0 }, 'the in-person request is not in the tray')
+  // Only in-person requests waiting: the pill is plain, not the accent.
+  const quiet = classifyAll([changes[1]!], bob._account_id)
+  assert.deepEqual(tabSegments(quiet)['needs-my-review'], [{ n: 1, tone: 'plain', label: 'in person' }])
+  assert.deepEqual(actionCounts(quiet), { review: 0, fix: 0, ready: 0, merge: 0 })
+  // The author sees both kinds, each in its own section, and one "out for review" segment for both.
+  const asAlice = classifyAll(changes, alice._account_id)
+  assert.deepEqual(titles('mine', asAlice), [
+    ['Pass Around', [1, 4]],
+    ['In Person', [2, 3]],
+    ['In Progress', [5]],
+  ])
+  assert.deepEqual(tabSegments(asAlice).mine, [
+    { n: 4, tone: 'pending', label: 'out for review' },
+    { n: 1, tone: 'wip', label: 'in progress' },
+  ])
 })
 
 test('private: the flag is read from Gerrit; absent means public', () => {
@@ -517,7 +599,7 @@ test('private: My Changes lists private changes in one section at the bottom, wh
   assert.deepEqual(
     groupsFor('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]),
     [
-      ['Out for review', [1]],
+      ['Pass Around', [1]],
       ['In Progress', [4]],
       ['Private', [2, 3]],
     ],
@@ -741,7 +823,7 @@ test('tabCounts: a Change-Id family counts once per tab; stateTally lists its st
   // The card sits in the section of its most urgent branch, and the pill counts it there only: no approved segment.
   assert.deepEqual(
     cardGroups('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]),
-    [['Out for review', [1, 4]]],
+    [['Pass Around', [1, 4]]],
   )
   assert.deepEqual(tabSegments(views).mine, [{ n: 2, tone: 'pending', label: 'out for review' }])
   // The tray counts cards as well: one approved card, however many approved branches.

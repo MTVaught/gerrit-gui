@@ -7,7 +7,7 @@ import { createService } from '../src/main/service.ts'
 import { fetchDashboard } from '../src/main/dashboard.ts'
 import type { ChangeInfo } from '../src/shared/types.ts'
 import { accountKeys, classify, mergerTags, reviewLink, reviewerTagsFor } from '../src/shared/model.ts'
-import { READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../src/shared/constants.ts'
+import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../src/shared/constants.ts'
 
 const URL = process.env['GERRIT_TEST_URL'] ?? 'http://localhost:8080'
 const user = (u: string) => new GerritClient(URL, u, `${u}pw`)
@@ -326,4 +326,50 @@ test('reviewers cannot forge a review request', { skip: !reachable && 'no local 
 
 test('bad credentials surface as a 401 GerritError', { skip: !reachable && 'no local Gerrit' }, async () => {
   await assert.rejects(new GerritClient(URL, 'bob', 'wrong').self(), (e: Error & { status?: number }) => e.status === 401)
+})
+
+test('an in-person request is its own state, switches kind in place, withdraws and re-requests cleanly', { skip: !reachable && 'no local Gerrit' }, async () => {
+  const service = serviceAs('alice')
+  const c = await raw('alice', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `in person ${Date.now()}`, work_in_progress: true })
+  const id: number = c._number
+  await pushPatchSet('alice', id, 'v1')
+  await service.act({ type: 'addPrimaryReviewer', id, reviewer: 'bob' })
+  const ps1 = (await view('alice', id)).patchSet
+
+  await service.act({ type: 'requestReview', id, patchSet: ps1, history: [], inPerson: true })
+  let v = await view('bob', id)
+  assert.equal(v.state, 'in-person-review')
+  assert.equal(v.inPerson, true)
+  assert.equal(v.needsMyReview, true, 'bob is waited for all the same')
+  assert.equal(v.change.custom_keyed_values?.[IN_PERSON_REVIEW_KEY], String(ps1))
+
+  // The kind switches without touching the round.
+  await service.act({ type: 'setReviewKind', id, patchSet: ps1, inPerson: false })
+  v = await view('alice', id)
+  assert.equal(v.state, 'needs-review')
+  assert.deepEqual(v.requestedPatchSets, [ps1])
+  assert.equal(v.change.custom_keyed_values?.[IN_PERSON_REVIEW_KEY], undefined)
+  await service.act({ type: 'setReviewKind', id, patchSet: ps1, inPerson: true })
+  assert.equal((await view('alice', id)).state, 'in-person-review')
+
+  // Withdraw takes both values away.
+  await service.act({ type: 'withdrawReview', id })
+  v = await view('alice', id)
+  assert.equal(v.state, 'in-progress')
+  assert.equal(v.change.custom_keyed_values?.[IN_PERSON_REVIEW_KEY], undefined)
+
+  // In person, voted on, then a new patch set re-requested as pass-around: the old record goes with the new request.
+  await service.act({ type: 'requestReview', id, patchSet: ps1, history: [], inPerson: true })
+  await user('bob').vote(id, 'Code-Review', -1, 'discussed')
+  assert.equal((await view('alice', id)).state, 'needs-changes', 'the votes decide, as for a pass-around review')
+  await pushPatchSet('alice', id, 'v2')
+  v = await view('alice', id)
+  assert.equal(v.state, 'iterating')
+  await service.act({ type: 'requestReview', id, patchSet: v.patchSet, history: v.requestedPatchSets })
+  v = await view('bob', id)
+  assert.equal(v.state, 'needs-review')
+  assert.equal(v.change.custom_keyed_values?.[IN_PERSON_REVIEW_KEY], undefined, 'a pass-around request removes the record')
+
+  // Only the owner may set the kind: bob cannot turn his own request into an in-person one.
+  await assert.rejects(user('bob').setCustomKeyedValues(id, { [IN_PERSON_REVIEW_KEY]: String(v.patchSet) }))
 })
