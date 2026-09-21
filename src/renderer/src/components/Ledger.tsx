@@ -2,12 +2,12 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName, reviewLink, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
-import { PrivateBadge, Reviewers, mergerLabel } from './ChangeRow.tsx'
+import { MyLastReview, PrivateBadge, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
 import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
 import { ForkIcon } from './Icons.tsx'
-import { ReviewButton } from './ReviewButton.tsx'
+import { ReviewButton, previousVote } from './ReviewButton.tsx'
 import { SplitButton } from './SplitButton.tsx'
 import { SlackLink } from './SlackLink.tsx'
 import { actionClass, changeActions } from './actions.ts'
@@ -164,11 +164,13 @@ function LedgerRow(
   sub.push(<span title={age.title}>{age.text}</span>)
   if (!v.isMine) sub.push(displayName(c.owner))
   sub.push(`PS ${v.patchSet}`)
+  if (!v.isMine && open && v.lastReviewedPatchSet !== null && v.lastReviewedPatchSet < v.patchSet) sub.push(<MyLastReview view={v} />)
   if ((c.unresolved_comment_count ?? 0) > 0) sub.push(`${c.unresolved_comment_count} unresolved`)
   if (c.insertions !== undefined) {
     sub.push(
       <>
         <span className="ins">+{c.insertions}</span> <span className="del">−{c.deletions}</span>
+        <SinceReview view={v} />
       </>,
     )
   }
@@ -298,7 +300,7 @@ function ReviewShort(props: { view: ChangeView }) {
   const title = upToDate
     ? `You already reviewed patch set ${v.patchSet}. Opens it in Gerrit.`
     : link.basePatchSet !== undefined
-      ? `Opens the diff from patch set ${link.basePatchSet}, the last one you reviewed, to patch set ${v.patchSet}`
+      ? `Opens the diff from patch set ${link.basePatchSet}, the last one you reviewed, to patch set ${v.patchSet}. ${previousVote(v.lastReviewedVote, link.basePatchSet)}`
       : `Opens patch set ${v.patchSet} against base in Gerrit`
   return (
     <button className={'btn sm' + (v.needsMyReview ? ' primary' : '')} title={title} onClick={() => void api.openChange(link)}>

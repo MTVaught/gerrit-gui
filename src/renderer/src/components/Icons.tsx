@@ -103,3 +103,10 @@ export const ChatIcon = () => (
     <path d="M21 12a8 8 0 0 1-8 8H8l-5 3 1.5-4.5A8 8 0 1 1 21 12z" />
   </svg>
 )
+
+/** A speech bubble, for the unresolved comment count. */
+export const CommentIcon = () => (
+  <svg {...common}>
+    <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+)

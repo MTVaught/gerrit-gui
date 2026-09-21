@@ -188,6 +188,16 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .c-diff, .c-updated { font-size: 12.5px; }
 /* Numbers line up on the right, so the pill or note beside them starts in the same place on every row. */
 .c-num, .c-diff, .c-updated { justify-content: flex-end; }
+/* The lines since the reviewer's last look, in brackets after the whole change's counts; muted so the total reads first. */
+.since { color: var(--muted); font-size: 12px; }
+.since .ins, .since .del { opacity: 0.8; }
+/* Unresolved comment threads: a bubble with the count, by the change number. */
+.unresolved { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--warn); }
+.unresolved svg { width: 11px; height: 11px; }
+/* The reviewer's own last round, as a second line under the patch set. */
+.c-req { flex-wrap: wrap; row-gap: 0; }
+.c-req .mine { flex-basis: 100%; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.c-req .mine .pos { color: var(--pos); } .c-req .mine .neg { color: var(--neg); }
 .req { font-size: 11px; color: var(--pending); }
 .req.stale { color: var(--muted); }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--border); white-space: nowrap; }

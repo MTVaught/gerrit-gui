@@ -97,6 +97,28 @@ export interface ChangeInfo {
   _more_changes?: boolean
   /** Present with CUSTOM_KEYED_VALUES. */
   custom_keyed_values?: Record<string, string>
+  /**
+   * Not a Gerrit field. The dashboard fetch adds the lines changed between
+   * the patch set the signed-in user last reviewed and the current one, so a
+   * re-review shows its own size next to the whole change's.
+   */
+  review_delta?: ReviewDelta
+}
+
+/** One entry of GET /changes/{id}/revisions/{rev}/files. Counts are absent when zero. */
+export interface FileInfo {
+  status?: 'A' | 'D' | 'R' | 'C' | 'W' | 'M'
+  binary?: boolean
+  lines_inserted?: number
+  lines_deleted?: number
+}
+
+/** Lines changed from `basePatchSet` to `patchSet`, summed over the files, the commit message left out as Gerrit does for a change's own counts. */
+export interface ReviewDelta {
+  basePatchSet: number
+  patchSet: number
+  insertions: number
+  deletions: number
 }
 
 export interface SuggestedReviewerInfo {
@@ -191,6 +213,19 @@ export interface ChangeView {
    * only what changed since they last looked.
    */
   lastReviewedPatchSet: number | null
+  /**
+   * The Code-Review vote the user cast on `lastReviewedPatchSet`, from the
+   * change messages: 0 when it was taken back, null when they only replied,
+   * or never reviewed. Tells a reviewer whether the re-review starts from a
+   * +1 or a -1.
+   */
+  lastReviewedVote: number | null
+  /**
+   * Lines changed since `lastReviewedPatchSet`, when the fetch looked them
+   * up for this pair of patch sets; null when up to date, never reviewed,
+   * or not fetched.
+   */
+  sinceReview: ReviewDelta | null
   /** Patch set the author tagged ready-to-merge, or null: never, or an older version wrote the tag alone. */
   readyPatchSet: number | null
   /** Hashtag says ready-to-merge but it was for an earlier patch set, or the approval no longer holds. */

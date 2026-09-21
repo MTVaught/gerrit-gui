@@ -1,4 +1,4 @@
-import type { AccountInfo, ChangeInfo, ChangeLink, SuggestedReviewerInfo } from '../shared/types.ts'
+import type { AccountInfo, ChangeInfo, ChangeLink, FileInfo, SuggestedReviewerInfo } from '../shared/types.ts'
 import { changePath } from '../shared/url.ts'
 
 const XSSI_PREFIX = ")]}'"
@@ -86,6 +86,15 @@ export class GerritClient {
     const q = new URLSearchParams()
     for (const o of CHANGE_OPTIONS) q.append('o', o)
     return this.req('GET', `/changes/${id}/detail`, undefined, q)
+  }
+
+  /**
+   * The files patch set `patchSet` changed against patch set `base`, with
+   * their line counts. Both are patch set numbers; Gerrit takes them as
+   * revision ids. Keys starting with "/" are the commit message and merge list.
+   */
+  files(id: number, patchSet: number, base: number): Promise<Record<string, FileInfo>> {
+    return this.req('GET', `/changes/${id}/revisions/${patchSet}/files`, undefined, new URLSearchParams({ base: String(base) }))
   }
 
   setReady(id: number) {
