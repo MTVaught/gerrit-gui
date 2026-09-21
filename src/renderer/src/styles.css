@@ -374,6 +374,8 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 /* Reviewer's split button: main part opens the diff since their last review, caret lists other views. */
 .split { display: inline-flex; }
 .btn.split-main { flex: 1; border-radius: 6px 0 0 6px; text-align: left; }
+/* Review button: label hugs the left edge and the arrow the right, so it never floats mid-button in a wide column. */
+.btn.split-main.review-main { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; }
 .btn.split-caret { border-radius: 0 6px 6px 0; border-left: none; padding: 4px 8px; font-size: 12px; }
 .btn.split-caret.primary { border-left: 1px solid #ffffff55; }
 .btn.split-main:hover:not(:disabled) + .btn.split-caret:not(.primary) { border-left: none; }
