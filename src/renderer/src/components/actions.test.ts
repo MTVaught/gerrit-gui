@@ -43,22 +43,27 @@ function requested(ps: number, requested: number[], messages: ChangeInfo['messag
 }
 const bobVoted = (ps: number) => ({ id: `b${ps}`, author: bob, date: '', message: `Patch Set ${ps}: Code-Review-1`, _revision_number: ps })
 
-test('Withdraw is offered on a first request nobody answered, and on no later round', () => {
-  const acts = (c: ChangeInfo) => changeActions(classify(c, alice._account_id), () => Promise.resolve()).map((a) => a.key)
-  assert.ok(acts(requested(1, [1])).includes('withdraw'))
-  assert.ok(!acts(requested(3, [1, 3], [bobVoted(1)])).includes('withdraw'), 'the first round was answered')
-  assert.ok(!acts(requested(2, [1, 2])).includes('withdraw'), 'a second request, even unanswered')
+test('Withdraw is offered while a request is open, whichever round, and pops only the latest one', () => {
+  const sent: unknown[] = []
+  const acts = (c: ChangeInfo) => changeActions(classify(c, alice._account_id), async (a) => void sent.push(a))
+  const keys = (c: ChangeInfo) => acts(c).map((a) => a.key)
+  assert.ok(keys(requested(1, [1])).includes('withdraw'))
+  assert.ok(keys(requested(3, [1, 3], [bobVoted(1)])).includes('withdraw'), 'a later round after the first was answered')
+  assert.ok(keys(requested(2, [1, 2])).includes('withdraw'), 'a second request')
+  assert.ok(!keys(requested(2, [1])).includes('withdraw'), 'no request open on this patch set')
+  acts(requested(3, [1, 3], [bobVoted(1)])).find((a) => a.key === 'withdraw')!.run()
+  assert.deepEqual(sent[0], { type: 'withdrawReview', id: 1, history: [1, 3] }, 'the service keeps the earlier rounds')
 })
 
 test('Request review carries the earlier requests along and says Re-request only after a round was answered', () => {
   const sent: unknown[] = []
   const spec = (c: ChangeInfo) => changeActions(classify(c, alice._account_id), async (a) => void sent.push(a)).find((a) => a.key === 'request')!
   const fresh = spec(requested(2, [1]))
-  assert.equal(fresh.label, 'Request review (PS 2)', 'nobody voted on patch set 1, so this is still the first round')
+  assert.equal(fresh.label, 'Request (PS 2)', 'nobody voted on patch set 1, so this is still the first round')
   fresh.run()
   assert.deepEqual(sent[0], { type: 'requestReview', id: 1, patchSet: 2, history: [1], clearTags: undefined, inPerson: false })
   const again = spec(requested(3, [1, 2], [bobVoted(2)]))
-  assert.equal(again.label, 'Re-request review (PS 3)')
+  assert.equal(again.label, 'Re-request (PS 3)')
   again.run()
   assert.deepEqual(sent[1], { type: 'requestReview', id: 1, patchSet: 3, history: [1, 2], clearTags: undefined, inPerson: false })
 })
@@ -99,17 +104,14 @@ test('An open request can switch kind: from the Withdraw caret on a first reques
   )
   back.split![0]!.run()
   assert.deepEqual(sent[1], { type: 'setReviewKind', id: 1, patchSet: 1, inPerson: false })
-  // A later round has no Withdraw, so the kind is a button of its own.
-  const later = acts(inPerson(3, [1, 3], [bobVoted(1)]))
-  assert.ok(!later.some((a) => a.key === 'withdraw'))
-  const kind = later.find((a) => a.key === 'kind')!
-  assert.equal(kind.label, 'In person')
+  // A later round: the same Withdraw button, with the switch in its menu.
+  const later = acts(inPerson(3, [1, 3], [bobVoted(1)])).find((a) => a.key === 'withdraw')!
   assert.deepEqual(
-    kind.menu!.map((m) => m.key),
+    later.split!.map((m) => m.key),
     ['pass-around'],
   )
   // No request open: no switch anywhere.
-  assert.ok(!acts(requested(2, [1])).some((a) => a.key === 'kind' || a.key === 'withdraw'))
+  assert.ok(!acts(requested(2, [1])).some((a) => a.key === 'withdraw'))
 })
 
 function ready(c: ChangeInfo) {

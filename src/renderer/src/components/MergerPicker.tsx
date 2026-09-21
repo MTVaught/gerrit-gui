@@ -5,7 +5,7 @@ import { accountKey, addMerger, displayName, mergerTags, mergersFor, preferredKe
 import { api } from '../api.ts'
 import { useNames } from '../names.ts'
 import { useSettings } from '../settings-context.ts'
-import type { ActionSpec } from './actions.ts'
+import { actionClass, type ActionSpec } from './actions.ts'
 
 const LAST_KEY = 'gerrit-gui.lastMerger'
 
@@ -125,14 +125,14 @@ export function MergerPicker(props: { view: ChangeView; spec: ActionSpec; onAct:
     await props.onAct({ type: 'requestMerge', id: c._number, merger: chosen, patchSet: v.patchSet, replace: mergerTags(c) })
   }
 
-  const cls = ['btn', spec.primary ? 'primary' : '', props.small ? 'sm' : ''].filter(Boolean).join(' ')
+  const size = props.small ? 'sm' : ''
   return (
     <div className="split picker-wrap" ref={wrap}>
-      <button className={cls} title={spec.title} disabled={spec.disabled} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+      <button className={actionClass(spec, `split-main ${size}`)} title={spec.title} disabled={spec.disabled} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
         {props.small ? spec.short : spec.label}
-        <span className="arrow" aria-hidden="true">
-          ▾
-        </span>
+      </button>
+      <button className={actionClass(spec, `split-caret ${size}`)} title={spec.title} aria-label={spec.title} disabled={spec.disabled} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+        ▾
       </button>
       {open && pos && (
         <div className="menu picker" role="dialog" aria-label="Ask to merge" style={{ top: pos.top, right: pos.right }}>

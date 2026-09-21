@@ -118,6 +118,8 @@ function BranchRow(props: RowProps) {
           {merger && ` · ${merger}`}
           {c.status === 'MERGED' && ` ${ago(c.submitted ?? c.updated)}`}
         </span>
+      </span>
+      <span className="cell c-flags">
         {v.staleReadyToMerge && (
           <span className="badge stale" title="Tagged ready-to-merge for an earlier patch set, or the approval no longer holds">
             stale tag
@@ -136,10 +138,14 @@ function BranchRow(props: RowProps) {
         <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title="Open in Gerrit">
           #{c._number}
         </button>
+      </span>
+      <span className="cell c-tags">
         <TagsButton message={commitMessage(c)} state={v.state} />
       </span>
       <span className="cell c-ps">
         <span>PS {v.patchSet}</span>
+      </span>
+      <span className="cell c-req">
         {open && v.reviewRequested && (
           <span className="req" title="Review requested for this patch set">
             asked
@@ -171,6 +177,61 @@ function BranchRow(props: RowProps) {
 }
 
 /** Gerrit's private flag: the change is hidden from everyone but the people on it. */
+/**
+ * A row of no height at the top of the grid, holding the widest label each
+ * fixed-vocabulary column can show. The columns are sized to content, so
+ * without it their widths shift from tab to tab with whatever happens to be
+ * on screen ("no tags" against a count, "In-Person Review" against
+ * "Approved"). The columns with free text (branch, reviewers) stay
+ * content-sized; the number, diff and age get a floor for their usual range.
+ * Each badge, pill and note has a column of its own, so a wide number never
+ * pushes the tags pill beside it out of line with the row below.
+ */
+export function SizerRow() {
+  const split = (label: string, cls = '') => (
+    <span className="split">
+      <span className={`btn split-main ${cls}`}>{label}</span>
+      <span className={`btn split-caret ${cls}`}>▾</span>
+    </span>
+  )
+  return (
+    <div className="change-row sizer" aria-hidden="true">
+      <span className="cell c-branch" />
+      <span className="cell c-state">
+        <span className="badge in-person-review">{STATE_LABEL['in-person-review']}</span>
+      </span>
+      <span className="cell c-flags">
+        <span className="badge stale">stale tag</span>
+        <PrivateBadge />
+      </span>
+      <span className="cell c-ci">
+        <span className="badge active">Active</span>
+      </span>
+      <span className="cell c-num">
+        <span className="link">#00000</span>
+      </span>
+      <span className="cell c-tags">
+        <span className="tags">
+          <span className="tagbtn missing">no tags</span>
+        </span>
+      </span>
+      <span className="cell c-ps">
+        <span>PS 00</span>
+      </span>
+      <span className="cell c-req">
+        <span className="req stale">asked PS 00</span>
+      </span>
+      <div className="cell c-reviewers" />
+      <span className="cell c-diff">
+        <span>+0000 −0000</span>
+      </span>
+      <span className="cell c-updated">00mo ago</span>
+      <div className="cell c-wip actions">{split('Mark active')}</div>
+      <div className="cell c-actions actions">{split('Clear ready-to-merge')}</div>
+    </div>
+  )
+}
+
 export function PrivateBadge() {
   return (
     <span className="badge private" title="Private: only the owner, the reviewers and the CCs can see this change in Gerrit">
@@ -419,13 +480,20 @@ function Actions(props: ActProps) {
         {a.label}
       </button>
     )
+  // One main button, last on the row. A stale ready-to-merge tag has to go
+  // before anything else, so "Clear ready-to-merge" stands in for Ready to
+  // Merge while it is there.
+  const review = open && v.iAmReviewer && !v.isMine
+  const buttons = actions.filter((a) => !a.subtle)
+  const clear = buttons.find((a) => a.key === 'clear')
+  const main = clear ? [clear] : buttons
   return (
     <>
-      <div className="cell c-actions actions">
-        {actions.filter((a) => !a.subtle).map(button)}
-        {open && v.iAmReviewer && !v.isMine && <ReviewButton view={v} />}
-      </div>
       <div className="cell c-wip actions">{actions.filter((a) => a.subtle).map(button)}</div>
+      <div className="cell c-actions actions">
+        {main.map(button)}
+        {review && <ReviewButton view={v} />}
+      </div>
     </>
   )
 }

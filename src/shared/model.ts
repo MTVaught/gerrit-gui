@@ -489,7 +489,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     requestedPatchSet: requested,
     requestedPatchSets: requestedAll,
     reviewedPatchSets: reviewed,
-    canWithdrawReview: open && isMine && reviewRequested && requestedAll.length === 1 && reviewed.length === 0,
+    canWithdrawReview: open && isMine && reviewRequested,
     reviewRequested,
     inPerson,
     isMine,

@@ -125,9 +125,9 @@ export function ViewMenu(props: {
     setQ('')
   }
   return (
-    <div className="view" ref={root}>
+    <div className="view split" ref={root}>
       <button
-        className={'btn view-btn' + (count > 0 ? ' active' : '')}
+        className={'btn view-btn split-main' + (count > 0 ? ' active' : '')}
         aria-haspopup="dialog"
         aria-expanded={open}
         title="Search, filter and sort (Ctrl+F)"
@@ -140,9 +140,16 @@ export function ViewMenu(props: {
             {count}
           </span>
         )}
-        <span className="arrow" aria-hidden>
-          ▾
-        </span>
+      </button>
+      <button
+        className={'btn view-btn split-caret' + (count > 0 ? ' active' : '')}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label="Search, filter and sort"
+        title="Search, filter and sort (Ctrl+F)"
+        onClick={() => setOpen((o) => !o)}
+      >
+        ▾
       </button>
       {open && (
         <div className="view-panel" role="dialog" aria-label="Search, filter and sort">

@@ -166,8 +166,9 @@ export interface ChangeView {
   /** The requested patch sets a primary reviewer voted on: the rounds that were answered. */
   reviewedPatchSets: number[]
   /**
-   * The owner may take the request back entirely: it is the first and only
-   * one, it is for the current patch set, and nobody has voted on it yet.
+   * The owner may take the open request back: it is for the current patch
+   * set. Withdrawing pops that round only; earlier rounds and any votes
+   * already given stay on record.
    */
   canWithdrawReview: boolean
   /** The request is for the current patch set, so reviews are outstanding. */
@@ -395,7 +396,12 @@ export type ChangeAction =
    * which go away so that one person is named.
    */
   | { type: 'requestMerge'; id: number; merger: string; patchSet: number; replace?: string[] }
-  | { type: 'withdrawReview'; id: number }
+  /**
+   * Owner's action: take back the open request. `history` is the list of
+   * requested patch sets as shown; the last one goes, the earlier rounds stay
+   * on record. Any vote already given stays in Gerrit.
+   */
+  | { type: 'withdrawReview'; id: number; history: number[] }
   | { type: 'setWip'; id: number; wip: boolean }
   /** Owner's action: hide the change from everyone not on it, or show it again. */
   | { type: 'setPrivate'; id: number; private: boolean }

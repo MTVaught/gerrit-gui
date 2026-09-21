@@ -248,7 +248,12 @@ test('re-requesting review drops a ready-to-merge tag and its merger left over f
   assert.equal(v.state, 'needs-review')
   assert.equal(v.staleReadyToMerge, true)
   assert.deepEqual(v.requestedPatchSets, [ps1, v.patchSet], 'the request appended to the list')
-  assert.equal(v.canWithdrawReview, false, 'the first round was answered')
+  assert.equal(v.canWithdrawReview, true, 'a later round can be taken back too')
+  // Withdrawing the second round pops it and leaves the first on record, so the change is iterating again.
+  await service.act({ type: 'withdrawReview', id, history: v.requestedPatchSets })
+  v = await view('alice', id)
+  assert.deepEqual(v.requestedPatchSets, [ps1], 'the earlier round stays')
+  assert.equal(v.state, 'iterating')
   await alice.setCustomKeyedValues(id, {}, [REVIEW_REQUESTED_KEY])
 
   await service.act({ type: 'requestReview', id, patchSet: v.patchSet, history: [], clearTags: [READY_TO_MERGE_TAG, ...mergerTags(v.change)] })
@@ -353,7 +358,7 @@ test('an in-person request is its own state, switches kind in place, withdraws a
   assert.equal((await view('alice', id)).state, 'in-person-review')
 
   // Withdraw takes both values away.
-  await service.act({ type: 'withdrawReview', id })
+  await service.act({ type: 'withdrawReview', id, history: [ps1] })
   v = await view('alice', id)
   assert.equal(v.state, 'in-progress')
   assert.equal(v.change.custom_keyed_values?.[IN_PERSON_REVIEW_KEY], undefined)

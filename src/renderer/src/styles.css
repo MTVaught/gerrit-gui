@@ -77,7 +77,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 /* The private count: a lock pill after the capsule, outlined rather than filled. */
 .count.private { display: inline-flex; align-items: center; gap: 3px; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0 6px; margin-left: -2px; }
 .count.private svg { width: 9px; height: 9px; }
-.btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--fg); cursor: pointer; white-space: nowrap; }
+.btn { font: inherit; text-align: left; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--fg); cursor: pointer; white-space: nowrap; }
 .btn:hover:not(:disabled) { border-color: var(--muted); }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn.icon { padding: 6px 8px; display: inline-flex; align-items: center; }
@@ -149,10 +149,14 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
  * the columns. Column widths follow the widest cell on the tab, as in a
  * table; nothing is spaced by hand. Reviewers take what is left. The WIP
  * toggle is its own column: its label changes width ("Mark WIP" or "Mark
- * active (runs CI)"), and in the buttons cell it would push the button beside
- * it out of line with the rows above and below.
+ * active"), and in the buttons cell it would push the button beside it out
+ * of line with the rows above and below. It sits before the main
+ * button's column so the main button ends flush with the card edge. Each
+ * button fills its column, so every row's button in a column is the same
+ * width: the widest label on the tab sets it.
  */
-.sections { display: grid; grid-template-columns: max-content max-content max-content max-content max-content minmax(140px, 1fr) max-content max-content max-content max-content; }
+/* branch, state, flags, ci, number, tags, patch set, request note, reviewers, diff, age, wip, main button */
+.sections { display: grid; grid-template-columns: max-content max-content max-content max-content max-content max-content max-content max-content minmax(140px, 1fr) max-content max-content max-content max-content; }
 .group, .changes { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .group > h3, .group > p { grid-column: 1 / -1; }
 .changes { list-style: none; margin: 0; padding: 0; row-gap: 8px; }
@@ -166,18 +170,24 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .subject { font-weight: 600; font-size: 15px; }
 .origin { white-space: nowrap; }
 .change-row { display: contents; }
+/* The sizer row takes no height and is never seen; only its cells' widths count. */
+.change-row.sizer > .cell { visibility: hidden; height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
 /* Spacing is padding, not a column gap, so the border between rows runs unbroken. */
 .cell { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 12px 4px 0; white-space: nowrap; font-size: 13px; }
-.c-actions { padding-right: 6px; }
-.c-wip { padding-right: 0; }
+.c-wip { padding-right: 6px; }
+.c-actions { padding-right: 0; }
+.c-wip > *, .c-actions > * { flex: 1; }
+.c-actions > .split, .c-wip > .split { display: flex; }
 .change-row + .change-row > .cell { border-top: 1px solid var(--border); }
 .change-row.closed > .cell { color: var(--muted); }
 .c-branch code { font-weight: 600; }
 .change-row.closed .c-branch code { font-weight: 500; }
 .c-reviewers { flex-direction: column; align-items: stretch; gap: 3px; }
 .c-actions { justify-content: flex-end; }
-.cell.c-wip { justify-content: flex-start; }
+.cell.c-wip { justify-content: flex-end; }
 .c-diff, .c-updated { font-size: 12.5px; }
+/* Numbers line up on the right, so the pill or note beside them starts in the same place on every row. */
+.c-num, .c-diff, .c-updated { justify-content: flex-end; }
 .req { font-size: 11px; color: var(--pending); }
 .req.stale { color: var(--muted); }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--border); white-space: nowrap; }
@@ -317,7 +327,6 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .suggestions li button { display: block; width: 100%; padding: 6px 10px; }
 .suggestions li button:hover { background: var(--panel); text-decoration: none; }
 /* Merger picker: the owner's Ready to Merge button opens a menu naming one person. */
-.picker-wrap .btn .arrow { margin-left: 6px; }
 .menu.picker { width: 340px; padding: 10px; max-height: calc(100vh - 16px); overflow: auto; }
 .menu.picker h4 { margin: 0 4px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
 .menu.picker .opt { display: flex; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 13px; }
@@ -367,9 +376,9 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .menu-item.selected { font-weight: 600; }
 .menu-item.selected::before { content: '\2713'; position: absolute; left: 8px; color: var(--accent); }
 /* Owner's flags menu: the subtle button in the last column opens the WIP and private toggles. */
-.flags-menu { display: inline-flex; }
-.flags-menu .btn.subtle .arrow { margin-left: 4px; }
-.flags-menu .btn.subtle[aria-expanded='true'] { color: var(--fg); border-color: var(--border); background: var(--panel); }
+/* In the card row the WIP toggle is an ordinary split button, the same as the main button beside it. */
+.cell.c-wip .btn.subtle { border-color: var(--border); background: var(--panel); color: var(--fg); font-size: inherit; }
+.cell.c-wip .btn.subtle:hover:not(:disabled) { border-color: var(--muted); }
 .menu.flags { width: 260px; }
 .menu.flags .menu-item { padding-left: 10px; }
 .menu.flags .menu-item .muted { font-size: 12px; }
