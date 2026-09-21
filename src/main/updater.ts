@@ -1,8 +1,10 @@
 // Application updates from the GitHub releases of this repository, through
 // electron-updater. Nothing is downloaded or installed without a click: a
 // check finds a newer release, the user asks for the download, then asks for
-// the restart that installs it. The state machine is in ../shared/update.ts
-// so the renderer, the tray and this file agree on what happens next.
+// the restart that installs it. A download checks again first, so a release
+// published since the last hourly check is the one that gets downloaded. The
+// state machine is in ../shared/update.ts so the renderer, the tray and this
+// file agree on what happens next.
 import { app, dialog, type BrowserWindow, type MessageBoxOptions } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import type { UpdateState } from '../shared/types.ts'
@@ -54,10 +56,16 @@ export function createUpdater(opts: UpdaterOptions): Updater {
     autoUpdater.autoInstallOnAppQuit = false
     autoUpdater.forceDevUpdateConfig = !app.isPackaged
     autoUpdater.logger = console
+    // The check that starts a download reads its result in download(); its
+    // events must not move the state out of 'downloading'.
     autoUpdater.on('update-available', (info) => {
+      if (state.status === 'downloading') return
       set(u.onAvailable(state, info.version, u.plainReleaseNotes(info.releaseNotes), now()))
     })
-    autoUpdater.on('update-not-available', () => set(u.onNoUpdate(state, now())))
+    autoUpdater.on('update-not-available', () => {
+      if (state.status === 'downloading') return
+      set(u.onNoUpdate(state, now()))
+    })
     autoUpdater.on('download-progress', (p) => {
       // Whole percents only; the raw events come per chunk.
       if (Math.floor(p.percent) !== Math.floor(state.downloadPercent ?? -1)) set(u.onDownloadProgress(state, p.percent))
@@ -98,20 +106,32 @@ export function createUpdater(opts: UpdaterOptions): Updater {
   }
 
   function download(): Promise<UpdateState> {
-    const version = state.availableVersion
-    if (!enabled || !version || state.downloadedVersion === version) return Promise.resolve(state)
+    if (!enabled || !state.availableVersion || state.downloadedVersion === state.availableVersion) {
+      return Promise.resolve(state)
+    }
     if (downloading) return downloading
     set(u.onDownloadStart(state))
-    downloading = autoUpdater
-      .downloadUpdate()
-      .then(() => {
-        if (state.status === 'downloading') set(u.onDownloaded(state, version))
-        return state
-      })
+    downloading = (async () => {
+      // The release found by the last check may have been superseded since.
+      // Check again and download whatever is newest now; electron-updater
+      // downloads the release of its most recent check.
+      const r = await autoUpdater.checkForUpdates()
+      if (!r) throw new Error('The updater is not active in this build.')
+      if (!r.isUpdateAvailable) {
+        set(u.onNoUpdate(state, now()))
+        return
+      }
+      const version = r.updateInfo.version
+      if (version !== state.availableVersion) {
+        set(u.onDownloadStart(u.onAvailable(state, version, u.plainReleaseNotes(r.updateInfo.releaseNotes), now())))
+      }
+      await autoUpdater.downloadUpdate()
+      if (state.status === 'downloading') set(u.onDownloaded(state, version))
+    })()
       .catch((e: unknown) => {
         set(u.onDownloadFailure(state, describe(e)))
-        return state
       })
+      .then(() => state)
       .finally(() => {
         downloading = null
       })
