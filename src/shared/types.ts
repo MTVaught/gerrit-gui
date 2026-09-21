@@ -171,9 +171,9 @@ export interface ChangeView {
    * Their votes are shown but never change the state.
    */
   otherReviewers: ReviewerStatus[]
-  /** A team is configured, so the owner decides between the team tabs and External Reviews. */
+  /** A team is configured, so the owner decides between Team Reviews and External Reviews. */
   teamScoped: boolean
-  /** The owner is outside the configured team; the change is listed on the External Reviews tab and on no other. */
+  /** The owner is outside the configured team: the change is on External Reviews rather than Team Reviews. The regular tabs do not care. */
   externalOwner: boolean
   /** Gerrit WIP flag. Independent of review state; commonly used to hold CI until review is done. */
   wip: boolean

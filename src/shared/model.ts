@@ -566,27 +566,20 @@ export function mergeWaitsOnMe(v: ChangeView): boolean {
 }
 
 /**
- * Internal or external is decided by the owner alone, cross-referenced with
- * the team list in Settings. Who reviews does not matter, because CI and
- * maintainer lists add reviewers from outside the team to the team's own
- * changes, and those must stay on My Changes and Reviewing. Without a team
- * everything is internal.
- *
- * An internal change is listed on the five regular tabs and never on
- * External Reviews. An external change is listed on External Reviews only.
+ * Open changes owned by someone outside the team: the External Reviews tab.
+ * The team list sorts changes by their owner between this tab and Team
+ * Reviews, and does nothing else: the five regular tabs are decided by the
+ * user's part on each change (owner, reviewer, tagged primary reviewer,
+ * named merger), whoever owns it. So an outside owner's change the user is
+ * tagged on is on Needs Review as well as here.
  */
-export function isInternal(v: ChangeView): boolean {
-  return !v.externalOwner
-}
-
-/** Open changes owned by someone outside the team: the External Reviews tab, and nowhere else. */
 export function isExternalReview(v: ChangeView): boolean {
   return v.change.status === 'NEW' && v.externalOwner
 }
 
 /**
  * Open changes owned by a teammate: the Team Reviews tab, which lists them
- * whether or not the user reviews them. Unlike External Reviews this tab is
+ * whether or not the user reviews them. Like External Reviews the tab is
  * not exclusive: a teammate's change the user reviews is on Reviewing too.
  */
 export function isTeamReview(v: ChangeView): boolean {
@@ -642,14 +635,12 @@ function mergeQueueGroups(open: ChangeView[]): Group[] {
 }
 
 /**
- * The sections of one tab, before the View filter. Every tab except External
- * Reviews lists internal changes only (see isInternal); External Reviews
- * lists the open external ones. No change is on both kinds of tab. Team
- * Reviews lists every open internal change of somebody else, reviewed or not.
+ * The sections of one tab, before the View filter. The five regular tabs go
+ * by the user's part on the change, whoever owns it. Team Reviews and
+ * External Reviews go by the owner, on the team or not, reviewed or not.
  */
 export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
-  const internal = views.filter(isInternal)
-  const open = internal.filter((v) => v.change.status === 'NEW')
+  const open = views.filter((v) => v.change.status === 'NEW')
   switch (tab) {
     case 'needs-my-review':
       // Pass-around requests first: those are read alone, at the reviewer's desk. In-person ones wait for the meeting.
@@ -679,7 +670,7 @@ export function groupsFor(tab: TabId, views: ChangeView[]): Group[] {
     }
     case 'merged':
       // The merger's queue above the history: what waits to be merged, then what already was.
-      return [...mergeQueueGroups(open), { title: 'Merged in the last 14 days', items: internal.filter((v) => v.change.status === 'MERGED') }]
+      return [...mergeQueueGroups(open), { title: 'Merged in the last 14 days', items: views.filter((v) => v.change.status === 'MERGED') }]
     case 'team-reviews':
       return reviewerGroups(views.filter(isTeamReview))
     case 'external-reviews':
@@ -828,9 +819,9 @@ export function actionCounts(views: ChangeView[]): ActionCounts {
   return { review: keys.review.size, fix: keys.fix.size, ready: keys.ready.size, merge: keys.merge.size }
 }
 
-/** Each category opens a regular tab, and those list open internal changes only. */
+/** Each category opens a regular tab, and those list open changes. */
 function countsForActions(v: ChangeView): boolean {
-  return v.change.status === 'NEW' && isInternal(v)
+  return v.change.status === 'NEW'
 }
 
 /** This change needs the category's action from the user. */
@@ -1127,9 +1118,8 @@ export function unseenLines(v: ChangeView): number {
 
 /**
  * Owner groups a filter can name without picking accounts: the user's own
- * changes. Inside or outside the team is not a scope, because the tabs already
- * split on it (see groupsFor): every row on a regular tab is owned by the
- * team, and every row on External Reviews by someone else.
+ * changes. Inside or outside the team is not a scope, because the Team
+ * Reviews and External Reviews tabs already split on it (see groupsFor).
  */
 export type AuthorScope = 'me'
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isInternal, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, type ViewFilter } from './model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -385,7 +385,7 @@ test('team: the signed-in user is always a member', () => {
   // Alice is not on the list, but her own change is not external to her.
   const v = classify(change({ owner: alice, reviewers: [bob], requested: 3 }), alice._account_id, TEAM)
   assert.equal(v.externalOwner, false)
-  assert.equal(isInternal(v), true)
+  assert.equal(v.externalOwner, false)
 })
 
 test('team: only the owner makes a change external, not its reviewers', () => {
@@ -407,31 +407,32 @@ test('team: only the owner makes a change external, not its reviewers', () => {
   assert.equal(isTeamReview(classify(change({ owner: carol, reviewers: [bob] }), bob._account_id)), false)
 })
 
-test('team: an external change is on the External Reviews tab and on no other; a teammate\'s is on Team Reviews as well', () => {
+test('team: the owner sorts a change between Team Reviews and External Reviews; the regular tabs go by my part on it', () => {
   // Bob is signed in. Carol is on the team; Alice and Erin are not.
   const changes = [
-    // 1: Erin asked Bob to review, and Bob has not voted: external, waiting on Bob.
+    // 1: Erin asked Bob to review, and Bob has not voted: external, and waiting on Bob all the same.
     change({ number: 1, owner: erin, reviewers: [bob], requested: 3 }),
     // 2: Erin's change, Bob voted +1 and it is tagged: external, ready to merge.
     change({ number: 2, owner: erin, reviewers: [bob], votes: { 2: 1 }, requested: 3, hashtags: ['ready-to-merge'], maxVote: 2 }),
-    // 3: Erin's change that merged: external, so not on Recently Merged.
+    // 3: Erin's change that merged: on Recently Merged like any other Bob reviewed.
     change({ number: 3, owner: erin, reviewers: [bob], status: 'MERGED' }),
-    // 4: Carol asked Bob, with Erin also on it: internal, waiting on Bob.
+    // 4: Carol asked Bob, with Erin also on it: on the team, waiting on Bob.
     change({ number: 4, owner: carol, reviewers: [bob, erin], requested: 3 }),
-    // 5: Bob's own change, reviewed by Erin only: internal, mine.
+    // 5: Bob's own change, reviewed by Erin only: mine, on neither owner tab.
     change({ number: 5, owner: bob, reviewers: [erin], requested: 3 }),
-    // 6: Carol's merged change: internal, on Recently Merged.
+    // 6: Carol's merged change: on Recently Merged.
     change({ number: 6, owner: carol, reviewers: [bob], status: 'MERGED' }),
     // 7: Carol's change that Bob is not on, approved by Alice: on Team Reviews only.
     change({ number: 7, owner: carol, reviewers: [alice], votes: { 1: 1 }, requested: 3 }),
   ]
   const views = classifyAll(changes, bob._account_id, TEAM)
-  assert.deepEqual(views.map(isInternal), [false, false, false, true, true, true, true])
+  assert.deepEqual(views.map((v) => v.externalOwner), [true, true, true, false, false, false, false])
   const on = (tab: Parameters<typeof groupsFor>[0]) => groupsFor(tab, views).flatMap((g) => g.items.map((v) => v.change._number))
-  assert.deepEqual(on('needs-my-review'), [4])
-  assert.deepEqual(on('reviewing'), [4])
+  assert.deepEqual(on('needs-my-review'), [1, 4], "Erin's request reaches Bob like Carol's")
+  assert.deepEqual(on('reviewing'), [1, 4, 2], 'the two waiting on Bob, then the ready one')
   assert.deepEqual(on('mine'), [5])
-  assert.deepEqual(on('merged'), [6])
+  // Erin's unnamed ready change waits on anyone with +2, so it heads the Merged tab ahead of the merges.
+  assert.deepEqual(on('merged'), [2, 3, 6])
   assert.deepEqual(on('team-reviews'), [4, 7])
   assert.deepEqual(
     groupsFor('team-reviews', views).map((g) => [g.title, g.items.map((v) => v.change._number)]),
@@ -441,24 +442,23 @@ test('team: an external change is on the External Reviews tab and on no other; a
     ],
   )
   assert.deepEqual(on('external-reviews'), [1, 2])
-  assert.deepEqual(tabCounts(views), { 'needs-my-review': 1, reviewing: 1, mine: 1, merged: 1, 'team-reviews': 2, 'external-reviews': 2 })
+  assert.deepEqual(tabCounts(views), { 'needs-my-review': 2, reviewing: 3, mine: 1, merged: 3, 'team-reviews': 2, 'external-reviews': 2 })
   assert.deepEqual(
     tabSegments(views),
-    { 'needs-my-review': [{ n: 1, tone: 'hot', label: 'pass around' }], merged: [], mine: [{ n: 1, tone: 'pending', label: 'out for review' }] },
-    'nothing waits on Bob: Erin\'s ready change is external',
+    { 'needs-my-review': [{ n: 2, tone: 'hot', label: 'pass around' }], merged: [{ n: 1, tone: 'pos', label: 'ready to merge' }], mine: [{ n: 1, tone: 'pending', label: 'out for review' }] },
+    "both requests wait on Bob, and Erin's ready change on anyone who can merge",
   )
-  // The tray counts follow the regular tabs, so Erin's request and her ready change are left out.
-  assert.deepEqual(actionCounts(views), { review: 1, fix: 0, ready: 0, merge: 0 })
-  // Without a team the same changes are all internal and both team tabs are empty.
+  // The tray counts follow the regular tabs, so the team makes no difference to them.
+  assert.deepEqual(actionCounts(views), { review: 2, fix: 0, ready: 0, merge: 1 })
+  // Without a team the regular tabs read the same and both owner tabs are empty.
   const none = classifyAll(changes, bob._account_id)
-  assert.equal(none.every(isInternal), true)
+  assert.equal(none.some((v) => v.externalOwner), false)
   assert.deepEqual(groupsFor('external-reviews', none), [])
   assert.deepEqual(groupsFor('team-reviews', none), [])
-  assert.deepEqual(groupsFor('needs-my-review', none).flatMap((g) => g.items.map((v) => v.change._number)), [1, 4])
-  // Erin's unnamed ready change waits on anyone with +2, so it heads the Merged tab ahead of the merges.
-  assert.deepEqual(groupsFor('merged', none).flatMap((g) => g.items.map((v) => v.change._number)), [2, 3, 6])
-  assert.equal(actionCounts(none).review, 2)
-  assert.equal(actionCounts(none).merge, 1)
+  for (const tab of ['needs-my-review', 'reviewing', 'mine', 'merged'] as const) {
+    assert.deepEqual(groupsFor(tab, none).flatMap((g) => g.items.map((v) => v.change._number)), on(tab), tab)
+  }
+  assert.deepEqual(actionCounts(none), actionCounts(views))
 })
 
 test('groupsFor: the tabs are sectioned by state and empty sections are left out', () => {

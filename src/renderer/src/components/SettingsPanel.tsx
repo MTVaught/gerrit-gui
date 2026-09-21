@@ -98,10 +98,10 @@ export function SettingsPanel(props: {
         {section === 'team' && (
           <>
             <p className="muted">
-              The team decides where a change is listed. Changes owned by the team are on the regular tabs and on{' '}
-              <b>Team Reviews</b>; changes owned by people outside the team are on <b>External Reviews</b> only. Who decides a
-              change is not the team but its primary reviewers, tagged on the change with the "+" button on its row. Leave the
-              list empty to hide the two tabs.
+              The team sorts other people's changes by their owner: changes owned by the team are on <b>Team Reviews</b>,
+              changes owned by anyone else on <b>External Reviews</b>. The five regular tabs and the counts in the tray do not
+              look at the team; they go by your part on each change. Who decides a change is not the team but its primary
+              reviewers, tagged on the change with the "+" button on its row. Leave the list empty to hide the two tabs.
             </p>
             <TeamEditor members={s.team} onChange={(team) => void apply({ team })} canSearch={connected} />
             <p className="muted small">

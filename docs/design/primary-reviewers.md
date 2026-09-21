@@ -68,9 +68,17 @@ The team list picks the tabs by owner, as before, and gains a tab:
 
 | Tab | Owner | Listed |
 | --- | --- | --- |
-| Needs Review, Reviewing, My Changes, Ready to Merge, Recently Merged | on the team | as before, with "primary" for "reviewer" on Needs Review |
+| Needs Review, Reviewing, My Changes, Ready to Merge, Recently Merged | anyone | by my part on the change, with "primary" for "reviewer" on Needs Review |
 | Team Reviews | someone else on the team | every open change, reviewed by me or not; not exclusive |
-| External Reviews | outside the team | every open change I am on; exclusive, as before |
+| External Reviews | outside the team | every open change, reviewed by me or not; not exclusive |
+
+External Reviews was exclusive at first: an outside owner's change was on
+it and on no regular tab, and the tray left it out. That came from the time
+the team list said whose votes counted, when an outside request was by
+definition not for the team. With the deciders named on the change, a tag
+from an outside owner is as much an ask as one from a teammate, so the
+regular tabs, the tray and the notifications now go by the tags alone and
+the team list only sorts the two owner tabs.
 
 Team Reviews needs a query the board did not have: `is:open (owner:a OR
 owner:b ...)` over the team list, with the project scope from Settings.

@@ -14,7 +14,6 @@ import {
   groupsFor,
   isExternalReview,
   isFilterActive,
-  isInternal,
   sortByBranch,
   sortViews,
   type ChangeFamily,
@@ -67,7 +66,7 @@ const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
 }
 
 function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => void }) {
-  const reviewing = props.views.filter((v) => v.change.status === 'NEW' && v.iAmReviewer && !v.isMine && isInternal(v))
+  const reviewing = props.views.filter((v) => v.change.status === 'NEW' && v.iAmReviewer && !v.isMine)
   const unrequested = reviewing.filter((v) => v.state === 'in-progress' || v.state === 'iterating').length
   return (
     <div className="panel empty-explain">
@@ -78,12 +77,13 @@ function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => 
           The author pressed <b>Request review</b> on it, and that request is for the <b>current patch set</b>. A new
           patch set cancels the request until the author asks again.
         </li>
-        <li>You are a primary reviewer on it, tagged with the "+" button on the row. Being a reviewer in Gerrit alone is not enough. The owner is on your team.</li>
+        <li>You are a primary reviewer on it, tagged with the "+" button on the row. Being a reviewer in Gerrit alone is not enough.</li>
         <li>You have not voted on that patch set yet. Any vote clears it.</li>
       </ol>
       <p className="muted">
         Being added as a reviewer in Gerrit without the tag, a new patch set, or the attention set do not put anything
-        here. WIP status makes no difference. Requests from owners outside the team are under External Reviews.
+        here. WIP status makes no difference. Who owns the change does not matter: a request from outside your team lands
+        here too.
       </p>
       {reviewing.length > 0 ? (
         <p>
@@ -192,8 +192,8 @@ export function Board(props: {
       )}
       {props.tab === 'external-reviews' && (
         <p className="muted small">
-          Open changes owned by people outside the team you set in Settings. They are listed here only, not under
-          Needs Review or Reviewing. Your own changes are never here, whoever reviews them.
+          Open changes owned by people outside the team you set in Settings, whether or not you review them. The ones
+          that wait on you are under Needs Review as well. Your own changes are never here, whoever reviews them.
         </p>
       )}
       <div className="sections">
