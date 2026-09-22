@@ -162,15 +162,17 @@ export function SinceReview(props: { view: ChangeView }) {
 }
 
 /**
- * The user's part of the review rounds, under the reviewer chips: the vote they
+ * The user's part of the review rounds, over the Review button: the vote they
  * cast on the last patch set they reviewed, so they know whether the
  * re-review starts from a +1 or a −1. Nothing when they never reviewed the
- * change or already reviewed this patch set.
+ * change or already reviewed this patch set; with `slot`, an empty line of
+ * the same height instead, so the button below sits where it does on every
+ * other row.
  */
-export function MyLastReview(props: { view: ChangeView }) {
+export function MyLastReview(props: { view: ChangeView; slot?: boolean }) {
   const { view: v } = props
   const last = v.lastReviewedPatchSet
-  if (v.change.status !== 'NEW' || v.isMine || last === null || last >= v.patchSet) return null
+  if (v.change.status !== 'NEW' || v.isMine || last === null || last >= v.patchSet) return props.slot ? <span className="mine" /> : null
   const vote = v.lastReviewedVote
   const title = vote === null ? `You replied on patch set ${last} without voting` : vote === 0 ? `You took your vote on patch set ${last} back` : `You voted ${fmtVote(vote)} on patch set ${last}`
   return (
@@ -240,7 +242,9 @@ export function SizerRow() {
       </span>
       <span className="cell c-updated">00mo ago</span>
       <div className="cell c-wip actions">{split('Mark active')}</div>
-      <div className="cell c-actions actions">{split('Re-request (PS 00)')}</div>
+      <div className="cell c-actions">
+        <div className="btns">{split('Re-request (PS 00)')}</div>
+      </div>
     </div>
   )
 }
@@ -286,7 +290,7 @@ function byVote(rs: ReviewerStatus[]): ReviewerStatus[] {
  * Reviewer chips with votes: the primary reviewers on the first line, every
  * other reviewer on the change on a second one (dashed, since their votes do
  * not change the state). Each line is one row of chips; what does not fit is
- * behind "+N". Under the lines, the user's own last round on the change.
+ * behind "+N".
  * With no primary reviewer the first line is just the add button: the
  * disabled Request button says why. Anyone may tag or untag a primary
  * reviewer; only the owner adds or removes plain reviewers, as in Gerrit.
@@ -375,7 +379,6 @@ export function Reviewers(props: ActProps) {
     <>
       <ChipRow chips={primary} trailing={open && <AddReviewer view={v} self={self} allowOther={owner} onAct={props.onAct} />} />
       {others.length > 0 && <ChipRow className="others" chips={others} />}
-      <MyLastReview view={v} />
     </>
   )
 }
@@ -499,14 +502,19 @@ function Actions(props: ActProps) {
     )
   // One main button, last on the row. A stale ready-to-merge tag does not
   // block it: re-requesting review or Ready to Merge writes over the tag.
+  // A reviewer's row carries their last round over the button; the slot is
+  // there even when they have none, so the button never moves between rows.
   const review = open && v.iAmReviewer && !v.isMine
   const buttons = actions.filter((a) => !a.subtle)
   return (
     <>
       <div className="cell c-wip actions">{actions.filter((a) => a.subtle).map(button)}</div>
-      <div className="cell c-actions actions">
-        {buttons.map(button)}
-        {review && <ReviewButton view={v} />}
+      <div className="cell c-actions">
+        {review && <MyLastReview view={v} slot />}
+        <div className="btns">
+          {buttons.map(button)}
+          {review && <ReviewButton view={v} />}
+        </div>
       </div>
     </>
   )
