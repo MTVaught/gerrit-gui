@@ -176,15 +176,20 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .cell { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 8px 4px 0; white-space: nowrap; font-size: 13px; }
 .c-wip { padding-right: 6px; }
 .c-actions { padding-right: 0; }
-.c-wip > *, .c-actions > * { flex: 1; }
-.c-actions > .split, .c-wip > .split { display: flex; }
+.c-wip > * { flex: 1; }
+.c-wip > .split { display: flex; }
+/* The main button's cell stacks the reviewer's last round over the button; the buttons share the row below it. */
+.c-actions { flex-direction: column; align-items: stretch; justify-content: center; gap: 3px; }
+.c-actions > .btns { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.c-actions > .btns > * { flex: 1; }
+.c-actions > .btns > .split { display: flex; }
+.c-actions > .btns .btn { padding: 4px 10px; font-size: 13px; }
+.c-actions > .mine { min-height: 14px; line-height: 14px; padding-left: 2px; }
 .change-row + .change-row > .cell { border-top: 1px solid var(--border); }
 .change-row.closed > .cell { color: var(--muted); }
 .c-branch code { font-weight: 600; }
 .change-row.closed .c-branch code { font-weight: 500; }
 .c-reviewers { flex-direction: column; align-items: stretch; gap: 3px; }
-.c-reviewers .mine { padding-left: 2px; }
-.c-actions { justify-content: flex-end; }
 .cell.c-wip { justify-content: flex-end; }
 .c-diff, .c-updated { font-size: 12.5px; }
 /* Numbers line up on the right, so the pill or note beside them starts in the same place on every row. */
@@ -198,7 +203,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 /* Unresolved comment threads: a bubble with the count, by the change number. */
 .unresolved { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--warn); }
 .unresolved svg { width: 11px; height: 11px; }
-/* The reviewer's own last round, as a line under the reviewer chips. */
+/* The reviewer's own last round, as a line over the Review button (and in the compact ledger's subtitle). */
 .mine { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .mine .pos { color: var(--pos); } .mine .neg { color: var(--neg); }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--border); white-space: nowrap; }
