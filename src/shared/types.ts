@@ -181,6 +181,8 @@ export interface ChangeView {
   isPrivate: boolean
   /** The Verified label is +1 on the current patch set (CI passed) with no -1. Required, with Active, to ask for the merge. */
   verified: boolean
+  /** The Verified vote on the current patch set: -1 when anyone vetoed it, 1 when verified, 0 when CI has not voted. */
+  verifiedVote: -1 | 0 | 1
   /** Patch set the author last requested review on, or null if never. */
   requestedPatchSet: number | null
   /** Every patch set the author requested review on, in the order asked. */
