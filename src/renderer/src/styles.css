@@ -510,3 +510,14 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .btn.update .ring circle:last-child { transition: stroke-dashoffset 0.3s ease-out; }
 .compact .btn.update span { display: none; }
 .release-notes { margin: 8px 0 0; padding: 10px 12px; max-height: 240px; overflow: auto; white-space: pre-wrap; font: inherit; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }
+
+/* Settings: Debug */
+.inspect-form { align-items: stretch; margin-top: 8px; }
+.inspect-form input { margin-top: 0; }
+.inspect-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 4px 0 0; font-size: 13px; }
+.inspect-facts dt { color: var(--muted); }
+.inspect-facts dd { margin: 0; min-width: 0; word-break: break-word; }
+.inspect-facts code { display: inline-block; margin: 0 6px 2px 0; padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
+.inspect .link-btn { font: inherit; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; }
+.inspect .link-btn:hover { text-decoration: underline; }
+.raw-change { max-height: 480px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }

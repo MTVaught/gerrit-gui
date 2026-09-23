@@ -8,6 +8,7 @@ import { mergerTag, preferredKey, requestedPatchSetsValue, reviewerTag } from '.
 import type {
   AccountInfo,
   ChangeAction,
+  ChangeInspection,
   ChangeLink,
   DashboardData,
   SettingsInput,
@@ -38,6 +39,8 @@ export interface Service {
   /** Accounts for usernames or email addresses; keys with no account are left out. */
   lookupAccounts(keys: string[]): Promise<AccountInfo[]>
   changeUrl(link: ChangeLink): Promise<string>
+  /** One change read from NoteDb, plus the signed-in account, for the Debug page. */
+  inspectChange(id: number): Promise<ChangeInspection>
 }
 
 /**
@@ -192,5 +195,10 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
     suggestAccounts: async (q) => (await client()).suggestAccounts(q),
     lookupAccounts: async (keys) => (keys.length ? (await client()).accountsByKey(keys) : []),
     changeUrl: async (link) => (await client()).changeUrl(link),
+    async inspectChange(id) {
+      const g = await client()
+      const [self, change] = await Promise.all([g.self(), g.change(id)])
+      return { self, change }
+    },
   }
 }

@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import type { MergerRule, SettingsInput, SettingsStatus, SlackWorkspace } from '../../../shared/types.ts'
-import { isSlackTeamId, mergersReflect, slackWorkspacesReflect } from '../../../shared/model.ts'
+import type { ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace } from '../../../shared/types.ts'
+import { STATE_LABEL, accountKeys, changeNumberOf, classify, explainView, groupsFor, isSlackTeamId, mergersReflect, slackWorkspacesReflect } from '../../../shared/model.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
 import { ago } from '../time.ts'
 import { runUpdateAction, useUpdateState } from './Update.tsx'
 import { TeamEditor } from './TeamEditor.tsx'
 import { MergersEditor } from './MergersEditor.tsx'
+import { visibleTabs } from './Board.tsx'
 import { PlugIcon } from './Icons.tsx'
 
-type SectionId = 'team' | 'mergers' | 'scope' | 'slack' | 'app-icon' | 'window' | 'menu-bar' | 'about'
+type SectionId = 'team' | 'mergers' | 'scope' | 'slack' | 'app-icon' | 'window' | 'menu-bar' | 'debug' | 'about'
 
 const SECTIONS: { id: SectionId; label: string; desktopOnly?: boolean }[] = [
   { id: 'team', label: 'Team' },
@@ -19,6 +20,7 @@ const SECTIONS: { id: SectionId; label: string; desktopOnly?: boolean }[] = [
   { id: 'app-icon', label: 'App icon', desktopOnly: true },
   { id: 'window', label: 'Window', desktopOnly: true },
   { id: 'menu-bar', label: 'Menu bar', desktopOnly: true },
+  { id: 'debug', label: 'Debug' },
   { id: 'about', label: 'About', desktopOnly: true },
 ]
 
@@ -225,6 +227,7 @@ export function SettingsPanel(props: {
             </p>
           </>
         )}
+        {section === 'debug' && <DebugSection team={s.team} connected={connected} />}
         {section === 'about' && <AboutSection />}
       </main>
     </div>
@@ -359,6 +362,149 @@ function SlackWorkspacesSection(props: { rows: SlackWorkspace[]; onSave: (rows: 
         Add workspace
       </button>
     </div>
+  )
+}
+
+type Inspection = { view: ChangeView; raw: ChangeInspection }
+
+/**
+ * Look one change up by number or URL and show why the board puts it where
+ * it does: the derivation step by step, the tags and keyed values Gerrit
+ * holds, the sections it lands in, and the raw change for anything else.
+ * The change is read straight from Gerrit, as the board would read it, and
+ * classified with the same code, so what is shown is what the board sees.
+ */
+function DebugSection(props: { team: string[]; connected: boolean }) {
+  const [input, setInput] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<Inspection | null>(null)
+  const [showRaw, setShowRaw] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  async function lookUp() {
+    const id = changeNumberOf(input)
+    if (id === null) {
+      setError('Enter a change number, or paste the URL of the change.')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    setCopied(false)
+    try {
+      const raw = await api.inspectChange(id)
+      setResult({ raw, view: classify(raw.change, raw.self._account_id, props.team, accountKeys(raw.self)) })
+    } catch (e) {
+      setError((e as Error).message)
+      setResult(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function copy() {
+    if (!result) return
+    await navigator.clipboard.writeText(JSON.stringify(result.raw, null, 2))
+    setCopied(true)
+  }
+
+  return (
+    <>
+      <p className="muted">
+        Look a change up the way the board reads it and see why it is where it is: the state, step by step, the hashtags
+        and keyed values on it, and the sections it lands in. Nothing here changes the change.
+      </p>
+      <form
+        className="row inspect-form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void lookUp()
+        }}
+      >
+        <input value={input} placeholder="Change number or URL" aria-label="Change number or URL" disabled={!props.connected} onChange={(e) => setInput(e.target.value)} />
+        <button type="submit" className="btn" disabled={!props.connected || busy || input.trim() === ''}>
+          {busy ? 'Looking up…' : 'Look up'}
+        </button>
+      </form>
+      {!props.connected && <p className="muted small">Set up the connection first.</p>}
+      {error && (
+        <p className="error small" role="alert">
+          {error}
+        </p>
+      )}
+      {result && (
+        <div className="inspect">
+          <InspectionReport r={result} team={props.team} />
+          <div className="row">
+            <button type="button" className="btn" onClick={() => setShowRaw((v) => !v)}>
+              {showRaw ? 'Hide raw change' : 'Show raw change'}
+            </button>
+            <button type="button" className="btn" onClick={() => void copy()}>
+              {copied ? 'Copied' : 'Copy raw change'}
+            </button>
+          </div>
+          {showRaw && <pre className="release-notes raw-change">{JSON.stringify(result.raw.change, null, 2)}</pre>}
+        </div>
+      )}
+    </>
+  )
+}
+
+function InspectionReport(props: { r: Inspection; team: string[] }) {
+  const { view: v, raw } = props.r
+  const c = v.change
+  // The Merged tab's history section is returned even when empty, hence the filter.
+  const listed = visibleTabs(props.team.length > 0).flatMap((t) =>
+    groupsFor(t.id, [v])
+      .filter((g) => g.items.length > 0)
+      .map((g) => `${t.label} › ${g.title}`),
+  )
+  const keyed = Object.entries(c.custom_keyed_values ?? {})
+  const votes = (rs: ChangeView['reviewers']) => rs.map((r) => `${r.account.name ?? r.account.username ?? r.account.email ?? r.account._account_id} ${r.vote > 0 ? '+' : ''}${r.vote}`).join(', ')
+  return (
+    <>
+      <h3>
+        <button type="button" className="link-btn" title="Open in Gerrit" onClick={() => void api.openChange({ id: c._number, project: c.project })}>
+          #{c._number}
+        </button>{' '}
+        {c.subject}
+      </h3>
+      <p className="muted small">
+        {c.project} · {c.branch} · {c.status} · owned by {c.owner.name ?? c.owner.username ?? c.owner._account_id}
+        {v.isMine ? ' (you)' : ''} · signed in as {raw.self.username ?? raw.self.name}
+      </p>
+      <h3>Why</h3>
+      <ol className="steps">
+        {explainView(v).map((line, i) => (
+          <li key={i}>{line}</li>
+        ))}
+      </ol>
+      <h3>What the board sees</h3>
+      <dl className="inspect-facts">
+        <dt>State</dt>
+        <dd>{STATE_LABEL[v.state]}{v.wip ? ' · WIP' : ''}{v.isPrivate ? ' · private' : ''}{v.verified ? ' · verified' : ''}</dd>
+        <dt>Listed under</dt>
+        <dd>{listed.length > 0 ? listed.join('; ') : 'Not on any tab'}</dd>
+        <dt>Hashtags</dt>
+        <dd>{c.hashtags?.length ? c.hashtags.map((t) => <code key={t}>{t}</code>) : 'none'}</dd>
+        <dt>Keyed values</dt>
+        <dd>
+          {keyed.length > 0
+            ? keyed.map(([k, val]) => (
+                <code key={k}>
+                  {k} = {val}
+                </code>
+              ))
+            : 'none'}
+        </dd>
+        <dt>Primary reviewers</dt>
+        <dd>{v.reviewers.length > 0 ? votes(v.reviewers) : 'none tagged'}</dd>
+        <dt>Other reviewers</dt>
+        <dd>{v.otherReviewers.length > 0 ? votes(v.otherReviewers) : 'none'}</dd>
+        <dt>Your vote</dt>
+        <dd>{v.myVote > 0 ? '+' : ''}{v.myVote}{v.canMerge ? ' · may vote +2' : ''}</dd>
+      </dl>
+    </>
   )
 }
 
