@@ -4,6 +4,7 @@ import type {
   AccountInfo,
   BadgePayload,
   ChangeAction,
+  ChangeInspection,
   ChangeLink,
   DashboardData,
   SettingsInput,
@@ -29,6 +30,8 @@ export interface Api {
   openChange(link: ChangeLink): Promise<void>
   /** The same URL as a string, for copying. */
   changeUrl(link: ChangeLink): Promise<string>
+  /** One change by number, with the board's fields, for the Debug page in Settings. */
+  inspectChange(id: number): Promise<ChangeInspection>
   /** Open an https link (a Slack conversation) in the browser, or in the Slack app when Settings knows the workspace. */
   openUrl(url: string): Promise<void>
   getUi(): Promise<UiState>

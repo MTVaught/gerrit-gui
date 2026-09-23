@@ -559,7 +559,8 @@ export function classifyAll(changes: ChangeInfo[], selfId: number, team: string[
 
 /**
  * The merge waits on this user: the author named them, or the tag names
- * nobody (an older version made it) and they can vote +2.
+ * nobody (an older version made it, or the merger tag was removed by hand)
+ * and they can vote +2.
  */
 export function mergeWaitsOnMe(v: ChangeView): boolean {
   return v.state === 'ready-to-merge' && (v.mergeRequestedFromMe || (v.requestedMerger === null && v.canMerge))
@@ -617,19 +618,19 @@ function reviewerGroups(items: ChangeView[]): Group[] {
   ].filter((g) => g.items.length > 0)
 }
 
-/** What the author asked of this user, and nothing asked of somebody else. */
+/** What the author asked of this user, and nothing asked of somebody else. A stale tag is the owner's alone. */
 function mergeQueueGroups(open: ChangeView[]): Group[] {
   return [
     { title: 'Asked of you', items: open.filter((v) => v.state === 'ready-to-merge' && v.mergeRequestedFromMe) },
     {
       title: 'Tagged without a merger',
-      hint: 'Tagged by an older version of the application, which named nobody. Anyone who can vote +2 may merge these.',
+      hint: 'The ready-to-merge tag names nobody, so anyone who can vote +2 may merge these.',
       items: open.filter((v) => v.state === 'ready-to-merge' && v.requestedMerger === null && v.canMerge),
     },
     {
       title: 'Tagged but no longer approved',
-      hint: 'A new patch set reset the votes. The owner should request review again or clear the tag.',
-      items: open.filter((v) => v.staleReadyToMerge && (v.isMine || v.mergeRequestedFromMe)),
+      hint: 'Your changes with a ready-to-merge tag that no longer counts: a newer patch set reset the votes, or an older version wrote the tag without one. Request review again, or press Ready to Merge once approved; either writes over the tag.',
+      items: open.filter((v) => v.staleReadyToMerge && v.isMine),
     },
   ].filter((g) => g.items.length > 0)
 }
@@ -917,6 +918,71 @@ export const STATE_LABEL: Record<ReviewState, string> = {
   'ready-to-merge': 'Ready to Merge',
   merged: 'Merged',
   abandoned: 'Abandoned',
+}
+
+/** The change number in what a user pastes: the number itself, or a change URL such as https://host/c/project/+/1234/2. */
+export function changeNumberOf(input: string): number | null {
+  const s = input.trim()
+  if (/^\d+$/.test(s)) return Number(s)
+  const m = /\/\+\/(\d+)(?:[/?#]|$)/.exec(s) ?? /\/c\/(\d+)(?:[/?#]|$)/.exec(s) ?? /#\/c\/(\d+)/.exec(s)
+  return m ? Number(m[1]) : null
+}
+
+function accountLabel(a: AccountInfo): string {
+  return a.name ?? a.username ?? a.email ?? `#${a._account_id}`
+}
+
+/**
+ * Why a change has the state it has: one line per step of the derivation in
+ * `classify`, in the order the steps are taken, for the Debug page in
+ * Settings. The words name the tags and keys as Gerrit stores them, so what
+ * the page says can be checked against the change.
+ */
+export function explainView(v: ChangeView): string[] {
+  const c = v.change
+  const out: string[] = []
+  if (c.status !== 'NEW') {
+    out.push(`The change is ${c.status.toLowerCase()}, so its state is ${STATE_LABEL[v.state]} whatever the tags say.`)
+    return out
+  }
+  out.push(`Current patch set: ${v.patchSet}.`)
+  if (v.reviewers.length === 0) {
+    out.push(`No primary reviewers: no "${REVIEWER_TAG_PREFIX}" hashtag names anyone but the owner or a bot. Nobody can decide the change, so it never becomes Approved.`)
+  } else {
+    const votes = v.reviewers.map((r) => `${accountLabel(r.account)} ${r.vote > 0 ? '+' : ''}${r.vote}${r.tagOnly ? ' (tagged, not a reviewer in Gerrit)' : ''}`)
+    out.push(`Primary reviewers and their votes on this patch set: ${votes.join(', ')}.`)
+  }
+  const requested = v.requestedPatchSets
+  if (v.reviewRequested) out.push(`Review requested on this patch set${v.inPerson ? ', in person' : ''} (${REVIEW_REQUESTED_KEY} = ${requested.join(',')}).`)
+  else if (requested.length > 0) out.push(`The last review request was for patch set ${requested.at(-1)}, not the current one (${REVIEW_REQUESTED_KEY} = ${requested.join(',')}).`)
+  else out.push(`No review requested (${REVIEW_REQUESTED_KEY} is not set).`)
+
+  const everyoneVoted = v.reviewers.length > 0 && v.pending.length === 0
+  if (!everyoneVoted) {
+    if (v.pending.length > 0) out.push(`Waiting on votes from ${v.pending.map(accountLabel).join(', ')}, so the outcome is not decided yet.`)
+    out.push(`State: ${STATE_LABEL[v.state]}.`)
+  } else if (v.reviewers.some((r) => r.vote < 0)) {
+    out.push(`Every primary reviewer voted and at least one voted negative. State: ${STATE_LABEL[v.state]}.`)
+  } else {
+    out.push('Every primary reviewer voted and none voted negative, so the change is approved.')
+  }
+
+  const tagged = hasTag(c, READY_TO_MERGE_TAG)
+  if (tagged) {
+    if (v.readyPatchSet === v.patchSet) out.push(`The ${READY_TO_MERGE_TAG} tag is for this patch set (${READY_TO_MERGE_KEY} = ${v.readyPatchSet}).`)
+    else if (v.readyPatchSet === null) out.push(`The ${READY_TO_MERGE_TAG} tag has no recorded patch set (${READY_TO_MERGE_KEY} is missing; an older version wrote it), so it does not count.`)
+    else out.push(`The ${READY_TO_MERGE_TAG} tag was set on patch set ${v.readyPatchSet} (${READY_TO_MERGE_KEY}), not the current ${v.patchSet}, so it does not count.`)
+  } else {
+    out.push(`No ${READY_TO_MERGE_TAG} tag.`)
+  }
+  if (everyoneVoted && !v.reviewers.some((r) => r.vote < 0)) out.push(`State: ${STATE_LABEL[v.state]}.`)
+  if (v.staleReadyToMerge) {
+    out.push(`The tag is on the change but the state is not Ready to Merge, so it does not count: the badge does not name a merger and nothing waits on one. The owner sees the change under "Tagged but no longer approved" on the Merged tab; asking for the merge again re-tags the current patch set.`)
+  }
+  if (v.requestedMerger !== null) out.push(`Merge asked of ${v.requestedMerger}${v.mergeRequestedFromMe ? ' (you)' : ''}.`)
+  else out.push(`No "${MERGER_TAG_PREFIX}" hashtag names a merger.`)
+  out.push(v.canMerge ? 'You can vote +2 on this change.' : 'You cannot vote +2 on this change.')
+  return out
 }
 
 function projectScope(projects: string[]): string {

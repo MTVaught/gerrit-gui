@@ -32,6 +32,7 @@ function browserApi(): Api {
       window.open(await call<string>('changeUrl', [link]), '_blank', 'noopener')
     },
     changeUrl: (link) => call('changeUrl', [link]),
+    inspectChange: (id) => call('inspectChange', [id]),
     openUrl: async (url) => {
       if (/^https:\/\//i.test(url)) window.open(url, '_blank', 'noopener')
     },

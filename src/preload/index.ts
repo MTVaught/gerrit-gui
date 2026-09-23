@@ -19,6 +19,7 @@ const api: Api = {
   lookupAccounts: (keys) => ipcRenderer.invoke('gerrit:lookupAccounts', keys),
   openChange: (link) => ipcRenderer.invoke('gerrit:openChange', link),
   changeUrl: (link) => ipcRenderer.invoke('gerrit:changeUrl', link),
+  inspectChange: (id) => ipcRenderer.invoke('gerrit:inspectChange', id),
   openUrl: (url) => ipcRenderer.invoke('app:openUrl', url),
   getUi: () => ipcRenderer.invoke('ui:get'),
   setCompact: (on) => ipcRenderer.invoke('ui:setCompact', on),

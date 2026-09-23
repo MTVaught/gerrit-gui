@@ -198,7 +198,7 @@ it, so the tab lists only what waits on you.
 | --- | --- | --- |
 | Asked of you | The named merger | `mergeRequestedFromMe`. Merge button here. |
 | Tagged without a merger | Users who can +2 | Old-version tag. Merge button. Transition only. |
-| Tagged but no longer approved | The owner and the named merger | As today, limited to the changes those two would otherwise see. |
+| Tagged but no longer approved | The owner | The owner's changes whose tag no longer counts. The named merger is not told: nothing waits on them until the owner re-tags. |
 
 The tab count follows the sections, so it matches the tray.
 

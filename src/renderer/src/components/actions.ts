@@ -39,8 +39,11 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
   const id = c._number
   const open = c.status === 'NEW'
   const owner = open && v.isMine
-  // The person the author asked, or anyone with +2 when nobody was named (a tag from an older version).
-  const merger = (v.state === 'ready-to-merge' || v.staleReadyToMerge) && (v.mergeRequestedFromMe || (v.requestedMerger === null && v.canMerge))
+  // The person the author asked, or anyone with +2 when the tag names nobody.
+  // Only while the state is Ready to Merge: a tag left from an earlier patch
+  // set, or written without one by an older version, is the owner's to deal
+  // with, and their Request and Ready to Merge buttons write over it.
+  const merger = v.state === 'ready-to-merge' && (v.mergeRequestedFromMe || (v.requestedMerger === null && v.canMerge))
   const readyTags = [READY_TO_MERGE_TAG, ...mergerTags(c)]
   const out: ActionSpec[] = []
 
@@ -120,7 +123,7 @@ export function changeActions(v: ChangeView, act: (a: ChangeAction) => Promise<v
   // the tag afresh for the current patch set over a stale one, and the merger
   // picker offers the clear in its menu. So the row keeps one button.
   const covered = out.some((a) => a.key === 'request' || a.key === 'ready' || a.key === 'change-merger')
-  if (open && (v.state === 'ready-to-merge' || v.staleReadyToMerge) && ((v.isMine && !covered) || merger)) {
+  if (open && ((v.isMine && v.staleReadyToMerge && !covered) || merger)) {
     out.push({ key: 'clear', label: 'Clear tag', short: 'Clear tag', run: () => void act({ type: 'hashtag', id, remove: readyTags }) })
   }
   // The subtle button in the last column. The owner gets a menu with the WIP

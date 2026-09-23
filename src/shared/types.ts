@@ -411,6 +411,12 @@ export interface DashboardData {
   truncated: boolean
 }
 
+/** One change as the Debug page in Settings reads it: the signed-in account and the change with the board's fields. */
+export interface ChangeInspection {
+  self: AccountInfo
+  change: ChangeInfo
+}
+
 export type ChangeAction =
   /** Owner's action. `clearTags` drops a ready-to-merge and merger tag left over from an earlier patch set. */
   | {

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, type ViewFilter } from './model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -948,13 +948,13 @@ test('Merged tab: only what is asked of me, plus unnamed tags for +2 users, plus
     [
       ['Asked of you', [2]],
       ['Tagged without a merger', [4]],
-      ['Tagged but no longer approved', [5, 6]],
+      ['Tagged but no longer approved', [5]],
       ['Merged in the last 14 days', [8]],
     ],
   )
-  assert.equal(tabCounts(views).merged, 5)
+  assert.equal(tabCounts(views).merged, 4)
   // The pill's green segment counts the queue, not the history.
-  assert.deepEqual(tabSegments(views).merged, [{ n: 4, tone: 'pos', label: 'ready to merge' }])
+  assert.deepEqual(tabSegments(views).merged, [{ n: 3, tone: 'pos', label: 'ready to merge' }])
   assert.equal(actionCounts(views).merge, 2, 'asked of me and the unnamed one I can +2')
   // My own ready change is on My Changes, not on the merger's queue.
   assert.ok(groupsFor('mine', views).some((g) => g.title === 'Ready to Merge' && g.items.some((v) => v.change._number === 1)))
@@ -1168,4 +1168,50 @@ test('the delta since my last review is kept only for the span the Review button
   assert.equal(classify(good, carol._account_id).sinceReview, null, 'carol never reviewed it')
   const upToDate = { ...change({ reviewers: [bob], patchSet: 5, messages: [msg(bob, 5)] }), review_delta: good.review_delta }
   assert.equal(classify(upToDate, bob._account_id).sinceReview, null)
+})
+
+test('changeNumberOf: a number, a change URL with or without a patch set, or nothing', () => {
+  assert.equal(changeNumberOf(' 1234 '), 1234)
+  assert.equal(changeNumberOf('https://host/c/platform%2Fcore/+/1234'), 1234)
+  assert.equal(changeNumberOf('https://host/gerrit1/c/demo/+/1234/2..3?tab=comments#x'), 1234)
+  assert.equal(changeNumberOf('https://host/c/1234/'), 1234)
+  assert.equal(changeNumberOf('https://host/#/c/1234/'), 1234)
+  assert.equal(changeNumberOf('https://host/c/demo/+/'), null)
+  assert.equal(changeNumberOf('twelve'), null)
+  assert.equal(changeNumberOf(''), null)
+})
+
+test('explainView: a tag from an earlier patch set on an approved change names the stale section', () => {
+  const c = change({ reviewers: [bob, carol], votes: { 2: 1, 3: 1 }, patchSet: 4, readyPs: 3, hashtags: ['ready-to-merge', 'merger:bob'], requested: [3, 4] })
+  const lines = explainView(classify(c, bob._account_id, [], accountKeys(bob)))
+  assert.equal(lines[0], 'Current patch set: 4.')
+  assert.match(lines[1]!, /Bob \+1, Carol \+1/)
+  assert.ok(lines.some((l) => l.includes('none voted negative')))
+  assert.ok(lines.some((l) => l.includes('set on patch set 3') && l.includes('not the current 4')))
+  assert.ok(lines.some((l) => l.includes('State: Approved.')))
+  assert.ok(lines.some((l) => l.includes('Tagged but no longer approved')))
+  assert.ok(lines.some((l) => l === 'Merge asked of bob (you).'))
+})
+
+test('explainView: a tag with no recorded patch set, and no primary reviewers, are each named', () => {
+  const noPs = change({ reviewers: [bob], votes: { 2: 1 }, patchSet: 2, readyPs: null, hashtags: ['ready-to-merge'] })
+  assert.ok(explainView(classify(noPs, alice._account_id)).some((l) => l.includes('no recorded patch set')))
+  const nobody = change({ reviewers: [bob], primary: [], votes: { 2: 1 }, hashtags: ['ready-to-merge'], requested: 3 })
+  const lines = explainView(classify(nobody, alice._account_id))
+  assert.ok(lines.some((l) => l.startsWith('No primary reviewers')))
+  assert.ok(lines.some((l) => l.includes('Review requested on this patch set')))
+  assert.ok(lines.some((l) => l === 'State: Needs Review.'))
+  assert.ok(lines.some((l) => l.includes('Tagged but no longer approved')))
+})
+
+test('explainView: the current patch set tagged after every vote is Ready to Merge', () => {
+  const c = change({ reviewers: [bob], votes: { 2: 1 }, patchSet: 3, hashtags: ['ready-to-merge', 'merger:carol'] })
+  const lines = explainView(classify(c, alice._account_id, [], accountKeys(alice)))
+  assert.ok(lines.some((l) => l.includes('tag is for this patch set (ready-to-merge-ps = 3)')))
+  assert.ok(lines.some((l) => l === 'State: Ready to Merge.'))
+  assert.ok(!lines.some((l) => l.includes('no longer approved')))
+  assert.ok(lines.some((l) => l === 'Merge asked of carol.'))
+  const merged = explainView(classify(change({ status: 'MERGED' }), alice._account_id))
+  assert.equal(merged.length, 1)
+  assert.match(merged[0]!, /merged/)
 })

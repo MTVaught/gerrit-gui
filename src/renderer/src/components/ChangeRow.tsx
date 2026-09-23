@@ -273,10 +273,16 @@ export function PrivateBadge() {
   )
 }
 
-/** Who was asked to merge, for the state badge: "you" for the signed-in user, else the name. Nothing once the change is closed. */
+/**
+ * Who was asked to merge, for the state badge: "you" for the signed-in user,
+ * else the name. Only while the state is Ready to Merge: a tag left over from
+ * an earlier patch set (or written without a patch set by an older version)
+ * must not dress an Approved change up as a merge request, since the owner's
+ * next step is the Ready to Merge button either way.
+ */
 export function mergerLabel(v: ChangeView, nameFor: (key: string) => string): string | null {
   if (v.change.status !== 'NEW' || !v.requestedMerger) return null
-  if (v.state !== 'ready-to-merge' && !v.staleReadyToMerge) return null
+  if (v.state !== 'ready-to-merge') return null
   return v.mergeRequestedFromMe ? 'you' : nameFor(v.requestedMerger)
 }
 
