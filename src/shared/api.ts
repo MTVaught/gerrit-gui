@@ -4,6 +4,7 @@ import type {
   AccountInfo,
   BadgePayload,
   ChangeAction,
+  ChangeInfo,
   ChangeInspection,
   ChangeLink,
   DashboardData,
@@ -20,6 +21,8 @@ export interface Api {
   saveSettings(input: SettingsInput): Promise<void>
   testConnection(): Promise<AccountInfo>
   fetchDashboard(): Promise<DashboardData>
+  /** One change as the board shows it, read after an action on it so only that card is redrawn. */
+  fetchChange(id: number): Promise<ChangeInfo>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
   /** Gerrit accounts matching a name, username or email, for the team list in Settings. */

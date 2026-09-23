@@ -13,6 +13,7 @@ const api: Api = {
   saveSettings: (input) => ipcRenderer.invoke('settings:save', input),
   testConnection: () => ipcRenderer.invoke('gerrit:testConnection'),
   fetchDashboard: () => ipcRenderer.invoke('gerrit:fetchDashboard'),
+  fetchChange: (id) => ipcRenderer.invoke('gerrit:fetchChange', id),
   act: (action) => ipcRenderer.invoke('gerrit:act', action),
   suggestReviewers: (id, q) => ipcRenderer.invoke('gerrit:suggestReviewers', id, q),
   suggestAccounts: (q) => ipcRenderer.invoke('gerrit:suggestAccounts', q),

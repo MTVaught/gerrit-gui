@@ -6,6 +6,7 @@ import type {
   ChangeInfo,
   ChangeLink,
   ChangeView,
+  DashboardData,
   MergerRule,
   ReviewDelta,
   ReviewState,
@@ -1029,6 +1030,32 @@ const NOT_OTHERS_PRIVATE = '(owner:self OR -is:private)'
  */
 export function isVisibleOnBoard(change: ChangeInfo, selfId: number): boolean {
   return change.is_private !== true || change.owner._account_id === selfId
+}
+
+/**
+ * The board with one change replaced by a fresh copy, after an action on
+ * it: the same rules as `dashboardQueries` decide which list it goes in, or
+ * that it leaves the board (abandoned, made private by someone else, the
+ * user taken off it). The rest of the board is left as it was, so this
+ * is what the UI does after an action instead of fetching everything again.
+ */
+export function withChange(data: DashboardData, fresh: ChangeInfo, team: string[] = []): DashboardData {
+  const selfId = data.self._account_id
+  const keys = accountKeys(data.self)
+  const mine = fresh.owner._account_id === selfId
+  const teamOwned = normalizeTeam(team).some((k) => accountKeys(fresh.owner).includes(k))
+  let list: 'open' | 'merged' | null = null
+  if (isVisibleOnBoard(fresh, selfId)) {
+    if (fresh.status === 'NEW' && (mine || isReviewer(fresh, selfId) || isTaggedReviewer(fresh, keys) || hasTag(fresh, READY_TO_MERGE_TAG) || teamOwned)) list = 'open'
+    else if (fresh.status === 'MERGED' && (mine || isReviewer(fresh, selfId))) list = 'merged'
+  }
+  const place = (name: 'open' | 'merged', items: ChangeInfo[]): ChangeInfo[] => {
+    const at = items.findIndex((c) => c._number === fresh._number)
+    if (list !== name) return at === -1 ? items : items.filter((c) => c._number !== fresh._number)
+    if (at === -1) return [...items, fresh]
+    return items.map((c, i) => (i === at ? fresh : c))
+  }
+  return { ...data, open: place('open', data.open), merged: place('merged', data.merged) }
 }
 
 /** Tagged as a primary reviewer, matched by username or email. */

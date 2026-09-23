@@ -83,6 +83,11 @@ test('full workflow through the client', { skip: !reachable && 'no local Gerrit 
   // The owner hides the change and shows it again; read directly, the flag is on the change (the board hides it: see below).
   await serviceAs('alice').act({ type: 'setPrivate', id, private: true })
   assert.equal((await view('bob', id)).isPrivate, true)
+  // The board re-reads just this change after an action; the write is already in what it gets back.
+  const fresh = await serviceAs('alice').fetchChange(id)
+  assert.equal(fresh._number, id)
+  assert.equal(fresh.is_private, true)
+  assert.deepEqual(fresh.reviewers?.REVIEWER?.map((r) => r.username).sort(), ['bob', 'carol'], 'the same fields as a search result')
   await serviceAs('alice').act({ type: 'setPrivate', id, private: false })
   v = await view('bob', id)
   assert.equal(v.isPrivate, false)

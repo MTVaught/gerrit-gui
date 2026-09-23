@@ -2,12 +2,13 @@
 // process exposes it over IPC; src/server exposes it over local HTTP for
 // running the UI in a browser (e.g. over VS Code port forwarding).
 import { GerritClient, GerritError, type FetchLike } from './gerrit.ts'
-import { fetchDashboard } from './dashboard.ts'
+import { fetchChange, fetchDashboard } from './dashboard.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
 import { mergerTag, preferredKey, requestedPatchSetsValue, reviewerTag } from '../shared/model.ts'
 import type {
   AccountInfo,
   ChangeAction,
+  ChangeInfo,
   ChangeInspection,
   ChangeLink,
   DashboardData,
@@ -33,6 +34,8 @@ export interface Service {
   saveSettings(input: SettingsInput): Promise<void>
   testConnection(): Promise<AccountInfo>
   fetchDashboard(): Promise<DashboardData>
+  /** One change, fresh from Gerrit, for updating the board after an action on it. */
+  fetchChange(id: number): Promise<ChangeInfo>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
   suggestAccounts(q: string): Promise<AccountInfo[]>
@@ -101,6 +104,10 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
     async fetchDashboard() {
       const [g, status] = await Promise.all([client(), store.getStatus()])
       return fetchDashboard(g, status.projects, status.team)
+    },
+
+    async fetchChange(id) {
+      return fetchChange(await client(), id)
     },
 
     async act(action) {

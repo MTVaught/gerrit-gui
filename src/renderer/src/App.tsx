@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, tabCounts, tabSegments, totalActions, type SortId, type TabSegment, type ViewFilter } from '../../shared/model.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, tabCounts, tabSegments, totalActions, withChange, type SortId, type TabSegment, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
@@ -124,6 +124,8 @@ export function App() {
   }, [projectsKey, configured, refresh])
 
   const team = settings?.team ?? NO_TEAM
+  const teamRef = useRef(team)
+  teamRef.current = team
   const views = useMemo<ChangeView[]>(
     () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id, team, accountKeys(data.self)) : []),
     [data, team],
@@ -149,6 +151,10 @@ export function App() {
     if (settings && !tabs.some((t) => t.id === tab)) setTab('needs-my-review')
   }, [settings, tabs, tab])
 
+  // After an action, only the change acted on is re-read; the rest of the
+  // board keeps what the last full refresh brought. The full refresh is the
+  // fallback when that read fails, and what an action that failed gets, so
+  // the board shows what Gerrit has either way.
   const act = useCallback(
     async (action: ChangeAction) => {
       setBusy(true)
@@ -157,8 +163,17 @@ export function App() {
         setError(null)
       } catch (e) {
         setError(String((e as Error).message ?? e))
-      } finally {
         await refresh()
+        return
+      }
+      try {
+        const fresh = await api.fetchChange(action.id)
+        rememberAccounts([fresh.owner, ...(fresh.reviewers?.REVIEWER ?? [])])
+        setData((d) => (d ? withChange(d, fresh, teamRef.current) : d))
+      } catch {
+        await refresh()
+      } finally {
+        setBusy(false)
       }
     },
     [refresh],
