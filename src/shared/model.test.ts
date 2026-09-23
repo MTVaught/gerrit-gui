@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, type ViewFilter } from './model.ts'
+import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, type ViewFilter } from './model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -1214,4 +1214,36 @@ test('explainView: the current patch set tagged after every vote is Ready to Mer
   const merged = explainView(classify(change({ status: 'MERGED' }), alice._account_id))
   assert.equal(merged.length, 1)
   assert.match(merged[0]!, /merged/)
+})
+
+test('withChange: the fresh copy replaces the old one in place, joins the list it belongs in, or leaves the board', () => {
+  const a = change({ number: 10, owner: alice })
+  const b = change({ number: 11, owner: bob, reviewers: [alice] })
+  const board = { self: alice, open: [a, b], merged: [], fetchedAt: '', truncated: false }
+
+  const b2 = { ...b, hashtags: ['ready-to-merge'] }
+  const replaced = withChange(board, b2)
+  assert.deepEqual(replaced.open.map((c) => c._number), [10, 11], 'same order')
+  assert.equal(replaced.open[1], b2)
+  assert.equal(replaced.open[0], a, 'the other change is untouched')
+
+  // Alice is no longer a reviewer nor tagged, and does not own it: off the board.
+  const gone = withChange(board, { ...change({ number: 11, owner: bob, reviewers: [] }), hashtags: [] })
+  assert.deepEqual(gone.open.map((c) => c._number), [10])
+
+  // Still a reviewer, but the owner made it private: not shown.
+  assert.deepEqual(withChange(board, change({ number: 11, owner: bob, reviewers: [alice], private: true })).open.map((c) => c._number), [10])
+  // Alice's own private change stays.
+  assert.deepEqual(withChange(board, change({ number: 10, owner: alice, private: true })).open.map((c) => c._number), [10, 11])
+
+  // Abandoned: gone. Merged: moves lists.
+  assert.deepEqual(withChange(board, change({ number: 10, owner: alice, status: 'ABANDONED' })).open.map((c) => c._number), [11])
+  const merged = withChange(board, change({ number: 10, owner: alice, status: 'MERGED' }))
+  assert.deepEqual(merged.open.map((c) => c._number), [11])
+  assert.deepEqual(merged.merged.map((c) => c._number), [10])
+
+  // A change not on the board yet joins it when it belongs: a team member's change, given the team.
+  const c = change({ number: 12, owner: carol })
+  assert.deepEqual(withChange(board, c).open.map((x) => x._number), [10, 11])
+  assert.deepEqual(withChange(board, c, TEAM).open.map((x) => x._number), [10, 11, 12])
 })

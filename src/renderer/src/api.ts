@@ -24,6 +24,7 @@ function browserApi(): Api {
     saveSettings: (input) => call('saveSettings', [input]),
     testConnection: () => call('testConnection'),
     fetchDashboard: () => call('fetchDashboard'),
+    fetchChange: (id) => call('fetchChange', [id]),
     act: (action) => call('act', [action]),
     suggestReviewers: (id, q) => call('suggestReviewers', [id, q]),
     suggestAccounts: (q) => call('suggestAccounts', [q]),

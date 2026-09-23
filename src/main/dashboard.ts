@@ -34,6 +34,17 @@ export async function fetchDashboard(g: GerritClient, projects: string[], team: 
   return { self, open, merged: merged!.filter(visible), fetchedAt: new Date().toISOString(), truncated }
 }
 
+/**
+ * One change as the board shows it, read after the user changed it. The
+ * detail read comes from NoteDb, so the write just made is in it, where a
+ * search would show the index's copy from before.
+ */
+export async function fetchChange(g: GerritClient, id: number): Promise<ChangeInfo> {
+  const [self, c] = await Promise.all([g.self(), g.change(id)])
+  await attachReviewDeltas(g, [c], self._account_id, accountKeys(self))
+  return c
+}
+
 /** Deltas already fetched. A pair of patch sets never changes, so an entry is good for the life of the process. */
 const deltaCache = new Map<string, ReviewDelta>()
 const DELTA_CACHE_MAX = 2000
