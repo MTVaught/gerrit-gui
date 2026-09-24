@@ -541,11 +541,14 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .team-card .team-add input { background: var(--bg); }
 .team-new { display: flex; gap: 8px; align-items: center; width: 100%; max-width: 480px; }
 .settings .team-new input { margin-top: 0; }
-/* The All Reviews tab is a native select box in the strip, in the place of a tab. */
-.tab-select { appearance: auto; font-weight: 500; padding: 5px 8px; border: 1px solid transparent; }
-.tab-select:hover { background: var(--panel); }
-.tab-select.active { border-color: var(--border); }
-.tab-select option { font-weight: 500; color: var(--fg); background: var(--bg); }
+/* The All Reviews tab is a split tab: the tab itself, then a caret that opens the teams, like the split buttons on the rows. */
+.tab-split { display: inline-flex; }
+.tab-split .tab:first-child { border-radius: 6px 0 0 6px; padding-right: 8px; }
+.tab-split .tab-caret { border-radius: 0 6px 6px 0; padding: 7px 7px 7px 5px; font-size: 11px; }
+.tab-split .tab-caret::before { content: ''; display: inline-block; width: 1px; height: 14px; background: var(--border); margin-right: 6px; vertical-align: -2px; }
+.tab-split .tab.active .muted { color: var(--muted); font-weight: 500; }
+.menu.team-menu { width: 240px; }
+.menu.team-menu .menu-item span:first-child { overflow: hidden; text-overflow: ellipsis; }
 .settings label.check.include-own { margin-top: 12px; }
 
 /*

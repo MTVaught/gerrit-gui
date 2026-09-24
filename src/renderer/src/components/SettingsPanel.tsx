@@ -102,8 +102,8 @@ export function SettingsPanel(props: {
           <>
             <p className="muted">
               The teams sort other people's changes by their owner. Changes owned by <b>your team</b> are on{' '}
-              <b>Team Reviews</b>; changes owned by another team, or by someone on no team, are on <b>All Reviews</b>, a
-              select box in the tab strip that shows them together, one team at a time, or the rest under <b>Other</b>. The five regular tabs and the counts in the
+              <b>Team Reviews</b>; changes owned by another team, or by someone on no team, are on <b>All Reviews</b>, whose
+              caret narrows it to one team at a time, or to the rest under <b>Other</b>. The five regular tabs and the counts in the
               tray do not look at the teams; they go by your part on each change. Who decides a change is not a team but
               its primary reviewers, tagged on the change with the "+" button on its row.
             </p>

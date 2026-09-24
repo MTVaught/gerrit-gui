@@ -257,6 +257,8 @@ export function App() {
                 entries={entries}
                 pick={pick}
                 active={tab === t.id && !showSettings}
+                short={compact || shortTabs}
+                count={<TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />}
                 onPick={setExternalPick}
                 onSelect={() => {
                   setTab(t.id)
@@ -285,8 +287,9 @@ export function App() {
           <nav className="tabs ghost" aria-hidden="true" ref={ghostRef}>
             {tabs.map((t) => (
               <span key={t.id} className="tab">
-                {t.id === 'external-reviews' ? `${entries.find((e) => e.pick === pick)?.label ?? t.label} (0) ▾` : t.label}
-                {t.id !== 'external-reviews' && <TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />}
+                {t.id === 'external-reviews' && pick !== undefined ? `${t.label} · ${entries.find((e) => e.pick === pick)?.label ?? ''}` : t.label}
+                <TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />
+                {t.id === 'external-reviews' && <span className="tab-caret">▾</span>}
               </span>
             ))}
           </nav>

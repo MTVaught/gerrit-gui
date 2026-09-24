@@ -47,10 +47,10 @@ list says so, as before. From that:
 | All Reviews, one team | someone on that team | at least one team |
 | All Reviews, Other | someone on no team | at least one team |
 
-The All Reviews tab is a native select box in the tab strip: it shows
-what it lists and that list's count. Opening it offers All Reviews, which
-is everyone outside the primary team together, then every team but the
-primary one, each with its count, then Other. The tab keeps the id
+The All Reviews tab is a split tab, like the split buttons on the rows:
+the tab shows everyone outside the primary team together, with the usual
+count pill, and the caret beside it opens every team but the primary one,
+each with its count, then Other, to narrow the tab to one of them. The tab keeps the id
 `external-reviews` in the code and the screenshot hook. The primary team is
 left out of All Reviews by default, since Team Reviews has it; the setting
 `includeOwnTeam` puts it in the select and among everyone, for people who

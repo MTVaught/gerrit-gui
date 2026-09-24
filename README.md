@@ -34,7 +34,7 @@ application remembers the sort; the search and filter last for the session.
 | My Changes | Your open changes, in groups by state, with the actions of the owner. The count gains a red segment for changes that need work and a green one for approved changes. Private changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
 | Merged | Approved changes that the author asked you, by name, to merge, above the changes that Gerrit merged in the last 14 days. The count gains a green segment while anything waits on you to merge. |
 | Team Reviews | Every open change owned by someone else on your team, in groups by state, whether or not you review it. Only when you picked your team. |
-| All Reviews | A select box in the tab strip: everyone outside your team together, one other team at a time, or "Other" for the owners on no team. Open changes owned by those people, in groups by state, whether or not you review them. Only with teams. |
+| All Reviews | Everyone outside your team together; its caret narrows it to one other team, or to "Other" for the owners on no team. Open changes owned by those people, in groups by state, whether or not you review them. Only with teams. |
 
 ![Needs Review](docs/screenshots/needs-my-review.png)
 
@@ -322,10 +322,10 @@ request from an owner on another team is on "Needs Review" like any other.
 - The "Team Reviews" tab lists every open change owned by someone else on
   your team, in groups by state, whether or not you are a reviewer of it.
   It is there only when you picked your team.
-- The "All Reviews" tab is a select box in the tab strip. It shows what
-  it lists, with that list's count; opening it offers "All Reviews" for
-  everyone outside your team together, every other team, each with a
-  count, and then "Other". Under a team: every open change owned by
+- The "All Reviews" tab is a split tab, like the split buttons on the
+  rows. Pressing the tab shows everyone outside your team together, with
+  its count. The caret beside it opens the teams, each with a count, and
+  then "Other"; picking one narrows the tab to it, and the tab says which. Under a team: every open change owned by
   someone on it. Under "Other": the changes owned by people on none of the
   teams, but only the ones you are on or that wait on you, since the
   application fetches the changes of the people it knows about. The tab is
