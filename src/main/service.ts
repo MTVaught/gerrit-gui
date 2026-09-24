@@ -4,7 +4,7 @@
 import { GerritClient, GerritError, type FetchLike } from './gerrit.ts'
 import { fetchChange, fetchDashboard } from './dashboard.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
-import { mergerTag, preferredKey, requestedPatchSetsValue, reviewerTag } from '../shared/model.ts'
+import { mergerTag, preferredKey, requestedPatchSetsValue, reviewerTag, teamMembers } from '../shared/model.ts'
 import type {
   AccountInfo,
   ChangeAction,
@@ -103,7 +103,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
 
     async fetchDashboard() {
       const [g, status] = await Promise.all([client(), store.getStatus()])
-      return fetchDashboard(g, status.projects, status.team)
+      return fetchDashboard(g, status.projects, teamMembers(status.teams))
     },
 
     async fetchChange(id) {

@@ -171,9 +171,13 @@ export interface ChangeView {
    * Their votes are shown but never change the state.
    */
   otherReviewers: ReviewerStatus[]
-  /** A team is configured, so the owner decides between Team Reviews and External Reviews. */
+  /** The names of the teams from Settings the owner is on; the signed-in user is always on the primary team. */
+  ownerTeams: string[]
+  /** At least one team is set, so the owner decides between Team Reviews and All Reviews. */
   teamScoped: boolean
-  /** The owner is outside the configured team: the change is on External Reviews rather than Team Reviews. The regular tabs do not care. */
+  /** A primary team is set and the owner is on it: the change is on Team Reviews. */
+  onPrimaryTeam: boolean
+  /** Teams are set and the change is on All Reviews: the owner is not on the primary team, or that team is included there by the setting. The regular tabs do not care. */
   externalOwner: boolean
   /** Gerrit WIP flag. Independent of review state; commonly used to hold CI until review is done. */
   wip: boolean
@@ -288,13 +292,17 @@ export interface Settings {
    */
   projects: string[]
   /**
-   * Usernames or email addresses of the team. The owner of a change decides
-   * where it is listed: changes owned by the team are on the regular tabs
-   * and on "Team Reviews", changes owned by anyone else on "External Reviews"
-   * only. The signed-in user is always a member. The team has no say in the
+   * The teams, each a name and its people. The owner of a change decides
+   * where it is listed: changes owned by the primary team are on "Team
+   * Reviews", changes owned by another team, or by nobody on any team, under
+   * that team or "Other" on "All Reviews". The teams have no say in the
    * state of a change; the `reviewer:` tags do (see ChangeView.reviewers).
    */
-  team: string[]
+  teams: Team[]
+  /** The name of the user's own team, one of `teams`, or "" for none. Without one there is no Team Reviews tab. */
+  primaryTeam: string
+  /** List the user's own team on All Reviews too, in the select and in the everyone entry; off, it is Team Reviews only. */
+  includeOwnTeam: boolean
   /**
    * Who the owner is offered when asking for a merge, by project. The list
    * only fills a menu: a wrong or missing entry costs one account search.
@@ -308,6 +316,14 @@ export interface Settings {
    * team ID, which the link does not carry, so each workspace is one row.
    */
   slackWorkspaces: SlackWorkspace[]
+}
+
+/** One team from Settings: a name and its people. */
+export interface Team {
+  /** As shown on the All Reviews picker; unique among the teams. */
+  name: string
+  /** Usernames or email addresses, lower-case. */
+  members: string[]
 }
 
 /** One Slack workspace: its subdomain and the team ID the desktop app knows it by. */

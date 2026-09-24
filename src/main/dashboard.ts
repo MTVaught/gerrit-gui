@@ -8,12 +8,13 @@ const LIMIT = 500
 /**
  * Everything the board needs: self, then one multi-query. Self comes first
  * because the queries search for the `reviewer:` tags that name the user,
- * by username and by email.
+ * by username and by email. `members` is everyone on any team in Settings
+ * (`teamMembers`): their open changes are fetched whole.
  */
-export async function fetchDashboard(g: GerritClient, projects: string[], team: string[] = []): Promise<DashboardData> {
+export async function fetchDashboard(g: GerritClient, projects: string[], members: string[] = []): Promise<DashboardData> {
   const self = await g.self()
   const keys = accountKeys(self)
-  const q = dashboardQueries(projects, keys, team)
+  const q = dashboardQueries(projects, keys, members)
   const queries = [q.direct, q.wipScan, q.merged, ...(q.team ? [q.team] : [])]
   const [direct, wipScan, merged, teamOwned = []] = await g.queryChanges(queries, LIMIT)
   // The queries already exclude other people's private changes; this is the

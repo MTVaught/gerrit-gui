@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { classify } from '../../../shared/model.ts'
+import { NO_TEAMS, classify } from '../../../shared/model.ts'
 import type { AccountInfo, ChangeInfo } from '../../../shared/types.ts'
 import { changeActions } from './actions.ts'
 
@@ -147,11 +147,11 @@ test('A stale ready-to-merge tag gives the named merger no buttons; the owner ke
   const c = approved({ verified: 1 })
   c.hashtags = ['reviewer:bob', 'ready-to-merge', 'merger:bob']
   c.work_in_progress = true
-  const forBob = classify(c, bob._account_id, [], ['bob'])
+  const forBob = classify(c, bob._account_id, NO_TEAMS, ['bob'])
   assert.equal(forBob.state, 'approved')
   assert.equal(forBob.staleReadyToMerge, true)
   assert.deepEqual(changeActions(forBob, async () => undefined).map((a) => a.key), [], 'nothing waits on Bob until Alice re-tags')
-  const forAlice = classify(c, alice._account_id, [], ['alice'])
+  const forAlice = classify(c, alice._account_id, NO_TEAMS, ['alice'])
   const keys = changeActions(forAlice, async () => undefined).map((a) => a.key)
   assert.ok(keys.includes('ready'), 'the owner re-tags with Ready to Merge')
   assert.ok(!keys.includes('clear'), 'no separate Clear tag beside it')
