@@ -212,6 +212,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .badge.approved, .badge.ready-to-merge, .badge.merged { background: var(--pos-bg); color: var(--pos); }
 .badge.wip { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
 .badge.active { background: var(--warn-bg); color: var(--warn); }
+/* The Verified vote, after the patch set number: a check when CI passed, a cross when it failed. */
+.ci-mark { font-weight: 700; }
+.ci-mark.pos { color: var(--pos); }
+.ci-mark.neg { color: var(--neg); }
 .badge.private { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--muted); }
 .badge.private svg { width: 10px; height: 10px; }
 .badge.tally { font-weight: 600; }

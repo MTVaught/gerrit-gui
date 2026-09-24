@@ -253,6 +253,14 @@ test('verified: a Verified +1 on the current patch set, unless someone voted it 
   assert.equal(classify(change({ reviewers: [bob], verified: { 9: 1, 2: -1 } }), 1).verified, false)
 })
 
+test('verifiedVote: the vote that counts on the current patch set; a veto beats a pass', () => {
+  assert.equal(classify(change({ reviewers: [bob] }), 1).verifiedVote, 0)
+  assert.equal(classify(change({ reviewers: [bob], verified: { 9: 0 } }), 1).verifiedVote, 0)
+  assert.equal(classify(change({ reviewers: [bob], verified: { 9: 1 } }), 1).verifiedVote, 1)
+  assert.equal(classify(change({ reviewers: [bob], verified: { 9: -1 } }), 1).verifiedVote, -1)
+  assert.equal(classify(change({ reviewers: [bob], verified: { 9: 1, 2: -1 } }), 1).verifiedVote, -1)
+})
+
 test('copied votes after a trivial rebase keep the change approved without a new request', () => {
   const v = classify(change({ reviewers: [bob], votes: { 2: 2 }, requested: 2, patchSet: 3 }), 1)
   assert.equal(v.state, 'approved')

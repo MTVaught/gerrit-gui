@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
 import { STATE_LABEL, displayName, reviewLink, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
-import { FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
+import { CiMark, FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
 import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
@@ -163,7 +163,12 @@ function LedgerRow(
   if (commitMessage(c) !== undefined) sub.push(<TagsButton message={commitMessage(c)} state={v.state} small />)
   sub.push(<span title={age.title}>{age.text}</span>)
   if (!v.isMine) sub.push(displayName(c.owner))
-  sub.push(`PS ${v.patchSet}`)
+  sub.push(
+    <>
+      PS {v.patchSet}
+      {open && <CiMark view={v} />}
+    </>,
+  )
   if (!v.isMine && open && v.lastReviewedPatchSet !== null && v.lastReviewedPatchSet < v.patchSet) sub.push(<MyLastReview view={v} />)
   if ((c.unresolved_comment_count ?? 0) > 0) sub.push(`${c.unresolved_comment_count} unresolved`)
   if (c.insertions !== undefined) {

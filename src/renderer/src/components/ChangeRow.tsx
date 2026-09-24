@@ -124,7 +124,10 @@ function BranchRow(props: RowProps) {
         <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title="Open in Gerrit">
           #{c._number}
         </button>
-        <span className="ps muted">PS {v.patchSet}</span>
+        <span className="ps muted">
+          PS {v.patchSet}
+          {open && <CiMark view={v} />}
+        </span>
       </span>
       <span className="cell c-tags">
         <TagsButton message={commitMessage(c)} state={v.state} />
@@ -184,6 +187,24 @@ export function MyLastReview(props: { view: ChangeView; slot?: boolean }) {
       ) : (
         `you commented on PS ${last}`
       )}
+    </span>
+  )
+}
+
+/**
+ * The Verified vote on the current patch set, after "PS N": a green check
+ * when CI passed, a red cross when it failed, nothing while CI has not voted.
+ * It sits by the patch set number because that is what the vote is on; a new
+ * patch set clears it. Ready to Merge needs the check.
+ */
+export function CiMark(props: { view: ChangeView }) {
+  const { view: v } = props
+  if (v.verifiedVote === 0) return null
+  const pos = v.verifiedVote > 0
+  return (
+    <span className={'ci-mark ' + (pos ? 'pos' : 'neg')} title={pos ? `Verified +1 on patch set ${v.patchSet}: CI passed` : `Verified −1 on patch set ${v.patchSet}: CI failed`}>
+      {' '}
+      {pos ? '✓' : '✕'}
     </span>
   )
 }

@@ -95,6 +95,10 @@ CI until the review is complete. The "Ready to Merge" button does not remove
 the WIP status; it is disabled until the change is Active and Verified +1, so
 the merger is only asked once CI has passed.
 
+The Verified vote on the current patch set is shown after the patch set
+number on an open change: a green check for +1, a red cross for −1, nothing
+while CI has not voted. A new patch set clears it, as it clears the vote.
+
 ## How the states are related to Gerrit data
 
 The application has no database. The application calculates each state from

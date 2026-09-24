@@ -40,6 +40,12 @@ export function isVerified(change: ChangeInfo): boolean {
   return votes.some((v) => v > 0) && !votes.some((v) => v < 0)
 }
 
+/** The Verified vote that counts: a veto beats a pass; 0 when nobody voted. */
+export function verifiedVote(change: ChangeInfo): -1 | 0 | 1 {
+  const votes = (change.labels?.[VERIFIED]?.all ?? []).map((a) => a.value ?? 0)
+  return votes.some((v) => v < 0) ? -1 : votes.some((v) => v > 0) ? 1 : 0
+}
+
 export function humanReviewers(change: ChangeInfo): AccountInfo[] {
   return (change.reviewers?.REVIEWER ?? []).filter(
     (r) => !isBot(r) && r._account_id !== change.owner._account_id,
@@ -519,6 +525,7 @@ export function classify(change: ChangeInfo, selfId: number, team: string[] = []
     wip: change.work_in_progress === true,
     isPrivate: change.is_private === true,
     verified: isVerified(change),
+    verifiedVote: verifiedVote(change),
     requestedPatchSet: requested,
     requestedPatchSets: requestedAll,
     reviewedPatchSets: reviewed,
