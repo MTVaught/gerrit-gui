@@ -74,9 +74,11 @@ export interface TeamSetup {
   teams: Team[]
   /** The name of one of `teams`, or "" for none. */
   primaryTeam: string
+  /** The primary team is on All Reviews as well as on Team Reviews. */
+  includeOwnTeam: boolean
 }
 
-export const NO_TEAMS: TeamSetup = { teams: [], primaryTeam: '' }
+export const NO_TEAMS: TeamSetup = { teams: [], primaryTeam: '', includeOwnTeam: false }
 
 /**
  * Trim the names, drop teams without one, keep the first of two teams with
@@ -104,7 +106,7 @@ export function normalizePrimaryTeam(name: string | undefined, teams: Team[]): s
  * names has one `team` list: that becomes the primary team, named "Team",
  * so nothing moves on the board after the update.
  */
-export function storedTeams(s: { team?: string[]; teams?: Team[]; primaryTeam?: string }): TeamSetup {
+export function storedTeams(s: { team?: string[]; teams?: Team[]; primaryTeam?: string }): Pick<TeamSetup, 'teams' | 'primaryTeam'> {
   if (s.teams === undefined && s.team && s.team.length > 0) return { teams: [{ name: 'Team', members: s.team }], primaryTeam: 'Team' }
   const teams = normalizeTeams(s.teams ?? [])
   return { teams, primaryTeam: normalizePrimaryTeam(s.primaryTeam, teams) }
@@ -122,11 +124,11 @@ export function teamMembers(teams: Team[]): string[] {
  */
 export type ExternalPick = string | null | undefined
 
-/** The entries of the All Reviews select: everyone together, every team but the primary one, then Other. */
+/** The entries of the All Reviews select: everyone together, every team (the primary one only when included by the setting), then Other. */
 export function externalPicks(setup: TeamSetup): { pick: ExternalPick; label: string }[] {
   return [
     { pick: undefined, label: 'All Reviews' },
-    ...setup.teams.filter((t) => t.name !== setup.primaryTeam).map((t) => ({ pick: t.name, label: t.name })),
+    ...setup.teams.filter((t) => setup.includeOwnTeam || t.name !== setup.primaryTeam).map((t) => ({ pick: t.name, label: t.name })),
     { pick: null, label: 'Other' },
   ]
 }
@@ -584,7 +586,7 @@ export function classify(change: ChangeInfo, selfId: number, setup: TeamSetup = 
     ownerTeams,
     teamScoped,
     onPrimaryTeam,
-    externalOwner: teamScoped && !onPrimaryTeam,
+    externalOwner: teamScoped && (!onPrimaryTeam || setup.includeOwnTeam),
     wip: change.work_in_progress === true,
     isPrivate: change.is_private === true,
     verified: isVerified(change),
@@ -638,9 +640,10 @@ export function mergeWaitsOnMe(v: ChangeView): boolean {
 }
 
 /**
- * Open changes owned by someone outside the primary team: the All Reviews
- * tab. With a pick, only the owners on that team, or with `null` the owners
- * on no team; without one, all of them.
+ * Open changes owned by someone outside the primary team, or on it too when
+ * the setting includes it: the All Reviews tab. With a pick, only the
+ * owners on that team, or with `null` the owners on no team; without one,
+ * all of them.
  * The teams sort changes by their owner between this tab and Team Reviews,
  * and do nothing else: the five regular tabs are decided by the user's
  * part on each change (owner, reviewer, tagged primary reviewer, named

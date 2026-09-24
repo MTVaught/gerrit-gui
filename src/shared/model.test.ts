@@ -13,7 +13,7 @@ const erin: AccountInfo = { _account_id: 5, name: 'Erin', username: 'erin', emai
 /** Bob and Carol; Alice is on it only when she is the signed-in user. */
 const TEAM = ['bob', 'Carol@Example.com']
 /** That list as the primary team, and nothing else. */
-const TEAMS: TeamSetup = { teams: [{ name: 'Core', members: TEAM }], primaryTeam: 'Core' }
+const TEAMS: TeamSetup = { teams: [{ name: 'Core', members: TEAM }], primaryTeam: 'Core', includeOwnTeam: false }
 
 function change(opts: {
   reviewers?: AccountInfo[]
@@ -304,7 +304,7 @@ test('primary: only tagged votes decide; an untagged -1 does not block approval'
   assert.deepEqual(v.reviewers.map((r) => [r.account._account_id, r.vote, r.key]), [[2, 1, 'bob']])
   assert.deepEqual(v.otherReviewers.map((r) => [r.account._account_id, r.vote]), [[5, -1]])
   // The team has no say: the same change reads the same with any team.
-  assert.equal(classify(c, 1, { teams: [{ name: 'T', members: ['erin'] }], primaryTeam: 'T' }).state, 'approved')
+  assert.equal(classify(c, 1, { teams: [{ name: 'T', members: ['erin'] }], primaryTeam: 'T', includeOwnTeam: false }).state, 'approved')
   // Tagged the other way round, erin decides and bob is shown.
   const w = classify(change({ reviewers: [bob, erin], primary: [erin], votes: { 2: 1, 5: -1 }, requested: 3 }), 1)
   assert.equal(w.state, 'needs-changes')
@@ -1268,6 +1268,7 @@ test('teams: several teams sort the owners; the primary team is Team Reviews, th
       { name: 'Empty', members: [] },
     ],
     primaryTeam: 'Core',
+    includeOwnTeam: false,
   }
   const changes = [
     change({ number: 1, owner: carol, reviewers: [bob], requested: 3 }), // Core and Storage
@@ -1304,6 +1305,15 @@ test('teams: several teams sort the owners; the primary team is Team Reviews, th
   assert.deepEqual(groupsFor('external-reviews', none).flatMap((g) => g.items.map((v) => v.change._number)), [1, 2, 3, 4])
   assert.deepEqual(groupsFor('external-reviews', none, 'Core').flatMap((g) => g.items.map((v) => v.change._number)), [1])
   assert.deepEqual(externalPicks({ ...setup, primaryTeam: '' }).map((p) => p.label), ['All Reviews', 'Core', 'Storage', 'Empty', 'Other'])
+
+  // Including the own team puts it in the select and its changes among everyone; Team Reviews is as before.
+  const incl = classifyAll(changes, bob._account_id, { ...setup, includeOwnTeam: true })
+  assert.deepEqual(incl.map((v) => v.externalOwner), [true, true, true, true, true, true], 'every owner qualifies; my own change is kept off the tab by isMine below')
+  assert.deepEqual(externalPicks({ ...setup, includeOwnTeam: true }).map((p) => p.label), ['All Reviews', 'Core', 'Storage', 'Empty', 'Other'])
+  assert.deepEqual(groupsFor('external-reviews', incl).flatMap((g) => g.items.map((v) => v.change._number)), [1, 2, 3, 4])
+  assert.deepEqual(groupsFor('external-reviews', incl, 'Core').flatMap((g) => g.items.map((v) => v.change._number)), [1])
+  assert.deepEqual(groupsFor('team-reviews', incl).flatMap((g) => g.items.map((v) => v.change._number)), [1])
+  assert.equal(tabCounts(incl)['external-reviews'], 4)
 })
 
 test('teams: normalizing, the members of all of them, and the stored form before teams had names', () => {

@@ -177,7 +177,7 @@ export interface ChangeView {
   teamScoped: boolean
   /** A primary team is set and the owner is on it: the change is on Team Reviews. */
   onPrimaryTeam: boolean
-  /** Teams are set and the owner is not on the primary team, or there is none: the change is on All Reviews. The regular tabs do not care. */
+  /** Teams are set and the change is on All Reviews: the owner is not on the primary team, or that team is included there by the setting. The regular tabs do not care. */
   externalOwner: boolean
   /** Gerrit WIP flag. Independent of review state; commonly used to hold CI until review is done. */
   wip: boolean
@@ -301,6 +301,8 @@ export interface Settings {
   teams: Team[]
   /** The name of the user's own team, one of `teams`, or "" for none. Without one there is no Team Reviews tab. */
   primaryTeam: string
+  /** List the user's own team on All Reviews too, in the select and in the everyone entry; off, it is Team Reviews only. */
+  includeOwnTeam: boolean
   /**
    * Who the owner is offered when asking for a merge, by project. The list
    * only fills a menu: a wrong or missing entry costs one account search.

@@ -204,7 +204,7 @@ export function Board(props: {
       )}
       {external && props.externalPick === undefined && (
         <p className="muted small">
-          Every open change owned by someone on another team, and the changes of people on no team that you are on.
+          Every open change owned by someone on {props.setup.includeOwnTeam ? 'any team' : 'another team'}, and the changes of people on no team that you are on.
           Pick a team on the tab to see one at a time. The ones that wait on you are under Needs Review as well. Your
           own changes are never here, whoever reviews them.
         </p>

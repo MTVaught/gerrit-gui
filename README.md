@@ -284,8 +284,11 @@ request from an owner on another team is on "Needs Review" like any other.
   someone on it. Under "Other": the changes owned by people on none of the
   teams, but only the ones you are on or that wait on you, since the
   application fetches the changes of the people it knows about. The tab is
-  there once there is at least one team. Only the owner decides this: your
-  own changes are on "My Changes" and on neither tab, whoever reviews them.
+  there once there is at least one team. Your own team is left out of it,
+  unless you tick "Show your team on All Reviews as well" under the teams
+  in Settings; then it is one of the teams in the select and its changes
+  are among everyone's. Only the owner decides this: your own changes are
+  on "My Changes" and on neither tab, whoever reviews them.
 
 Both tabs are a second listing: the changes on them that you review, or
 that wait on you, are on "Reviewing", "Needs Review" or "Merged" as well.

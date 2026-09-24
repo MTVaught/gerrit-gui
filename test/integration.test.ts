@@ -38,7 +38,7 @@ async function pushPatchSet(u: string, id: number, content: string) {
 async function view(u: string, id: number, team: string[] = []) {
   const g = user(u)
   const [me, c] = await Promise.all([g.self(), g.change(id)])
-  const setup = team.length > 0 ? { teams: [{ name: 'Team', members: team }], primaryTeam: 'Team' } : NO_TEAMS
+  const setup = team.length > 0 ? { teams: [{ name: 'Team', members: team }], primaryTeam: 'Team', includeOwnTeam: false } : NO_TEAMS
   return classify(c, me._account_id, setup, accountKeys(me))
 }
 

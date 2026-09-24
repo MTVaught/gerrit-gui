@@ -45,7 +45,7 @@ export function SettingsPanel(props: {
   const [sync, setSync] = useState<SyncState>({ kind: 'saved' })
   const s = props.settings
   const connected = Boolean(s.serverUrl && s.username && s.hasPassword)
-  const setup: TeamSetup = { teams: s.teams, primaryTeam: s.primaryTeam }
+  const setup: TeamSetup = { teams: s.teams, primaryTeam: s.primaryTeam, includeOwnTeam: s.includeOwnTeam }
 
   async function apply(patch: Partial<SettingsInput>) {
     setSync({ kind: 'saving' })
@@ -108,11 +108,18 @@ export function SettingsPanel(props: {
               its primary reviewers, tagged on the change with the "+" button on its row.
             </p>
             <TeamsEditor teams={s.teams} primaryTeam={s.primaryTeam} onChange={(teams, primaryTeam) => void apply({ teams, primaryTeam })} canSearch={connected} />
+            {s.primaryTeam !== '' && (
+              <label className="check include-own">
+                <input type="checkbox" checked={s.includeOwnTeam} onChange={(e) => void apply({ includeOwnTeam: e.target.checked })} />
+                Show your team on All Reviews as well: in its list of teams, and among everyone
+              </label>
+            )}
             <p className="muted small">
               People are stored as usernames; an email address still matches. You are always on your own team, so you do
               not need to add yourself. Start typing to pick from the accounts on the server. Set your team to None to
               hide Team Reviews; remove every team to hide All Reviews too. The "+" button on a change lists your
-              team, or everyone on any team when you have not picked one.
+              team, or everyone on any team when you have not picked one. Your team is on Team Reviews; tick the box to
+              have it on All Reviews too.
             </p>
           </>
         )}

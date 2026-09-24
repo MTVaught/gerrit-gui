@@ -51,7 +51,10 @@ The All Reviews tab is a native select box in the tab strip: it shows
 what it lists and that list's count. Opening it offers All Reviews, which
 is everyone outside the primary team together, then every team but the
 primary one, each with its count, then Other. The tab keeps the id
-`external-reviews` in the code and the screenshot hook. Someone on two teams is
+`external-reviews` in the code and the screenshot hook. The primary team is
+left out of All Reviews by default, since Team Reviews has it; the setting
+`includeOwnTeam` puts it in the select and among everyone, for people who
+want one tab with everything. Someone on two teams is
 listed under both. Without a primary team every other owner
 is external, and every team is in the picker.
 

@@ -546,3 +546,4 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .tab-select:hover { background: var(--panel); }
 .tab-select.active { border-color: var(--border); }
 .tab-select option { font-weight: 500; color: var(--fg); background: var(--bg); }
+.settings label.check.include-own { margin-top: 12px; }

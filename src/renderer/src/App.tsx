@@ -117,7 +117,7 @@ export function App() {
     }
   }, [configured, refresh])
 
-  const setup = useMemo<TeamSetup>(() => (settings ? { teams: settings.teams, primaryTeam: settings.primaryTeam } : NO_TEAMS), [settings])
+  const setup = useMemo<TeamSetup>(() => (settings ? { teams: settings.teams, primaryTeam: settings.primaryTeam, includeOwnTeam: settings.includeOwnTeam } : NO_TEAMS), [settings])
   // Everyone on any team: their open changes are fetched whole, so the list decides what is on the board.
   const members = useMemo(() => teamMembers(setup.teams), [setup])
   const membersRef = useRef(members)

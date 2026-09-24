@@ -18,6 +18,7 @@ interface Stored {
   team?: string[]
   teams?: Team[]
   primaryTeam?: string
+  includeOwnTeam?: boolean
   mergers?: MergerRule[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
@@ -44,7 +45,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
   return {
     async getStatus(): Promise<SettingsStatus> {
       const s = await read()
-      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], ...storedTeams(s), mergers: s.mergers ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, compactOnTop: s.compactOnTop ?? true, slackWorkspaces: s.slackWorkspaces ?? [], hasPassword: Boolean(s.password), encrypted: false }
+      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], ...storedTeams(s), includeOwnTeam: s.includeOwnTeam ?? false, mergers: s.mergers ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, compactOnTop: s.compactOnTop ?? true, slackWorkspaces: s.slackWorkspaces ?? [], hasPassword: Boolean(s.password), encrypted: false }
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
@@ -59,6 +60,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
         projects: input.projects.map((p) => p.trim()).filter(Boolean),
         teams: normalizeTeams(input.teams),
         primaryTeam: normalizePrimaryTeam(input.primaryTeam, normalizeTeams(input.teams)),
+        includeOwnTeam: input.includeOwnTeam === true,
         mergers: normalizeMergers(input.mergers ?? []),
         badgeStyle: input.badgeStyle,
         showZeroCounts: input.showZeroCounts,
