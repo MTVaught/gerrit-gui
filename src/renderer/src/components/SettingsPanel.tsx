@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace } from '../../../shared/types.ts'
-import { STATE_LABEL, accountKeys, changeNumberOf, classify, explainView, groupsFor, isSlackTeamId, mergersReflect, slackWorkspacesReflect } from '../../../shared/model.ts'
+import { STATE_LABEL, accountKeys, changeNumberOf, classify, explainView, externalPicks, groupsFor, isSlackTeamId, mergersReflect, slackWorkspacesReflect, type TeamSetup } from '../../../shared/model.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
 import { ago } from '../time.ts'
 import { runUpdateAction, useUpdateState } from './Update.tsx'
-import { TeamEditor } from './TeamEditor.tsx'
+import { TeamsEditor } from './TeamsEditor.tsx'
 import { MergersEditor } from './MergersEditor.tsx'
 import { visibleTabs } from './Board.tsx'
 import { PlugIcon } from './Icons.tsx'
@@ -13,7 +13,7 @@ import { PlugIcon } from './Icons.tsx'
 type SectionId = 'team' | 'mergers' | 'scope' | 'slack' | 'app-icon' | 'window' | 'menu-bar' | 'debug' | 'about'
 
 const SECTIONS: { id: SectionId; label: string; desktopOnly?: boolean }[] = [
-  { id: 'team', label: 'Team' },
+  { id: 'team', label: 'Teams' },
   { id: 'mergers', label: 'Mergers' },
   { id: 'scope', label: 'Scope' },
   { id: 'slack', label: 'Slack', desktopOnly: true },
@@ -45,6 +45,7 @@ export function SettingsPanel(props: {
   const [sync, setSync] = useState<SyncState>({ kind: 'saved' })
   const s = props.settings
   const connected = Boolean(s.serverUrl && s.username && s.hasPassword)
+  const setup: TeamSetup = { teams: s.teams, primaryTeam: s.primaryTeam }
 
   async function apply(patch: Partial<SettingsInput>) {
     setSync({ kind: 'saving' })
@@ -100,15 +101,18 @@ export function SettingsPanel(props: {
         {section === 'team' && (
           <>
             <p className="muted">
-              The team sorts other people's changes by their owner: changes owned by the team are on <b>Team Reviews</b>,
-              changes owned by anyone else on <b>External Reviews</b>. The five regular tabs and the counts in the tray do not
-              look at the team; they go by your part on each change. Who decides a change is not the team but its primary
-              reviewers, tagged on the change with the "+" button on its row. Leave the list empty to hide the two tabs.
+              The teams sort other people's changes by their owner. Changes owned by <b>your team</b> are on{' '}
+              <b>Team Reviews</b>; changes owned by another team, or by someone on no team, are on <b>All Reviews</b>, a
+              select box in the tab strip that shows them together, one team at a time, or the rest under <b>Other</b>. The five regular tabs and the counts in the
+              tray do not look at the teams; they go by your part on each change. Who decides a change is not a team but
+              its primary reviewers, tagged on the change with the "+" button on its row.
             </p>
-            <TeamEditor members={s.team} onChange={(team) => void apply({ team })} canSearch={connected} />
+            <TeamsEditor teams={s.teams} primaryTeam={s.primaryTeam} onChange={(teams, primaryTeam) => void apply({ teams, primaryTeam })} canSearch={connected} />
             <p className="muted small">
-              Stored as usernames; an email address still matches. You are always on the team, so you do not need to add
-              yourself. Start typing to pick from the accounts on the server.
+              People are stored as usernames; an email address still matches. You are always on your own team, so you do
+              not need to add yourself. Start typing to pick from the accounts on the server. Set your team to None to
+              hide Team Reviews; remove every team to hide All Reviews too. The "+" button on a change lists your
+              team, or everyone on any team when you have not picked one.
             </p>
           </>
         )}
@@ -227,7 +231,7 @@ export function SettingsPanel(props: {
             </p>
           </>
         )}
-        {section === 'debug' && <DebugSection team={s.team} connected={connected} />}
+        {section === 'debug' && <DebugSection setup={setup} connected={connected} />}
         {section === 'about' && <AboutSection />}
       </main>
     </div>
@@ -374,7 +378,7 @@ type Inspection = { view: ChangeView; raw: ChangeInspection }
  * The change is read straight from Gerrit, as the board would read it, and
  * classified with the same code, so what is shown is what the board sees.
  */
-function DebugSection(props: { team: string[]; connected: boolean }) {
+function DebugSection(props: { setup: TeamSetup; connected: boolean }) {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -393,7 +397,7 @@ function DebugSection(props: { team: string[]; connected: boolean }) {
     setCopied(false)
     try {
       const raw = await api.inspectChange(id)
-      setResult({ raw, view: classify(raw.change, raw.self._account_id, props.team, accountKeys(raw.self)) })
+      setResult({ raw, view: classify(raw.change, raw.self._account_id, props.setup, accountKeys(raw.self)) })
     } catch (e) {
       setError((e as Error).message)
       setResult(null)
@@ -434,7 +438,7 @@ function DebugSection(props: { team: string[]; connected: boolean }) {
       )}
       {result && (
         <div className="inspect">
-          <InspectionReport r={result} team={props.team} />
+          <InspectionReport r={result} setup={props.setup} />
           <div className="row">
             <button type="button" className="btn" onClick={() => setShowRaw((v) => !v)}>
               {showRaw ? 'Hide raw change' : 'Show raw change'}
@@ -450,15 +454,18 @@ function DebugSection(props: { team: string[]; connected: boolean }) {
   )
 }
 
-function InspectionReport(props: { r: Inspection; team: string[] }) {
+function InspectionReport(props: { r: Inspection; setup: TeamSetup }) {
   const { view: v, raw } = props.r
   const c = v.change
-  // The Merged tab's history section is returned even when empty, hence the filter.
-  const listed = visibleTabs(props.team.length > 0).flatMap((t) =>
-    groupsFor(t.id, [v])
-      .filter((g) => g.items.length > 0)
-      .map((g) => `${t.label} › ${g.title}`),
-  )
+  // The Merged tab's history section is returned even when empty, hence the filter. All Reviews is listed per pick.
+  const listed = visibleTabs(props.setup).flatMap((t) => {
+    const picks = t.id === 'external-reviews' ? externalPicks(props.setup) : [{ pick: undefined, label: '' }]
+    return picks.flatMap((p) =>
+      groupsFor(t.id, [v], p.pick)
+        .filter((g) => g.items.length > 0)
+        .map((g) => `${t.label} › ${p.label ? `${p.label} › ` : ''}${g.title}`),
+    )
+  })
   const keyed = Object.entries(c.custom_keyed_values ?? {})
   const votes = (rs: ChangeView['reviewers']) => rs.map((r) => `${r.account.name ?? r.account.username ?? r.account.email ?? r.account._account_id} ${r.vote > 0 ? '+' : ''}${r.vote}`).join(', ')
   return (

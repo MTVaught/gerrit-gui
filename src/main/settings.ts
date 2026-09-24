@@ -1,15 +1,18 @@
 import { app, safeStorage } from 'electron'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, UiState } from '../shared/types.ts'
+import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, Team, UiState } from '../shared/types.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
-import { normalizeMergers, normalizeSlackWorkspaces, normalizeTeam } from '../shared/model.ts'
+import { normalizeMergers, normalizePrimaryTeam, normalizeSlackWorkspaces, normalizeTeams, storedTeams } from '../shared/model.ts'
 
 interface StoredSettings {
   serverUrl: string
   username: string
   projects?: string[]
+  /** Before teams had names: one list, the user's own team. Read as the primary team named "Team". */
   team?: string[]
+  teams?: Team[]
+  primaryTeam?: string
   mergers?: MergerRule[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
@@ -41,7 +44,7 @@ export async function getStatus(): Promise<SettingsStatus> {
     serverUrl: s.serverUrl,
     username: s.username,
     projects: s.projects ?? [],
-    team: s.team ?? [],
+    ...storedTeams(s),
     mergers: s.mergers ?? [],
     badgeStyle: s.badgeStyle ?? 'color',
     showZeroCounts: s.showZeroCounts ?? false,
@@ -69,7 +72,8 @@ export async function save(input: SettingsInput): Promise<void> {
     serverUrl: normalizeServerUrl(input.serverUrl),
     username: input.username.trim(),
     projects: input.projects.map((p) => p.trim()).filter(Boolean),
-    team: normalizeTeam(input.team),
+    teams: normalizeTeams(input.teams),
+    primaryTeam: normalizePrimaryTeam(input.primaryTeam, normalizeTeams(input.teams)),
     mergers: normalizeMergers(input.mergers ?? []),
     badgeStyle: input.badgeStyle,
     showZeroCounts: input.showZeroCounts,

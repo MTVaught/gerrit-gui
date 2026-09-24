@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, tabCounts, tabSegments, totalActions, withChange, type SortId, type TabSegment, type ViewFilter } from '../../shared/model.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, NO_TEAMS, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, externalPicks, tabCounts, tabSegments, teamMembers, totalActions, withChange, type ExternalPick, type SortId, type TabSegment, type TeamSetup, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
+import { TeamTab, externalEntries } from './components/TeamTab.tsx'
 import { ViewMenu } from './components/ViewMenu.tsx'
 import { ago } from './time.ts'
 import { renderBadgeIcon, trayStrips } from './badge.ts'
@@ -20,6 +21,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState<TabId>(initialTab)
+  // Which owners the All Reviews tab lists: everyone outside the team until the user picks one, or Other.
+  const [externalPick, setExternalPick] = useState<ExternalPick>(initialExternalPick)
   const [sort, setSort] = useState<SortId>(initialSort)
   // Search and author filter last for the session; the sort is remembered.
   const [filter, setFilter] = useState<ViewFilter>(EMPTY_FILTER)
@@ -114,21 +117,23 @@ export function App() {
     }
   }, [configured, refresh])
 
-  // The project scope changes what is fetched, so a change to it reloads the board.
-  const projectsKey = settings?.projects.join(',')
-  const lastProjects = useRef<string | undefined>(undefined)
+  const setup = useMemo<TeamSetup>(() => (settings ? { teams: settings.teams, primaryTeam: settings.primaryTeam } : NO_TEAMS), [settings])
+  // Everyone on any team: their open changes are fetched whole, so the list decides what is on the board.
+  const members = useMemo(() => teamMembers(setup.teams), [setup])
+  const membersRef = useRef(members)
+  membersRef.current = members
+  // The project scope and the teams change what is fetched, so a change to either reloads the board.
+  const fetchKey = settings ? [...settings.projects, '|', ...members].join(',') : undefined
+  const lastFetchKey = useRef<string | undefined>(undefined)
   useEffect(() => {
-    if (projectsKey === undefined) return
-    if (lastProjects.current !== undefined && lastProjects.current !== projectsKey && configured) void refresh()
-    lastProjects.current = projectsKey
-  }, [projectsKey, configured, refresh])
+    if (fetchKey === undefined) return
+    if (lastFetchKey.current !== undefined && lastFetchKey.current !== fetchKey && configured) void refresh()
+    lastFetchKey.current = fetchKey
+  }, [fetchKey, configured, refresh])
 
-  const team = settings?.team ?? NO_TEAM
-  const teamRef = useRef(team)
-  teamRef.current = team
   const views = useMemo<ChangeView[]>(
-    () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id, team, accountKeys(data.self)) : []),
-    [data, team],
+    () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id, setup, accountKeys(data.self)) : []),
+    [data, setup],
   )
   // The parts of the board that read or write settings directly (the merger picker).
   const settingsHandle = useMemo<SettingsHandle>(
@@ -142,11 +147,16 @@ export function App() {
     }),
     [settings],
   )
-  const tabs = useMemo(() => visibleTabs(team.length > 0), [team])
+  const tabs = useMemo(() => visibleTabs(setup), [setup])
+  // The All Reviews select: the pick as made while it is still a team, else everyone.
+  const picks = useMemo(() => externalPicks(setup), [setup])
+  const pick: ExternalPick = picks.some((p) => p.pick === externalPick) ? externalPick : undefined
+  // The All Reviews tab's list: everyone, each team and Other, with their counts.
+  const entries = useMemo(() => externalEntries(setup, views), [setup, views])
   // What the current tab lists before the filter: the author picker suggests these owners first.
-  const tabViews = useMemo(() => groupsFor(tab, views).flatMap((g) => g.items), [tab, views])
-  // Clearing the team hides the External Reviews tab; fall back if it was selected.
-  // Not before the settings are in, or an initial External Reviews tab would be lost.
+  const tabViews = useMemo(() => groupsFor(tab, views, tab === 'external-reviews' ? pick : undefined).flatMap((g) => g.items), [tab, views, pick])
+  // Clearing the teams hides their tabs; fall back if one was selected.
+  // Not before the settings are in, or an initial All Reviews tab would be lost.
   useEffect(() => {
     if (settings && !tabs.some((t) => t.id === tab)) setTab('needs-my-review')
   }, [settings, tabs, tab])
@@ -169,7 +179,7 @@ export function App() {
       try {
         const fresh = await api.fetchChange(action.id)
         rememberAccounts([fresh.owner, ...(fresh.reviewers?.REVIEWER ?? [])])
-        setData((d) => (d ? withChange(d, fresh, teamRef.current) : d))
+        setData((d) => (d ? withChange(d, fresh, membersRef.current) : d))
       } catch {
         await refresh()
       } finally {
@@ -234,29 +244,43 @@ export function App() {
     <div className={'app' + (compact ? ' compact' : '')}>
       <header className="topbar" ref={topbarRef}>
         <nav className={'tabs' + (shortTabs ? ' short' : '')} role="tablist" ref={tabsRef}>
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={tab === t.id && !showSettings}
-              aria-label={t.label}
-              className={'tab' + (tab === t.id && !showSettings ? ' active' : '')}
-              onClick={() => {
-                setTab(t.id)
-                setShowSettings(false)
-              }}
-            >
-              {compact || shortTabs ? t.short : t.label}
-              <TabCount total={counts[t.id]} hot={t.id === 'needs-my-review'} segments={segments[t.id] ?? []} />
-            </button>
-          ))}
+          {tabs.map((t) =>
+            t.id === 'external-reviews' ? (
+              <TeamTab
+                key={t.id}
+                entries={entries}
+                pick={pick}
+                active={tab === t.id && !showSettings}
+                onPick={setExternalPick}
+                onSelect={() => {
+                  setTab(t.id)
+                  setShowSettings(false)
+                }}
+              />
+            ) : (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={tab === t.id && !showSettings}
+                aria-label={t.label}
+                className={'tab' + (tab === t.id && !showSettings ? ' active' : '')}
+                onClick={() => {
+                  setTab(t.id)
+                  setShowSettings(false)
+                }}
+              >
+                {compact || shortTabs ? t.short : t.label}
+                <TabCount total={counts[t.id]} hot={t.id === 'needs-my-review'} segments={segments[t.id] ?? []} />
+              </button>
+            ),
+          )}
         </nav>
         {!compact && (
           <nav className="tabs ghost" aria-hidden="true" ref={ghostRef}>
             {tabs.map((t) => (
               <span key={t.id} className="tab">
-                {t.label}
-                <TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />
+                {t.id === 'external-reviews' ? `${entries.find((e) => e.pick === pick)?.label ?? t.label} (0) ▾` : t.label}
+                {t.id !== 'external-reviews' && <TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />}
               </span>
             ))}
           </nav>
@@ -336,6 +360,8 @@ export function App() {
           self={data?.self ?? null}
           loading={!data && busy}
           compact={compact}
+          setup={setup}
+          externalPick={pick}
           onAct={act}
           onGoTo={(t) => {
             setTab(t)
@@ -349,9 +375,6 @@ export function App() {
 }
 
 const SORT_KEY = 'gerrit-gui.sort'
-/** Stable empty list so the memo keyed on the team does not rerun every render before settings load. */
-const NO_TEAM: string[] = []
-
 function initialSort(): SortId {
   try {
     const s = localStorage.getItem(SORT_KEY)
@@ -420,6 +443,14 @@ function initialTab(): TabId {
   return id && TABS.some((t) => t.id === id) ? id : 'needs-my-review'
 }
 
+/** `team=<name>` after the tab in the hash picks a team on All Reviews, `team=-` picks Other; without it, everyone (screenshot hook). */
+function initialExternalPick(): ExternalPick {
+  const m = /team=([^&]*)/.exec(window.location.hash)
+  if (!m) return undefined
+  const name = decodeURIComponent(m[1]!)
+  return name === '-' ? null : name
+}
+
 /** GERRIT_GUI_TAB=settings opens the settings panel instead of a board tab (screenshot hook). */
 function initialSettingsOpen(): boolean {
   return /tab=settings\b/.test(window.location.hash)
@@ -428,7 +459,7 @@ function initialSettingsOpen(): boolean {
 /** A desktop notification for each change that the author just asked this user to merge. */
 function notifyMergeRequests(d: DashboardData, seen: React.RefObject<Set<number> | null>) {
   const now = new Set(
-    classifyAll(d.open, d.self._account_id, [], accountKeys(d.self))
+    classifyAll(d.open, d.self._account_id, NO_TEAMS, accountKeys(d.self))
       .filter((v) => v.state === 'ready-to-merge' && v.mergeRequestedFromMe)
       .map((v) => v.change._number),
   )
@@ -443,7 +474,7 @@ function notifyMergeRequests(d: DashboardData, seen: React.RefObject<Set<number>
 
 /** A desktop notification for each change the author just asked this user to review, of either kind. */
 function notifyNewReviews(d: DashboardData, seen: React.RefObject<Set<number> | null>) {
-  const waiting = classifyAll(d.open, d.self._account_id, [], accountKeys(d.self)).filter((v) => v.needsMyReview)
+  const waiting = classifyAll(d.open, d.self._account_id, NO_TEAMS, accountKeys(d.self)).filter((v) => v.needsMyReview)
   const now = new Set(waiting.map((v) => v.change._number))
   if (seen.current && typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
     const fresh = waiting.filter((v) => !seen.current!.has(v.change._number))

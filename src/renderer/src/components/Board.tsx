@@ -17,8 +17,10 @@ import {
   sortByBranch,
   sortViews,
   type ChangeFamily,
+  type ExternalPick,
   type Group,
   type SortId,
+  type TeamSetup,
   type ViewFilter,
 } from '../../../shared/model.ts'
 import { ChangeRow, FamilyCard, SizerRow } from './ChangeRow.tsx'
@@ -40,12 +42,12 @@ export const TABS: Tab[] = [
   { id: 'mine', label: 'My Changes', short: 'Mine' },
   { id: 'merged', label: 'Merged', short: 'Merged' },
   { id: 'team-reviews', label: 'Team Reviews', short: 'Team' },
-  { id: 'external-reviews', label: 'External Reviews', short: 'External' },
+  { id: 'external-reviews', label: 'All Reviews', short: 'All' },
 ]
 
-/** The Team Reviews and External Reviews tabs exist only once a team is configured; without one there is no team and nobody is external. */
-export function visibleTabs(teamConfigured: boolean): Tab[] {
-  return TABS.filter((t) => (t.id !== 'external-reviews' && t.id !== 'team-reviews') || teamConfigured)
+/** Team Reviews exists only with a primary team; All Reviews once any team is set. Without teams nobody is external. */
+export function visibleTabs(setup: TeamSetup): Tab[] {
+  return TABS.filter((t) => (t.id === 'team-reviews' ? setup.primaryTeam !== '' : t.id === 'external-reviews' ? setup.teams.length > 0 : true))
 }
 
 /** One list entry: a single change, or the lead of a family card. */
@@ -57,12 +59,17 @@ export interface Row {
 /** A section with its entries folded into rows: a family is one row, led by its most urgent member on this tab. */
 export type Section = Group & { rows: Row[] }
 
-const EMPTY: Record<Exclude<TabId, 'needs-my-review'>, string> = {
+const EMPTY: Record<Exclude<TabId, 'needs-my-review' | 'external-reviews'>, string> = {
   reviewing: 'You are not a reviewer on any open change.',
   mine: 'You have no open changes.',
   merged: 'Nobody has asked you to merge anything, and nothing merged recently.',
-  'team-reviews': 'Nobody else on the team has an open change.',
-  'external-reviews': 'No open change is owned by someone outside the team.',
+  'team-reviews': 'Nobody else on your team has an open change.',
+}
+
+/** The All Reviews tab with nothing under the picked team, under Other, or at all. */
+function externalEmpty(pick: ExternalPick): string {
+  if (pick === undefined) return 'No open change is owned by someone outside your team.'
+  return pick === null ? 'No open change owned by someone on none of the teams involves you.' : `Nobody on ${pick} has an open change.`
 }
 
 function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => void }) {
@@ -117,6 +124,10 @@ export function Board(props: {
   loading: boolean
   /** Narrow window: render the ledger, one line per change, instead of the cards. */
   compact: boolean
+  /** The teams from Settings, for the wording on Team Reviews. */
+  setup: TeamSetup
+  /** Which owners All Reviews lists: everyone, the team picked on its tab, or Other. */
+  externalPick: ExternalPick
   onAct: (a: ChangeAction) => Promise<void>
   onGoTo: (tab: TabId) => void
 }) {
@@ -128,7 +139,8 @@ export function Board(props: {
     return m
   }, [props.views])
   if (props.loading || !props.self) return <div className="panel muted">Loading...</div>
-  const all = groupsFor(props.tab, props.views)
+  const external = props.tab === 'external-reviews'
+  const all = groupsFor(props.tab, props.views, external ? props.externalPick : undefined)
   const groups = all.map((g) => ({ ...g, items: filterViews(g.items, props.filter) })).filter((g) => g.items.length > 0)
   // The counts are cards: a family counts once, however many branches.
   const total = countFamilies(all.flatMap((g) => g.items))
@@ -154,7 +166,7 @@ export function Board(props: {
     .filter((g) => g.rows.length > 0)
   if (all.length === 0) {
     if (props.tab === 'needs-my-review') return <NeedsReviewEmpty views={props.views} onGoTo={props.onGoTo} />
-    return <div className="panel empty">{EMPTY[props.tab]}</div>
+    return <div className="panel empty">{props.tab === 'external-reviews' ? externalEmpty(props.externalPick) : EMPTY[props.tab]}</div>
   }
   const summary = isFilterActive(props.filter) && (
     <FilterSummary filter={props.filter} sort={props.sort} shown={shown} total={total} onFilter={props.onFilter} />
@@ -186,14 +198,27 @@ export function Board(props: {
       {summary}
       {props.tab === 'team-reviews' && (
         <p className="muted small">
-          Every open change owned by someone else on the team you set in Settings, whether or not you review it. The ones
-          you review are under Reviewing as well.
+          Every open change owned by someone else on your team, {props.setup.primaryTeam}, whether or not you review it. The
+          ones you review are under Reviewing as well.
         </p>
       )}
-      {props.tab === 'external-reviews' && (
+      {external && props.externalPick === undefined && (
         <p className="muted small">
-          Open changes owned by people outside the team you set in Settings, whether or not you review them. The ones
-          that wait on you are under Needs Review as well. Your own changes are never here, whoever reviews them.
+          Every open change owned by someone on another team, and the changes of people on no team that you are on.
+          Pick a team on the tab to see one at a time. The ones that wait on you are under Needs Review as well. Your
+          own changes are never here, whoever reviews them.
+        </p>
+      )}
+      {external && typeof props.externalPick === 'string' && (
+        <p className="muted small">
+          Every open change owned by someone on {props.externalPick}, whether or not you review it. The ones that wait on
+          you are under Needs Review as well. Your own changes are never here, whoever reviews them.
+        </p>
+      )}
+      {external && props.externalPick === null && (
+        <p className="muted small">
+          Open changes owned by people on none of the teams in Settings: only the ones you are on, or that wait on you.
+          Your own changes are never here, whoever reviews them.
         </p>
       )}
       <div className="sections">

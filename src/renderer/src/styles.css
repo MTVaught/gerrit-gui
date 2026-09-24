@@ -525,3 +525,24 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .inspect .link-btn { font: inherit; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; }
 .inspect .link-btn:hover { text-decoration: underline; }
 .raw-change { max-height: 480px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+/* Teams in Settings: the user's own team picked above, a card per team. */
+.teams-editor { margin-top: 8px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.teams-editor p { margin: 0; }
+.teams-editor .primary-pick { display: flex; align-items: center; gap: 8px; margin: 0; }
+.settings select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.team-card { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.team-card.primary { border-color: var(--accent); }
+.team-head { display: flex; gap: 8px; align-items: center; }
+.settings .team-head input.team-name { flex: 1; margin-top: 0; background: var(--bg); font-weight: 600; }
+.settings input[aria-invalid='true'] { border-color: var(--neg); }
+.chip.your-team { background: var(--pending-bg); color: var(--pending); border-color: transparent; white-space: nowrap; }
+.team-card .team-editor { margin-top: 8px; }
+.team-card .chip.member { background: var(--bg); }
+.team-card .team-add input { background: var(--bg); }
+.team-new { display: flex; gap: 8px; align-items: center; width: 100%; max-width: 480px; }
+.settings .team-new input { margin-top: 0; }
+/* The All Reviews tab is a native select box in the strip, in the place of a tab. */
+.tab-select { appearance: auto; font-weight: 500; padding: 5px 8px; border: 1px solid transparent; }
+.tab-select:hover { background: var(--panel); }
+.tab-select.active { border-color: var(--border); }
+.tab-select option { font-weight: 500; color: var(--fg); background: var(--bg); }

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { accountKeys, accountMatches, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, type ViewFilter } from './model.ts'
+import { NO_TEAMS, accountKeys, accountMatches, externalPicks, normalizeTeams, normalizePrimaryTeam, storedTeams, teamMembers, type TeamSetup, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, type ViewFilter } from './model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -12,6 +12,8 @@ const bot: AccountInfo = { _account_id: 9, name: 'CI', tags: ['SERVICE_USER'] }
 const erin: AccountInfo = { _account_id: 5, name: 'Erin', username: 'erin', email: 'erin@other.example' }
 /** Bob and Carol; Alice is on it only when she is the signed-in user. */
 const TEAM = ['bob', 'Carol@Example.com']
+/** That list as the primary team, and nothing else. */
+const TEAMS: TeamSetup = { teams: [{ name: 'Core', members: TEAM }], primaryTeam: 'Core' }
 
 function change(opts: {
   reviewers?: AccountInfo[]
@@ -302,7 +304,7 @@ test('primary: only tagged votes decide; an untagged -1 does not block approval'
   assert.deepEqual(v.reviewers.map((r) => [r.account._account_id, r.vote, r.key]), [[2, 1, 'bob']])
   assert.deepEqual(v.otherReviewers.map((r) => [r.account._account_id, r.vote]), [[5, -1]])
   // The team has no say: the same change reads the same with any team.
-  assert.equal(classify(c, 1, ['erin']).state, 'approved')
+  assert.equal(classify(c, 1, { teams: [{ name: 'T', members: ['erin'] }], primaryTeam: 'T' }).state, 'approved')
   // Tagged the other way round, erin decides and bob is shown.
   const w = classify(change({ reviewers: [bob, erin], primary: [erin], votes: { 2: 1, 5: -1 }, requested: 3 }), 1)
   assert.equal(w.state, 'needs-changes')
@@ -350,7 +352,7 @@ test('primary: tagged but not on the change in Gerrit is a stand-in, still waite
   const byEmail = classify(change({ primary: [], hashtags: ['reviewer:dave@example.com'], requested: 3 }), 1)
   assert.deepEqual(byEmail.reviewers[0]!.account, { _account_id: -1, email: 'dave@example.com' })
   // Carol, signed in, is asked although Gerrit does not list her.
-  const asCarol = classify(c, carol._account_id, [], accountKeys(carol))
+  const asCarol = classify(c, carol._account_id, NO_TEAMS, accountKeys(carol))
   assert.equal(asCarol.iAmPrimary, true)
   assert.equal(asCarol.iAmReviewer, true)
   assert.equal(asCarol.needsMyReview, true)
@@ -358,7 +360,7 @@ test('primary: tagged but not on the change in Gerrit is a stand-in, still waite
 
 test('primary: the tag alone puts a request on my Needs Review tab; a plain reviewer is not asked', () => {
   const c = change({ reviewers: [bob, carol], primary: [carol], requested: 3 })
-  const asBob = classify(c, bob._account_id, [], accountKeys(bob))
+  const asBob = classify(c, bob._account_id, NO_TEAMS, accountKeys(bob))
   assert.equal(asBob.iAmReviewer, true, 'a reviewer in Gerrit')
   assert.equal(asBob.iAmPrimary, false)
   assert.equal(asBob.needsMyReview, false)
@@ -366,7 +368,7 @@ test('primary: the tag alone puts a request on my Needs Review tab; a plain revi
   assert.deepEqual(on('reviewing'), [1], 'listed under Reviewing all the same')
   assert.deepEqual(on('needs-my-review'), [])
   assert.equal(actionCounts([asBob]).review, 0)
-  const asCarol = classify(c, carol._account_id, [], accountKeys(carol))
+  const asCarol = classify(c, carol._account_id, NO_TEAMS, accountKeys(carol))
   assert.equal(asCarol.needsMyReview, true)
   assert.equal(actionCounts([asCarol]).review, 1)
 })
@@ -382,8 +384,8 @@ test('primary: the owner and bots are ignored even when tagged', () => {
 
 test('team: an external owner is flagged; no team means nobody is external', () => {
   const c = change({ owner: erin, reviewers: [bob], requested: 3 })
-  assert.equal(classify(c, bob._account_id, TEAM).externalOwner, true)
-  assert.equal(classify(c, bob._account_id, TEAM).needsMyReview, true, 'their request still reaches me')
+  assert.equal(classify(c, bob._account_id, TEAMS).externalOwner, true)
+  assert.equal(classify(c, bob._account_id, TEAMS).needsMyReview, true, 'their request still reaches me')
   const none = classify(change({ reviewers: [bob, erin], requested: 3 }), 1)
   assert.equal(none.teamScoped, false)
   assert.equal(none.externalOwner, false)
@@ -391,31 +393,31 @@ test('team: an external owner is flagged; no team means nobody is external', () 
 
 test('team: the signed-in user is always a member', () => {
   // Alice is not on the list, but her own change is not external to her.
-  const v = classify(change({ owner: alice, reviewers: [bob], requested: 3 }), alice._account_id, TEAM)
+  const v = classify(change({ owner: alice, reviewers: [bob], requested: 3 }), alice._account_id, TEAMS)
   assert.equal(v.externalOwner, false)
   assert.equal(v.externalOwner, false)
 })
 
 test('team: only the owner makes a change external, not its reviewers', () => {
-  const theirs = classify(change({ owner: erin, reviewers: [bob], requested: 3 }), bob._account_id, TEAM)
+  const theirs = classify(change({ owner: erin, reviewers: [bob], requested: 3 }), bob._account_id, TEAMS)
   assert.equal(isExternalReview(theirs), true)
   assert.equal(isTeamReview(theirs), false)
   // My change with an outside reviewer (CI adds maintainers) stays mine.
-  const mine = classify(change({ reviewers: [bob, erin], requested: 3 }), 1, TEAM)
+  const mine = classify(change({ reviewers: [bob, erin], requested: 3 }), 1, TEAMS)
   assert.equal(isExternalReview(mine), false)
   assert.equal(isTeamReview(mine), false, 'my own changes are on My Changes, not Team Reviews')
   // A team member's change I review, with an outside reviewer, is not external either.
-  const teammates = classify(change({ owner: bob, reviewers: [alice, erin], requested: 3 }), 1, TEAM)
+  const teammates = classify(change({ owner: bob, reviewers: [alice, erin], requested: 3 }), 1, TEAMS)
   assert.equal(isExternalReview(teammates), false)
   assert.equal(isTeamReview(teammates), true)
   // Closed changes never show, and without a team nobody is external and there is no team tab.
-  const merged = classify({ ...change({ owner: erin, reviewers: [bob] }), status: 'MERGED' }, bob._account_id, TEAM)
+  const merged = classify({ ...change({ owner: erin, reviewers: [bob] }), status: 'MERGED' }, bob._account_id, TEAMS)
   assert.equal(isExternalReview(merged), false)
   assert.equal(isExternalReview(classify(change({ owner: erin, reviewers: [bob] }), bob._account_id)), false)
   assert.equal(isTeamReview(classify(change({ owner: carol, reviewers: [bob] }), bob._account_id)), false)
 })
 
-test('team: the owner sorts a change between Team Reviews and External Reviews; the regular tabs go by my part on it', () => {
+test('team: the owner sorts a change between Team Reviews and All Reviews; the regular tabs go by my part on it', () => {
   // Bob is signed in. Carol is on the team; Alice and Erin are not.
   const changes = [
     // 1: Erin asked Bob to review, and Bob has not voted: external, and waiting on Bob all the same.
@@ -433,7 +435,7 @@ test('team: the owner sorts a change between Team Reviews and External Reviews; 
     // 7: Carol's change that Bob is not on, approved by Alice: on Team Reviews only.
     change({ number: 7, owner: carol, reviewers: [alice], votes: { 1: 1 }, requested: 3 }),
   ]
-  const views = classifyAll(changes, bob._account_id, TEAM)
+  const views = classifyAll(changes, bob._account_id, TEAMS)
   assert.deepEqual(views.map((v) => v.externalOwner), [true, true, true, false, false, false, false])
   const on = (tab: Parameters<typeof groupsFor>[0]) => groupsFor(tab, views).flatMap((g) => g.items.map((v) => v.change._number))
   assert.deepEqual(on('needs-my-review'), [1, 4], "Erin's request reaches Bob like Carol's")
@@ -746,7 +748,7 @@ test('filterViews: picked authors and scopes are one condition; the search is an
     change({ number: 2, owner: bob, subject: 'b' }),
     change({ number: 3, owner: carol, subject: 'c' }),
     change({ number: 4, owner: erin, subject: 'd' }),
-  ].map((c) => classify(c, bob._account_id, TEAM))
+  ].map((c) => classify(c, bob._account_id, TEAMS))
   const nums = (f: Partial<ViewFilter>) => filterViews(views, { ...NONE, ...f }).map((v) => v.change._number)
   assert.deepEqual(nums({ authors: [alice] }), [1])
   assert.deepEqual(nums({ authors: [alice], scopes: ['me'] }), [1, 2])
@@ -913,28 +915,28 @@ test('merger tag: parsed to the requested merger, lower-case; the tag for a key 
 })
 
 test('merger tag: the merge waits on the named person, whether matched by username or by email', () => {
-  const byName = classify(approved({ maxVote: 2 }), dave._account_id, [], accountKeys(dave))
+  const byName = classify(approved({ maxVote: 2 }), dave._account_id, NO_TEAMS, accountKeys(dave))
   assert.equal(byName.state, 'ready-to-merge')
   assert.equal(byName.requestedMerger, 'dave')
   assert.equal(byName.mergeRequestedFromMe, true)
   assert.equal(mergeWaitsOnMe(byName), true)
 
-  const byEmail = classify(approved({ hashtags: ['ready-to-merge', 'merger:dave@example.com'], maxVote: 2 }), dave._account_id, [], accountKeys(dave))
+  const byEmail = classify(approved({ hashtags: ['ready-to-merge', 'merger:dave@example.com'], maxVote: 2 }), dave._account_id, NO_TEAMS, accountKeys(dave))
   assert.equal(byEmail.mergeRequestedFromMe, true)
 
-  const someoneElse = classify(approved({ maxVote: 2 }), carol._account_id, [], accountKeys(carol))
+  const someoneElse = classify(approved({ maxVote: 2 }), carol._account_id, NO_TEAMS, accountKeys(carol))
   assert.equal(someoneElse.mergeRequestedFromMe, false)
   assert.equal(mergeWaitsOnMe(someoneElse), false, 'a +2 user who was not asked is not waited on')
 })
 
 test('merger tag: a tag naming nobody (older version) waits on anyone who can +2', () => {
   const unnamed = approved({ hashtags: ['ready-to-merge'], maxVote: 2 })
-  assert.equal(mergeWaitsOnMe(classify(unnamed, dave._account_id, [], accountKeys(dave))), true)
-  assert.equal(mergeWaitsOnMe(classify(approved({ hashtags: ['ready-to-merge'] }), bob._account_id, [], accountKeys(bob))), false, 'no +2, no merge')
+  assert.equal(mergeWaitsOnMe(classify(unnamed, dave._account_id, NO_TEAMS, accountKeys(dave))), true)
+  assert.equal(mergeWaitsOnMe(classify(approved({ hashtags: ['ready-to-merge'] }), bob._account_id, NO_TEAMS, accountKeys(bob))), false, 'no +2, no merge')
 })
 
 test('merger tag: asked but without +2 rights is still asked, so the hint can be shown', () => {
-  const v = classify(approved({ hashtags: ['ready-to-merge', 'merger:bob'] }), bob._account_id, [], accountKeys(bob))
+  const v = classify(approved({ hashtags: ['ready-to-merge', 'merger:bob'] }), bob._account_id, NO_TEAMS, accountKeys(bob))
   assert.equal(v.mergeRequestedFromMe, true)
   assert.equal(v.canMerge, false)
   assert.equal(mergeWaitsOnMe(v), true)
@@ -949,7 +951,7 @@ test('Merged tab: only what is asked of me, plus unnamed tags for +2 users, plus
   const staleForMe = change({ number: 6, owner: bob, reviewers: [carol], requested: 2, hashtags: ['ready-to-merge', 'merger:alice'], patchSet: 3 })
   const staleForDave = change({ number: 7, owner: bob, reviewers: [carol], requested: 2, hashtags: READY, patchSet: 3 })
   const merged = change({ number: 8, owner: bob, reviewers: [alice], status: 'MERGED' })
-  const views = classifyAll([mine, forMe, forDave, unnamed, stale, staleForMe, staleForDave, merged], alice._account_id, [], accountKeys(alice))
+  const views = classifyAll([mine, forMe, forDave, unnamed, stale, staleForMe, staleForDave, merged], alice._account_id, NO_TEAMS, accountKeys(alice))
   const groups = groupsFor('merged', views)
   assert.deepEqual(
     groups.map((g) => [g.title, g.items.map((v) => v.change._number)]),
@@ -1191,7 +1193,7 @@ test('changeNumberOf: a number, a change URL with or without a patch set, or not
 
 test('explainView: a tag from an earlier patch set on an approved change names the stale section', () => {
   const c = change({ reviewers: [bob, carol], votes: { 2: 1, 3: 1 }, patchSet: 4, readyPs: 3, hashtags: ['ready-to-merge', 'merger:bob'], requested: [3, 4] })
-  const lines = explainView(classify(c, bob._account_id, [], accountKeys(bob)))
+  const lines = explainView(classify(c, bob._account_id, NO_TEAMS, accountKeys(bob)))
   assert.equal(lines[0], 'Current patch set: 4.')
   assert.match(lines[1]!, /Bob \+1, Carol \+1/)
   assert.ok(lines.some((l) => l.includes('none voted negative')))
@@ -1214,7 +1216,7 @@ test('explainView: a tag with no recorded patch set, and no primary reviewers, a
 
 test('explainView: the current patch set tagged after every vote is Ready to Merge', () => {
   const c = change({ reviewers: [bob], votes: { 2: 1 }, patchSet: 3, hashtags: ['ready-to-merge', 'merger:carol'] })
-  const lines = explainView(classify(c, alice._account_id, [], accountKeys(alice)))
+  const lines = explainView(classify(c, alice._account_id, NO_TEAMS, accountKeys(alice)))
   assert.ok(lines.some((l) => l.includes('tag is for this patch set (ready-to-merge-ps = 3)')))
   assert.ok(lines.some((l) => l === 'State: Ready to Merge.'))
   assert.ok(!lines.some((l) => l.includes('no longer approved')))
@@ -1254,4 +1256,77 @@ test('withChange: the fresh copy replaces the old one in place, joins the list i
   const c = change({ number: 12, owner: carol })
   assert.deepEqual(withChange(board, c).open.map((x) => x._number), [10, 11])
   assert.deepEqual(withChange(board, c, TEAM).open.map((x) => x._number), [10, 11, 12])
+})
+
+test('teams: several teams sort the owners; the primary team is Team Reviews, the rest are All Reviews by team, then Other', () => {
+  const frank: AccountInfo = { _account_id: 6, name: 'Frank', username: 'frank' }
+  const dave: AccountInfo = { _account_id: 4, name: 'Dave', username: 'dave' }
+  const setup: TeamSetup = {
+    teams: [
+      { name: 'Core', members: ['carol'] },
+      { name: 'Storage', members: ['erin', 'Carol'] },
+      { name: 'Empty', members: [] },
+    ],
+    primaryTeam: 'Core',
+  }
+  const changes = [
+    change({ number: 1, owner: carol, reviewers: [bob], requested: 3 }), // Core and Storage
+    change({ number: 2, owner: erin, reviewers: [bob], requested: 3 }), // Storage
+    change({ number: 3, owner: frank, reviewers: [bob], requested: 3 }), // no team
+    change({ number: 4, owner: dave, reviewers: [bob], requested: 3 }), // no team
+    change({ number: 5, owner: bob, reviewers: [erin], requested: 3 }), // mine
+    change({ number: 6, owner: erin, reviewers: [bob], status: 'MERGED' }),
+  ]
+  const views = classifyAll(changes, bob._account_id, setup)
+  assert.deepEqual(views.map((v) => v.ownerTeams), [['Core', 'Storage'], ['Storage'], [], [], ['Core'], ['Storage']], 'the signed-in user is on the primary team without being listed')
+  assert.deepEqual(views.map((v) => v.onPrimaryTeam), [true, false, false, false, true, false])
+  assert.deepEqual(views.map((v) => v.externalOwner), [false, true, true, true, false, true])
+  const on = (pick?: Parameters<typeof groupsFor>[2]) => groupsFor('external-reviews', views, pick).flatMap((g) => g.items.map((v) => v.change._number))
+  assert.deepEqual(groupsFor('team-reviews', views).flatMap((g) => g.items.map((v) => v.change._number)), [1])
+  assert.deepEqual(on(), [2, 3, 4], 'the tab count: every external owner')
+  assert.deepEqual(on('Storage'), [2])
+  assert.deepEqual(on('Core'), [], 'nothing on the primary team is external, even when asked')
+  assert.deepEqual(on('Empty'), [])
+  assert.deepEqual(on(null), [3, 4], 'Other: owners on no team')
+  assert.deepEqual(externalPicks(setup), [
+    { pick: undefined, label: 'All Reviews' },
+    { pick: 'Storage', label: 'Storage' },
+    { pick: 'Empty', label: 'Empty' },
+    { pick: null, label: 'Other' },
+  ])
+  assert.equal(tabCounts(views)['external-reviews'], 3)
+  assert.equal(tabCounts(views)['team-reviews'], 1)
+
+  // Without a primary team nobody is a teammate: Team Reviews is empty, and every other owner is external, by team or under Other.
+  const none = classifyAll(changes, bob._account_id, { ...setup, primaryTeam: '' })
+  assert.deepEqual(none.map((v) => v.ownerTeams), [['Core', 'Storage'], ['Storage'], [], [], [], ['Storage']])
+  assert.deepEqual(groupsFor('team-reviews', none), [])
+  assert.deepEqual(groupsFor('external-reviews', none).flatMap((g) => g.items.map((v) => v.change._number)), [1, 2, 3, 4])
+  assert.deepEqual(groupsFor('external-reviews', none, 'Core').flatMap((g) => g.items.map((v) => v.change._number)), [1])
+  assert.deepEqual(externalPicks({ ...setup, primaryTeam: '' }).map((p) => p.label), ['All Reviews', 'Core', 'Storage', 'Empty', 'Other'])
+})
+
+test('teams: normalizing, the members of all of them, and the stored form before teams had names', () => {
+  const teams = normalizeTeams([
+    { name: ' Core ', members: ['Bob', 'bob', ''] },
+    { name: '', members: ['x'] },
+    { name: 'Core', members: ['other'] },
+    { name: 'Storage', members: [] },
+  ])
+  assert.deepEqual(teams, [
+    { name: 'Core', members: ['bob'] },
+    { name: 'Storage', members: [] },
+  ])
+  assert.equal(normalizePrimaryTeam('Core', teams), 'Core')
+  assert.equal(normalizePrimaryTeam(' Core ', teams), 'Core')
+  assert.equal(normalizePrimaryTeam('Gone', teams), '')
+  assert.equal(normalizePrimaryTeam(undefined, teams), '')
+  assert.deepEqual(teamMembers([{ name: 'A', members: ['bob', 'carol'] }, { name: 'B', members: ['Carol', 'erin'] }]), ['bob', 'carol', 'erin'])
+  // An older settings file: the one list becomes the primary team.
+  assert.deepEqual(storedTeams({ team: ['alice', 'bob'] }), { teams: [{ name: 'Team', members: ['alice', 'bob'] }], primaryTeam: 'Team' })
+  assert.deepEqual(storedTeams({ team: [] }), { teams: [], primaryTeam: '' })
+  assert.deepEqual(storedTeams({}), { teams: [], primaryTeam: '' })
+  // Once written in the new form, the old list is ignored.
+  assert.deepEqual(storedTeams({ team: ['alice'], teams: [{ name: 'X', members: ['bob'] }], primaryTeam: 'nope' }), { teams: [{ name: 'X', members: ['bob'] }], primaryTeam: '' })
+  assert.deepEqual(storedTeams({ teams: [{ name: 'X', members: ['bob'] }], primaryTeam: 'X' }).primaryTeam, 'X')
 })

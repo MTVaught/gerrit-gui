@@ -6,7 +6,7 @@ import { GerritClient } from '../src/main/gerrit.ts'
 import { createService } from '../src/main/service.ts'
 import { fetchDashboard } from '../src/main/dashboard.ts'
 import type { ChangeInfo } from '../src/shared/types.ts'
-import { accountKeys, classify, mergerTags, reviewLink, reviewerTagsFor } from '../src/shared/model.ts'
+import { NO_TEAMS, accountKeys, classify, mergerTags, reviewLink, reviewerTagsFor } from '../src/shared/model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../src/shared/constants.ts'
 
 const URL = process.env['GERRIT_TEST_URL'] ?? 'http://localhost:8080'
@@ -38,7 +38,8 @@ async function pushPatchSet(u: string, id: number, content: string) {
 async function view(u: string, id: number, team: string[] = []) {
   const g = user(u)
   const [me, c] = await Promise.all([g.self(), g.change(id)])
-  return classify(c, me._account_id, team, accountKeys(me))
+  const setup = team.length > 0 ? { teams: [{ name: 'Team', members: team }], primaryTeam: 'Team' } : NO_TEAMS
+  return classify(c, me._account_id, setup, accountKeys(me))
 }
 
 function serviceAs(u: string) {

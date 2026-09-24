@@ -13,9 +13,10 @@ The application shows three things:
 
 All users get the same five tabs, which go by your part on each change:
 owner, reviewer, tagged primary reviewer or named merger. Two more tabs,
-"Team Reviews" and "External Reviews", appear when you set a team in the
+"Team Reviews" and "All Reviews", appear when you set teams in the
 settings (refer to "Teams" below). They sort other people's open changes by
-owner: on the team or outside it. Neither takes a change off the five tabs.
+owner: on your team, on another team, or on none. Neither takes a change off
+the five tabs.
 The "View"
 button in the top bar (or Ctrl+F) opens the search, filter and sort for every
 tab: a search over the subjects, an author filter, and the row order. The
@@ -32,15 +33,15 @@ application remembers the sort; the search and filter last for the session.
 | Reviewing | All open changes on which you are a reviewer, primary or not, in groups by state. |
 | My Changes | Your open changes, in groups by state, with the actions of the owner. The count gains a red segment for changes that need work and a green one for approved changes. Private changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
 | Merged | Approved changes that the author asked you, by name, to merge, above the changes that Gerrit merged in the last 14 days. The count gains a green segment while anything waits on you to merge. |
-| Team Reviews | Every open change owned by someone else on your team, in groups by state, whether or not you review it. Only with a team. |
-| External Reviews | Open changes owned by someone outside your team, in groups by state, whether or not you review them. Only with a team. |
+| Team Reviews | Every open change owned by someone else on your team, in groups by state, whether or not you review it. Only when you picked your team. |
+| All Reviews | A select box in the tab strip: everyone outside your team together, one other team at a time, or "Other" for the owners on no team. Open changes owned by those people, in groups by state, whether or not you review them. Only with teams. |
 
 ![Needs Review](docs/screenshots/needs-my-review.png)
 
 ## The workflow
 
 1. The author pushes a change and adds primary reviewers with the "+"
-   button on the row. It opens a checklist of the team from Settings; anyone
+   button on the row. It opens a checklist of your team from Settings; anyone
    else on the server can be searched for and joins the list. One button adds
    everyone checked. With "Primary" selected, the application adds each one
    as a reviewer in Gerrit, if needed, and tags the change
@@ -260,35 +261,49 @@ the section.
 
 ## Teams
 
-In "Settings", under "Team", add the people on your team. Enter a username
-or an email address, or start to type and select an account from the server.
-The comparison ignores case. You are always on the team, so you do not need
-to add yourself.
+In "Settings", under "Teams", add a team by name, then the people on it.
+Enter a username or an email address, or start to type and select an
+account from the server. The comparison ignores case. Add as many teams as
+you like. Pick one of them as "Your team"; the first team you add is picked
+for you, and "None" is a choice too. You are always on your own team, so
+you do not need to add yourself to it.
 
-The team sorts other people's changes between two tabs, by owner. It has
-no say in the state of a change, nor in the five regular tabs and the tray
-counts: the primary reviewers, tagged on each change, decide the state
+The teams sort other people's changes between two tabs, by owner. They
+have no say in the state of a change, nor in the five regular tabs and the
+tray counts: the primary reviewers, tagged on each change, decide the state
 (refer to "The workflow"), and your part on a change decides the tabs. A
-request from an owner outside the team is on "Needs Review" like any other.
-When the team list has one or more entries:
+request from an owner on another team is on "Needs Review" like any other.
 
 - The "Team Reviews" tab lists every open change owned by someone else on
-  the team, in groups by state, whether or not you are a reviewer of it.
-- The "External Reviews" tab lists every open change owned by someone
-  outside the team, in the same way. Only the owner decides this: your own
-  changes are on "My Changes" and on neither tab, whoever reviews them.
+  your team, in groups by state, whether or not you are a reviewer of it.
+  It is there only when you picked your team.
+- The "All Reviews" tab is a select box in the tab strip. It shows what
+  it lists, with that list's count; opening it offers "All Reviews" for
+  everyone outside your team together, every other team, each with a
+  count, and then "Other". Under a team: every open change owned by
+  someone on it. Under "Other": the changes owned by people on none of the
+  teams, but only the ones you are on or that wait on you, since the
+  application fetches the changes of the people it knows about. The tab is
+  there once there is at least one team. Only the owner decides this: your
+  own changes are on "My Changes" and on neither tab, whoever reviews them.
 
 Both tabs are a second listing: the changes on them that you review, or
 that wait on you, are on "Reviewing", "Needs Review" or "Merged" as well.
+Someone on two teams is listed under both.
 
-When the team list is empty, both tabs are hidden. The team is a setting of
-your computer. Each team member enters the same list.
+Without any team, both tabs are hidden. The teams are a setting of your
+computer. Each team member enters the same lists. A settings file from
+before teams had names is read as one team, named "Team", picked as yours.
 
 ![Team Reviews](docs/screenshots/team-reviews.png)
 
-![External Reviews](docs/screenshots/external-reviews.png)
+![All Reviews, everyone outside the team](docs/screenshots/all-reviews.png)
 
-![Team in Settings](docs/screenshots/settings-team.png)
+![All Reviews, one team](docs/screenshots/external-reviews.png)
+
+![All Reviews, the owners on no team](docs/screenshots/external-reviews-other.png)
+
+![Teams in Settings](docs/screenshots/settings-team.png)
 
 ## Mergers
 
