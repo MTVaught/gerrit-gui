@@ -778,7 +778,7 @@ export function tabCounts(views: ChangeView[], teamPick?: TeamPick): Record<TabI
   return c
 }
 
-const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'merged', 'team-reviews', 'external-reviews']
+const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'external-reviews', 'team-reviews', 'merged']
 
 /** One colored part of a tab's count pill, left of the grey total. */
 export interface TabSegment {

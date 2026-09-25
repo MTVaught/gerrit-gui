@@ -47,10 +47,10 @@ export const TABS: Tab[] = [
   { id: 'needs-my-review', label: 'Needs Review', short: 'To review' },
   { id: 'reviewing', label: 'Reviewing', short: 'Reviewing' },
   { id: 'mine', label: 'My Changes', short: 'Mine' },
-  { id: 'merged', label: 'Merged', short: 'Merged' },
+  { id: 'external-reviews', label: 'External Reviews', short: 'External' },
   // The team tab is named after the user's team, or Watched; the label here is a stand-in (see teamTabLabel).
   { id: 'team-reviews', label: 'Team', short: 'Team' },
-  { id: 'external-reviews', label: 'External Reviews', short: 'External' },
+  { id: 'merged', label: 'Merged', short: 'Merged' },
 ]
 
 /** The team tab exists once a team is watched, which the user's own always is; External Reviews only with the user's own team. */
