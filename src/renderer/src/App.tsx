@@ -176,6 +176,12 @@ export function App() {
         await refresh()
         return
       }
+      // A sequence edit tags several changes, so the whole board is re-read.
+      if (action.type === 'setSequence') {
+        await refresh()
+        setBusy(false)
+        return
+      }
       try {
         const fresh = await api.fetchChange(action.id)
         rememberAccounts([fresh.owner, ...(fresh.reviewers?.REVIEWER ?? [])])

@@ -547,3 +547,48 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .tab-select.active { border-color: var(--border); }
 .tab-select option { font-weight: 500; color: var(--fg); background: var(--bg); }
 .settings label.check.include-own { margin-top: 12px; }
+
+/*
+ * Sequences: changes built on each other on one branch, shown as one card
+ * with a row per change, base first. The subject takes the branch column
+ * (the branch is on the head line), capped so a long subject does not
+ * widen the column for the whole tab. A step circle leads each row: the
+ * number, a tick once the change is approved or merged, the accent on the
+ * one the reviewer should read next.
+ */
+.change.chain .c-branch { max-width: clamp(160px, 17vw, 320px); gap: 8px; }
+.change.chain .c-branch .subj-wrap { display: flex; flex-direction: column; min-width: 0; }
+.change.chain .c-branch .subj { overflow: hidden; text-overflow: ellipsis; font-weight: 600; white-space: nowrap; display: block; }
+.change-row.closed .c-branch .subj { font-weight: 500; }
+.parent-note { font-size: 11px; color: var(--warn); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.step { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.step.next { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.step.done { background: var(--pos-bg); border-color: transparent; color: var(--pos); }
+.step svg { width: 11px; height: 11px; stroke-width: 3; }
+.badge.chain { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
+.badge.chain svg { color: var(--muted); }
+.change-head .next-hint b { color: var(--fg); }
+/* The stub: a dashed card offering to make a sequence of a set the owner has not tagged. */
+.change.stub { border-style: dashed; padding-top: 6px; padding-bottom: 6px; }
+.change.stub .change-head { margin-bottom: 0; align-items: center; }
+.change.stub .subject { font-size: 14px; }
+.change-head .seq-btn { margin-left: auto; }
+.change-head .seq-btn .btn { padding: 3px 10px; font-size: 12.5px; }
+/* The picker: the related changes as a checklist in reading order. */
+.menu.picker.sequence { width: 520px; }
+.seq-row { display: flex; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 5px; font-size: 13px; white-space: nowrap; cursor: pointer; }
+.seq-row:hover { background: var(--panel); }
+.seq-row input { margin: 0; accent-color: var(--accent); }
+.seq-row .n { font-weight: 600; }
+.seq-row .subj { flex: 1; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.seq-row .badge { font-size: 10.5px; }
+.seq-row .built { font-size: 11.5px; color: var(--muted); }
+.seq-row.off { color: var(--muted); }
+.seq-row.off .step { border-style: dashed; }
+/* The compact ledger: a sequence is a box like a family, the members titled by subject with a step in front. */
+.ledger tr.mem .t .step { width: 16px; height: 16px; font-size: 10px; margin-right: 6px; vertical-align: -3px; display: inline-flex; }
+.ledger tr.mem.seq .t { font-family: inherit; }
+.ledger tr.fh td { overflow: hidden; }
+.ledger tr.fh .seq-btn { float: right; }
+.ledger tr.fh .seq-btn .btn { padding: 1px 8px; font-size: 11.5px; margin-left: 8px; vertical-align: 1px; }
+.ledger tr.fh.stub td { border-style: dashed; background: transparent; border-bottom: 1px dashed var(--band-border); }

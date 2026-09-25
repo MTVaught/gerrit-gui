@@ -1,12 +1,13 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, displayName, reviewLink, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, chainTitle, displayName, nextInChain, reviewLink, stateTally, type Chain, type ChangeFamily, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { CiMark, FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
 import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
-import { ForkIcon } from './Icons.tsx'
+import { ChainIcon, CheckIcon, ForkIcon } from './Icons.tsx'
+import { SequencePicker } from './SequencePicker.tsx'
 import { ReviewButton, previousVote } from './ReviewButton.tsx'
 import { SplitButton } from './SplitButton.tsx'
 import { SlackLink } from './SlackLink.tsx'
@@ -62,8 +63,12 @@ export function Ledger(props: {
           </tr>
           {g.rows.map((r) => {
             const line = { self: props.self, onAct: props.onAct, sort: props.sort, search: props.search, showCi: !narrow, columns }
-            if (!r.family) return <LedgerRow key={r.view.change.id} view={r.view} {...line} />
-            return <FamilyBox key={r.family.key} family={r.family} lead={r.view} {...line} />
+            return (
+              <Fragment key={r.chain?.key ?? r.family?.key ?? r.view.change.id}>
+                {r.stub && <StubLine set={r.stub} lead={r.view} onAct={props.onAct} columns={columns} />}
+                {r.chain ? <ChainBox chain={r.chain} lead={r.view} all={r.related} {...line} /> : r.family ? <FamilyBox family={r.family} lead={r.view} {...line} /> : <LedgerRow view={r.view} {...line} />}
+              </Fragment>
+            )
           })}
         </tbody>
       ))}
@@ -116,6 +121,79 @@ function FamilyBox(props: { family: ChangeFamily; lead: ChangeView } & LineProps
   )
 }
 
+/**
+ * A sequence: the same box as a family, the header naming the sequence and
+ * the branch, the members titled by their subject with a step in front,
+ * base first. The owner's Edit button is on the header.
+ */
+function ChainBox(props: { chain: Chain; lead: ChangeView; all: RelatedSet | null } & LineProps) {
+  const { chain, lead, all, ...line } = props
+  const next = nextInChain(chain)
+  return (
+    <>
+      <tr className="fsp">
+        <td colSpan={line.columns} />
+      </tr>
+      <tr className="fh">
+        <td colSpan={line.columns}>
+          <span className="t" title={`${chain.members.length} changes built on each other on ${lead.change.branch}; review them from the top down`}>
+            <ChainIcon />
+            <span className="txt">
+              <Highlight text={chainTitle(chain)} term={line.search} />
+            </span>
+          </span>
+          <span className="n muted">
+            {chain.members.length} in sequence · <code>{lead.change.branch}</code>
+            {next && !lead.isMine && (
+              <>
+                {' · '}
+                <span className="tally needs-review">#{next.change._number} next</span>
+              </>
+            )}
+          </span>
+          {lead.isMine && all && <SequencePicker set={all} from={lead} label="Edit…" title="Change which of the related changes are in the sequence" onAct={line.onAct} small />}
+        </td>
+      </tr>
+      {chain.members.map((v, i) => (
+        <LedgerRow
+          key={v.change.id}
+          view={v}
+          {...line}
+          member={{
+            last: i === chain.members.length - 1,
+            title: (
+              <>
+                <span className={'step' + (v === next ? ' next' : v.state === 'approved' || v.state === 'ready-to-merge' || v.state === 'merged' ? ' done' : '')}>
+                  {v.state === 'approved' || v.state === 'ready-to-merge' || v.state === 'merged' ? <CheckIcon /> : i + 1}
+                </span>
+                <Highlight text={v.change.subject} term={line.search} />
+              </>
+            ),
+          }}
+        />
+      ))}
+      <tr className="fsp">
+        <td colSpan={line.columns} />
+      </tr>
+    </>
+  )
+}
+
+/** The offer to make a sequence of the owner's related changes, as one dashed header line above them. */
+function StubLine(props: { set: RelatedSet; lead: ChangeView; onAct: (a: ChangeAction) => Promise<void>; columns: number }) {
+  return (
+    <tr className="fh stub">
+      <td colSpan={props.columns}>
+        <span className="t">
+          <ChainIcon />
+          <span className="txt">{props.set.members.map((v) => `#${v.change._number}`).join(', ')} are built on each other</span>
+        </span>
+        <SequencePicker set={props.set} from={props.lead} label="Set up a sequence…" title="Show these changes to reviewers as one card, in order" onAct={props.onAct} small />
+      </td>
+    </tr>
+  )
+}
+
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
   useEffect(() => {
@@ -141,8 +219,8 @@ interface LineProps {
 function LedgerRow(
   props: LineProps & {
     view: ChangeView
-    /** A branch line inside a family box: titled by its branch, the subject is on the box's header. */
-    member?: { last: boolean }
+    /** A line inside a box: titled by its branch (a family) or by `title` (a sequence: step and subject). */
+    member?: { last: boolean; title?: ReactNode }
   },
 ) {
   const { view: v, self } = props
@@ -181,7 +259,7 @@ function LedgerRow(
   }
 
   // In a box, the bottom edge of the box follows the last member's line, or its detail row while open.
-  const mem = props.member ? ` mem${!open ? ' closed' : ''}${props.member.last && !expanded ? ' end' : ''}` : ''
+  const mem = props.member ? ` mem${props.member.title ? ' seq' : ''}${!open ? ' closed' : ''}${props.member.last && !expanded ? ' end' : ''}` : ''
   return (
     <>
       <tr className={`lrow state-${v.state}${expanded ? ' open' : ''}${mem}`}>
@@ -198,7 +276,7 @@ function LedgerRow(
                 void api.openChange({ id, project: c.project })
               }}
             >
-              <code>{c.branch}</code>
+              {props.member.title ?? <code>{c.branch}</code>}
             </button>
           ) : (
             <button

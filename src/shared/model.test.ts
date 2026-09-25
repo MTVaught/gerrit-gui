@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { NO_TEAMS, accountKeys, accountMatches, externalPicks, normalizeTeams, normalizePrimaryTeam, storedTeams, teamMembers, type TeamSetup, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, type ViewFilter } from './model.ts'
+import { NO_TEAMS, accountKeys, accountMatches, externalPicks, normalizeTeams, normalizePrimaryTeam, storedTeams, teamMembers, type TeamSetup, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, parentLinks, relatedSets, sequenceChains, sequenceCandidates, relatedSetOf, chainTitle, nextInChain, chainLeads, type ViewFilter } from './model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -49,6 +49,11 @@ function change(opts: {
   verified?: Record<number, number>
   /** Change-Id shared by cherry-picks; left out to mimic a server that does not send it. */
   changeId?: string
+  /** The SHA of the current commit's parent: a patch set of another change, or a branch tip. */
+  parent?: string
+  /** Every patch set as SHA and number; the last one is current. Without it, one patch set with SHA "abc". */
+  shas?: [string, number][]
+  topic?: string
 }): ChangeInfo {
   const reviewers = opts.reviewers ?? []
   const keyed: Record<string, string> = {}
@@ -82,8 +87,14 @@ function change(opts: {
       },
     },
     permitted_labels: { 'Code-Review': opts.maxVote === 2 ? ['-2', '-1', ' 0', '+1', '+2'] : ['-1', ' 0', '+1'] },
-    current_revision: 'abc',
-    revisions: { abc: { _number: opts.patchSet ?? 3, created: opts.patchSetCreated ?? '' } },
+    topic: opts.topic,
+    current_revision: opts.shas ? opts.shas[opts.shas.length - 1]![0] : 'abc',
+    revisions: Object.fromEntries(
+      (opts.shas ?? [['abc', opts.patchSet ?? 3]]).map(([sha, n], i, all) => [
+        sha,
+        { _number: n, created: opts.patchSetCreated ?? '', ...(i === all.length - 1 && opts.parent ? { commit: { subject: opts.subject ?? 's', message: '', parents: [{ commit: opts.parent }] } } : {}) },
+      ]),
+    ),
     messages: opts.messages,
   }
 }
@@ -1339,4 +1350,99 @@ test('teams: normalizing, the members of all of them, and the stored form before
   // Once written in the new form, the old list is ignored.
   assert.deepEqual(storedTeams({ team: ['alice'], teams: [{ name: 'X', members: ['bob'] }], primaryTeam: 'nope' }), { teams: [{ name: 'X', members: ['bob'] }], primaryTeam: '' })
   assert.deepEqual(storedTeams({ teams: [{ name: 'X', members: ['bob'] }], primaryTeam: 'X' }).primaryTeam, 'X')
+})
+
+/*
+ * Sequences. A chain of four by Bob on master: 61 <- 62 <- 63 <- 64, with 63
+ * built on the first patch set of 62, which has since moved to a second.
+ * 65 is built on 62 as well, beside 63. 58 is an unrelated change.
+ */
+function chainFixture(tags: Record<number, string[]> = {}, opts: { owner?: AccountInfo; reviewers?: AccountInfo[]; votes?: Partial<Record<number, Record<number, number>>> } = {}) {
+  const owner = opts.owner ?? bob
+  const reviewers = opts.reviewers ?? [alice]
+  const t = (n: number) => ['sequence'].filter(() => tags[n]?.includes('sequence'))
+  const mk = (n: number, subject: string, shas: [string, number][], parent: string, extra: Partial<Parameters<typeof change>[0]> = {}) =>
+    change({ number: n, subject, shas, parent, owner, reviewers, hashtags: t(n), requested: shas[shas.length - 1]![1], votes: opts.votes?.[n], branch: 'master', ...extra })
+  return {
+    c61: mk(61, 'Storage: add a migration runner', [['s61a', 1], ['s61b', 2]], 'tip', { votes: opts.votes?.[61] ?? { 1: 1 } }),
+    c62: mk(62, 'Storage: migrate the settings table', [['s62a', 1], ['s62b', 2]], 's61b'),
+    c63: mk(63, 'Settings: read the new table', [['s63a', 1]], 's62a'),
+    c64: mk(64, 'Settings: drop the legacy reader', [['s64a', 1]], 's63a', { requested: undefined }),
+    c65: mk(65, 'Settings: cache the table reads', [['s65a', 1]], 's62b', { requested: undefined }),
+    c58: change({ number: 58, subject: 'Tray: show build info', shas: [['s58a', 4]], parent: 'tip', owner, reviewers, requested: 4 }),
+  }
+}
+
+test('sequence: parents link a change to the patch set of the change it is built on, on the same branch only', () => {
+  const f = chainFixture()
+  const other = change({ number: 70, shas: [['s70a', 1]], parent: 's62b', branch: 'release-2.1', owner: bob })
+  const views = classifyAll([...Object.values(f), other], alice._account_id)
+  const links = parentLinks(views)
+  assert.equal(links.get(61), undefined, 'the base is built on the branch tip, which is no change')
+  assert.equal(links.get(62)!.view.change._number, 61)
+  assert.equal(links.get(62)!.stale, false)
+  assert.equal(links.get(63)!.view.change._number, 62)
+  assert.deepEqual([links.get(63)!.patchSet, links.get(63)!.stale], [1, true], '63 sits on patch set 1 of 62, which is now on 2')
+  assert.equal(links.get(65)!.view.change._number, 62)
+  assert.equal(links.get(70), undefined, 'a cherry-pick on another branch is not built on the change')
+})
+
+test('sequence: a related set is every change linked to a base, base first, a fork listed lower number first with its own children after it', () => {
+  const f = chainFixture()
+  const views = classifyAll(Object.values(f), alice._account_id)
+  const sets = relatedSets(views)
+  assert.equal(sets.length, 1, '58 has no parent or child, so it is no set')
+  assert.deepEqual(sets[0]!.members.map((v) => v.change._number), [61, 62, 63, 64, 65])
+  assert.equal(sets[0]!.parents.get(64)!.view.change._number, 63)
+})
+
+test('sequence: only tagged changes linked through tagged changes form a chain; an untagged one in the middle splits it', () => {
+  const tagged = (ns: number[]) => Object.fromEntries(ns.map((n) => [n, ['sequence']]))
+  const views = (tags: Record<number, string[]>) => classifyAll(Object.values(chainFixture(tags)), alice._account_id)
+  assert.deepEqual(sequenceChains(views(tagged([61, 62, 63, 64]))).map((c) => c.members.map((v) => v.change._number)), [[61, 62, 63, 64]])
+  assert.deepEqual(sequenceChains(views(tagged([62, 63, 64]))).map((c) => c.members.map((v) => v.change._number)), [[62, 63, 64]], 'a tagged change whose parent is not tagged is the base')
+  assert.deepEqual(sequenceChains(views(tagged([61, 62, 64]))).map((c) => c.members.map((v) => v.change._number)), [[61, 62]], '64 is cut off by the untagged 63 and alone, so it is no sequence')
+  assert.deepEqual(sequenceChains(views(tagged([63]))), [], 'one tagged change with no tagged parent or child stays an ordinary card')
+  assert.deepEqual(sequenceChains(views(tagged([62, 63, 65]))).map((c) => c.members.map((v) => v.change._number)), [[62, 63, 65]], 'a fork among tagged changes is one sequence, in reading order')
+})
+
+test('sequence: the candidates are the owner\'s open related sets with no member tagged; the picker sees the whole set around a change', () => {
+  const f = chainFixture()
+  const views = classifyAll(Object.values(f), bob._account_id)
+  assert.deepEqual(sequenceCandidates(views, bob._account_id).map((s) => s.members.map((v) => v.change._number)), [[61, 62, 63, 64, 65]])
+  assert.deepEqual(sequenceCandidates(views, alice._account_id), [], 'not the reviewer\'s to set up')
+  const tagged = classifyAll(Object.values(chainFixture({ 61: ['sequence'], 62: ['sequence'] })), bob._account_id)
+  assert.deepEqual(sequenceCandidates(tagged, bob._account_id), [], 'a set with a sequence in it is edited from the sequence card, not offered again')
+  const split = classifyAll(Object.values(chainFixture({ 61: ['sequence'], 63: ['sequence'] })), bob._account_id)
+  assert.equal(sequenceCandidates(split, bob._account_id).length, 1, 'tags that make no sequence leave the set on offer, or the owner could not reach the picker')
+  assert.deepEqual(relatedSetOf(tagged, f.c63)!.members.map((v) => v.change._number), [61, 62, 63, 64, 65])
+  assert.equal(relatedSetOf(tagged, f.c58), null)
+})
+
+test('sequence: the title is the shared topic, else the first and last numbers; the reviewer\'s next is the lowest change waiting on them', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'] })
+  const views = classifyAll(Object.values(f), alice._account_id)
+  const [chain] = sequenceChains(views)
+  assert.equal(chainTitle(chain!), '#61 to #64')
+  assert.equal(nextInChain(chain!)!.change._number, 62, '61 has her +1 already; 62 is the lowest that waits on her')
+  const topical = classifyAll(Object.values(chainFixture({ 61: ['sequence'], 62: ['sequence'] })).map((c) => ({ ...c, topic: 'settings-table' })), alice._account_id)
+  assert.equal(chainTitle(sequenceChains(topical)[0]!), 'settings-table')
+  const mine = classifyAll(Object.values(f), bob._account_id)
+  assert.equal(nextInChain(sequenceChains(mine)[0]!), null, 'nothing in it waits on the owner')
+})
+
+test('sequence: a chain is one card on the tab counts and leads with its most urgent member', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'] })
+  const views = classifyAll(Object.values(f), alice._account_id)
+  // Alice reviews 62 and 63 (and 58); the four-change sequence is one card, 58 another.
+  assert.equal(tabCounts(views)['needs-my-review'], 2)
+  const groups = groupsFor('reviewing', views)
+  const [chain] = sequenceChains(views)
+  const lead = chainLeads(groups, [chain!])
+  assert.equal(lead.get(chain!.key)!.change._number, 62, 'the first change that needs review, not the approved base')
+  // For the owner the card sits under Pass Around, led by 62; the Approved section, whose only change is the base, is dropped.
+  const mine = classifyAll(Object.values(f), bob._account_id)
+  const cards = cardGroups('mine', mine)
+  assert.deepEqual(cards.map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Pass Around', [62, 58]], ['In Progress', [65]]])
+  assert.deepEqual(tabSegments(mine).mine!.map((s) => [s.tone, s.n]), [['pending', 2], ['wip', 1]])
 })

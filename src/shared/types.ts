@@ -43,6 +43,8 @@ export interface CommitInfo {
   subject: string
   /** The whole commit message: subject, body and the trailers at the end. */
   message: string
+  /** The parent commits; one for an ordinary commit. Its SHA is a patch set of the change this one is built on, when it is built on a change. */
+  parents?: { commit: string; subject?: string }[]
 }
 
 export interface ChangeMessageInfo {
@@ -78,6 +80,7 @@ export interface ChangeInfo {
   /** Private: visible only to the owner, the reviewers and the CCs. Absent when false. */
   is_private?: boolean
   hashtags?: string[]
+  topic?: string
   created: string
   updated: string
   submitted?: string
@@ -89,6 +92,10 @@ export interface ChangeInfo {
   permitted_labels?: Record<string, string[]>
   reviewers?: { REVIEWER?: AccountInfo[]; CC?: AccountInfo[]; REMOVED?: AccountInfo[] }
   current_revision?: string
+  /**
+   * With ALL_REVISIONS, every patch set, keyed by commit SHA. The board uses
+   * the keys to tell which patch set of a change another change is built on.
+   */
   revisions?: Record<string, RevisionInfo>
   submit_requirements?: SubmitRequirementResultInfo[]
   /** Present with MESSAGES. */
@@ -465,6 +472,13 @@ export type ChangeAction =
   /** Owner's action: hide the change from everyone not on it, or show it again. */
   | { type: 'setPrivate'; id: number; private: boolean }
   | { type: 'hashtag'; id: number; add?: string[]; remove?: string[] }
+  /**
+   * Owner's action: set which changes form a sequence. The `sequence` tag is
+   * added to `add` and removed from `remove`; `id` is the change the picker
+   * was opened from. The whole board is re-read afterwards, since several
+   * changes moved.
+   */
+  | { type: 'setSequence'; id: number; add: number[]; remove: number[] }
   /** Add to the change in Gerrit only; the person is shown but not waited for. `reviewer` is an account, group or free text. */
   | { type: 'addReviewer'; id: number; reviewer: string }
   | { type: 'removeReviewer'; id: number; accountId: number }

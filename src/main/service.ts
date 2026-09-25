@@ -3,7 +3,7 @@
 // running the UI in a browser (e.g. over VS Code port forwarding).
 import { GerritClient, GerritError, type FetchLike } from './gerrit.ts'
 import { fetchChange, fetchDashboard } from './dashboard.ts'
-import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../shared/constants.ts'
+import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY, SEQUENCE_TAG } from '../shared/constants.ts'
 import { mergerTag, preferredKey, requestedPatchSetsValue, reviewerTag, teamMembers } from '../shared/model.ts'
 import type {
   AccountInfo,
@@ -156,6 +156,11 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
           return
         case 'hashtag':
           await g.setHashtags(action.id, action.add, action.remove)
+          return
+        case 'setSequence':
+          // One request per change; Gerrit has no bulk tag write.
+          for (const n of action.add) await g.setHashtags(n, [SEQUENCE_TAG])
+          for (const n of action.remove) await g.setHashtags(n, [], [SEQUENCE_TAG])
           return
         case 'addReviewer':
           await g.addReviewer(action.id, action.reviewer)

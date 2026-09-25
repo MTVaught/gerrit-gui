@@ -15,7 +15,7 @@ import type {
   TabId,
   Team,
 } from './types.ts'
-import { CODE_REVIEW, IN_PERSON_REVIEW_KEY, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, READY_TO_MERGE_KEY, SLACK_TAG_PREFIX, VERIFIED } from './constants.ts'
+import { CODE_REVIEW, IN_PERSON_REVIEW_KEY, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, READY_TO_MERGE_KEY, SEQUENCE_TAG, SLACK_TAG_PREFIX, VERIFIED } from './constants.ts'
 
 export function isBot(a: AccountInfo): boolean {
   return a.tags?.includes('SERVICE_USER') ?? false
@@ -819,9 +819,9 @@ export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegme
   return segments
 }
 
-/** How many cards a list of changes makes: each Change-Id once. */
+/** How many cards a list of changes makes: each Change-Id once, and a sequence once however many changes it has. */
 export function countFamilies(views: ChangeView[]): number {
-  return new Set(views.map((v) => familyKey(v.change))).size
+  return new Set(cardKeys(views).values()).size
 }
 
 /**
@@ -853,10 +853,17 @@ export function familyLeads(groups: Group[], views: ChangeView[]): Map<string, C
  */
 export function cardGroups(tab: TabId, views: ChangeView[]): Group[] {
   const groups = groupsFor(tab, views)
-  const lead = familyLeads(groups, views)
-  return groups
-    .map((g) => ({ ...g, items: g.items.filter((v) => (lead.get(familyKey(v.change)) ?? v) === v) }))
-    .filter((g) => g.items.length > 0)
+  const chains = sequenceChains(views)
+  const inChain = new Map<ChangeView, string>()
+  for (const c of chains) for (const v of c.members) inChain.set(v, c.key)
+  // A change in a sequence is drawn there, so it is in no family.
+  const lead = familyLeads(groups, views.filter((v) => !inChain.has(v)))
+  const chainLead = chainLeads(groups, chains)
+  const leads = (v: ChangeView) => {
+    const key = inChain.get(v)
+    return key !== undefined ? chainLead.get(key) === v : (lead.get(familyKey(v.change)) ?? v) === v
+  }
+  return groups.map((g) => ({ ...g, items: g.items.filter(leads) })).filter((g) => g.items.length > 0)
 }
 
 export interface ActionCategoryInfo {
@@ -1357,4 +1364,191 @@ export function accountMatches(a: AccountInfo, q: string): boolean {
   if (!t) return true
   const words = displayName(a).toLowerCase().split(/\s+/)
   return words.some((w) => w.startsWith(t)) || (a.username?.toLowerCase().startsWith(t) ?? false) || (a.email?.toLowerCase().startsWith(t) ?? false)
+}
+
+/*
+ * Sequences: changes built on each other on one branch, which reviewers
+ * should read in order. Gerrit makes a change of each commit pushed, and the
+ * board links a change to the one it is built on through the parent SHA of
+ * its current commit, matched against the patch sets of the other changes
+ * on the board. The owner turns a set of related changes into a sequence
+ * with the `sequence` hashtag on each; the tag only says "show these as one
+ * card, in order".
+ */
+
+/** The change one is built on, and which of its patch sets: `stale` when that patch set is no longer the parent's current one. */
+export interface ParentLink {
+  view: ChangeView
+  patchSet: number
+  stale: boolean
+}
+
+/**
+ * Changes on one project and branch that are built on each other, in
+ * reading order: a base first, then each change after the one it is built
+ * on. A fork (two changes built on the same one) lists the lower number
+ * first, with its own children after it.
+ */
+export interface RelatedSet {
+  /** The base change's id. */
+  key: string
+  members: ChangeView[]
+  /** By change number: what each member is built on, for the members built on another member. */
+  parents: Map<number, ParentLink>
+}
+
+/** A sequence: the tagged members of a related set that are linked to each other through tagged members only, in reading order. */
+export type Chain = RelatedSet
+
+export function isSequenced(change: ChangeInfo): boolean {
+  return hasTag(change, SEQUENCE_TAG)
+}
+
+/** The parent SHA of the current commit, when Gerrit sent the commit. */
+function parentSha(change: ChangeInfo): string | null {
+  const rev = change.current_revision ? change.revisions?.[change.current_revision] : undefined
+  return rev?.commit?.parents?.[0]?.commit ?? null
+}
+
+/**
+ * What each change is built on, among `views`: by change number, the change
+ * whose patch set is the parent commit. Only changes on the same project
+ * and branch are linked: a change on another branch with the same parent
+ * is a cherry-pick, not a step. A parent with no change on the board is
+ * not listed.
+ */
+export function parentLinks(views: ChangeView[]): Map<number, ParentLink> {
+  const bySha = new Map<string, { view: ChangeView; patchSet: number }>()
+  for (const v of views) {
+    for (const [sha, r] of Object.entries(v.change.revisions ?? {})) bySha.set(sha, { view: v, patchSet: r._number })
+  }
+  const out = new Map<number, ParentLink>()
+  for (const v of views) {
+    const sha = parentSha(v.change)
+    const p = sha ? bySha.get(sha) : undefined
+    if (!p || p.view === v) continue
+    if (p.view.change.project !== v.change.project || p.view.change.branch !== v.change.branch) continue
+    out.set(v.change._number, { view: p.view, patchSet: p.patchSet, stale: p.patchSet < p.view.patchSet })
+  }
+  return out
+}
+
+/**
+ * The connected sets of `views` under `parents`, each in reading order,
+ * base first. A change with no parent or child among the views is left
+ * out: it is an ordinary card. `parents` is normally `parentLinks(views)`;
+ * a caller can pass a subset of the links to cut the sets differently.
+ */
+export function relatedSets(views: ChangeView[], parents: Map<number, ParentLink> = parentLinks(views)): RelatedSet[] {
+  const children = new Map<number, ChangeView[]>()
+  const has = new Set(views.map((v) => v.change._number))
+  for (const v of views) {
+    const p = parents.get(v.change._number)
+    if (!p || !has.has(p.view.change._number)) continue
+    const list = children.get(p.view.change._number) ?? []
+    list.push(v)
+    children.set(p.view.change._number, list)
+  }
+  const byNumber = (a: ChangeView, b: ChangeView) => a.change._number - b.change._number
+  const seen = new Set<number>()
+  const out: RelatedSet[] = []
+  // A base: a change with no parent among the views. Its set is everything reachable through children.
+  for (const base of [...views].sort(byNumber)) {
+    const n = base.change._number
+    if (seen.has(n) || (parents.has(n) && has.has(parents.get(n)!.view.change._number))) continue
+    const members: ChangeView[] = []
+    const walk = (v: ChangeView) => {
+      if (seen.has(v.change._number)) return
+      seen.add(v.change._number)
+      members.push(v)
+      for (const c of (children.get(v.change._number) ?? []).sort(byNumber)) walk(c)
+    }
+    walk(base)
+    if (members.length < 2) continue
+    const own = new Map<number, ParentLink>()
+    for (const m of members) {
+      const p = parents.get(m.change._number)
+      if (p) own.set(m.change._number, p)
+    }
+    out.push({ key: base.change.id, members, parents: own })
+  }
+  return out
+}
+
+/**
+ * The sequences on the board: among the tagged changes, the related sets
+ * made of links between tagged changes only. So an untagged change in the
+ * middle splits a line in two, a tagged change whose parent is not tagged
+ * is a base, and a tagged change with no tagged parent or child is not a
+ * sequence at all and stays an ordinary card.
+ */
+export function sequenceChains(views: ChangeView[]): Chain[] {
+  const tagged = views.filter((v) => isSequenced(v.change))
+  const links = parentLinks(views)
+  const own = new Map<number, ParentLink>()
+  for (const v of tagged) {
+    const p = links.get(v.change._number)
+    if (p && isSequenced(p.view.change)) own.set(v.change._number, p)
+  }
+  return relatedSets(tagged, own)
+}
+
+/**
+ * The sets the owner could make a sequence of: their open changes built on
+ * each other, with no member in a sequence yet. A set with tags left on it
+ * that make no sequence (a lone tagged change, or two split by an untagged
+ * one) is still offered, since its sequence card, and the Edit button on
+ * it, do not exist.
+ */
+export function sequenceCandidates(views: ChangeView[], selfId: number): RelatedSet[] {
+  const mine = views.filter((v) => v.change.status === 'NEW' && v.change.owner._account_id === selfId)
+  const chained = new Set(sequenceChains(views).flatMap((c) => c.members))
+  return relatedSets(mine).filter((s) => !s.members.some((v) => chained.has(v)))
+}
+
+/** The related set a member belongs to, for the picker: the whole set, tagged or not, around the change. */
+export function relatedSetOf(views: ChangeView[], change: ChangeInfo): RelatedSet | null {
+  const same = views.filter((v) => v.change.status === 'NEW' && v.change.project === change.project && v.change.branch === change.branch && v.change.owner._account_id === change.owner._account_id)
+  return relatedSets(same).find((s) => s.members.some((v) => v.change._number === change._number)) ?? null
+}
+
+/** The card's title: the topic when the members share one, else the first and last change numbers. */
+export function chainTitle(chain: RelatedSet): string {
+  const topics = new Set(chain.members.map((v) => v.change.topic ?? ''))
+  const [topic] = topics
+  if (topics.size === 1 && topic) return topic
+  return `#${chain.members[0]!.change._number} to #${chain.members.at(-1)!.change._number}`
+}
+
+/** The member the reviewer should read next: the lowest one that waits on them. Null when none does. */
+export function nextInChain(chain: RelatedSet): ChangeView | null {
+  return chain.members.find((v) => v.needsMyReview) ?? null
+}
+
+/** The key a change is counted under: its sequence when it is in one, else its Change-Id family. */
+export function cardKeys(views: ChangeView[]): Map<ChangeView, string> {
+  const out = new Map<ChangeView, string>()
+  for (const v of views) out.set(v, familyKey(v.change))
+  for (const c of sequenceChains(views)) for (const v of c.members) out.set(v, 'seq:' + c.key)
+  return out
+}
+
+/**
+ * The member that leads each sequence card on a tab, by sequence key: the
+ * most urgent member among the sections, a tie going to the earliest
+ * section. As `familyLeads`, for sequences.
+ */
+export function chainLeads(groups: Group[], chains: Chain[]): Map<string, ChangeView> {
+  const keyOf = new Map<ChangeView, string>()
+  for (const c of chains) for (const v of c.members) keyOf.set(v, c.key)
+  const lead = new Map<string, ChangeView>()
+  for (const g of groups) {
+    for (const v of g.items) {
+      const key = keyOf.get(v)
+      if (key === undefined) continue
+      const cur = lead.get(key)
+      if (!cur || urgency(v.state) < urgency(cur.state)) lead.set(key, v)
+    }
+  }
+  return lead
 }

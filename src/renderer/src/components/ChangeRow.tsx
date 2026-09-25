@@ -1,9 +1,10 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, accountKeys, displayName, preferredKey, reviewerTag, reviewerTagsFor, stateTally, type ChangeFamily, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, accountKeys, chainTitle, displayName, nextInChain, preferredKey, reviewerTag, reviewerTagsFor, stateTally, type Chain, type ChangeFamily, type ParentLink, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
-import { CommentIcon, ForkIcon, LockIcon } from './Icons.tsx'
+import { ChainIcon, CheckIcon, CommentIcon, ForkIcon, LockIcon } from './Icons.tsx'
+import { SequencePicker } from './SequencePicker.tsx'
 import { actionClass, changeActions, type ActionSpec } from './actions.ts'
 import { ago } from '../time.ts'
 import { ReviewButton } from './ReviewButton.tsx'
@@ -29,6 +30,8 @@ interface RowProps extends ActProps {
   sort: SortId
   /** Search text from the View menu, marked in the subject. */
   search: string
+  /** What the first cell shows instead of the branch: a sequence row leads with its step and subject. */
+  lead?: ReactNode
 }
 
 /**
@@ -63,6 +66,125 @@ export function FamilyCard(props: { family: ChangeFamily; lead: ChangeView; self
       {f.members.map((v) => (
         <BranchRow key={v.change.id} view={v} self={props.self} onAct={props.onAct} sort={props.sort} search={props.search} />
       ))}
+    </li>
+  )
+}
+
+/**
+ * A sequence: changes built on each other on one branch, one card with a
+ * row per change, base first, so the rows read in review order. The
+ * subject takes the branch column; the head line names the sequence (its
+ * topic, or the first and last numbers), the branch, a tally of states and,
+ * for a reviewer, which change to read next. Each row keeps its own
+ * reviewers and buttons, as in a family card. The owner edits the members
+ * from the head line.
+ */
+export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedSet | null; self: AccountInfo; onAct: (a: ChangeAction) => Promise<void>; sort: SortId; search: string }) {
+  const { chain, lead } = props
+  const c = lead.change
+  const next = nextInChain(chain)
+  const owner = lead.isMine
+  return (
+    <li className={`change chain state-${lead.state}`}>
+      <SlackLink view={lead} onAct={props.onAct} variant="tab" />
+      <div className="change-head">
+        <span className="badge chain" title="These changes are built on each other; review them from the top down">
+          <ChainIcon /> {chain.members.length} in sequence
+        </span>
+        <span className="subject">
+          <Highlight text={chainTitle(chain)} term={props.search} />
+        </span>
+        <span className="badge branch" title={`${c.project} · ${c.branch}`}>
+          <code>{c.branch}</code>
+        </span>
+        {stateTally(chain.members).map((t) => (
+          <span key={t.state} className={`badge tally ${t.state}`} title={`${t.count} of the ${chain.members.length} changes: ${STATE_LABEL[t.state]}`}>
+            {t.count} {STATE_LABEL[t.state]}
+          </span>
+        ))}
+        {next && !owner && (
+          <span className="muted small next-hint">
+            review from the top down · <b>#{next.change._number}</b> is next for you
+          </span>
+        )}
+        <span className="muted small origin">
+          {c.project} · {owner ? 'you' : displayName(c.owner)}
+        </span>
+        {owner && props.all && <SequencePicker set={props.all} from={lead} label="Edit sequence…" title="Change which of the related changes are in the sequence" onAct={props.onAct} />}
+      </div>
+      {chain.members.map((v, i) => (
+        <BranchRow
+          key={v.change.id}
+          view={v}
+          self={props.self}
+          onAct={props.onAct}
+          sort={props.sort}
+          search={props.search}
+          lead={
+            <>
+              <Step view={v} index={i} next={v === next} />
+              <span className="subj-wrap">
+                <button className="link subj" onClick={() => void api.openChange({ id: v.change._number, project: v.change.project })} title={`Open #${v.change._number} in Gerrit`}>
+                  <Highlight text={v.change.subject} term={props.search} />
+                </button>
+                <ParentNote link={chain.parents.get(v.change._number)} open={v.change.status === 'NEW'} />
+              </span>
+            </>
+          }
+        />
+      ))}
+    </li>
+  )
+}
+
+/** Under the subject of a sequence row: the change is built on an older patch set of the one below it, so a rebase is due. */
+function ParentNote(props: { link: ParentLink | undefined; open: boolean }) {
+  const p = props.link
+  if (!p || !p.stale || !props.open) return null
+  return (
+    <span className="parent-note" title={`Built on patch set ${p.patchSet} of #${p.view.change._number}, which is now on patch set ${p.view.patchSet}; a rebase is due`}>
+      on #{p.view.change._number} PS {p.patchSet}, now PS {p.view.patchSet}
+    </span>
+  )
+}
+
+/** The circle before a sequence row: the step number, a tick once the change is approved or in, the accent on the reviewer's next one. */
+function Step(props: { view: ChangeView; index: number; next: boolean }) {
+  const { view: v } = props
+  const done = v.state === 'approved' || v.state === 'ready-to-merge' || v.state === 'merged'
+  if (done)
+    return (
+      <span className="step done" title={`Step ${props.index + 1}: ${STATE_LABEL[v.state]}`}>
+        <CheckIcon />
+      </span>
+    )
+  return (
+    <span className={'step' + (props.next ? ' next' : '')} title={props.next ? `Step ${props.index + 1}: review this one next` : `Step ${props.index + 1}`}>
+      {props.index + 1}
+    </span>
+  )
+}
+
+/**
+ * The offer to make a sequence: a dashed card above the cards of a set of
+ * the owner's changes that are built on each other but not tagged. The
+ * button opens the picker with every change ticked.
+ */
+export function StubCard(props: { set: RelatedSet; lead: ChangeView; onAct: (a: ChangeAction) => Promise<void> }) {
+  const { set, lead } = props
+  const nums = set.members.map((v) => `#${v.change._number}`).join(', ')
+  return (
+    <li className="change stub state-in-progress">
+      <div className="change-head">
+        <span className="badge chain" title="These changes are built on each other">
+          <ChainIcon /> {set.members.length} related
+        </span>
+        <span className="subject">
+          {nums} on <code>{lead.change.branch}</code>
+        </span>
+        <span className="muted small">shown as separate cards until a sequence is set up</span>
+        <SequencePicker set={set} from={lead} label="Set up a sequence…" title="Show these changes to reviewers as one card, in the order they are built on each other" onAct={props.onAct} />
+      </div>
     </li>
   )
 }
@@ -108,9 +230,11 @@ function BranchRow(props: RowProps) {
   return (
     <div className={open ? 'change-row' : 'change-row closed'}>
       <span className="cell c-branch">
-        <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title={`Open #${c._number} (${c.project}) in Gerrit`}>
-          <code>{c.branch}</code>
-        </button>
+        {props.lead ?? (
+          <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title={`Open #${c._number} (${c.project}) in Gerrit`}>
+            <code>{c.branch}</code>
+          </button>
+        )}
       </span>
       <span className="cell c-state">
         <span className={`badge ${v.state}`} title={merger ? `The owner asked ${merger} to merge` : undefined}>

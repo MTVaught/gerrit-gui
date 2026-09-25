@@ -13,8 +13,13 @@ export class GerritError extends Error {
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>
 
-/** What the board needs on every change: labels, accounts, the current revision and its commit message, hashtags, keyed values and messages. */
-const CHANGE_OPTIONS = ['DETAILED_LABELS', 'DETAILED_ACCOUNTS', 'CURRENT_REVISION', 'CURRENT_COMMIT', 'SUBMITTABLE', 'SUBMIT_REQUIREMENTS', 'CURRENT_ACTIONS', 'CUSTOM_KEYED_VALUES', 'MESSAGES']
+/**
+ * What the board needs on every change: labels, accounts, the current
+ * revision and its commit message, hashtags, keyed values and messages.
+ * ALL_REVISIONS adds the SHA of every patch set, so a change built on an
+ * older patch set of another is still linked to it.
+ */
+const CHANGE_OPTIONS = ['DETAILED_LABELS', 'DETAILED_ACCOUNTS', 'CURRENT_REVISION', 'CURRENT_COMMIT', 'ALL_REVISIONS', 'SUBMITTABLE', 'SUBMIT_REQUIREMENTS', 'CURRENT_ACTIONS', 'CUSTOM_KEYED_VALUES', 'MESSAGES']
 
 /**
  * Minimal Gerrit REST client using HTTP-password basic auth on /a/ endpoints.
