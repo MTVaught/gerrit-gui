@@ -1,50 +1,110 @@
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ChangeView } from '../../../shared/types.ts'
-import { countFamilies, externalPicks, groupsFor, type ExternalPick, type TeamSetup } from '../../../shared/model.ts'
+import { countFamilies, groupsFor, teamPicks, type TeamPick, type TeamSetup } from '../../../shared/model.ts'
 
-/** The All Reviews entries with the number of cards under each. */
-export function externalEntries(setup: TeamSetup, views: ChangeView[]): { pick: ExternalPick; label: string; n: number }[] {
-  return externalPicks(setup).map((e) => ({ ...e, n: countFamilies(groupsFor('external-reviews', views, e.pick).flatMap((g) => g.items)) }))
+/** The team tab's menu entries with the number of cards under each; empty with one watched team. */
+export function teamEntries(setup: TeamSetup, views: ChangeView[]): { pick: TeamPick; label: string; n: number }[] {
+  return teamPicks(setup).map((e) => ({ ...e, n: countFamilies(groupsFor('team-reviews', views, e.pick).flatMap((g) => g.items)) }))
 }
 
-/** The values of the All and Other entries in the select. A team name is trimmed, so it cannot start with a space. */
-const ALL_VALUE = ' all'
-const OTHER_VALUE = ' other'
-
 /**
- * The All Reviews tab: a native select box in the tab strip, in the place
- * of a tab. It lists everyone outside the user's team together, then every
- * team but the user's own, each with its count, then Other, and shows the
- * one picked. Opening it brings the tab up, as pressing a tab does;
- * choosing an entry shows those changes.
+ * The team tab: named after the user's team, or Watched, with the count of
+ * the list it shows. With several watched teams it is a split tab, like the
+ * split buttons on the rows: the caret opens a menu of the watched teams
+ * and all of them together, and picking one changes the list below. The
+ * label stays; the check in the menu and the line above the list say
+ * which team is showing.
  */
 export function TeamTab(props: {
-  entries: { pick: ExternalPick; label: string; n: number }[]
-  pick: ExternalPick
+  label: string
+  /** Menu entries; none means a plain tab. */
+  entries: { pick: TeamPick; label: string; n: number }[]
+  pick: TeamPick
   active: boolean
-  onPick: (p: ExternalPick) => void
+  /** The count pill, styled like the other tabs'. */
+  count: ReactNode
+  onPick: (p: TeamPick) => void
   /** Bring the tab up, as pressing any tab does. */
   onSelect: () => void
 }) {
-  const valueOf = (p: ExternalPick) => (p === undefined ? ALL_VALUE : p === null ? OTHER_VALUE : p)
-  return (
-    <select
-      className={'tab tab-select' + (props.active ? ' active' : '')}
-      value={valueOf(props.pick)}
-      aria-label="All Reviews: which team"
-      title="All Reviews: changes owned by another team, or by people on no team"
-      onMouseDown={() => {
-        if (!props.active) props.onSelect()
-      }}
-      onChange={(e) => {
-        props.onPick(e.target.value === ALL_VALUE ? undefined : e.target.value === OTHER_VALUE ? null : e.target.value)
+  const [open, setOpen] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  const caret = useRef<HTMLButtonElement>(null)
+  // The strip scrolls sideways in the compact window and would clip the menu, so it is placed against the window.
+  const [at, setAt] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
+  const showing = props.entries.find((e) => e.pick === props.pick)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const tab = (
+    <button
+      role="tab"
+      aria-selected={props.active}
+      aria-label={showing && showing.label !== props.label ? `${props.label}, showing ${showing.label}` : props.label}
+      title={showing ? `Showing ${showing.label}` : 'Every open change of the team, whether or not you are on it'}
+      className={'tab' + (props.active ? ' active' : '')}
+      onClick={() => {
         props.onSelect()
+        setOpen(false)
       }}
     >
-      {props.entries.map((e) => (
-        <option key={valueOf(e.pick)} value={valueOf(e.pick)}>
-          {e.label} ({e.n})
-        </option>
-      ))}
-    </select>
+      {props.label}
+      {props.count}
+    </button>
+  )
+  if (props.entries.length === 0) return tab
+  return (
+    <div className="tab-split" ref={root}>
+      {tab}
+      <button
+        ref={caret}
+        className={'tab tab-caret' + (props.active ? ' active' : '')}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Pick a watched team"
+        title="One watched team at a time, or all of them"
+        onClick={() => {
+          const r = caret.current?.getBoundingClientRect()
+          if (r) setAt({ left: Math.max(4, Math.min(r.right - 240, window.innerWidth - 244)), top: r.bottom + 4 })
+          setOpen((o) => !o)
+        }}
+      >
+        ▾
+      </button>
+      {open && (
+        <div className="menu team-menu" role="menu" aria-label="Which team" style={at}>
+          {props.entries.map((e) => (
+            <button
+              key={e.pick ?? ' all'}
+              role="menuitemradio"
+              aria-checked={e.pick === props.pick}
+              className={'menu-item' + (e.pick === props.pick ? ' selected' : '')}
+              onClick={() => {
+                props.onPick(e.pick)
+                props.onSelect()
+                setOpen(false)
+              }}
+            >
+              <span>{e.label}</span>
+              <span className="count">{e.n}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

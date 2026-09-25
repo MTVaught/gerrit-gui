@@ -74,11 +74,9 @@ export interface TeamSetup {
   teams: Team[]
   /** The name of one of `teams`, or "" for none. */
   primaryTeam: string
-  /** The primary team is on All Reviews as well as on Team Reviews. */
-  includeOwnTeam: boolean
 }
 
-export const NO_TEAMS: TeamSetup = { teams: [], primaryTeam: '', includeOwnTeam: false }
+export const NO_TEAMS: TeamSetup = { teams: [], primaryTeam: '' }
 
 /**
  * Trim the names, drop teams without one, keep the first of two teams with
@@ -90,7 +88,7 @@ export function normalizeTeams(teams: Team[]): Team[] {
   for (const t of teams) {
     const name = t.name.trim()
     if (!name || out.some((o) => o.name === name)) continue
-    out.push({ name, members: normalizeTeam(t.members) })
+    out.push({ name, members: normalizeTeam(t.members), watched: t.watched === true })
   }
   return out
 }
@@ -106,31 +104,45 @@ export function normalizePrimaryTeam(name: string | undefined, teams: Team[]): s
  * names has one `team` list: that becomes the primary team, named "Team",
  * so nothing moves on the board after the update.
  */
-export function storedTeams(s: { team?: string[]; teams?: Team[]; primaryTeam?: string }): Pick<TeamSetup, 'teams' | 'primaryTeam'> {
-  if (s.teams === undefined && s.team && s.team.length > 0) return { teams: [{ name: 'Team', members: s.team }], primaryTeam: 'Team' }
+export function storedTeams(s: { team?: string[]; teams?: Team[]; primaryTeam?: string }): TeamSetup {
+  if (s.teams === undefined && s.team && s.team.length > 0) return { teams: [{ name: 'Team', members: s.team, watched: true }], primaryTeam: 'Team' }
   const teams = normalizeTeams(s.teams ?? [])
   return { teams, primaryTeam: normalizePrimaryTeam(s.primaryTeam, teams) }
 }
 
-/** Everyone on any team, each once: what the dashboard fetches the open changes of. */
-export function teamMembers(teams: Team[]): string[] {
+/** The watched teams: those ticked in Settings, and the user's own team whatever its tick. */
+export function watchedTeams(setup: TeamSetup): Team[] {
+  return setup.teams.filter((t) => t.watched || t.name === setup.primaryTeam)
+}
+
+/** Everyone on a watched team, each once: what the dashboard fetches the open changes of. */
+export function teamMembers(setup: TeamSetup): string[] {
+  return normalizeTeam(watchedTeams(setup).flatMap((t) => t.members))
+}
+
+/** Everyone on any team, each once, for the reviewer picker. */
+export function allMembers(teams: Team[]): string[] {
   return normalizeTeam(teams.flatMap((t) => t.members))
 }
 
-/**
- * Which owners the All Reviews tab lists: `undefined` for all of them
- * together, one team by name, or `null` for "Other", the owners on no team
- * at all.
- */
-export type ExternalPick = string | null | undefined
+/** Which team the team tab lists: one watched team by name, or `undefined` for all of them together. */
+export type TeamPick = string | undefined
 
-/** The entries of the All Reviews select: everyone together, every team (the primary one only when included by the setting), then Other. */
-export function externalPicks(setup: TeamSetup): { pick: ExternalPick; label: string }[] {
-  return [
-    { pick: undefined, label: 'All Reviews' },
-    ...setup.teams.filter((t) => setup.includeOwnTeam || t.name !== setup.primaryTeam).map((t) => ({ pick: t.name, label: t.name })),
-    { pick: null, label: 'Other' },
-  ]
+/** What the team tab is called: the user's own team, or Watched when there is none. */
+export function teamTabLabel(setup: TeamSetup): string {
+  return setup.primaryTeam || 'Watched'
+}
+
+/** The default list on the team tab: the user's own team, or every watched team together. */
+export function defaultTeamPick(setup: TeamSetup): TeamPick {
+  return setup.primaryTeam || undefined
+}
+
+/** The entries of the team tab's menu: each watched team, then all of them together as Watched. Empty with one team only. */
+export function teamPicks(setup: TeamSetup): { pick: TeamPick; label: string }[] {
+  const watched = watchedTeams(setup)
+  if (watched.length < 2) return []
+  return [...watched.map((t) => ({ pick: t.name, label: t.name })), { pick: undefined, label: 'Watched' }]
 }
 
 /** Does a project pattern from Settings (exact name, prefix ending in "*", or "*") match a project? */
@@ -539,8 +551,8 @@ export function classify(change: ChangeInfo, selfId: number, setup: TeamSetup = 
   // The user is on their own team whether or not the list says so; other teams go by the list alone.
   const primary = setup.teams.find((t) => t.name === setup.primaryTeam)
   const ownerTeams = setup.teams.filter((t) => (t === primary && isMine) || isListed(change.owner, normalizeTeam(t.members))).map((t) => t.name)
-  const teamScoped = setup.teams.length > 0
-  const onPrimaryTeam = primary !== undefined && ownerTeams.includes(primary.name)
+  const watched = watchedTeams(setup).map((t) => t.name)
+  const teamScoped = primary !== undefined
   const iAmPrimary = reviewers.some((r) => r.account._account_id === selfId || (r.tagOnly === true && selfKeys.includes(r.key!)))
   const iAmReviewer = iAmPrimary || everyone.some((r) => r.account._account_id === selfId)
   const myVote = votes.get(selfId) ?? 0
@@ -584,9 +596,9 @@ export function classify(change: ChangeInfo, selfId: number, setup: TeamSetup = 
     pending,
     otherReviewers,
     ownerTeams,
+    ownerWatched: ownerTeams.some((t) => watched.includes(t)),
     teamScoped,
-    onPrimaryTeam,
-    externalOwner: teamScoped && (!onPrimaryTeam || setup.includeOwnTeam),
+    externalOwner: teamScoped && !ownerTeams.includes(primary.name),
     wip: change.work_in_progress === true,
     isPrivate: change.is_private === true,
     verified: isVerified(change),
@@ -640,30 +652,28 @@ export function mergeWaitsOnMe(v: ChangeView): boolean {
 }
 
 /**
- * Open changes owned by someone outside the primary team, or on it too when
- * the setting includes it: the All Reviews tab. With a pick, only the
- * owners on that team, or with `null` the owners on no team; without one,
- * all of them.
- * The teams sort changes by their owner between this tab and Team Reviews,
- * and do nothing else: the five regular tabs are decided by the user's
- * part on each change (owner, reviewer, tagged primary reviewer, named
- * merger), whoever owns it. So an outside owner's change the user is
- * tagged on is on Needs Review as well as here.
+ * Open changes the user is on, owned by someone outside their own team: the
+ * External Reviews tab. Being on a change means reviewing it, being tagged
+ * as a primary reviewer, or being asked to merge it, so a watched team's
+ * change the user has no part in is not here even though it was fetched.
+ * The tab is a slice of what involves the user, sorted by owner; the five
+ * regular tabs go by the user's part alone, whoever owns the change, so an
+ * outside owner's change the user is tagged on is on Needs Review as well.
  */
-export function isExternalReview(v: ChangeView, pick?: ExternalPick): boolean {
-  if (v.change.status !== 'NEW' || v.isMine || !v.externalOwner) return false
-  if (pick === undefined) return true
-  return pick === null ? v.ownerTeams.length === 0 : v.ownerTeams.includes(pick)
+export function isExternalReview(v: ChangeView): boolean {
+  return v.change.status === 'NEW' && !v.isMine && v.externalOwner && (v.iAmReviewer || v.mergeRequestedFromMe)
 }
 
 /**
- * Open changes owned by someone else on the primary team: the Team Reviews
- * tab, which lists them whether or not the user reviews them. Like External
+ * Open changes owned by someone else on a watched team: the team tab, which
+ * lists them whether or not the user is on them. With a pick, the owners on
+ * that team; without one, every watched team together. Like External
  * Reviews the tab is not exclusive: a teammate's change the user reviews is
  * on Reviewing too.
  */
-export function isTeamReview(v: ChangeView): boolean {
-  return v.change.status === 'NEW' && v.onPrimaryTeam && !v.isMine
+export function isTeamReview(v: ChangeView, pick?: TeamPick): boolean {
+  if (v.change.status !== 'NEW' || v.isMine) return false
+  return pick === undefined ? v.ownerWatched : v.ownerTeams.includes(pick)
 }
 
 export interface Group {
@@ -686,7 +696,7 @@ function byState(items: ChangeView[], order: (ReviewState | ReviewState[])[], ti
 const REVIEWER_ORDER: (ReviewState | ReviewState[])[] = ['needs-changes', 'approved', 'ready-to-merge', ['in-progress', 'iterating']]
 const REVIEWER_TITLES: Partial<Record<ReviewState, string>> = { 'in-progress': 'Author iterating, no review requested' }
 
-/** Sections for the tabs that list other people's changes: the same on Reviewing, Team Reviews and All Reviews. */
+/** Sections for the tabs that list other people's changes: the same on Reviewing, the team tab and External Reviews. */
 function reviewerGroups(items: ChangeView[]): Group[] {
   return [
     { title: 'Waiting on you', items: items.filter((v) => v.needsMyReview && v.state === 'needs-review') },
@@ -716,10 +726,10 @@ function mergeQueueGroups(open: ChangeView[]): Group[] {
 
 /**
  * The sections of one tab, before the View filter. The five regular tabs go
- * by the user's part on the change, whoever owns it. Team Reviews and
- * All Reviews go by the owner, on the team or not, reviewed or not.
+ * by the user's part on the change, whoever owns it. The team tab goes by
+ * the owner alone; External Reviews by the owner among what the user is on.
  */
-export function groupsFor(tab: TabId, views: ChangeView[], pick?: ExternalPick): Group[] {
+export function groupsFor(tab: TabId, views: ChangeView[], pick?: TeamPick): Group[] {
   const open = views.filter((v) => v.change.status === 'NEW')
   switch (tab) {
     case 'needs-my-review':
@@ -752,9 +762,9 @@ export function groupsFor(tab: TabId, views: ChangeView[], pick?: ExternalPick):
       // The merger's queue above the history: what waits to be merged, then what already was.
       return [...mergeQueueGroups(open), { title: 'Merged in the last 14 days', items: views.filter((v) => v.change.status === 'MERGED') }]
     case 'team-reviews':
-      return reviewerGroups(views.filter(isTeamReview))
+      return reviewerGroups(views.filter((v) => isTeamReview(v, pick)))
     case 'external-reviews':
-      return reviewerGroups(views.filter((v) => isExternalReview(v, pick)))
+      return reviewerGroups(views.filter(isExternalReview))
   }
 }
 
@@ -762,13 +772,13 @@ export function groupsFor(tab: TabId, views: ChangeView[], pick?: ExternalPick):
  * The number on each tab: how many cards its sections list before the View
  * filter. A Change-Id family is one card wherever it is, so it counts once.
  */
-export function tabCounts(views: ChangeView[]): Record<TabId, number> {
+export function tabCounts(views: ChangeView[], teamPick?: TeamPick): Record<TabId, number> {
   const c = {} as Record<TabId, number>
-  for (const tab of TAB_IDS) c[tab] = countFamilies(groupsFor(tab, views).flatMap((g) => g.items))
+  for (const tab of TAB_IDS) c[tab] = countFamilies(groupsFor(tab, views, tab === 'team-reviews' ? teamPick : undefined).flatMap((g) => g.items))
   return c
 }
 
-const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'merged', 'team-reviews', 'external-reviews']
+const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'external-reviews', 'team-reviews', 'merged']
 
 /** One colored part of a tab's count pill, left of the grey total. */
 export interface TabSegment {
@@ -1089,7 +1099,7 @@ function projectScope(projects: string[]): string {
  * (`selfKeys`) is searched for as well, so a primary reviewer who was taken
  * off the change in Gerrit still sees it. The team query fetches the open
  * changes of everyone on any team (`members`, from `teamMembers`) for the
- * Team Reviews and All Reviews tabs; it is empty without a team, and
+ * team tab; it is empty without a watched team, and
  * the caller then skips it.
  *
  * A private change of another author is never shown, even when the user is
@@ -1298,7 +1308,7 @@ export function unseenLines(v: ChangeView): number {
 /**
  * Owner groups a filter can name without picking accounts: the user's own
  * changes. Inside or outside the team is not a scope, because the Team
- * Reviews and All Reviews tabs already split on it (see groupsFor).
+ * tab and External Reviews already split on it (see groupsFor).
  */
 export type AuthorScope = 'me'
 

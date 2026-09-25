@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace } from '../../../shared/types.ts'
-import { STATE_LABEL, accountKeys, changeNumberOf, classify, explainView, externalPicks, groupsFor, isSlackTeamId, mergersReflect, slackWorkspacesReflect, type TeamSetup } from '../../../shared/model.ts'
+import { STATE_LABEL, accountKeys, changeNumberOf, classify, explainView, groupsFor, isSlackTeamId, mergersReflect, slackWorkspacesReflect, teamPicks, teamTabLabel, type TeamSetup } from '../../../shared/model.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
 import { ago } from '../time.ts'
@@ -45,7 +45,7 @@ export function SettingsPanel(props: {
   const [sync, setSync] = useState<SyncState>({ kind: 'saved' })
   const s = props.settings
   const connected = Boolean(s.serverUrl && s.username && s.hasPassword)
-  const setup: TeamSetup = { teams: s.teams, primaryTeam: s.primaryTeam, includeOwnTeam: s.includeOwnTeam }
+  const setup: TeamSetup = { teams: s.teams, primaryTeam: s.primaryTeam }
 
   async function apply(patch: Partial<SettingsInput>) {
     setSync({ kind: 'saving' })
@@ -101,25 +101,19 @@ export function SettingsPanel(props: {
         {section === 'team' && (
           <>
             <p className="muted">
-              The teams sort other people's changes by their owner. Changes owned by <b>your team</b> are on{' '}
-              <b>Team Reviews</b>; changes owned by another team, or by someone on no team, are on <b>All Reviews</b>, a
-              select box in the tab strip that shows them together, one team at a time, or the rest under <b>Other</b>. The five regular tabs and the counts in the
-              tray do not look at the teams; they go by your part on each change. Who decides a change is not a team but
-              its primary reviewers, tagged on the change with the "+" button on its row.
+              A <b>watched</b> team's open changes are all on the board, whether or not you are on them, under the team
+              tab: named after <b>your team</b>, or <b>Watched</b> when you have not picked one. With several watched
+              teams, the tab's caret shows one at a time. <b>External Reviews</b> is the changes you are on whose owner is
+              not on your team. The five regular tabs and the counts in the tray do not look at the teams; they go by
+              your part on each change. Who decides a change is not a team but its primary reviewers, tagged on the
+              change with the "+" button on its row.
             </p>
             <TeamsEditor teams={s.teams} primaryTeam={s.primaryTeam} onChange={(teams, primaryTeam) => void apply({ teams, primaryTeam })} canSearch={connected} />
-            {s.primaryTeam !== '' && (
-              <label className="check include-own">
-                <input type="checkbox" checked={s.includeOwnTeam} onChange={(e) => void apply({ includeOwnTeam: e.target.checked })} />
-                Show your team on All Reviews as well: in its list of teams, and among everyone
-              </label>
-            )}
             <p className="muted small">
               People are stored as usernames; an email address still matches. You are always on your own team, so you do
-              not need to add yourself. Start typing to pick from the accounts on the server. Set your team to None to
-              hide Team Reviews; remove every team to hide All Reviews too. The "+" button on a change lists your
-              team, or everyone on any team when you have not picked one. Your team is on Team Reviews; tick the box to
-              have it on All Reviews too.
+              not need to add yourself, and it is always watched. Start typing to pick from the accounts on the server. A
+              team that is not watched only names its people: their changes you are on still show, with the team as a
+              filter. The "+" button on a change lists your team, or everyone on any team when you have not picked one.
             </p>
           </>
         )}
@@ -464,13 +458,14 @@ function DebugSection(props: { setup: TeamSetup; connected: boolean }) {
 function InspectionReport(props: { r: Inspection; setup: TeamSetup }) {
   const { view: v, raw } = props.r
   const c = v.change
-  // The Merged tab's history section is returned even when empty, hence the filter. All Reviews is listed per pick.
+  // The Merged tab's history section is returned even when empty, hence the filter. The team tab is listed per watched team.
   const listed = visibleTabs(props.setup).flatMap((t) => {
-    const picks = t.id === 'external-reviews' ? externalPicks(props.setup) : [{ pick: undefined, label: '' }]
-    return picks.flatMap((p) =>
+    const label = t.id === 'team-reviews' ? teamTabLabel(props.setup) : t.label
+    const picks = t.id === 'team-reviews' ? teamPicks(props.setup) : []
+    return (picks.length > 0 ? picks : [{ pick: undefined, label: '' }]).flatMap((p) =>
       groupsFor(t.id, [v], p.pick)
         .filter((g) => g.items.length > 0)
-        .map((g) => `${t.label} › ${p.label ? `${p.label} › ` : ''}${g.title}`),
+        .map((g) => `${label} › ${p.label ? `${p.label} › ` : ''}${g.title}`),
     )
   })
   const keyed = Object.entries(c.custom_keyed_values ?? {})

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, NO_TEAMS, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, externalPicks, tabCounts, tabSegments, teamMembers, totalActions, withChange, type ExternalPick, type SortId, type TabSegment, type TeamSetup, type ViewFilter } from '../../shared/model.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, NO_TEAMS, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, defaultTeamPick, tabCounts, tabSegments, teamMembers, teamPicks, teamTabLabel, totalActions, withChange, type SortId, type TabSegment, type TeamPick, type TeamSetup, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
-import { TeamTab, externalEntries } from './components/TeamTab.tsx'
+import { TeamTab, teamEntries } from './components/TeamTab.tsx'
 import { ViewMenu } from './components/ViewMenu.tsx'
 import { ago } from './time.ts'
 import { renderBadgeIcon, trayStrips } from './badge.ts'
@@ -21,8 +21,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState<TabId>(initialTab)
-  // Which owners the All Reviews tab lists: everyone outside the team until the user picks one, or Other.
-  const [externalPick, setExternalPick] = useState<ExternalPick>(initialExternalPick)
+  // Which team the team tab lists, once the user picked one on its caret; until then the default for the setup.
+  const [teamPickChoice, setTeamPickChoice] = useState<TeamPick | null>(initialTeamPick)
   const [sort, setSort] = useState<SortId>(initialSort)
   // Search and author filter last for the session; the sort is remembered.
   const [filter, setFilter] = useState<ViewFilter>(EMPTY_FILTER)
@@ -117,9 +117,9 @@ export function App() {
     }
   }, [configured, refresh])
 
-  const setup = useMemo<TeamSetup>(() => (settings ? { teams: settings.teams, primaryTeam: settings.primaryTeam, includeOwnTeam: settings.includeOwnTeam } : NO_TEAMS), [settings])
-  // Everyone on any team: their open changes are fetched whole, so the list decides what is on the board.
-  const members = useMemo(() => teamMembers(setup.teams), [setup])
+  const setup = useMemo<TeamSetup>(() => (settings ? { teams: settings.teams, primaryTeam: settings.primaryTeam } : NO_TEAMS), [settings])
+  // Everyone on a watched team: their open changes are fetched whole, so the list decides what is on the board.
+  const members = useMemo(() => teamMembers(setup), [setup])
   const membersRef = useRef(members)
   membersRef.current = members
   // The project scope and the teams change what is fetched, so a change to either reloads the board.
@@ -148,15 +148,14 @@ export function App() {
     [settings],
   )
   const tabs = useMemo(() => visibleTabs(setup), [setup])
-  // The All Reviews select: the pick as made while it is still a team, else everyone.
-  const picks = useMemo(() => externalPicks(setup), [setup])
-  const pick: ExternalPick = picks.some((p) => p.pick === externalPick) ? externalPick : undefined
-  // The All Reviews tab's list: everyone, each team and Other, with their counts.
-  const entries = useMemo(() => externalEntries(setup, views), [setup, views])
+  // The team tab: the pick as made while it is still a watched team, else the default (own team, or all watched).
+  const picks = useMemo(() => teamPicks(setup), [setup])
+  const pick: TeamPick = teamPickChoice !== null && picks.some((p) => p.pick === teamPickChoice) ? teamPickChoice : defaultTeamPick(setup)
+  const entries = useMemo(() => teamEntries(setup, views), [setup, views])
   // What the current tab lists before the filter: the author picker suggests these owners first.
-  const tabViews = useMemo(() => groupsFor(tab, views, tab === 'external-reviews' ? pick : undefined).flatMap((g) => g.items), [tab, views, pick])
+  const tabViews = useMemo(() => groupsFor(tab, views, tab === 'team-reviews' ? pick : undefined).flatMap((g) => g.items), [tab, views, pick])
   // Clearing the teams hides their tabs; fall back if one was selected.
-  // Not before the settings are in, or an initial All Reviews tab would be lost.
+  // Not before the settings are in, or an initial team tab would be lost.
   useEffect(() => {
     if (settings && !tabs.some((t) => t.id === tab)) setTab('needs-my-review')
   }, [settings, tabs, tab])
@@ -195,7 +194,8 @@ export function App() {
     [refresh],
   )
 
-  const counts = useMemo(() => tabCounts(views), [views])
+  // The team tab's pill counts the list its label names, whatever the caret picked; the menu has the rest.
+  const counts = useMemo(() => tabCounts(views, defaultTeamPick(setup)), [views, setup])
   const segments = useMemo(() => tabSegments(views), [views])
   // One row: the tabs and the controls. A hidden copy of the strip with the full labels is measured
   // against the room left of the controls; when it does not fit, the tabs use their short labels.
@@ -251,13 +251,15 @@ export function App() {
       <header className="topbar" ref={topbarRef}>
         <nav className={'tabs' + (shortTabs ? ' short' : '')} role="tablist" ref={tabsRef}>
           {tabs.map((t) =>
-            t.id === 'external-reviews' ? (
+            t.id === 'team-reviews' ? (
               <TeamTab
                 key={t.id}
+                label={teamTabLabel(setup)}
                 entries={entries}
                 pick={pick}
                 active={tab === t.id && !showSettings}
-                onPick={setExternalPick}
+                count={<TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />}
+                onPick={setTeamPickChoice}
                 onSelect={() => {
                   setTab(t.id)
                   setShowSettings(false)
@@ -285,8 +287,9 @@ export function App() {
           <nav className="tabs ghost" aria-hidden="true" ref={ghostRef}>
             {tabs.map((t) => (
               <span key={t.id} className="tab">
-                {t.id === 'external-reviews' ? `${entries.find((e) => e.pick === pick)?.label ?? t.label} (0) ▾` : t.label}
-                {t.id !== 'external-reviews' && <TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />}
+                {t.id === 'team-reviews' ? teamTabLabel(setup) : t.label}
+                <TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />
+                {t.id === 'team-reviews' && entries.length > 0 && <span className="tab-caret">▾</span>}
               </span>
             ))}
           </nav>
@@ -367,7 +370,7 @@ export function App() {
           loading={!data && busy}
           compact={compact}
           setup={setup}
-          externalPick={pick}
+          teamPick={pick}
           onAct={act}
           onGoTo={(t) => {
             setTab(t)
@@ -449,12 +452,12 @@ function initialTab(): TabId {
   return id && TABS.some((t) => t.id === id) ? id : 'needs-my-review'
 }
 
-/** `team=<name>` after the tab in the hash picks a team on All Reviews, `team=-` picks Other; without it, everyone (screenshot hook). */
-function initialExternalPick(): ExternalPick {
+/** `team=<name>` after the tab in the hash picks a watched team on the team tab, `team=-` all of them; without it, the default (screenshot hook). */
+function initialTeamPick(): TeamPick | null {
   const m = /team=([^&]*)/.exec(window.location.hash)
-  if (!m) return undefined
+  if (!m) return null
   const name = decodeURIComponent(m[1]!)
-  return name === '-' ? null : name
+  return name === '-' ? undefined : name
 }
 
 /** GERRIT_GUI_TAB=settings opens the settings panel instead of a board tab (screenshot hook). */

@@ -103,7 +103,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
 
     async fetchDashboard() {
       const [g, status] = await Promise.all([client(), store.getStatus()])
-      return fetchDashboard(g, status.projects, teamMembers(status.teams))
+      return fetchDashboard(g, status.projects, teamMembers(status))
     },
 
     async fetchChange(id) {

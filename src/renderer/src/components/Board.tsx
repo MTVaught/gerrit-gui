@@ -20,12 +20,13 @@ import {
   chainLeads,
   sortByBranch,
   sortViews,
+  watchedTeams,
   type Chain,
   type ChangeFamily,
   type RelatedSet,
-  type ExternalPick,
   type Group,
   type SortId,
+  type TeamPick,
   type TeamSetup,
   type ViewFilter,
 } from '../../../shared/model.ts'
@@ -46,14 +47,15 @@ export const TABS: Tab[] = [
   { id: 'needs-my-review', label: 'Needs Review', short: 'To review' },
   { id: 'reviewing', label: 'Reviewing', short: 'Reviewing' },
   { id: 'mine', label: 'My Changes', short: 'Mine' },
+  { id: 'external-reviews', label: 'External Reviews', short: 'External' },
+  // The team tab is named after the user's team, or Watched; the label here is a stand-in (see teamTabLabel).
+  { id: 'team-reviews', label: 'Team', short: 'Team' },
   { id: 'merged', label: 'Merged', short: 'Merged' },
-  { id: 'team-reviews', label: 'Team Reviews', short: 'Team' },
-  { id: 'external-reviews', label: 'All Reviews', short: 'All' },
 ]
 
-/** Team Reviews exists only with a primary team; All Reviews once any team is set. Without teams nobody is external. */
+/** The team tab exists once a team is watched, which the user's own always is; External Reviews only with the user's own team. */
 export function visibleTabs(setup: TeamSetup): Tab[] {
-  return TABS.filter((t) => (t.id === 'team-reviews' ? setup.primaryTeam !== '' : t.id === 'external-reviews' ? setup.teams.length > 0 : true))
+  return TABS.filter((t) => (t.id === 'team-reviews' ? watchedTeams(setup).length > 0 : t.id === 'external-reviews' ? setup.primaryTeam !== '' : true))
 }
 
 /** One list entry: a single change, the lead of a family card, or the lead of a sequence card. */
@@ -70,17 +72,17 @@ export interface Row {
 /** A section with its entries folded into rows: a family is one row, led by its most urgent member on this tab. */
 export type Section = Group & { rows: Row[] }
 
-const EMPTY: Record<Exclude<TabId, 'needs-my-review' | 'external-reviews'>, string> = {
+const EMPTY: Record<Exclude<TabId, 'needs-my-review' | 'team-reviews'>, string> = {
   reviewing: 'You are not a reviewer on any open change.',
   mine: 'You have no open changes.',
   merged: 'Nobody has asked you to merge anything, and nothing merged recently.',
-  'team-reviews': 'Nobody else on your team has an open change.',
+  'external-reviews': 'No open change you are on is owned by someone outside your team.',
 }
 
-/** The All Reviews tab with nothing under the picked team, under Other, or at all. */
-function externalEmpty(pick: ExternalPick): string {
-  if (pick === undefined) return 'No open change is owned by someone outside your team.'
-  return pick === null ? 'No open change owned by someone on none of the teams involves you.' : `Nobody on ${pick} has an open change.`
+/** The team tab with nothing under the picked team, or under every watched team. */
+function teamEmpty(pick: TeamPick, own: string): string {
+  if (pick === undefined) return 'Nobody on a watched team has an open change.'
+  return pick === own ? 'Nobody else on your team has an open change.' : `Nobody on ${pick} has an open change.`
 }
 
 function NeedsReviewEmpty(props: { views: ChangeView[]; onGoTo: (tab: TabId) => void }) {
@@ -135,10 +137,10 @@ export function Board(props: {
   loading: boolean
   /** Narrow window: render the ledger, one line per change, instead of the cards. */
   compact: boolean
-  /** The teams from Settings, for the wording on Team Reviews. */
+  /** The teams from Settings, for the wording on the team tab. */
   setup: TeamSetup
-  /** Which owners All Reviews lists: everyone, the team picked on its tab, or Other. */
-  externalPick: ExternalPick
+  /** Which team the team tab lists: the one picked on its caret, or every watched team. */
+  teamPick: TeamPick
   onAct: (a: ChangeAction) => Promise<void>
   onGoTo: (tab: TabId) => void
 }) {
@@ -166,8 +168,8 @@ export function Board(props: {
     return m
   }, [props.views, props.tab, props.self])
   if (props.loading || !props.self) return <div className="panel muted">Loading...</div>
-  const external = props.tab === 'external-reviews'
-  const all = groupsFor(props.tab, props.views, external ? props.externalPick : undefined)
+  const team = props.tab === 'team-reviews'
+  const all = groupsFor(props.tab, props.views, team ? props.teamPick : undefined)
   const groups = all.map((g) => ({ ...g, items: filterViews(g.items, props.filter) })).filter((g) => g.items.length > 0)
   // The counts are cards: a family counts once, however many branches.
   const total = countFamilies(all.flatMap((g) => g.items))
@@ -202,7 +204,7 @@ export function Board(props: {
     .filter((g) => g.rows.length > 0)
   if (all.length === 0) {
     if (props.tab === 'needs-my-review') return <NeedsReviewEmpty views={props.views} onGoTo={props.onGoTo} />
-    return <div className="panel empty">{props.tab === 'external-reviews' ? externalEmpty(props.externalPick) : EMPTY[props.tab]}</div>
+    return <div className="panel empty">{props.tab === 'team-reviews' ? teamEmpty(props.teamPick, props.setup.primaryTeam) : EMPTY[props.tab]}</div>
   }
   const summary = isFilterActive(props.filter) && (
     <FilterSummary filter={props.filter} sort={props.sort} shown={shown} total={total} onFilter={props.onFilter} />
@@ -232,29 +234,21 @@ export function Board(props: {
   return (
     <main className="board">
       {summary}
-      {props.tab === 'team-reviews' && (
+      {team && (
         <p className="muted small">
-          Every open change owned by someone else on your team, {props.setup.primaryTeam}, whether or not you review it. The
-          ones you review are under Reviewing as well.
+          {props.teamPick === undefined
+            ? 'Every open change owned by someone on a watched team'
+            : props.teamPick === props.setup.primaryTeam
+              ? `Every open change owned by someone else on your team, ${props.teamPick}`
+              : `Every open change owned by someone on ${props.teamPick}`}
+          , whether or not you are on it. The ones you are on are under Reviewing as well
+          {props.teamPick !== props.setup.primaryTeam && `, and under External Reviews`}.
         </p>
       )}
-      {external && props.externalPick === undefined && (
+      {props.tab === 'external-reviews' && (
         <p className="muted small">
-          Every open change owned by someone on {props.setup.includeOwnTeam ? 'any team' : 'another team'}, and the changes of people on no team that you are on.
-          Pick a team on the tab to see one at a time. The ones that wait on you are under Needs Review as well. Your
-          own changes are never here, whoever reviews them.
-        </p>
-      )}
-      {external && typeof props.externalPick === 'string' && (
-        <p className="muted small">
-          Every open change owned by someone on {props.externalPick}, whether or not you review it. The ones that wait on
-          you are under Needs Review as well. Your own changes are never here, whoever reviews them.
-        </p>
-      )}
-      {external && props.externalPick === null && (
-        <p className="muted small">
-          Open changes owned by people on none of the teams in Settings: only the ones you are on, or that wait on you.
-          Your own changes are never here, whoever reviews them.
+          The open changes you are on whose owner is not on your team, {props.setup.primaryTeam}. The ones that wait on you
+          are under Needs Review as well. Your own changes are never here, whoever reviews them.
         </p>
       )}
       <div className="sections">
