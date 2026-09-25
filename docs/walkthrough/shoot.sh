@@ -48,7 +48,7 @@ profile() { # user
   "password": "$1pw",
   "passwordEncrypted": false,
   "projects": [],
-  "teams": [{ "name": "Platform", "members": ["alice", "bob", "carol", "dave"] }],
+  "teams": [{ "name": "Platform", "members": ["alice", "bob", "carol", "dave"], "watched": true }],
   "primaryTeam": "Platform",
   "mergers": [{ "project": "platform/*", "people": ["dave"] }],
   "badgeStyle": "color",
