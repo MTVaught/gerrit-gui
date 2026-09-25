@@ -1,0 +1,81 @@
+<!doctype html><html><head><meta charset="utf-8"><title>2 Head-line tab</title><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"><style>
+
+.tabmark.seq { right: 120px; opacity: 1; white-space: nowrap; gap: 5px; }
+.tabmark.seq svg { width: 11px; height: 11px; flex: 0 0 auto; }
+.tabmark.seq.add { color: var(--muted); }
+.tabmark.seq.hot { color: var(--fg); border-color: var(--muted); }
+
+</style></head><body><div class="app"><header class="topbar"><nav class="tabs">
+<span class="tab">Needs Review <span class="count">1</span></span><span class="tab">Reviewing <span class="count">2</span></span><span class="tab active">My Changes <span class="count split"><span class="pos">1</span><span>4</span></span></span><span class="tab">Merged <span class="count">1</span></span><span class="tab">Team Reviews <span class="count">2</span></span><span class="tab">External Reviews <span class="count">0</span></span>
+</nav><div class="topbar-right"><span class="btn view-btn">⇅ View <span class="arrow">▾</span></span><span class="btn icon">⟳</span><span class="btn icon">⤡</span><span class="btn icon">⚙</span></div></header><main class="board"><div class="sections"><section class="group"><h3>Approved <span class="count">1</span></h3><ul class="changes"><li class="change state-approved ">
+<div class="change-head"><span class="link subject">Storage: add a migration runner</span><span class="tabmark seq add "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="20" r="2.5"/><path d="M12 6.5v3M12 14.5v3"/></svg> + sequence</span><span class="muted small origin">demo · you</span></div>
+<div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge approved">Approved</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#61</span><span class="ps muted">PS 3 <span class="ci-mark pos">✓</span></span></span>
+<span class="cell c-tags"><span class="tags"><span class="tagbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg> 2</span></span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pos">Alice <b>+1</b></span><span class="chip pos">Carol <b>+1</b></span><span class="trailing"><span class="chip add">+</span></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+118</span> <span class="del">−4</span></span></span>
+<span class="cell c-updated muted">2d ago</span>
+<div class="cell c-wip actions"><div class="split flags-menu" style="position:relative"><span class="btn subtle split-main " >Mark WIP</span><span class="btn subtle split-caret" >▾</span></div></div>
+<div class="cell c-actions actions"><div class="btns"><span class="split picker-wrap"><span class="btn primary split-main">Ready to Merge</span><span class="btn primary split-caret">▾</span></span></div></div>
+</div>
+</li></ul></section><section class="group"><h3>Out for review <span class="count">3</span></h3><ul class="changes"><li class="change state-needs-review hovered">
+<div class="change-head"><span class="link subject">Storage: migrate the settings table</span><span class="tabmark seq add hot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="20" r="2.5"/><path d="M12 6.5v3M12 14.5v3"/></svg> Set up a sequence · 5 related changes</span><span class="muted small origin">demo · you</span></div>
+<div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#62</span><span class="ps muted">PS 2 <span class="ci-mark pos">✓</span></span></span>
+<span class="cell c-tags"><span class="tags"><span class="tagbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg> 2</span></span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">Alice</span><span class="chip pending">Carol</span><span class="trailing"><span class="chip add">+</span></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+64</span> <span class="del">−12</span></span></span>
+<span class="cell c-updated muted">3h ago</span>
+<div class="cell c-wip actions"><div class="split flags-menu" style="position:relative"><span class="btn subtle split-main " >Mark WIP</span><span class="btn subtle split-caret" >▾</span></div></div>
+<div class="cell c-actions actions"><div class="btns"><span class="btn">Withdraw request</span></div></div>
+</div>
+</li><li class="change state-needs-review ">
+<div class="change-head"><span class="link subject">Settings: read the new table</span><span class="tabmark seq add "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="20" r="2.5"/><path d="M12 6.5v3M12 14.5v3"/></svg> + sequence</span><span class="muted small origin">demo · you</span></div>
+<div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge wip">WIP</span></span>
+<span class="cell c-num"><span class="link">#63</span><span class="ps muted">PS 2</span></span>
+<span class="cell c-tags"><span class="tags"><span class="tagbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg> 1</span></span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">Alice</span><span class="chip pos">Carol <b>+1</b></span><span class="trailing"><span class="chip add">+</span></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+37</span> <span class="del">−51</span></span></span>
+<span class="cell c-updated muted">3h ago</span>
+<div class="cell c-wip actions"><div class="split flags-menu" style="position:relative"><span class="btn subtle split-main " >Mark active</span><span class="btn subtle split-caret" >▾</span></div></div>
+<div class="cell c-actions actions"><div class="btns"><span class="btn">Withdraw request</span></div></div>
+</div>
+</li><li class="change state-needs-review ">
+<div class="change-head"><span class="link subject">Tray: show build info in the menu</span><span class="muted small origin">gerrit-gui · you</span></div>
+<div class="change-row">
+<span class="cell c-branch"><span class="link"><code>main</code></span></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge wip">WIP</span></span>
+<span class="cell c-num"><span class="link">#58</span><span class="ps muted">PS 4</span></span>
+<span class="cell c-tags"><span class="tags"><span class="tagbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg> 1</span></span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">Alice</span><span class="chip pos">Carol <b>+1</b></span><span class="trailing"><span class="chip add">+</span></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+58</span> <span class="del">−12</span></span></span>
+<span class="cell c-updated muted">4h ago</span>
+<div class="cell c-wip actions"><div class="split flags-menu" style="position:relative"><span class="btn subtle split-main " >Mark active</span><span class="btn subtle split-caret" >▾</span></div></div>
+<div class="cell c-actions actions"><div class="btns"><span class="btn">Withdraw request</span></div></div>
+</div>
+</li></ul></section><section class="group"><h3>In progress, review not requested <span class="count">1</span></h3><ul class="changes"><li class="change state-in-progress ">
+<div class="change-head"><span class="link subject">Settings: drop the legacy reader</span><span class="tabmark seq add "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="20" r="2.5"/><path d="M12 6.5v3M12 14.5v3"/></svg> + sequence</span><span class="muted small origin">demo · you</span></div>
+<div class="change-row">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge in-progress">In Progress</span></span>
+<span class="cell c-ci"><span class="badge wip">WIP</span></span>
+<span class="cell c-num"><span class="link">#64</span><span class="ps muted">PS 1</span></span>
+<span class="cell c-tags"><span class="tags"><span class="tagbtn "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg> no tags</span></span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip ">Alice</span><span class="chip ">Carol</span><span class="trailing"><span class="chip add">+</span></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+2</span> <span class="del">−140</span></span></span>
+<span class="cell c-updated muted">40m ago</span>
+<div class="cell c-wip actions"><div class="split flags-menu" style="position:relative"><span class="btn subtle split-main " >Mark active</span><span class="btn subtle split-caret" >▾</span></div></div>
+<div class="cell c-actions actions"><div class="btns"><span class="split"><span class="btn primary split-main">Request (PS 1)</span><span class="btn primary split-caret">▾</span></span></div></div>
+</div>
+</li></ul></section></div></main></div>
+<div class="mock-note"><b>2 · Head-line tab.</b> A dashed tab hangs from the top edge of every card that has a parent or child on the same branch, beside the "+ Slack" tab. It reads "+ sequence" and shows on hover; hovering it says what it opens, and a click opens the manager. Once a sequence exists the chain card carries a solid "sequence" tab that opens the same manager to edit it. The affordance is visible only on the cards that can use it, which is a hint on its own, but it competes for the corner with the Slack tab and hover-only controls are easy to miss.</div></body></html>

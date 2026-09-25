@@ -1,0 +1,23 @@
+/* Mockup only: static stand-ins for the live top bar, menus drawn open, and the note at the bottom. */
+body { width: 1200px; overflow: hidden; }
+.app { min-height: 0; }
+.tab, .btn, .link, .chip, .tagbtn { cursor: default; }
+.btn.icon { font-size: 15px; line-height: 1; width: 32px; height: 30px; justify-content: center; }
+.tagbtn svg { width: 10px; height: 10px; }
+.chip-x { display: none; }
+.mock-note { margin: 18px 16px 4px; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; font-size: 12.5px; color: var(--muted); max-width: 1000px; }
+.mock-note b { color: var(--fg); }
+.badge.chain { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
+.badge.chain svg { width: 12px; height: 12px; }
+/* A menu drawn in place under its button. */
+.menu.here { position: absolute; top: calc(100% + 4px); right: 0; z-index: 40; }
+.menu-item.on::before { content: '\2713'; position: absolute; left: 8px; color: var(--accent); }
+.menu.flags .menu-item.on { padding-left: 24px; }
+.menu-item.sep { border-top: 1px solid var(--border); border-radius: 0; margin-top: 4px; padding-top: 8px; }
+/* Chain card, from design 1. */
+.chain .c-branch { max-width: 280px; overflow: hidden; }
+.chain .c-branch .subj { overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.change-row.closed .c-branch .subj { font-weight: 500; }
+.step { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.step.done { background: var(--pos-bg); border-color: transparent; color: var(--pos); }
+.step.next { background: var(--accent); border-color: var(--accent); color: #fff; }

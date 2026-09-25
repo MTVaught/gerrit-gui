@@ -1,0 +1,12 @@
+/* Mockup only: static stand-ins for the live top bar and the note at the bottom. */
+body { width: 1200px; overflow: hidden; }
+.tab, .btn, .link, .chip, .tagbtn { cursor: default; }
+.btn.icon { font-size: 15px; line-height: 1; width: 32px; height: 30px; justify-content: center; }
+.tagbtn svg { width: 10px; height: 10px; }
+.chip-x { display: none; }
+.mock-note { margin: 18px 16px 4px; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 8px; font-size: 12.5px; color: var(--muted); max-width: 1000px; }
+.mock-note b { color: var(--fg); }
+/* The chain icon, wherever a design uses it. */
+.badge.chain { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
+.badge.chain svg { width: 12px; height: 12px; }
+.app { min-height: 0; }

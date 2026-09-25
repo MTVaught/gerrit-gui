@@ -1,0 +1,62 @@
+<!doctype html><html><head><meta charset="utf-8"><title>5 Next up</title><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="mock.css"><style>
+
+.stepper { display: inline-flex; align-items: center; gap: 0; vertical-align: middle; }
+.st { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border); color: var(--muted); font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.st.next { background: var(--accent); border-color: var(--accent); color: #fff; }
+.st.done { background: var(--pos-bg); border-color: transparent; color: var(--pos); }
+.st.todo { border-color: var(--pending); color: var(--pending); }
+.st.off { border-style: dashed; }
+.stl { width: 10px; border-top: 1.5px solid var(--border); }
+.chain-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--border); font-size: 12.5px; color: var(--muted); }
+.chain-foot .fl { display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.chain-foot .k { font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.chain-foot .fi { display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
+.chain-foot .link { font-weight: 600; color: var(--fg); }
+.chain-foot .chip, .chain-foot .badge { font-size: 11px; padding: 1px 7px; }
+
+</style></head><body><div class="app"><header class="topbar"><nav class="tabs">
+<span class="tab active">Needs Review <span class="count hot">5</span></span><span class="tab">Reviewing <span class="count">12</span></span><span class="tab">My Changes <span class="count split"><span class="neg">1</span><span class="pos">1</span></span></span><span class="tab">Merged <span class="count">1</span></span><span class="tab">Team Reviews <span class="count">15</span></span><span class="tab">External Reviews <span class="count">1</span></span>
+</nav><div class="topbar-right"><span class="btn view-btn">⇅ View <span class="arrow">▾</span></span><span class="btn icon">⟳</span><span class="btn icon">⤡</span><span class="btn icon">⚙</span></div></header><main class="board"><div class="sections"><section class="group"><h3>Waiting on you <span class="count">5</span></h3><ul class="changes"><li class="change state-needs-review nextup">
+<div class="change-head"><span class="link subject">Storage: migrate the settings table</span><span class="badge chain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="20" r="2.5"/><path d="M12 6.5v3M12 14.5v3"/></svg> step 2 of 4</span><span class="stepper"><span class="st done" title="#61 Storage: add a migration runner"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span><span class="stl"></span><span class="st next" title="#62 Storage: migrate the settings table">2</span><span class="stl"></span><span class="st todo" title="#63 Settings: read the new table">3</span><span class="stl"></span><span class="st off" title="#64 Settings: drop the legacy reader">4</span></span><span class="muted small origin">demo · Bob</span></div>
+<div class="change-row ">
+<span class="cell c-branch"><span class="link"><code>master</code></span></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#62</span><span class="tags"><span class="tagbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg> 2</span></span></span>
+<span class="cell c-ps"><span>PS 2</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">you</span><span class="chip pending">Carol</span><span class="trailing"><span class="chip add">+</span></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+64</span> <span class="del">−12</span></span></span>
+<span class="cell c-updated muted">3h ago</span>
+<div class="cell c-actions actions"><span class="split"><span class="btn primary split-main">Review PS 2 ↗</span><span class="btn primary split-caret">▾</span></span></div>
+<div class="cell c-wip actions"></div>
+</div>
+<div class="chain-foot"><span class="fl"><span class="k">Built on</span><span class="fi"><span class="link">#61</span> Storage: add a migration runner <span class="chip pos">you +1</span></span></span><span class="fl"><span class="k">Then</span><span class="fi"><span class="link">#63</span> Settings: read the new table <span class="badge needs-review">Needs Review</span><span class="badge stale" title="Built on #62 PS 1; that change has a newer patch set">on #62 PS 1</span></span><span class="fi"><span class="link">#64</span> Settings: drop the legacy reader <span class="badge in-progress">not asked yet</span></span></span></div></li><li class="change state-needs-review nextup">
+<div class="change-head"><span class="link subject">CI: cache the pnpm store between jobs</span><span class="badge chain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="20" r="2.5"/><path d="M12 6.5v3M12 14.5v3"/></svg> step 1 of 2</span><span class="stepper"><span class="st next" title="#70 CI: cache the pnpm store between jobs">1</span><span class="stl"></span><span class="st todo" title="#71 CI: split lint from typecheck">2</span></span><span class="muted small origin">demo · Dave</span></div>
+<div class="change-row ">
+<span class="cell c-branch"><span class="link"><code>release-2.1</code></span></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge active">Active</span></span>
+<span class="cell c-num"><span class="link">#70</span><span class="tags"><span class="tagbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg> 1</span></span></span>
+<span class="cell c-ps"><span>PS 1</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">you</span><span class="chip pending">Erin</span><span class="trailing"><span class="chip add">+</span></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+25</span> <span class="del">−3</span></span></span>
+<span class="cell c-updated muted">1h ago</span>
+<div class="cell c-actions actions"><span class="split"><span class="btn primary split-main">Review PS 1 ↗</span><span class="btn primary split-caret">▾</span></span></div>
+<div class="cell c-wip actions"></div>
+</div>
+<div class="chain-foot"><span class="fl"><span class="k">Then</span><span class="fi"><span class="link">#71</span> CI: split lint from typecheck <span class="badge needs-review">Needs Review</span></span></span></div></li><li class="change state-needs-review ">
+<div class="change-head"><span class="link subject">Tray: show build info in the menu</span><span class="muted small origin">gerrit-gui · Carol</span></div>
+<div class="change-row ">
+<span class="cell c-branch"><span class="link"><code>main</code></span></span>
+<span class="cell c-state"><span class="badge needs-review">Needs Review</span></span>
+<span class="cell c-ci"><span class="badge wip">WIP</span></span>
+<span class="cell c-num"><span class="link">#58</span><span class="tags"><span class="tagbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg> 1</span></span></span>
+<span class="cell c-ps"><span>PS 4</span><span class="req">asked</span></span>
+<div class="cell c-reviewers"><div class="reviewers"><span class="chip pending">you</span><span class="chip pos">Bob <b>+1</b></span><span class="trailing"><span class="chip add">+</span></span></div></div>
+<span class="cell c-diff"><span><span class="ins">+58</span> <span class="del">−12</span></span></span>
+<span class="cell c-updated muted">4h ago</span>
+<div class="cell c-actions actions"><span class="split"><span class="btn primary split-main">Review PS 4 ↗</span><span class="btn primary split-caret">▾</span></span></div>
+<div class="cell c-wip actions"></div>
+</div>
+</li></ul></section></div></main></div>
+<div class="mock-note"><b>5 · Next up.</b> A chain shows one card: the lowest change that still waits on you, drawn exactly as a single change is today. A stepper in the head says where it sits in the chain (tick: you voted; blue: this one; outlined: still to come; dashed: not asked yet). A footer names what it is built on and what comes after, each with its state. When you vote on this change, the card is replaced by the next one. The board is as short as it is now, and the reader is never offered #63 before #62; the cost is that #63 and #71 are not on the tab as cards, so the count "5" counts changes but only 3 cards are shown.</div></body></html>
