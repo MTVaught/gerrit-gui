@@ -17,7 +17,8 @@ async function call<T>(method: string, args: unknown[] = []): Promise<T> {
 }
 
 function browserApi(): Api {
-  const ui: UiState = { compact: false }
+  // `compact` in the hash opens the compact layout, which the browser cannot switch to otherwise (screenshot hook).
+  const ui: UiState = { compact: /(^|[#&])compact\b/.test(window.location.hash) }
   const noUpdates = initialUpdateState('dev', 'Updates are for the desktop app; in the browser, pull the repository.')
   return {
     getSettings: () => call('getSettings'),

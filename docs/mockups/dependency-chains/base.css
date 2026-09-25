@@ -66,8 +66,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .count.hot { background: var(--accent); color: var(--accent-fg); }
 .count.split { display: inline-flex; padding: 0; overflow: hidden; }
 .count.split > span { padding: 1px 7px; }
-/* Needs Review: pass-around requests in the accent, in-person ones in the plain grey of an ordinary count. */
-.count.split > .hot { background: var(--accent); color: var(--accent-fg); }
 .count.split > .pos { background: var(--pos-bg); color: var(--pos); }
 .count.split > .neg { background: var(--neg-bg); color: var(--neg); }
 .count.split > .pending { background: var(--pending-bg); color: var(--pending); }
@@ -77,7 +75,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 /* The private count: a lock pill after the capsule, outlined rather than filled. */
 .count.private { display: inline-flex; align-items: center; gap: 3px; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0 6px; margin-left: -2px; }
 .count.private svg { width: 9px; height: 9px; }
-.btn { font: inherit; text-align: left; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--fg); cursor: pointer; white-space: nowrap; }
+.btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--fg); cursor: pointer; white-space: nowrap; }
 .btn:hover:not(:disabled) { border-color: var(--muted); }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn.icon { padding: 6px 8px; display: inline-flex; align-items: center; }
@@ -149,20 +147,16 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
  * the columns. Column widths follow the widest cell on the tab, as in a
  * table; nothing is spaced by hand. Reviewers take what is left. The WIP
  * toggle is its own column: its label changes width ("Mark WIP" or "Mark
- * active"), and in the buttons cell it would push the button beside it out
- * of line with the rows above and below. It sits before the main
- * button's column so the main button ends flush with the card edge. Each
- * button fills its column, so every row's button in a column is the same
- * width: the widest label on the tab sets it.
+ * active (runs CI)"), and in the buttons cell it would push the button beside
+ * it out of line with the rows above and below.
  */
-/* branch, state, flag, number over patch set, tags, reviewers, diff, age, wip, main button */
-.sections { display: grid; grid-template-columns: max-content max-content max-content max-content max-content minmax(150px, 1fr) max-content max-content max-content max-content; }
+.sections { display: grid; grid-template-columns: max-content max-content max-content max-content max-content minmax(140px, 1fr) max-content max-content max-content max-content; }
 .group, .changes { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .group > h3, .group > p { grid-column: 1 / -1; }
 .changes { list-style: none; margin: 0; padding: 0; row-gap: 8px; }
 /* Each card is an island: its own border, corners and a gap, so a family's rows read as one block and a card edge is never mistaken for a row divider. */
 .change { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding: 8px 14px 8px 12px; border: 1px solid var(--border); border-left: 4px solid transparent; border-radius: 8px; position: relative; }
-.change.state-needs-review, .change.state-in-person-review { border-left-color: var(--pending); }
+.change.state-needs-review { border-left-color: var(--pending); }
 .change.state-needs-changes { border-left-color: var(--neg); }
 .change.state-approved, .change.state-ready-to-merge { border-left-color: var(--pos); }
 .change.state-in-progress, .change.state-iterating { border-left-color: var(--muted); }
@@ -170,57 +164,32 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .subject { font-weight: 600; font-size: 15px; }
 .origin { white-space: nowrap; }
 .change-row { display: contents; }
-/* The sizer row takes no height and is never seen; only its cells' widths count. */
-.change-row.sizer > .cell { visibility: hidden; height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
 /* Spacing is padding, not a column gap, so the border between rows runs unbroken. */
-.cell { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 8px 4px 0; white-space: nowrap; font-size: 13px; }
-.c-wip { padding-right: 6px; }
-.c-actions { padding-right: 0; }
-.c-wip > * { flex: 1; }
-.c-wip > .split { display: flex; }
-/* The main button's cell stacks the reviewer's last round over the button; the buttons share the row below it. */
-.c-actions { flex-direction: column; align-items: stretch; justify-content: center; gap: 3px; }
-.c-actions > .btns { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
-.c-actions > .btns > * { flex: 1; }
-.c-actions > .btns > .split { display: flex; }
-.c-actions > .btns .btn { padding: 4px 10px; font-size: 13px; }
-.c-actions > .mine { min-height: 14px; line-height: 14px; padding-left: 2px; }
+.cell { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 12px 4px 0; white-space: nowrap; font-size: 13px; }
+.c-actions { padding-right: 6px; }
+.c-wip { padding-right: 0; }
 .change-row + .change-row > .cell { border-top: 1px solid var(--border); }
 .change-row.closed > .cell { color: var(--muted); }
 .c-branch code { font-weight: 600; }
 .change-row.closed .c-branch code { font-weight: 500; }
 .c-reviewers { flex-direction: column; align-items: stretch; gap: 3px; }
-.cell.c-wip { justify-content: flex-end; }
+.c-actions { justify-content: flex-end; }
+.cell.c-wip { justify-content: flex-start; }
 .c-diff, .c-updated { font-size: 12.5px; }
-/* Numbers line up on the right, so the pill or note beside them starts in the same place on every row. */
-.c-num, .c-diff, .c-updated { justify-content: flex-end; }
-/* The patch set sits under the change number, so it costs the row no width. */
-.c-num { flex-direction: column; align-items: flex-end; justify-content: center; gap: 0; }
-.c-num .ps { font-size: 11px; white-space: nowrap; }
-/* The lines since the reviewer's last look, in brackets after the whole change's counts; muted so the total reads first. */
-.since { color: var(--muted); font-size: 12px; }
-.since .ins, .since .del { opacity: 0.8; }
-/* Unresolved comment threads: a bubble with the count, by the change number. */
-.unresolved { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--warn); }
-.unresolved svg { width: 11px; height: 11px; }
-/* The reviewer's own last round, as a line over the Review button (and in the compact ledger's subtitle). */
-.mine { font-size: 11px; color: var(--muted); white-space: nowrap; }
-.mine .pos { color: var(--pos); } .mine .neg { color: var(--neg); }
+.req { font-size: 11px; color: var(--pending); }
+.req.stale { color: var(--muted); }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--border); white-space: nowrap; }
-.badge.needs-review, .badge.in-person-review { background: var(--pending-bg); color: var(--pending); }
+.badge.needs-review { background: var(--pending-bg); color: var(--pending); }
 .badge.needs-changes { background: var(--neg-bg); color: var(--neg); }
 .badge.approved, .badge.ready-to-merge, .badge.merged { background: var(--pos-bg); color: var(--pos); }
 .badge.wip { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
 .badge.active { background: var(--warn-bg); color: var(--warn); }
-/* The Verified vote, after the patch set number: a check when CI passed, a cross when it failed. */
-.ci-mark { font-weight: 700; }
-.ci-mark.pos { color: var(--pos); }
-.ci-mark.neg { color: var(--neg); }
+.badge.stale { background: var(--warn-bg); color: var(--warn); }
 .badge.private { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--muted); }
 .badge.private svg { width: 10px; height: 10px; }
 .badge.tally { font-weight: 600; }
 .ledger .fh .tally.needs-changes { color: var(--neg); }
-.ledger .fh .tally.needs-review, .ledger .fh .tally.in-person-review { color: var(--pending); }
+.ledger .fh .tally.needs-review { color: var(--pending); }
 .ledger .fh .tally.approved, .ledger .fh .tally.ready-to-merge { color: var(--pos); }
 .badge.branch { display: inline-flex; gap: 4px; align-items: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
 .btn.subtle { border-color: transparent; background: none; color: var(--muted); font-size: 12px; }
@@ -234,6 +203,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .chip.pending { background: var(--pending-bg); color: var(--pending); border-color: transparent; }
 .chip.pos { background: var(--pos-bg); color: var(--pos); border-color: transparent; }
 .chip.neg { background: var(--neg-bg); color: var(--neg); border-color: transparent; }
+.chip.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
 .chip.add, .chip.more { background: none; cursor: pointer; color: var(--muted); font: inherit; font-size: 12px; }
 .chip.add:hover, .chip.more:hover { color: var(--fg); }
 .chip.add { padding: 2px 7px; }
@@ -345,7 +315,8 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .suggestions li button { display: block; width: 100%; padding: 6px 10px; }
 .suggestions li button:hover { background: var(--panel); text-decoration: none; }
 /* Merger picker: the owner's Ready to Merge button opens a menu naming one person. */
-.menu.picker { width: 340px; padding: 10px; max-height: calc(100vh - 16px); overflow: auto; }
+.picker-wrap .btn .arrow { margin-left: 6px; }
+.menu.picker { width: 340px; padding: 10px; }
 .menu.picker h4 { margin: 0 4px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
 .menu.picker .opt { display: flex; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 13px; }
 .menu.picker .opt:hover { background: var(--panel); }
@@ -382,8 +353,6 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 /* Reviewer's split button: main part opens the diff since their last review, caret lists other views. */
 .split { display: inline-flex; }
 .btn.split-main { flex: 1; border-radius: 6px 0 0 6px; text-align: left; }
-/* Review button: label hugs the left edge and the arrow the right, so it never floats mid-button in a wide column. */
-.btn.split-main.review-main { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; }
 .btn.split-caret { border-radius: 0 6px 6px 0; border-left: none; padding: 4px 8px; font-size: 12px; }
 .btn.split-caret.primary { border-left: 1px solid #ffffff55; }
 .btn.split-main:hover:not(:disabled) + .btn.split-caret:not(.primary) { border-left: none; }
@@ -396,9 +365,9 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .menu-item.selected { font-weight: 600; }
 .menu-item.selected::before { content: '\2713'; position: absolute; left: 8px; color: var(--accent); }
 /* Owner's flags menu: the subtle button in the last column opens the WIP and private toggles. */
-/* In the card row the WIP toggle is an ordinary split button, the same as the main button beside it. */
-.cell.c-wip .btn.subtle { border-color: var(--border); background: var(--panel); color: var(--fg); font-size: inherit; }
-.cell.c-wip .btn.subtle:hover:not(:disabled) { border-color: var(--muted); }
+.flags-menu { display: inline-flex; }
+.flags-menu .btn.subtle .arrow { margin-left: 4px; }
+.flags-menu .btn.subtle[aria-expanded='true'] { color: var(--fg); border-color: var(--border); background: var(--panel); }
 .menu.flags { width: 260px; }
 .menu.flags .menu-item { padding-left: 10px; }
 .menu.flags .menu-item .muted { font-size: 12px; }
@@ -441,7 +410,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .ledger td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .ledger td.c { border-left: 3px solid transparent; padding-left: 6px; overflow: hidden; cursor: pointer; }
 .ledger td.ci, .ledger td.r { cursor: pointer; white-space: nowrap; }
-.ledger tr.state-needs-review td.c, .ledger tr.state-in-person-review td.c { border-left-color: var(--pending); }
+.ledger tr.state-needs-review td.c { border-left-color: var(--pending); }
 .ledger tr.state-needs-changes td.c { border-left-color: var(--neg); }
 .ledger tr.state-approved td.c, .ledger tr.state-ready-to-merge td.c { border-left-color: var(--pos); }
 .ledger tr.state-in-progress td.c, .ledger tr.state-iterating td.c { border-left-color: var(--muted); }
@@ -450,6 +419,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .ledger .s { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ledger .sep { margin: 0 4px; opacity: 0.6; }
 .ledger td.a { text-align: right; white-space: nowrap; padding-right: 6px; }
+.ledger .none { color: var(--warn); font-size: 11px; }
 .ledger tr.g td { padding: 12px 8px 4px; border-bottom: 1px solid var(--border); font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
 .ledger tr.g .hint { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; margin-top: 2px; white-space: normal; }
 .ledger tr.open td { background: var(--panel); border-bottom: none; }
@@ -514,81 +484,3 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .btn.update .ring circle:last-child { transition: stroke-dashoffset 0.3s ease-out; }
 .compact .btn.update span { display: none; }
 .release-notes { margin: 8px 0 0; padding: 10px 12px; max-height: 240px; overflow: auto; white-space: pre-wrap; font: inherit; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }
-
-/* Settings: Debug */
-.inspect-form { align-items: stretch; margin-top: 8px; }
-.inspect-form input { margin-top: 0; }
-.inspect-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 4px 0 0; font-size: 13px; }
-.inspect-facts dt { color: var(--muted); }
-.inspect-facts dd { margin: 0; min-width: 0; word-break: break-word; }
-.inspect-facts code { display: inline-block; margin: 0 6px 2px 0; padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
-.inspect .link-btn { font: inherit; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; }
-.inspect .link-btn:hover { text-decoration: underline; }
-.raw-change { max-height: 480px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-/* Teams in Settings: the user's own team picked above, a card per team. */
-.teams-editor { margin-top: 8px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
-.teams-editor p { margin: 0; }
-.teams-editor .primary-pick { display: flex; align-items: center; gap: 8px; margin: 0; }
-.settings select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
-.team-card { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
-.team-card.primary { border-color: var(--accent); }
-.team-head { display: flex; gap: 8px; align-items: center; }
-.settings .team-head input.team-name { flex: 1; margin-top: 0; background: var(--bg); font-weight: 600; }
-.settings input[aria-invalid='true'] { border-color: var(--neg); }
-.chip.your-team { background: var(--pending-bg); color: var(--pending); border-color: transparent; white-space: nowrap; }
-.team-card .team-editor { margin-top: 8px; }
-.team-card .chip.member { background: var(--bg); }
-.team-card .team-add input { background: var(--bg); }
-.team-new { display: flex; gap: 8px; align-items: center; width: 100%; max-width: 480px; }
-.settings .team-new input { margin-top: 0; }
-/* The All Reviews tab is a native select box in the strip, in the place of a tab. */
-.tab-select { appearance: auto; font-weight: 500; padding: 5px 8px; border: 1px solid transparent; }
-.tab-select:hover { background: var(--panel); }
-.tab-select.active { border-color: var(--border); }
-.tab-select option { font-weight: 500; color: var(--fg); background: var(--bg); }
-.settings label.check.include-own { margin-top: 12px; }
-
-/*
- * Sequences: changes built on each other on one branch, shown as one card
- * with a row per change, base first. The subject takes the branch column
- * (the branch is on the head line), capped so a long subject does not
- * widen the column for the whole tab. A step circle leads each row: the
- * number, a tick once the change is approved or merged, the accent on the
- * one the reviewer should read next.
- */
-.change.chain .c-branch { max-width: clamp(160px, 17vw, 320px); gap: 8px; }
-.change.chain .c-branch .subj-wrap { display: flex; flex-direction: column; min-width: 0; }
-.change.chain .c-branch .subj { overflow: hidden; text-overflow: ellipsis; font-weight: 600; white-space: nowrap; display: block; }
-.change-row.closed .c-branch .subj { font-weight: 500; }
-.parent-note { font-size: 11px; color: var(--warn); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.step { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
-.step.next { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-.step.done { background: var(--pos-bg); border-color: transparent; color: var(--pos); }
-.step svg { width: 11px; height: 11px; stroke-width: 3; }
-.badge.chain { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
-.badge.chain svg { color: var(--muted); }
-.change-head .next-hint b { color: var(--fg); }
-/* The stub: a dashed card offering to make a sequence of a set the owner has not tagged. */
-.change.stub { border-style: dashed; padding-top: 6px; padding-bottom: 6px; }
-.change.stub .change-head { margin-bottom: 0; align-items: center; }
-.change.stub .subject { font-size: 14px; }
-.change-head .seq-btn { margin-left: auto; }
-.change-head .seq-btn .btn { padding: 3px 10px; font-size: 12.5px; }
-/* The picker: the related changes as a checklist in reading order. */
-.menu.picker.sequence { width: 520px; }
-.seq-row { display: flex; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 5px; font-size: 13px; white-space: nowrap; cursor: pointer; }
-.seq-row:hover { background: var(--panel); }
-.seq-row input { margin: 0; accent-color: var(--accent); }
-.seq-row .n { font-weight: 600; }
-.seq-row .subj { flex: 1; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.seq-row .badge { font-size: 10.5px; }
-.seq-row .built { font-size: 11.5px; color: var(--muted); }
-.seq-row.off { color: var(--muted); }
-.seq-row.off .step { border-style: dashed; }
-/* The compact ledger: a sequence is a box like a family, the members titled by subject with a step in front. */
-.ledger tr.mem .t .step { width: 16px; height: 16px; font-size: 10px; margin-right: 6px; vertical-align: -3px; display: inline-flex; }
-.ledger tr.mem.seq .t { font-family: inherit; }
-.ledger tr.fh td { overflow: hidden; }
-.ledger tr.fh .seq-btn { float: right; }
-.ledger tr.fh .seq-btn .btn { padding: 1px 8px; font-size: 11.5px; margin-left: 8px; vertical-align: 1px; }
-.ledger tr.fh.stub td { border-style: dashed; background: transparent; border-bottom: 1px dashed var(--band-border); }

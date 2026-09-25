@@ -211,6 +211,51 @@ change on one branch is a card with one row, so both read the same way.
 `docs/mockups/change-id-groups/` has five mockups of ways to show a group.
 The application uses mockup 3.
 
+## A sequence of changes
+
+Commits pushed together on one branch become one change each, and Gerrit
+submits a change only after the ones below it. The owner can show such
+changes to reviewers as one card, in the order they are built on each
+other, with the "sequence" hashtag on each one.
+
+- On "My Changes", changes of yours that are built on each other and not
+  yet in a sequence get a dashed card above them: "#61, #62, #63, #64 on
+  master" with a "Set up a sequence…" button. The button opens a checklist
+  of those changes, base first, every one ticked. Untick any change that
+  should stay on its own, then save. The application writes the tag on the
+  ticked changes.
+- Tagged changes that are built on each other form one card, on every tab,
+  with a row per change, base first. The subject is in the first column,
+  with a step number in front: a tick once the change is approved or
+  merged, blue on the change a reviewer should read next, which is the
+  lowest one that waits on them. The head line names the sequence (its
+  topic, or the first and last change numbers), the branch, and how many
+  changes are in each state. A change built on an older patch set of the
+  one below it says so, "on #62 PS 1", since a rebase is due.
+- The head line of your own sequence has an "Edit sequence…" button. It
+  opens the same checklist with the members ticked. Untick everything to
+  dissolve the sequence.
+- The tag only says which changes to show together. Which change is built
+  on which comes from the commits: an untagged change in the middle of a
+  line splits the sequence in two, a tagged change whose parent is not
+  tagged is the base of its sequence, and a tagged change with no tagged
+  parent or child is an ordinary card.
+- Nothing else changes. Request review, Ready to Merge, the reviewers and
+  the votes stay per change, and only the owner sets or clears the tag. A
+  sequence is one card in the counts, like a family. A cherry-pick of a
+  member on another branch is a card of its own.
+- In the compact window the sequence is a box like a family, the lines
+  titled by their subjects with the step in front, and the dashed offer is
+  one header line.
+
+![A sequence on the Needs Review tab](docs/screenshots/sequence.png)
+
+![The owner sets up a sequence](docs/screenshots/sequence-picker.png)
+
+`docs/mockups/dependency-chains/` has five mockups of the card, five of the
+picker and five of the button that opens it; the application uses the first
+of each, the fourth for the button.
+
 ## Slack threads
 
 A review sometimes has a conversation on Slack. To keep it with the change,

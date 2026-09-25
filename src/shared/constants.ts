@@ -19,6 +19,13 @@ export const REVIEWER_TAG_PREFIX = 'reviewer:'
  */
 export const SLACK_TAG_PREFIX = 'slack:'
 /**
+ * Hashtag the owner sets on each change of a sequence: changes built on
+ * each other on one branch that reviewers should read in order, base first.
+ * The tag only says "show these as one card"; which change is built on
+ * which comes from the commits' parents.
+ */
+export const SEQUENCE_TAG = 'sequence'
+/**
  * Custom keyed value listing every patch set the author asked to have
  * reviewed, comma-separated in the order asked: "2,4,5". Each request appends;
  * only the last entry can be the open request, and only when it equals the

@@ -110,3 +110,19 @@ export const CommentIcon = () => (
     <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 )
+
+/** Three dots in a line: a sequence of changes built on each other. */
+export const ChainIcon = () => (
+  <svg {...common} width={12} height={12} strokeWidth={2.2}>
+    <circle cx="12" cy="4" r="2.5" />
+    <circle cx="12" cy="12" r="2.5" />
+    <circle cx="12" cy="20" r="2.5" />
+    <path d="M12 6.5v3M12 14.5v3" />
+  </svg>
+)
+
+export const CheckIcon = () => (
+  <svg {...common} width={11} height={11} strokeWidth={3}>
+    <path d="M4 12.5l5 5L20 6.5" />
+  </svg>
+)

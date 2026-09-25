@@ -6,8 +6,8 @@ import { GerritClient } from '../src/main/gerrit.ts'
 import { createService } from '../src/main/service.ts'
 import { fetchDashboard } from '../src/main/dashboard.ts'
 import type { ChangeInfo } from '../src/shared/types.ts'
-import { NO_TEAMS, accountKeys, classify, mergerTags, reviewLink, reviewerTagsFor } from '../src/shared/model.ts'
-import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY } from '../src/shared/constants.ts'
+import { NO_TEAMS, accountKeys, classify, classifyAll, mergerTags, parentLinks, relatedSetOf, relatedSets, reviewLink, reviewerTagsFor, sequenceCandidates, sequenceChains } from '../src/shared/model.ts'
+import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY, SEQUENCE_TAG } from '../src/shared/constants.ts'
 
 const URL = process.env['GERRIT_TEST_URL'] ?? 'http://localhost:8080'
 const user = (u: string) => new GerritClient(URL, u, `${u}pw`)
@@ -383,4 +383,39 @@ test('an in-person request is its own state, switches kind in place, withdraws a
 
   // Only the owner may set the kind: bob cannot turn his own request into an in-person one.
   await assert.rejects(user('bob').setCustomKeyedValues(id, { [IN_PERSON_REVIEW_KEY]: String(v.patchSet) }))
+})
+
+test('a sequence: parents link changes built on each other, the owner tags them through the service, the board reads them as one line', { skip: !reachable && 'no local Gerrit' }, async () => {
+  const stamp = Date.now()
+  const base = await raw('bob', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `seq base ${stamp}` })
+  // base_change makes the new change's parent the base's current patch set.
+  const mid = await raw('bob', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `seq mid ${stamp}`, base_change: String(base._number) })
+  const top = await raw('bob', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `seq top ${stamp}`, base_change: String(mid._number) })
+  // The middle change moves on after the top was built on its first patch set.
+  await pushPatchSet('bob', mid._number, 'v2')
+  const nums = [base._number, mid._number, top._number] as number[]
+  const bobSelf = await user('bob').self()
+
+  // Before any tag: the three are one related set, in order, and no sequence.
+  const board = (data: Awaited<ReturnType<typeof fetchDashboard>>) => classifyAll(data.open.filter((c) => nums.includes(c._number)), bobSelf._account_id)
+  let views = board(await fetchDashboard(user('bob'), []))
+  const links = parentLinks(views)
+  assert.equal(links.get(mid._number)!.view.change._number, base._number)
+  assert.deepEqual([links.get(top._number)!.view.change._number, links.get(top._number)!.patchSet, links.get(top._number)!.stale], [mid._number, 1, true], 'the top sits on patch set 1 of the middle, now on 2')
+  assert.deepEqual(relatedSets(views).map((s) => s.members.map((v) => v.change._number)), [nums])
+  assert.deepEqual(sequenceChains(views), [])
+  assert.deepEqual(sequenceCandidates(views, bobSelf._account_id).map((s) => s.members.map((v) => v.change._number)), [nums])
+
+  await serviceAs('bob').act({ type: 'setSequence', id: base._number, add: nums, remove: [] })
+  for (const n of nums) assert.ok(((await user('bob').change(n)).hashtags ?? []).includes(SEQUENCE_TAG), `#${n} is tagged`)
+  views = board(await fetchDashboard(user('bob'), []))
+  assert.deepEqual(sequenceChains(views).map((s) => s.members.map((v) => v.change._number)), [nums])
+  assert.deepEqual(sequenceCandidates(views, bobSelf._account_id), [], 'nothing left to offer')
+
+  // Untagging the middle one splits the line: the base and the top are then alone, so there is no sequence.
+  await serviceAs('bob').act({ type: 'setSequence', id: base._number, add: [], remove: [mid._number] })
+  views = board(await fetchDashboard(user('bob'), []))
+  assert.deepEqual(sequenceChains(views), [])
+  assert.deepEqual(relatedSetOf(views, views[0]!.change)!.members.map((v) => v.change._number), nums, 'the picker still sees the whole set')
+  assert.deepEqual(sequenceCandidates(views, bobSelf._account_id).map((s) => s.members.map((v) => v.change._number)), [nums], 'and the set is on offer again')
 })
