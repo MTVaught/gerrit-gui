@@ -32,3 +32,18 @@ newps bob $Q2; request bob $Q2 2; echo "Q2 now on PS 2, requested"
 Q4=$(on bob "Q4 Settings: drop the legacy reader" $Q3); primary bob $Q4 alice; primary bob $Q4 carol; echo "Q4=$Q4 (not requested)"
 Q5=$(on bob "Q5 Settings: cache the table reads" $Q2); primary bob $Q5 alice; echo "Q5=$Q5 (beside Q3, built on PS 2 of Q2)"
 echo "== done"
+
+# A second sequence, tagged, with a member in every state: merged, ready to
+# merge (dave asked), needs changes, needs review, in progress.
+echo "== sequence in every state"
+ready() { as "$1" POST "/changes/$2/hashtags" "{\"add\":[\"ready-to-merge\",\"merger:$4\"]}" >/dev/null; as "$1" POST "/changes/$2/custom_keyed_values" "{\"add\":{\"ready-to-merge-ps\":\"$3\"}}" >/dev/null; }
+tag() { as "$1" POST "/changes/$2/hashtags" '{"add":["sequence"]}' >/dev/null; }
+R1=$(as bob POST "/changes/" '{"project":"demo","branch":"master","subject":"R1 Auth: add a token store","topic":"auth-refresh"}' | num)
+primary bob $R1 alice; primary bob $R1 carol; request bob $R1 1; vote alice $R1 1 "ok"; vote carol $R1 1 "ok"; tag bob $R1
+R2=$(on bob "R2 Auth: refresh tokens before they expire" $R1); primary bob $R2 alice; primary bob $R2 carol; request bob $R2 1; vote alice $R2 1 "ok"; vote carol $R2 1 "ok"; ready bob $R2 1 dave; tag bob $R2
+R3=$(on bob "R3 Auth: retry a request once after a refresh" $R2); primary bob $R3 alice; primary bob $R3 carol; request bob $R3 1; vote alice $R3 1 "fine"; vote carol $R3 -1 "the retry loops on a 401"; tag bob $R3
+R4=$(on bob "R4 Auth: log refresh failures" $R3); primary bob $R4 alice; primary bob $R4 carol; request bob $R4 1; vote carol $R4 1 "ok"; tag bob $R4
+R5=$(on bob "R5 Auth: drop the legacy session cookie" $R4); primary bob $R5 alice; primary bob $R5 carol; tag bob $R5
+vote dave $R1 2 "merging"; as dave POST "/changes/$R1/submit" '{}' >/dev/null
+echo "R1=$R1 merged, R2=$R2 ready to merge (dave), R3=$R3 needs changes, R4=$R4 needs review (alice), R5=$R5 in progress"
+echo "== done"
