@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { NO_TEAMS, accountKeys, accountMatches, externalPicks, normalizeTeams, normalizePrimaryTeam, storedTeams, teamMembers, type TeamSetup, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, parentLinks, relatedSets, sequenceChains, sequenceCandidates, relatedSetOf, chainTitle, nextInChain, chainLeads, type ViewFilter } from './model.ts'
+import { NO_TEAMS, accountKeys, accountMatches, allMembers, defaultTeamPick, normalizeTeams, normalizePrimaryTeam, storedTeams, teamMembers, teamPicks, teamTabLabel, watchedTeams, type TeamSetup, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, type ViewFilter, parentLinks, relatedSets, sequenceChains, sequenceCandidates, relatedSetOf, chainTitle, nextInChain, chainLeads } from './model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -13,7 +13,7 @@ const erin: AccountInfo = { _account_id: 5, name: 'Erin', username: 'erin', emai
 /** Bob and Carol; Alice is on it only when she is the signed-in user. */
 const TEAM = ['bob', 'Carol@Example.com']
 /** That list as the primary team, and nothing else. */
-const TEAMS: TeamSetup = { teams: [{ name: 'Core', members: TEAM }], primaryTeam: 'Core', includeOwnTeam: false }
+const TEAMS: TeamSetup = { teams: [{ name: 'Core', members: TEAM, watched: true }], primaryTeam: 'Core' }
 
 function change(opts: {
   reviewers?: AccountInfo[]
@@ -315,7 +315,7 @@ test('primary: only tagged votes decide; an untagged -1 does not block approval'
   assert.deepEqual(v.reviewers.map((r) => [r.account._account_id, r.vote, r.key]), [[2, 1, 'bob']])
   assert.deepEqual(v.otherReviewers.map((r) => [r.account._account_id, r.vote]), [[5, -1]])
   // The team has no say: the same change reads the same with any team.
-  assert.equal(classify(c, 1, { teams: [{ name: 'T', members: ['erin'] }], primaryTeam: 'T', includeOwnTeam: false }).state, 'approved')
+  assert.equal(classify(c, 1, { teams: [{ name: 'T', members: ['erin'], watched: true }], primaryTeam: 'T' }).state, 'approved')
   // Tagged the other way round, erin decides and bob is shown.
   const w = classify(change({ reviewers: [bob, erin], primary: [erin], votes: { 2: 1, 5: -1 }, requested: 3 }), 1)
   assert.equal(w.state, 'needs-changes')
@@ -428,7 +428,7 @@ test('team: only the owner makes a change external, not its reviewers', () => {
   assert.equal(isTeamReview(classify(change({ owner: carol, reviewers: [bob] }), bob._account_id)), false)
 })
 
-test('team: the owner sorts a change between Team Reviews and All Reviews; the regular tabs go by my part on it', () => {
+test('team: the owner sorts a change between the team tab and External Reviews; the regular tabs go by my part on it', () => {
   // Bob is signed in. Carol is on the team; Alice and Erin are not.
   const changes = [
     // 1: Erin asked Bob to review, and Bob has not voted: external, and waiting on Bob all the same.
@@ -1269,87 +1269,91 @@ test('withChange: the fresh copy replaces the old one in place, joins the list i
   assert.deepEqual(withChange(board, c, TEAM).open.map((x) => x._number), [10, 11, 12])
 })
 
-test('teams: several teams sort the owners; the primary team is Team Reviews, the rest are All Reviews by team, then Other', () => {
+test('teams: the team tab lists watched teams by owner; External Reviews is what I am on from outside my team', () => {
   const frank: AccountInfo = { _account_id: 6, name: 'Frank', username: 'frank' }
   const dave: AccountInfo = { _account_id: 4, name: 'Dave', username: 'dave' }
   const setup: TeamSetup = {
     teams: [
-      { name: 'Core', members: ['carol'] },
-      { name: 'Storage', members: ['erin', 'Carol'] },
-      { name: 'Empty', members: [] },
+      { name: 'Core', members: ['carol'], watched: false },
+      { name: 'Storage', members: ['erin', 'Carol'], watched: true },
+      { name: 'Network', members: ['frank'], watched: false },
     ],
     primaryTeam: 'Core',
-    includeOwnTeam: false,
   }
   const changes = [
-    change({ number: 1, owner: carol, reviewers: [bob], requested: 3 }), // Core and Storage
-    change({ number: 2, owner: erin, reviewers: [bob], requested: 3 }), // Storage
-    change({ number: 3, owner: frank, reviewers: [bob], requested: 3 }), // no team
-    change({ number: 4, owner: dave, reviewers: [bob], requested: 3 }), // no team
+    change({ number: 1, owner: carol, reviewers: [bob], requested: 3 }), // Core and Storage, I review
+    change({ number: 2, owner: erin, reviewers: [bob], requested: 3 }), // Storage, I review
+    change({ number: 3, owner: frank, reviewers: [bob], requested: 3 }), // Network (not watched), I review
+    change({ number: 4, owner: dave, reviewers: [bob], requested: 3 }), // no team, I review
     change({ number: 5, owner: bob, reviewers: [erin], requested: 3 }), // mine
-    change({ number: 6, owner: erin, reviewers: [bob], status: 'MERGED' }),
+    change({ number: 6, owner: erin, reviewers: [alice], requested: 3 }), // Storage, fetched because watched, I am not on it
+    change({ number: 7, owner: erin, reviewers: [bob], status: 'MERGED' }),
   ]
   const views = classifyAll(changes, bob._account_id, setup)
-  assert.deepEqual(views.map((v) => v.ownerTeams), [['Core', 'Storage'], ['Storage'], [], [], ['Core'], ['Storage']], 'the signed-in user is on the primary team without being listed')
-  assert.deepEqual(views.map((v) => v.onPrimaryTeam), [true, false, false, false, true, false])
-  assert.deepEqual(views.map((v) => v.externalOwner), [false, true, true, true, false, true])
-  const on = (pick?: Parameters<typeof groupsFor>[2]) => groupsFor('external-reviews', views, pick).flatMap((g) => g.items.map((v) => v.change._number))
-  assert.deepEqual(groupsFor('team-reviews', views).flatMap((g) => g.items.map((v) => v.change._number)), [1])
-  assert.deepEqual(on(), [2, 3, 4], 'the tab count: every external owner')
-  assert.deepEqual(on('Storage'), [2])
-  assert.deepEqual(on('Core'), [], 'nothing on the primary team is external, even when asked')
-  assert.deepEqual(on('Empty'), [])
-  assert.deepEqual(on(null), [3, 4], 'Other: owners on no team')
-  assert.deepEqual(externalPicks(setup), [
-    { pick: undefined, label: 'All Reviews' },
+  assert.deepEqual(views.map((v) => v.ownerTeams), [['Core', 'Storage'], ['Storage'], ['Network'], [], ['Core'], ['Storage'], ['Storage']], 'the signed-in user is on their own team without being listed')
+  assert.deepEqual(views.map((v) => v.ownerWatched), [true, true, false, false, true, true, true], 'the own team is watched whatever its tick')
+  assert.deepEqual(views.map((v) => v.externalOwner), [false, true, true, true, false, true, true])
+  const on = (tab: Parameters<typeof groupsFor>[0], pick?: Parameters<typeof groupsFor>[2]) => groupsFor(tab, views, pick).flatMap((g) => g.items.map((v) => v.change._number))
+  // The team tab: by owner alone, watched teams only. The default pick is the own team.
+  assert.deepEqual(watchedTeams(setup).map((t) => t.name), ['Core', 'Storage'])
+  assert.equal(defaultTeamPick(setup), 'Core')
+  assert.equal(teamTabLabel(setup), 'Core')
+  assert.deepEqual(on('team-reviews', 'Core'), [1])
+  assert.deepEqual(on('team-reviews', 'Storage'), [1, 2, 6], 'whether or not I am on it')
+  assert.deepEqual(on('team-reviews', 'Network'), [3], 'a pick names a team even when it is not watched; the menu just never offers it')
+  assert.deepEqual(on('team-reviews'), [1, 2, 6], 'all watched teams together')
+  assert.deepEqual(teamPicks(setup), [
+    { pick: 'Core', label: 'Core' },
     { pick: 'Storage', label: 'Storage' },
-    { pick: 'Empty', label: 'Empty' },
-    { pick: null, label: 'Other' },
+    { pick: undefined, label: 'Watched' },
   ])
+  // External Reviews: what I am on, owner outside my team. Storage's change I am not on is fetched but not here.
+  assert.deepEqual(on('external-reviews'), [2, 3, 4])
+  assert.deepEqual(on('reviewing'), [1, 2, 3, 4], 'Reviewing is by my part alone')
+  assert.equal(tabCounts(views, 'Core')['team-reviews'], 1)
+  assert.equal(tabCounts(views, undefined)['team-reviews'], 3)
   assert.equal(tabCounts(views)['external-reviews'], 3)
-  assert.equal(tabCounts(views)['team-reviews'], 1)
 
-  // Without a primary team nobody is a teammate: Team Reviews is empty, and every other owner is external, by team or under Other.
-  const none = classifyAll(changes, bob._account_id, { ...setup, primaryTeam: '' })
-  assert.deepEqual(none.map((v) => v.ownerTeams), [['Core', 'Storage'], ['Storage'], [], [], [], ['Storage']])
-  assert.deepEqual(groupsFor('team-reviews', none), [])
-  assert.deepEqual(groupsFor('external-reviews', none).flatMap((g) => g.items.map((v) => v.change._number)), [1, 2, 3, 4])
-  assert.deepEqual(groupsFor('external-reviews', none, 'Core').flatMap((g) => g.items.map((v) => v.change._number)), [1])
-  assert.deepEqual(externalPicks({ ...setup, primaryTeam: '' }).map((p) => p.label), ['All Reviews', 'Core', 'Storage', 'Empty', 'Other'])
-
-  // Including the own team puts it in the select and its changes among everyone; Team Reviews is as before.
-  const incl = classifyAll(changes, bob._account_id, { ...setup, includeOwnTeam: true })
-  assert.deepEqual(incl.map((v) => v.externalOwner), [true, true, true, true, true, true], 'every owner qualifies; my own change is kept off the tab by isMine below')
-  assert.deepEqual(externalPicks({ ...setup, includeOwnTeam: true }).map((p) => p.label), ['All Reviews', 'Core', 'Storage', 'Empty', 'Other'])
-  assert.deepEqual(groupsFor('external-reviews', incl).flatMap((g) => g.items.map((v) => v.change._number)), [1, 2, 3, 4])
-  assert.deepEqual(groupsFor('external-reviews', incl, 'Core').flatMap((g) => g.items.map((v) => v.change._number)), [1])
-  assert.deepEqual(groupsFor('team-reviews', incl).flatMap((g) => g.items.map((v) => v.change._number)), [1])
-  assert.equal(tabCounts(incl)['external-reviews'], 4)
+  // Without an own team: no External Reviews, the tab is Watched, all watched teams by default, and the menu is the watched ones.
+  const noOwn: TeamSetup = { ...setup, primaryTeam: '' }
+  const none = classifyAll(changes, bob._account_id, noOwn)
+  assert.equal(none.some((v) => v.externalOwner), false)
+  assert.deepEqual(groupsFor('external-reviews', none), [])
+  assert.equal(teamTabLabel(noOwn), 'Watched')
+  assert.equal(defaultTeamPick(noOwn), undefined)
+  assert.deepEqual(watchedTeams(noOwn).map((t) => t.name), ['Storage'])
+  assert.deepEqual(teamPicks(noOwn), [], 'one watched team: a plain tab')
+  assert.deepEqual(groupsFor('team-reviews', none).flatMap((g) => g.items.map((v) => v.change._number)), [1, 2, 6])
+  // With one team only, the tab has no menu.
+  assert.deepEqual(teamPicks(TEAMS), [])
 })
 
 test('teams: normalizing, the members of all of them, and the stored form before teams had names', () => {
   const teams = normalizeTeams([
-    { name: ' Core ', members: ['Bob', 'bob', ''] },
-    { name: '', members: ['x'] },
-    { name: 'Core', members: ['other'] },
-    { name: 'Storage', members: [] },
+    { name: ' Core ', members: ['Bob', 'bob', ''], watched: true },
+    { name: '', members: ['x'], watched: true },
+    { name: 'Core', members: ['other'], watched: false },
+    { name: 'Storage', members: [], watched: false },
   ])
   assert.deepEqual(teams, [
-    { name: 'Core', members: ['bob'] },
-    { name: 'Storage', members: [] },
+    { name: 'Core', members: ['bob'], watched: true },
+    { name: 'Storage', members: [], watched: false },
   ])
   assert.equal(normalizePrimaryTeam('Core', teams), 'Core')
   assert.equal(normalizePrimaryTeam(' Core ', teams), 'Core')
   assert.equal(normalizePrimaryTeam('Gone', teams), '')
   assert.equal(normalizePrimaryTeam(undefined, teams), '')
-  assert.deepEqual(teamMembers([{ name: 'A', members: ['bob', 'carol'] }, { name: 'B', members: ['Carol', 'erin'] }]), ['bob', 'carol', 'erin'])
-  // An older settings file: the one list becomes the primary team.
-  assert.deepEqual(storedTeams({ team: ['alice', 'bob'] }), { teams: [{ name: 'Team', members: ['alice', 'bob'] }], primaryTeam: 'Team' })
+  const ab: TeamSetup = { teams: [{ name: 'A', members: ['bob', 'carol'], watched: false }, { name: 'B', members: ['Carol', 'erin'], watched: true }], primaryTeam: 'A' }
+  assert.deepEqual(teamMembers(ab), ['bob', 'carol', 'erin'], 'the own team and the watched one')
+  assert.deepEqual(teamMembers({ ...ab, primaryTeam: '' }), ['carol', 'erin'], 'only the watched one')
+  assert.deepEqual(allMembers(ab.teams), ['bob', 'carol', 'erin'])
+  // An older settings file: the one list becomes the primary team, watched.
+  assert.deepEqual(storedTeams({ team: ['alice', 'bob'] }), { teams: [{ name: 'Team', members: ['alice', 'bob'], watched: true }], primaryTeam: 'Team' })
   assert.deepEqual(storedTeams({ team: [] }), { teams: [], primaryTeam: '' })
   assert.deepEqual(storedTeams({}), { teams: [], primaryTeam: '' })
   // Once written in the new form, the old list is ignored.
-  assert.deepEqual(storedTeams({ team: ['alice'], teams: [{ name: 'X', members: ['bob'] }], primaryTeam: 'nope' }), { teams: [{ name: 'X', members: ['bob'] }], primaryTeam: '' })
-  assert.deepEqual(storedTeams({ teams: [{ name: 'X', members: ['bob'] }], primaryTeam: 'X' }).primaryTeam, 'X')
+  assert.deepEqual(storedTeams({ team: ['alice'], teams: [{ name: 'X', members: ['bob'], watched: false }], primaryTeam: 'nope' }), { teams: [{ name: 'X', members: ['bob'], watched: false }], primaryTeam: '' })
+  assert.deepEqual(storedTeams({ teams: [{ name: 'X', members: ['bob'], watched: true }], primaryTeam: 'X' }).primaryTeam, 'X')
 })
 
 /*

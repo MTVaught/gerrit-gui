@@ -23,7 +23,7 @@ export function TeamsEditor(props: {
   function add() {
     const name = newName.trim()
     if (!name || taken(name)) return
-    const teams = normalizeTeams([...props.teams, { name, members: [] }])
+    const teams = normalizeTeams([...props.teams, { name, members: [], watched: props.teams.length === 0 }])
     props.onChange(teams, props.teams.length === 0 ? name : props.primaryTeam)
     setNewName('')
   }
@@ -38,6 +38,13 @@ export function TeamsEditor(props: {
   function setMembers(i: number, members: string[]) {
     props.onChange(
       props.teams.map((t, j) => (j === i ? { ...t, members } : t)),
+      props.primaryTeam,
+    )
+  }
+
+  function setWatched(i: number, watched: boolean) {
+    props.onChange(
+      props.teams.map((t, j) => (j === i ? { ...t, watched } : t)),
       props.primaryTeam,
     )
   }
@@ -66,12 +73,16 @@ export function TeamsEditor(props: {
           </select>
         </label>
       )}
-      {props.teams.length === 0 && <p className="muted small">No team yet: the Team Reviews and All Reviews tabs are hidden.</p>}
+      {props.teams.length === 0 && <p className="muted small">No team yet: the team tab and External Reviews are hidden.</p>}
       {props.teams.map((t, i) => (
         <div key={t.name} className={'team-card' + (t.name === props.primaryTeam ? ' primary' : '')}>
           <div className="team-head">
             <NameField value={t.name} taken={(n) => taken(n, i)} onCommit={(n) => rename(i, n)} />
             {t.name === props.primaryTeam && <span className="chip your-team">Your team</span>}
+            <label className="check watch" title={t.name === props.primaryTeam ? 'Your own team is always on the board' : 'Fetch every open change of this team, for the team tab'}>
+              <input type="checkbox" checked={t.watched || t.name === props.primaryTeam} disabled={t.name === props.primaryTeam} onChange={(e) => setWatched(i, e.target.checked)} />
+              Watch
+            </label>
             <button type="button" className="btn subtle" title={`Remove the team ${t.name}`} onClick={() => remove(i)}>
               Remove
             </button>
@@ -119,7 +130,7 @@ function NameField(props: { value: string; taken: (name: string) => boolean; onC
       value={text}
       aria-label="Team name"
       aria-invalid={bad}
-      title={name === '' ? 'A team needs a name' : bad ? 'A team with this name exists' : 'The team\'s name, as the All Reviews tab lists it'}
+      title={name === '' ? 'A team needs a name' : bad ? 'A team with this name exists' : 'The team\'s name, as the team tab lists it'}
       onChange={(e) => setText(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {

@@ -13,7 +13,6 @@ interface StoredSettings {
   team?: string[]
   teams?: Team[]
   primaryTeam?: string
-  includeOwnTeam?: boolean
   mergers?: MergerRule[]
   badgeStyle?: BadgeStyle
   showZeroCounts?: boolean
@@ -46,7 +45,6 @@ export async function getStatus(): Promise<SettingsStatus> {
     username: s.username,
     projects: s.projects ?? [],
     ...storedTeams(s),
-    includeOwnTeam: s.includeOwnTeam ?? false,
     mergers: s.mergers ?? [],
     badgeStyle: s.badgeStyle ?? 'color',
     showZeroCounts: s.showZeroCounts ?? false,
@@ -76,7 +74,6 @@ export async function save(input: SettingsInput): Promise<void> {
     projects: input.projects.map((p) => p.trim()).filter(Boolean),
     teams: normalizeTeams(input.teams),
     primaryTeam: normalizePrimaryTeam(input.primaryTeam, normalizeTeams(input.teams)),
-    includeOwnTeam: input.includeOwnTeam === true,
     mergers: normalizeMergers(input.mergers ?? []),
     badgeStyle: input.badgeStyle,
     showZeroCounts: input.showZeroCounts,

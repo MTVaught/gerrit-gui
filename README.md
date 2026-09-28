@@ -13,10 +13,10 @@ The application shows three things:
 
 All users get the same five tabs, which go by your part on each change:
 owner, reviewer, tagged primary reviewer or named merger. Two more tabs,
-"Team Reviews" and "All Reviews", appear when you set teams in the
-settings (refer to "Teams" below). They sort other people's open changes by
-owner: on your team, on another team, or on none. Neither takes a change off
-the five tabs.
+the team tab and "External Reviews", appear when you set teams in the
+settings (refer to "Teams" below). The team tab is a watched team's whole
+backlog; External Reviews is what you are on from outside your team. Neither
+takes a change off the five tabs.
 The "View"
 button in the top bar (or Ctrl+F) opens the search, filter and sort for every
 tab: a search over the subjects, an author filter, and the row order. The
@@ -32,9 +32,9 @@ application remembers the sort; the search and filter last for the session.
 | Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. Two sections: "Pass Around" for reviews you do on your own, "In Person" for reviews done together with the author. The count is split the same way; only the pass-around part is in the accent colour. |
 | Reviewing | All open changes on which you are a reviewer, primary or not, in groups by state. |
 | My Changes | Your open changes, in groups by state, with the actions of the owner. The count gains a red segment for changes that need work and a green one for approved changes. Private changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
+| External Reviews | The open changes you are on whose owner is not on your team, in groups by state. Only when you picked your team. |
+| Team tab | Named after your team, or "Watched". Every open change owned by someone else on a watched team, in groups by state, whether or not you are on it. With several watched teams, a caret shows one at a time or all together. |
 | Merged | Approved changes that the author asked you, by name, to merge, above the changes that Gerrit merged in the last 14 days. The count gains a green segment while anything waits on you to merge. |
-| Team Reviews | Every open change owned by someone else on your team, in groups by state, whether or not you review it. Only when you picked your team. |
-| All Reviews | A select box in the tab strip: everyone outside your team together, one other team at a time, or "Other" for the owners on no team. Open changes owned by those people, in groups by state, whether or not you review them. Only with teams. |
 
 ![Needs Review](docs/screenshots/needs-my-review.png)
 
@@ -313,43 +313,45 @@ you like. Pick one of them as "Your team"; the first team you add is picked
 for you, and "None" is a choice too. You are always on your own team, so
 you do not need to add yourself to it.
 
-The teams sort other people's changes between two tabs, by owner. They
-have no say in the state of a change, nor in the five regular tabs and the
-tray counts: the primary reviewers, tagged on each change, decide the state
-(refer to "The workflow"), and your part on a change decides the tabs. A
-request from an owner on another team is on "Needs Review" like any other.
+Each team has a "Watch" box. A watched team's open changes are all on the
+board, whether or not you are on them; your own team is always watched. A
+team that is not watched only names its people: the changes of theirs that
+you are on show as usual. So an engineer watches their own team, and a
+lead watches several.
 
-- The "Team Reviews" tab lists every open change owned by someone else on
-  your team, in groups by state, whether or not you are a reviewer of it.
-  It is there only when you picked your team.
-- The "All Reviews" tab is a select box in the tab strip. It shows what
-  it lists, with that list's count; opening it offers "All Reviews" for
-  everyone outside your team together, every other team, each with a
-  count, and then "Other". Under a team: every open change owned by
-  someone on it. Under "Other": the changes owned by people on none of the
-  teams, but only the ones you are on or that wait on you, since the
-  application fetches the changes of the people it knows about. The tab is
-  there once there is at least one team. Your own team is left out of it,
-  unless you tick "Show your team on All Reviews as well" under the teams
-  in Settings; then it is one of the teams in the select and its changes
-  are among everyone's. Only the owner decides this: your own changes are
-  on "My Changes" and on neither tab, whoever reviews them.
+The teams have no say in the state of a change, nor in the five regular
+tabs and the tray counts: the primary reviewers, tagged on each change,
+decide the state (refer to "The workflow"), and your part on a change
+decides the tabs. A request from an owner on another team is on "Needs
+Review" like any other. The teams add two tabs:
 
-Both tabs are a second listing: the changes on them that you review, or
+- The team tab, named after your team, or "Watched" when you have not
+  picked one, lists every open change owned by someone else on a watched
+  team, in groups by state, whether or not you are on it. With several
+  watched teams the tab has a caret: it opens each team with its count,
+  and "Watched" for all of them together. The label does not change; the
+  line above the list says which team is showing. The tab is there once a
+  team is watched.
+- The "External Reviews" tab lists the open changes you are on, as a
+  reviewer, a tagged primary reviewer or the asked merger, whose owner is
+  not on your team. It is there only when you picked your team. A watched
+  team's change you have no part in is on the team tab and not here.
+
+Both tabs are a second listing: the changes on them that you are on, or
 that wait on you, are on "Reviewing", "Needs Review" or "Merged" as well.
-Someone on two teams is listed under both.
+Your own changes are on "My Changes" and on neither tab, whoever reviews
+them. Someone on two teams is listed under both.
 
 Without any team, both tabs are hidden. The teams are a setting of your
 computer. Each team member enters the same lists. A settings file from
-before teams had names is read as one team, named "Team", picked as yours.
+before teams had names is read as one team, named "Team", picked as yours
+and watched.
 
-![Team Reviews](docs/screenshots/team-reviews.png)
+![The team tab](docs/screenshots/team-reviews.png)
 
-![All Reviews, everyone outside the team](docs/screenshots/all-reviews.png)
+![The team tab, another watched team picked](docs/screenshots/team-watched.png)
 
-![All Reviews, one team](docs/screenshots/external-reviews.png)
-
-![All Reviews, the owners on no team](docs/screenshots/external-reviews-other.png)
+![External Reviews](docs/screenshots/external-reviews.png)
 
 ![Teams in Settings](docs/screenshots/settings-team.png)
 

@@ -8,13 +8,13 @@ GERRIT_GUI_USER_DATA=/tmp/gg-bob GERRIT_GUI_TAB=mine GERRIT_GUI_SCREENSHOT=/tmp/
 ```
 
 - `GERRIT_GUI_USER_DATA` is a separate profile directory, so the test user does not touch your settings.
-- `GERRIT_GUI_TAB` selects the tab. Use `needs-my-review`, `reviewing`, `mine`, `merged`, `team-reviews` or `external-reviews`. Use `settings` to open the settings page instead of a tab, or `connection` to show the connection form in the main window. The `team-reviews` tab is only there when `settings.json` in the profile directory names a `primaryTeam`, and `external-reviews` only when `teams` has one or more entries. The `external-reviews` tab is All Reviews, showing everyone outside the team; append `&team=<name>` to pick a team, or `&team=-` for Other: `GERRIT_GUI_TAB='external-reviews&team=Storage'`.
+- `GERRIT_GUI_TAB` selects the tab. Use `needs-my-review`, `reviewing`, `mine`, `merged`, `team-reviews` or `external-reviews`. Use `settings` to open the settings page instead of a tab, or `connection` to show the connection form in the main window. The `team-reviews` tab (the team tab) is only there when `settings.json` in the profile directory has a watched team or a `primaryTeam`, and `external-reviews` only with a `primaryTeam`. Append `&team=<name>` to pick a watched team on the team tab, or `&team=-` for all of them: `GERRIT_GUI_TAB='team-reviews&team=Storage'`.
 - `GERRIT_GUI_SCREENSHOT_JS` is optional JavaScript that runs in the page before the capture, for example `document.querySelector('.ledger .t').click()` to open the first ledger row.
 - `GERRIT_GUI_SCREENSHOT` is the output path. The application waits 3 seconds after load (set `GERRIT_GUI_SCREENSHOT_DELAY` in ms to change this), writes the PNG and stops.
 
 Seed a test server first with `./test/seed-gerrit.sh` (refer to the "Tests" section of `README.md`).
 
-`docs/walkthrough/shoot.sh` uses the same hooks to make the screenshots in `docs/walkthrough.md`. It needs an empty Gerrit on its own port, seeds four users and one project, then takes one change through the workflow and captures the window of each person at each step. `settings.json` in a profile directory can hold `mergers`, a list of `{ "project": "platform/*", "people": ["dave"] }` rows, to fill the Ready to Merge picker, and `teams`, a list of `{ "name": "Platform", "members": ["alice", "bob"] }` rows, with `primaryTeam` naming one of them.
+`docs/walkthrough/shoot.sh` uses the same hooks to make the screenshots in `docs/walkthrough.md`. It needs an empty Gerrit on its own port, seeds four users and one project, then takes one change through the workflow and captures the window of each person at each step. `settings.json` in a profile directory can hold `mergers`, a list of `{ "project": "platform/*", "people": ["dave"] }` rows, to fill the Ready to Merge picker, and `teams`, a list of `{ "name": "Platform", "members": ["alice", "bob"], "watched": true }` rows, with `primaryTeam` naming one of them.
 
 ## Mockups and web pages
 

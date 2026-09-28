@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, SuggestedReviewerInfo } from '../../../shared/types.ts'
-import { accountKey, accountKeys, displayName, normalizeTeam, teamMembers } from '../../../shared/model.ts'
+import { accountKey, accountKeys, displayName, normalizeTeam, allMembers } from '../../../shared/model.ts'
 import { api } from '../api.ts'
 import { useNames } from '../names.ts'
 import { useSettings } from '../settings-context.ts'
@@ -33,7 +33,7 @@ export function AddReviewer(props: { view: ChangeView; self: AccountInfo; allowO
   // The checklist: the primary team, or without one everyone on any team.
   const teams = settings?.teams ?? []
   const own = teams.find((t) => t.name === settings?.primaryTeam)
-  const team = normalizeTeam(own ? own.members : teamMembers(teams)).filter((k) => !selfKeys.includes(k))
+  const team = normalizeTeam(own ? own.members : allMembers(teams)).filter((k) => !selfKeys.includes(k))
   const nameFor = useNames(team)
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)

@@ -178,13 +178,13 @@ export interface ChangeView {
    * Their votes are shown but never change the state.
    */
   otherReviewers: ReviewerStatus[]
-  /** The names of the teams from Settings the owner is on; the signed-in user is always on the primary team. */
+  /** The names of the teams from Settings the owner is on; the signed-in user is always on their own team. */
   ownerTeams: string[]
-  /** At least one team is set, so the owner decides between Team Reviews and All Reviews. */
+  /** The owner is on a watched team, so the change is on the team tab. */
+  ownerWatched: boolean
+  /** The user's own team is set, so the owner is either on it or external. */
   teamScoped: boolean
-  /** A primary team is set and the owner is on it: the change is on Team Reviews. */
-  onPrimaryTeam: boolean
-  /** Teams are set and the change is on All Reviews: the owner is not on the primary team, or that team is included there by the setting. The regular tabs do not care. */
+  /** The user's own team is set and the owner is not on it: a change the user is on is on External Reviews. The regular tabs do not care. */
   externalOwner: boolean
   /** Gerrit WIP flag. Independent of review state; commonly used to hold CI until review is done. */
   wip: boolean
@@ -299,17 +299,15 @@ export interface Settings {
    */
   projects: string[]
   /**
-   * The teams, each a name and its people. The owner of a change decides
-   * where it is listed: changes owned by the primary team are on "Team
-   * Reviews", changes owned by another team, or by nobody on any team, under
-   * that team or "Other" on "All Reviews". The teams have no say in the
-   * state of a change; the `reviewer:` tags do (see ChangeView.reviewers).
+   * The teams, each a name, its people, and whether it is watched. The open
+   * changes of a watched team are fetched whole, for the team tab. The user's
+   * own team (`primaryTeam`) is always watched, and decides which of the
+   * changes the user is on are on "External Reviews". The teams have no say
+   * in the state of a change; the `reviewer:` tags do (see ChangeView.reviewers).
    */
   teams: Team[]
-  /** The name of the user's own team, one of `teams`, or "" for none. Without one there is no Team Reviews tab. */
+  /** The name of the user's own team, one of `teams`, or "" for none. Without one there is no External Reviews tab. */
   primaryTeam: string
-  /** List the user's own team on All Reviews too, in the select and in the everyone entry; off, it is Team Reviews only. */
-  includeOwnTeam: boolean
   /**
    * Who the owner is offered when asking for a merge, by project. The list
    * only fills a menu: a wrong or missing entry costs one account search.
@@ -325,12 +323,14 @@ export interface Settings {
   slackWorkspaces: SlackWorkspace[]
 }
 
-/** One team from Settings: a name and its people. */
+/** One team from Settings: a name, its people, and whether its backlog is on the board. */
 export interface Team {
-  /** As shown on the All Reviews picker; unique among the teams. */
+  /** As shown on the team tab; unique among the teams. */
   name: string
   /** Usernames or email addresses, lower-case. */
   members: string[]
+  /** Fetch every open change of the team, for the team tab. The user's own team is watched whatever this says. */
+  watched: boolean
 }
 
 /** One Slack workspace: its subdomain and the team ID the desktop app knows it by. */
