@@ -1435,11 +1435,15 @@ test('sequence: the title is the shared topic, else the first and last numbers; 
   assert.equal(nextInChain(sequenceChains(mine)[0]!), null, 'nothing in it waits on the owner')
 })
 
-test('sequence: a chain is one card on the tab counts and leads with its most urgent member', () => {
+test('sequence: a chain is one card on the tab counts, except that Needs Review counts each of its reviews, and leads with its most urgent member', () => {
   const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'] })
   const views = classifyAll(Object.values(f), alice._account_id)
-  // Alice reviews 62 and 63 (and 58); the four-change sequence is one card, 58 another.
-  assert.equal(tabCounts(views)['needs-my-review'], 2)
+  // Alice reviews 62 and 63 (and 58): three reviews on Needs Review, one per change, as in the tray.
+  assert.equal(tabCounts(views)['needs-my-review'], 3)
+  assert.deepEqual(tabSegments(views)['needs-my-review'], [{ n: 3, tone: 'hot', label: 'pass around' }])
+  assert.equal(actionCounts(views).review, 3)
+  // On Reviewing the sequence is one card, with 58 and the untagged 65 as two more.
+  assert.equal(tabCounts(views).reviewing, 3)
   const groups = groupsFor('reviewing', views)
   const [chain] = sequenceChains(views)
   const lead = chainLeads(groups, [chain!])

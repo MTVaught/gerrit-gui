@@ -771,11 +771,19 @@ export function groupsFor(tab: TabId, views: ChangeView[], pick?: TeamPick): Gro
 /**
  * The number on each tab: how many cards its sections list before the View
  * filter. A Change-Id family is one card wherever it is, so it counts once.
+ * Needs Review counts reviews instead: each change of a sequence that
+ * waits on the user is a review of its own, so it counts on its own there,
+ * the same as in the tray.
  */
 export function tabCounts(views: ChangeView[], teamPick?: TeamPick): Record<TabId, number> {
   const c = {} as Record<TabId, number>
-  for (const tab of TAB_IDS) c[tab] = countFamilies(groupsFor(tab, views, tab === 'team-reviews' ? teamPick : undefined).flatMap((g) => g.items))
+  for (const tab of TAB_IDS) c[tab] = countOnTab(tab, groupsFor(tab, views, tab === 'team-reviews' ? teamPick : undefined).flatMap((g) => g.items))
   return c
+}
+
+/** The tab's count of a list of its changes: reviews on Needs Review, cards elsewhere. */
+export function countOnTab(tab: TabId, views: ChangeView[]): number {
+  return tab === 'needs-my-review' ? countReviews(views) : countFamilies(views)
 }
 
 const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'external-reviews', 'team-reviews', 'merged']
@@ -802,18 +810,21 @@ export interface TabSegment {
  * then what is out for review and what is still in progress, and the private
  * ones apart. Cards, like the totals, so a family counts once: in the section
  * its card is under, the same as the section headers, however many other
- * sections its branches touch. A segment at zero is left out, as is in
+ * sections its branches touch. On Needs Review the segments are reviews,
+ * like its total: each change of a sequence that waits on the user, in the
+ * section it is listed under. A segment at zero is left out, as is in
  * progress when it is the only state: then it is the whole tab and the plain
  * total says as much.
  */
 export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegment[]>> {
   const bySection = (tab: TabId, title: string) =>
     countFamilies(cardGroups(tab, views).filter((g) => g.title === title).flatMap((g) => g.items))
+  const reviews = (title: string) => countReviews(groupsFor('needs-my-review', views).filter((g) => g.title === title).flatMap((g) => g.items))
   const merged = cardGroups('merged', views)
   const segments: Partial<Record<TabId, TabSegment[]>> = {
     'needs-my-review': [
-      { n: bySection('needs-my-review', 'Pass Around'), tone: 'hot', label: 'pass around' },
-      { n: bySection('needs-my-review', 'In Person'), tone: 'plain', label: 'in person' },
+      { n: reviews('Pass Around'), tone: 'hot', label: 'pass around' },
+      { n: reviews('In Person'), tone: 'plain', label: 'in person' },
     ],
     merged: [{ n: countFamilies(merged.filter((g) => g.title !== 'Merged in the last 14 days').flatMap((g) => g.items)), tone: 'pos', label: 'ready to merge' }],
     mine: [
@@ -832,6 +843,11 @@ export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegme
 /** How many cards a list of changes makes: each Change-Id once, and a sequence once however many changes it has. */
 export function countFamilies(views: ChangeView[]): number {
   return new Set(cardKeys(views).values()).size
+}
+
+/** How many reviews a list of changes asks for: each Change-Id once, and each change of a sequence on its own, since each is reviewed on its own. */
+export function countReviews(views: ChangeView[]): number {
+  return new Set(views.map((v) => familyKey(v.change))).size
 }
 
 /**
