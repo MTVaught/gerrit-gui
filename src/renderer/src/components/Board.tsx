@@ -5,7 +5,7 @@ import {
   DEFAULT_SORT,
   EMPTY_FILTER,
   SORT_OPTIONS,
-  countFamilies,
+  countOnTab,
   displayName,
   familyKey,
   familyLeads,
@@ -171,9 +171,10 @@ export function Board(props: {
   const team = props.tab === 'team-reviews'
   const all = groupsFor(props.tab, props.views, team ? props.teamPick : undefined)
   const groups = all.map((g) => ({ ...g, items: filterViews(g.items, props.filter) })).filter((g) => g.items.length > 0)
-  // The counts are cards: a family counts once, however many branches.
-  const total = countFamilies(all.flatMap((g) => g.items))
-  const shown = countFamilies(groups.flatMap((g) => g.items))
+  // The counts are cards: a family counts once, however many branches. On
+  // Needs Review they are reviews: each change of a sequence on its own.
+  const total = countOnTab(props.tab, all.flatMap((g) => g.items))
+  const shown = countOnTab(props.tab, groups.flatMap((g) => g.items))
   // A family is one card, led by its most urgent branch on this tab (see
   // URGENCY). It sits in that branch's section, at that branch's sort
   // position. A tie goes to the earliest section, so on Reviewing a branch
