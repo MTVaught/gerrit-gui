@@ -11,6 +11,8 @@ import type {
   ChangeInfo,
   ChangeInspection,
   ChangeLink,
+  ReviewDiff,
+  FileInfo,
   DashboardData,
   SettingsInput,
   SettingsStatus,
@@ -36,6 +38,8 @@ export interface Service {
   fetchDashboard(): Promise<DashboardData>
   /** One change, fresh from Gerrit, for updating the board after an action on it. */
   fetchChange(id: number): Promise<ChangeInfo>
+  reviewFiles(link: ChangeLink): Promise<Record<string, FileInfo>>
+  reviewDiff(link: ChangeLink, path: string): Promise<ReviewDiff>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
   suggestAccounts(q: string): Promise<AccountInfo[]>
@@ -128,6 +132,9 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
     async fetchChange(id) {
       return fetchChange(await client(), id)
     },
+
+    reviewFiles: async (link) => (await client()).files(link.id, link.patchSet!, link.basePatchSet),
+    reviewDiff: async (link, path) => (await client()).diff(link, path),
 
     async act(action) {
       if (pretend) throw new Error(`Nothing was changed: the board is shown as ${pretend.name ?? pretend.username ?? pretend._account_id} and read-only. Stop pretending in Settings › Debug first.`)

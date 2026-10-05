@@ -430,7 +430,7 @@ test('pretending to be someone else: their board is read, nothing is written', {
   // The dashboard read needs the settings; the shared helper has none.
   const svc = createService(
     {
-      getStatus: async () => ({ serverUrl: URL, username: 'alice', projects: [], teams: [], primaryTeam: '', mergers: [], badgeStyle: 'color', showZeroCounts: false, compactOnTop: true, slackWorkspaces: [], showAppBadge: true, showTrayCounts: true, hasPassword: true, encrypted: false }),
+      getStatus: async () => ({ serverUrl: URL, username: 'alice', projects: [], teams: [], primaryTeam: '', mergers: [], badgeStyle: 'color', showZeroCounts: false, compactOnTop: true, slackWorkspaces: [], showAppBadge: true, showTrayCounts: true, localReview: false, hasPassword: true, encrypted: false }),
       getCredentials: async () => ({ serverUrl: URL, username: 'alice', password: 'alicepw' }),
       save: () => Promise.reject(new Error('unused')),
     },

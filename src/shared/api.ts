@@ -7,6 +7,8 @@ import type {
   ChangeInfo,
   ChangeInspection,
   ChangeLink,
+  ReviewDiff,
+  FileInfo,
   DashboardData,
   SettingsInput,
   SettingsStatus,
@@ -23,6 +25,8 @@ export interface Api {
   fetchDashboard(): Promise<DashboardData>
   /** One change as the board shows it, read after an action on it so only that card is redrawn. */
   fetchChange(id: number): Promise<ChangeInfo>
+  reviewFiles(link: ChangeLink): Promise<Record<string, FileInfo>>
+  reviewDiff(link: ChangeLink, path: string): Promise<ReviewDiff>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
   /** Gerrit accounts matching a name, username or email, for the team list in Settings. */

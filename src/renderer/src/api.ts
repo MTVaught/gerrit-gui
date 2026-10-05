@@ -26,6 +26,8 @@ function browserApi(): Api {
     testConnection: () => call('testConnection'),
     fetchDashboard: () => call('fetchDashboard'),
     fetchChange: (id) => call('fetchChange', [id]),
+    reviewFiles: (link) => call('reviewFiles', [link]),
+    reviewDiff: (link, path) => call('reviewDiff', [link, path]),
     act: (action) => call('act', [action]),
     suggestReviewers: (id, q) => call('suggestReviewers', [id, q]),
     suggestAccounts: (q) => call('suggestAccounts', [q]),
