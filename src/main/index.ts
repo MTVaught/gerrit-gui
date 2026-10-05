@@ -126,6 +126,8 @@ function registerIpc(): void {
   })
   ipcMain.handle('gerrit:changeUrl', (_e, link: ChangeLink) => service.changeUrl(link))
   ipcMain.handle('gerrit:inspectChange', (_e, id: number) => service.inspectChange(id))
+  ipcMain.handle('gerrit:getPretend', () => service.getPretend())
+  ipcMain.handle('gerrit:setPretend', (_e, key: string | null) => service.setPretend(key))
   ipcMain.handle('app:openUrl', async (_e, url: string) => {
     // The renderer only hands over links it built from a Slack tag; the check keeps any other scheme out of the shell.
     if (!/^https:\/\//i.test(url)) throw new Error('Only https links can be opened')

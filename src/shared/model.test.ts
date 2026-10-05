@@ -648,6 +648,11 @@ test('dashboard queries search for my reviewer tags and for the team\'s changes'
   assert.equal(q.team, 'is:open -owner:self -is:private (owner:carol@example.com OR owner:dave) (projects:platform/)')
   assert.equal(dashboardQueries().team, '', 'no team, no team query')
   assert.equal(dashboardQueries().direct, 'is:open (owner:self OR reviewer:self OR hashtag:ready-to-merge) (owner:self OR -is:private)')
+  const as = dashboardQueries(['platform/*'], ['carol'], ['dave'], '1000042')
+  assert.equal(as.direct, 'is:open (owner:1000042 OR reviewer:1000042 OR hashtag:ready-to-merge OR hashtag:reviewer:carol) (owner:1000042 OR -is:private)', 'as someone else: no self in the queries')
+  assert.equal(as.wipScan, 'is:open is:wip -owner:1000042 -is:private (projects:platform/)')
+  assert.equal(as.merged, 'is:merged (owner:1000042 OR reviewer:1000042) -age:14d (owner:1000042 OR -is:private)')
+  assert.equal(as.team, 'is:open -owner:1000042 -is:private (owner:dave) (projects:platform/)')
 })
 
 test('normalizeTeam trims, lower-cases and de-duplicates', () => {

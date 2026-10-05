@@ -32,6 +32,14 @@ export class GerritClient {
   private readonly base: string
   private readonly auth: string
   private readonly fetchImpl: FetchLike
+  /**
+   * Set, the client answers `self()` with this account and refuses every
+   * request that is not a GET, so the board can be looked at as that person
+   * sees it without anything being written in their name or the user's own.
+   * The requests still go out with the user's credentials: what the server
+   * lets the user see or do (private changes, +2 rights) is unchanged.
+   */
+  pretendAs: AccountInfo | null = null
 
   constructor(serverUrl: string, username: string, password: string, fetchImpl: FetchLike = (u, i) => fetch(u, i)) {
     this.base = serverUrl.replace(/\/+$/, '')
@@ -40,6 +48,7 @@ export class GerritClient {
   }
 
   private async req<T>(method: string, path: string, body?: unknown, query?: URLSearchParams): Promise<T> {
+    if (this.pretendAs && method !== 'GET') throw new GerritError(`${method} ${path} refused: the board is read-only while shown as ${this.pretendAs.username ?? this.pretendAs._account_id}`, 0)
     const url = `${this.base}/a${path}${query ? '?' + query.toString() : ''}`
     let res: Response
     try {
@@ -69,7 +78,12 @@ export class GerritClient {
   }
 
   self(): Promise<AccountInfo> {
-    return this.req('GET', '/accounts/self')
+    return this.pretendAs ? Promise.resolve(this.pretendAs) : this.req('GET', '/accounts/self')
+  }
+
+  /** What the search queries call the signed-in user: `self`, or the account id of the person the board is shown as. */
+  selfRef(): string {
+    return this.pretendAs ? String(this.pretendAs._account_id) : 'self'
   }
 
   /** Runs several searches in one request; returns one array per query. */

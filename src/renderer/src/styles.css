@@ -94,6 +94,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .banner { padding: 8px 16px; border-bottom: 1px solid var(--border); }
 .banner.error { background: var(--neg-bg); }
 .banner.warn { background: var(--warn-bg); color: var(--warn); }
+/* Debug: the board is shown as someone else and read-only. Striped so it cannot be mistaken for a normal notice. */
+.banner.pretend { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--fg); background: repeating-linear-gradient(-45deg, var(--warn-bg) 0 12px, transparent 12px 24px), var(--panel); border-bottom: 2px solid var(--warn); }
+.banner.pretend .btn { flex: 0 0 auto; border-color: var(--warn); color: var(--warn); }
 .panel { max-width: 640px; margin: 24px auto; padding: 24px; }
 .panel.empty { text-align: center; color: var(--muted); padding-top: 80px; }
 .not-connected .btn { display: inline-flex; gap: 6px; align-items: center; margin-top: 8px; }
@@ -518,6 +521,8 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 /* Settings: Debug */
 .inspect-form { align-items: stretch; margin-top: 8px; }
 .inspect-form input { margin-top: 0; }
+.inspect-form .add-reviewer { flex: 1; margin-top: 0; }
+.pretend-current { align-items: center; margin-top: 8px; padding: 8px 12px; border: 1px solid var(--warn); border-radius: 6px; background: var(--warn-bg); }
 .inspect-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 4px 0 0; font-size: 13px; }
 .inspect-facts dt { color: var(--muted); }
 .inspect-facts dd { margin: 0; min-width: 0; word-break: break-word; }

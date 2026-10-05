@@ -14,7 +14,7 @@ const LIMIT = 500
 export async function fetchDashboard(g: GerritClient, projects: string[], members: string[] = []): Promise<DashboardData> {
   const self = await g.self()
   const keys = accountKeys(self)
-  const q = dashboardQueries(projects, keys, members)
+  const q = dashboardQueries(projects, keys, members, g.selfRef())
   const queries = [q.direct, q.wipScan, q.merged, ...(q.team ? [q.team] : [])]
   const [direct, wipScan, merged, teamOwned = []] = await g.queryChanges(queries, LIMIT)
   // The queries already exclude other people's private changes; this is the

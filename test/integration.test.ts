@@ -419,3 +419,53 @@ test('a sequence: parents link changes built on each other, the owner tags them 
   assert.deepEqual(relatedSetOf(views, views[0]!.change)!.members.map((v) => v.change._number), nums, 'the picker still sees the whole set')
   assert.deepEqual(sequenceCandidates(views, bobSelf._account_id).map((s) => s.members.map((v) => v.change._number)), [nums], 'and the set is on offer again')
 })
+
+test('pretending to be someone else: their board is read, nothing is written', { skip: !reachable && 'no local Gerrit' }, async () => {
+  const c = await raw('alice', 'POST', '/changes/', { project: 'demo', branch: 'master', subject: `pretend ${Date.now()}` })
+  const id: number = c._number
+  await pushPatchSet('alice', id, 'v1')
+  await serviceAs('alice').act({ type: 'addPrimaryReviewer', id, reviewer: 'bob' })
+  await raw('alice', 'POST', `/changes/${id}/custom_keyed_values`, { add: { [REVIEW_REQUESTED_KEY]: '2' } })
+
+  // The dashboard read needs the settings; the shared helper has none.
+  const svc = createService(
+    {
+      getStatus: async () => ({ serverUrl: URL, username: 'alice', projects: [], teams: [], primaryTeam: '', mergers: [], badgeStyle: 'color', showZeroCounts: false, compactOnTop: true, slackWorkspaces: [], showAppBadge: true, showTrayCounts: true, hasPassword: true, encrypted: false }),
+      getCredentials: async () => ({ serverUrl: URL, username: 'alice', password: 'alicepw' }),
+      save: () => Promise.reject(new Error('unused')),
+    },
+    (url, init) => fetch(url, init),
+  )
+  assert.equal(await svc.getPretend(), null)
+  await assert.rejects(svc.setPretend('nobody-such-user'), /No account matches/)
+  const bob = await svc.setPretend('bob')
+  assert.equal(bob.username, 'bob')
+  assert.equal((await svc.getPretend())?.username, 'bob')
+
+  // Read as bob: the change waits on him, not on its owner.
+  const d = await svc.fetchDashboard()
+  assert.equal(d.self.username, 'bob')
+  const v = classifyAll(d.open, d.self._account_id, NO_TEAMS, accountKeys(d.self)).find((x) => x.change._number === id)
+  assert.ok(v, 'the change alice asked bob to review is on the board shown as bob')
+  assert.equal(v.isMine, false)
+  assert.equal(v.needsMyReview, true)
+  assert.equal((await svc.inspectChange(id)).self.username, 'bob')
+  assert.equal((await svc.fetchChange(id))._number, id)
+
+  // Every write is refused, at the service and below it.
+  await assert.rejects(svc.act({ type: 'hashtag', id, add: ['pretend-leak'] }), /read-only/)
+  const g = user('alice')
+  g.pretendAs = bob
+  await assert.rejects(g.setHashtags(id, ['pretend-leak']), /refused/)
+  await assert.rejects(g.vote(id, 'Code-Review', 1), /refused/)
+  assert.ok(!((await user('alice').change(id)).hashtags ?? []).includes('pretend-leak'), 'nothing reached Gerrit')
+
+  // The connection test is always the signed-in user.
+  assert.equal((await svc.testConnection()).username, 'alice')
+
+  // Off again: alice's own board, writes allowed.
+  assert.equal(await svc.setPretend(null), null)
+  assert.equal((await svc.fetchDashboard()).self.username, 'alice')
+  await svc.act({ type: 'hashtag', id, add: ['pretend-off'] })
+  assert.ok(((await user('alice').change(id)).hashtags ?? []).includes('pretend-off'))
+})
