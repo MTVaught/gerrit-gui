@@ -1,25 +1,32 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { diffRows, visibleRows, findReviewRow } from './review.ts'
+import { diffContents, reviewLanguage } from './review.ts'
 
-test('full-file rows preserve empty context, replacements, additions and deletions', () => {
-  const rows = diffRows({ content: [{ ab: ['start', ''] }, { a: ['old', 'deleted'], b: ['new'] }, { b: ['added'] }, { ab: ['end'] }] })
-  assert.deepEqual(rows.map((r) => [r.lineA, r.lineB, r.a, r.b]), [
-    [1, 1, 'start', 'start'], [2, 2, '', ''], [3, 3, 'old', 'new'],
-    [4, undefined, 'deleted', undefined], [undefined, 4, undefined, 'added'], [5, 5, 'end', 'end'],
-  ])
-  assert.throws(() => diffRows({ content: [{ skip: 10 }] }), /missing/)
-  assert.equal(diffRows({ content: [{ b: [''] }] })[0]!.lineB, 1)
-  assert.equal(diffRows({ content: [] }).length, 0)
+test('whole-file models preserve context, whitespace, blank lines and both sides of edits', () => {
+  const contents = diffContents({ content: [{ ab: ['start', ''] }, { a: ['old', 'deleted'], b: ['new'] }, { b: ['\tadded  '] }, { ab: ['end', ''] }] })
+  assert.equal(contents.original, 'start\n\nold\ndeleted\nend\n')
+  assert.equal(contents.modified, 'start\n\nnew\n\tadded  \nend\n')
+  assert.equal(contents.originalLines, 6)
+  assert.equal(contents.modifiedLines, 6)
+  assert.throws(() => diffContents({ content: [{ skip: 10 }] }), /missing/)
+  assert.deepEqual(diffContents({ content: [] }), { original: '', modified: '', originalLines: 0, modifiedLines: 0 })
+  assert.equal(diffContents({ content: [{ b: ['added'] }] }).original, '')
+  assert.equal(diffContents({ content: [{ a: ['deleted'] }] }).modified, '')
 })
 
-test('100k-line file remains fully searchable while rendering a bounded viewport', () => {
-  const rows = diffRows({ content: [{ ab: Array.from({ length: 100000 }, (_, i) => `line ${i + 1}`) }] })
-  const [from, to] = visibleRows(99999 * 22, 600, rows.length)
-  assert.equal(to, 100000)
-  assert.ok(to - from < 60)
-  assert.equal(findReviewRow(rows, 'LINE 100000', -1, 1), 99999)
-  assert.equal(findReviewRow(rows, 'line 1', 99999, 1), 0)
-  assert.equal(findReviewRow(rows, 'line 100000', 0, -1), 99999)
-  assert.equal(findReviewRow(rows, 'no match', -1, 1), -1)
+test('large context chunks reconstruct fully without JS argument-count limits', () => {
+  const lines = Array.from({ length: 200000 }, (_, i) => `line ${i + 1}`)
+  const contents = diffContents({ content: [{ ab: lines }, { a: ['old last'], b: ['new last'] }] })
+  assert.equal(contents.originalLines, 200001)
+  assert.equal(contents.modifiedLines, 200001)
+  assert.ok(contents.original.endsWith('line 200000\nold last'))
+  assert.ok(contents.modified.endsWith('line 200000\nnew last'))
+})
+
+test('file names pick tokenizers and unknown extensions fall back to plain text', () => {
+  assert.equal(reviewLanguage('src/main.cpp'), 'cpp')
+  assert.equal(reviewLanguage('src/App.TSX'), 'typescript')
+  assert.equal(reviewLanguage('Dockerfile'), 'dockerfile')
+  assert.equal(reviewLanguage('logs/output.unknown'), 'plaintext')
+  assert.equal(reviewLanguage('/COMMIT_MSG'), 'plaintext')
 })

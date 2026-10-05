@@ -112,14 +112,19 @@ sections. Scrolling, whole-file search, line jumps and change navigation use
 that loaded content without further Gerrit requests. Files opened during the
 same review stay cached until you close it, so memory use grows with the files
 you open. Each side can scroll horizontally; vertical scrolling is synchronized.
-Use Ctrl+F or Cmd+F to search the whole loaded file.
+The Monaco diff editor owns the scrollbars and text rendering. Ctrl+F or Cmd+F
+searches the focused side, Ctrl+G jumps to a line, and F1 opens editor commands.
+Syntax and character-level highlighting, text selection and matching-text
+highlighting work locally. Editor models are disposed when you switch files;
+the cached file content and scroll position remain available for reopening.
 
-The footer reports request/transfer time, row preparation time and the first
-frame delay to help compare large files. Rendering creates only the visible
-rows. Syntax and character-level highlighting, comments and voting are outside
-this initial proof of concept. Use **Open in Gerrit** for comments, votes and
-binary files. Gerrit still computes the diff, so a slow server response can
-still delay opening a file.
+The footer reports request/transfer time, file preparation, editor startup and
+local diff computation. The editor renders visible lines and computes alignment
+in a bundled worker. No source code is sent to a CDN or a language service.
+Comments, voting, Gerrit-specific shortcuts and semantic symbol hovers remain
+future work. Use **Open in Gerrit** for comments, votes and binary files. Gerrit
+still computes the API diff, so a slow server response can still delay opening
+a file.
 
 ## How the states are related to Gerrit data
 

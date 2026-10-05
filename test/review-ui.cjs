@@ -1,0 +1,103 @@
+// Exercise the packaged Electron renderer with synthetic complete files, no Gerrit.
+// Build first, then on Linux: xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-ui.cjs
+const { app, BrowserWindow, nativeTheme } = require('electron')
+const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
+const taskData = fs.mkdtempSync(path.join(os.tmpdir(), 'gerrit-review-ui-'))
+app.setPath('userData', taskData)
+app.disableHardwareAcceleration()
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const timeout = setTimeout(() => { console.error('Review UI test timed out'); app.exit(2) }, 45000)
+app.whenReady().then(async () => {
+  nativeTheme.themeSource = 'light'
+  const win = new BrowserWindow({ width: 1440, height: 960, useContentSize: true, show: true, frame: false,
+    webPreferences: { contextIsolation: true, sandbox: false, preload: path.join(__dirname, 'fixtures/local-review-preload.cjs') } })
+  const errors = []
+  win.webContents.on('console-message', (details) => {
+    if (details.level === 'error' || /Could not create web worker|Falling back to loading web worker/.test(details.message)) errors.push(details.message)
+  })
+  const run = (script) => win.webContents.executeJavaScript(script)
+  async function until(script, label) {
+    for (let i = 0; i < 150; i++) { if (await run(script)) return; await delay(100) }
+    throw new Error(`Timed out: ${label}`)
+  }
+  async function click(selector) { await run(`document.querySelector(${JSON.stringify(selector)}).click()`); await delay(150) }
+  const selector = '.modified-in-monaco-diff-editor'
+  const barSelector = selector + ' .scrollbar.vertical .slider'
+  const firstLine = () => run(`document.querySelector('${selector} .view-lines').textContent`)
+  const bar = () => run(`document.querySelector('${barSelector}').getBoundingClientRect().toJSON()`)
+  async function screenshot(name) {
+    if (!process.env.REVIEW_SCREENSHOTS) return
+    const dir = path.join(__dirname, '../docs/screenshots/local-review')
+    fs.mkdirSync(dir, { recursive: true })
+    await delay(250)
+    fs.writeFileSync(path.join(dir, name + '.png'), (await win.webContents.capturePage()).toPNG())
+  }
+  await win.loadFile(path.join(__dirname, '../out/renderer/index.html'))
+  await until(`Boolean(document.querySelector('.review-main'))`, 'review button')
+  await click('button[aria-label="Settings"]')
+  await run(`Array.from(document.querySelectorAll('.section-nav button')).find(b => b.textContent === 'Beta').click()`)
+  await screenshot('beta-settings')
+  assert.equal(await run(`document.querySelector('.section-body input[type="checkbox"]').checked`), false)
+  await click('.section-body input[type="checkbox"]')
+  await click('button[aria-label="Settings"]')
+  await click('.review-main')
+  await until(`Boolean(document.querySelector('${barSelector}')) && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, 'editor and worker diff')
+  assert.deepEqual(errors, [], 'workers, styles and language modules load under the packaged CSP')
+  await screenshot('full-file-review')
+  win.focus()
+  win.webContents.focus()
+  await delay(250)
+  const initial = await bar()
+  const initialText = await firstLine()
+  const box = await run(`document.querySelector('${selector}').getBoundingClientRect().toJSON()`)
+  win.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(box.x + box.width / 2), y: Math.round(box.y + 200) })
+  win.webContents.sendInputEvent({ type: 'mouseWheel', x: Math.round(box.x + box.width / 2), y: Math.round(box.y + 200), deltaY: -20000, deltaX: 0, canScroll: true, wheelTicksY: -166, hasPreciseScrollingDeltas: true })
+  await until(`document.querySelector('${barSelector}').getBoundingClientRect().y > ${initial.y + 0.01}`, 'wheel moves scrollbar thumb')
+  assert.notEqual(await firstLine(), initialText, 'wheel changes visible text')
+  await delay(100)
+  const afterWheel = await bar()
+  const afterWheelText = await firstLine()
+  // Drag the actual scrollbar, rather than mutating scrollTop in JavaScript.
+  const x = Math.round(afterWheel.x + afterWheel.width / 2)
+  const y = Math.round(afterWheel.y + afterWheel.height / 2)
+  win.webContents.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 })
+  await delay(50)
+  win.webContents.sendInputEvent({ type: 'mouseMove', x, y: y + 260, button: 'left', modifiers: ['leftbuttondown'] })
+  await delay(50)
+  win.webContents.sendInputEvent({ type: 'mouseUp', x, y: y + 260, button: 'left', clickCount: 1 })
+  await until(`document.querySelector('${barSelector}').getBoundingClientRect().y > ${afterWheel.y + 100}`, 'drag moves scrollbar thumb')
+  assert.notEqual(await firstLine(), afterWheelText, 'drag changes visible text')
+  const positions = await run(`Array.from(document.querySelectorAll('.review-editor .scrollbar.vertical .slider')).map(el => el.getBoundingClientRect().y)`)
+  assert.ok(Math.abs(positions[0] - positions[1]) < 2, 'both sides stay vertically synchronized')
+  // Editor keyboard navigation goes to the end of the complete in-memory model.
+  win.webContents.sendInputEvent({ type: 'mouseDown', x: Math.round(box.x + 180), y: Math.round(box.y + 180), button: 'left', clickCount: 1 })
+  win.webContents.sendInputEvent({ type: 'mouseUp', x: Math.round(box.x + 180), y: Math.round(box.y + 180), button: 'left', clickCount: 1 })
+  await delay(100)
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'End', modifiers: ['control'] })
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'End', modifiers: ['control'] })
+  await until(`document.querySelector('${selector} .view-lines').textContent.replaceAll('\u00a0', ' ').includes('End of delivery fixtures')`, 'Ctrl+End reaches full-file end')
+  await screenshot('large-file-navigation')
+  await click('button[data-review-find]')
+  await until(`Boolean(document.querySelector('${selector} .find-widget.visible'))`, 'editor find widget')
+  // Returning to a previously loaded file uses the session cache.
+  await click('.review-files button:nth-child(2)')
+  await until(`document.querySelector('.review-side-head').textContent.includes('types.ts') && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, 'second file')
+  await click('.review-files button:first-child')
+  await until(`document.querySelector('.review-side-head').textContent.includes('batch-scheduler.ts') && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, 'cached file')
+  const requests = await run('window.api.fixtureStats()')
+  assert.equal(requests.requests, 2, 'wheel, drag, keyboard, find and returning to a cached file make no extra Gerrit requests')
+  const rendered = await run(`document.querySelectorAll('.review-editor .view-line').length`)
+  assert.ok(rendered < 300, 'the DOM remains bounded for 100k lines')
+  await click('button[data-review-find]')
+  await click('.local-review-header button:last-child')
+  await until(`!document.querySelector('.local-review')`, 'review closes cleanly')
+  assert.deepEqual(errors, [], 'no renderer or worker errors')
+  console.log(JSON.stringify({ wheel: 'passed', scrollbarDrag: 'passed', synchronized: 'passed', keyboard: 'passed', find: 'passed', sessionCache: 'passed', renderedLines: rendered, requests: requests.requests }))
+  win.destroy()
+  clearTimeout(timeout)
+  fs.rmSync(taskData, { recursive: true, force: true })
+  app.exit(0)
+}).catch((error) => { console.error(error); clearTimeout(timeout); fs.rmSync(taskData, { recursive: true, force: true }); app.exit(1) })
