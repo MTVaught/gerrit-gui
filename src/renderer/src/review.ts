@@ -1,45 +1,37 @@
 import type { ReviewDiff } from '../../shared/types.ts'
 
-export interface DiffRow {
-  a?: string
-  b?: string
-  lineA?: number
-  lineB?: number
-  changed: boolean
+export interface ReviewContents {
+  original: string
+  modified: string
+  originalLines: number
+  modifiedLines: number
 }
 
-/** Preserve every line, including empty lines, and align additions/deletions. */
-export function diffRows(diff: ReviewDiff): DiffRow[] {
-  const rows: DiffRow[] = []
-  let lineA = 0
-  let lineB = 0
+/** Reconstruct both complete files without allocating an object for each diff row. */
+export function diffContents(diff: ReviewDiff): ReviewContents {
+  const original: string[] = []
+  const modified: string[] = []
   for (const chunk of diff.content) {
     if (chunk.skip) throw new Error('The diff is missing file content')
-    if (chunk.ab) {
-      for (const text of chunk.ab) rows.push({ a: text, b: text, lineA: ++lineA, lineB: ++lineB, changed: false })
-    } else {
-      for (let i = 0; i < Math.max(chunk.a?.length ?? 0, chunk.b?.length ?? 0); i++) {
-        const a = chunk.a?.[i]
-        const b = chunk.b?.[i]
-        rows.push({ a, b, lineA: a === undefined ? undefined : ++lineA, lineB: b === undefined ? undefined : ++lineB, changed: true })
-      }
-    }
+    // Avoid spreading a huge chunk into push: JS has an argument-count limit.
+    for (const line of chunk.ab ?? chunk.a ?? []) original.push(line)
+    for (const line of chunk.ab ?? chunk.b ?? []) modified.push(line)
   }
-  return rows
+  return { original: original.join('\n'), modified: modified.join('\n'), originalLines: original.length, modifiedLines: modified.length }
 }
 
-export const REVIEW_ROW_HEIGHT = 22
-export function visibleRows(top: number, height: number, total: number): [number, number] {
-  return [Math.max(0, Math.floor(top / REVIEW_ROW_HEIGHT) - 12), Math.min(total, Math.ceil((top + height) / REVIEW_ROW_HEIGHT) + 12)]
-}
-
-export function findReviewRow(rows: DiffRow[], query: string, start: number, direction: 1 | -1): number {
-  if (!query || !rows.length) return -1
-  const needle = query.toLowerCase()
-  for (let step = 1; step <= rows.length; step++) {
-    const index = ((start + step * direction) % rows.length + rows.length) % rows.length
-    const row = rows[index]!
-    if (row.a?.toLowerCase().includes(needle) || row.b?.toLowerCase().includes(needle)) return index
+/** Match Monaco's bundled tokenizers, with plain text as the fallback. */
+export function reviewLanguage(path: string): string {
+  const name = path.toLowerCase().split('/').at(-1) ?? ''
+  const extension = name.split('.').at(-1) ?? ''
+  const languages: Record<string, string> = {
+    ts: 'typescript', tsx: 'typescript', mts: 'typescript', cts: 'typescript',
+    js: 'javascript', jsx: 'javascript', mjs: 'javascript', cjs: 'javascript',
+    c: 'cpp', h: 'cpp', cc: 'cpp', cpp: 'cpp', cxx: 'cpp', hpp: 'cpp',
+    cs: 'csharp', java: 'java', py: 'python', rs: 'rust', go: 'go',
+    json: 'json', xml: 'xml', html: 'html', css: 'css', scss: 'scss',
+    yaml: 'yaml', yml: 'yaml', sh: 'shell', bash: 'shell', sql: 'sql',
+    md: 'markdown', toml: 'ini', ini: 'ini',
   }
-  return -1
+  return name === 'dockerfile' ? 'dockerfile' : languages[extension] ?? 'plaintext'
 }

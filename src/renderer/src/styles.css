@@ -601,7 +601,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .ledger tr.fh.stub td { border-style: dashed; background: transparent; border-bottom: 1px dashed var(--band-border); }
 .team-head label.check.watch { font-size: 12px; margin: 0; white-space: nowrap; }
 
-/* Full-file beta viewer. All rows exist locally; only the viewport creates DOM. */
+/* Full-file beta viewer. Complete file models stay local; the editor owns scrolling and rendering. */
 .local-review { width: 100vw; max-width: none; height: 100vh; max-height: none; margin: 0; padding: 0; border: 0; background: var(--bg); color: var(--fg); }
 .local-review[open] { display: flex; flex-direction: column; }
 .local-review::backdrop { background: #0008; }
@@ -616,18 +616,8 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-message { padding: 20px; }
 .review-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border-bottom: 1px solid var(--border); }
 .review-tools form { display: flex; gap: 4px; }
-.review-tools input { width: 150px; min-width: 0; }
-.review-tools input[type=number] { width: 80px; }
 .review-side-head { display: grid; grid-template-columns: 1fr 1fr; background: var(--panel); border-bottom: 1px solid var(--border); }
 .review-side-head span { padding: 6px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.review-panes { display: flex; flex: 1; min-height: 0; }
-.review-scroll { width: 50%; border-right: 1px solid var(--border); overflow: auto; min-height: 0; overflow-anchor: none; }
-.review-lines { position: relative; }
-.review-line { position: absolute; left: 0; right: 0; height: 22px; display: block; font: 13px/22px ui-monospace, SFMono-Regular, Menlo, monospace; }
-.review-side { display: flex; white-space: pre; height: 22px; tab-size: 4; border-right: 1px solid var(--border); }
-.review-number { width: 70px; flex-shrink: 0; padding-right: 12px; text-align: right; color: var(--muted); user-select: none; background: var(--panel); }
-.review-side.removed { background: var(--neg-bg); }
-.review-side.added { background: var(--pos-bg); }
-.review-line.match { outline: 2px solid var(--accent); outline-offset: -2px; }
+.review-editor { flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
 .review-stats { padding: 6px 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
 @media (max-width: 700px) { .review-files { width: 130px; } .local-review-header { gap: 6px; padding: 8px; } }

@@ -30,3 +30,19 @@ SHOT_LOGIN='http://localhost:8080/login/%23%2F?account_id=1000001' SHOT_DELAY=40
 ## Update flow
 
 Updates are off when the application runs from the source tree. To exercise the check, download and restart flow in `pnpm dev`, set `GERRIT_GUI_DEV_UPDATE=1`. The updater then reads `dev-app-update.yml` (the GitHub repository to poll) in place of the metadata a packaged application carries. The download step needs a packaged application, and on macOS a signed one, so in `pnpm dev` it ends with an error, shown in the top bar button's tooltip and in Settings. The check and the top bar button work.
+
+## Local review editor
+
+Build the app and run the Electron interaction test with synthetic 100k-line
+files. It needs no Gerrit server or saved credentials:
+
+```sh
+pnpm build
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-ui.cjs
+```
+
+The test sends wheel, scrollbar drag and keyboard input to the packaged
+renderer. It checks synchronized scrolling, whole-file navigation, the search
+widget, file caching, bounded rendered lines and worker loading under the CSP.
+Set `REVIEW_SCREENSHOTS=1` to refresh `docs/screenshots/local-review/`.
+The sandbox flag is for the Xvfb test harness only.
