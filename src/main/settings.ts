@@ -19,6 +19,7 @@ interface StoredSettings {
   compactOnTop?: boolean
   slackWorkspaces?: SlackWorkspace[]
   showAppBadge?: boolean
+  localReview?: boolean
   showTrayCounts?: boolean
   /** base64 of safeStorage ciphertext, or plaintext when no keychain is available. */
   password?: string
@@ -52,6 +53,7 @@ export async function getStatus(): Promise<SettingsStatus> {
     slackWorkspaces: s.slackWorkspaces ?? [],
     showAppBadge: s.showAppBadge ?? true,
     showTrayCounts: s.showTrayCounts ?? true,
+    localReview: s.localReview === true,
     hasPassword: Boolean(s.password),
     encrypted: safeStorage.isEncryptionAvailable(),
   }
@@ -81,6 +83,7 @@ export async function save(input: SettingsInput): Promise<void> {
     slackWorkspaces: normalizeSlackWorkspaces(input.slackWorkspaces ?? []),
     showAppBadge: input.showAppBadge,
     showTrayCounts: input.showTrayCounts,
+    localReview: input.localReview === true,
     password: prev.password,
     passwordEncrypted: prev.passwordEncrypted,
     ui: prev.ui,

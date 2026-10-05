@@ -117,6 +117,8 @@ function registerIpc(): void {
   ipcMain.handle('gerrit:testConnection', () => service.testConnection())
   ipcMain.handle('gerrit:fetchDashboard', () => service.fetchDashboard())
   ipcMain.handle('gerrit:fetchChange', (_e, id: number) => service.fetchChange(id))
+  ipcMain.handle('gerrit:reviewFiles', (_e, link: ChangeLink) => service.reviewFiles(link))
+  ipcMain.handle('gerrit:reviewDiff', (_e, link: ChangeLink, path: string) => service.reviewDiff(link, path))
   ipcMain.handle('gerrit:act', (_e, action: ChangeAction) => service.act(action))
   ipcMain.handle('gerrit:suggestReviewers', (_e, id: number, q: string) => service.suggestReviewers(id, q))
   ipcMain.handle('gerrit:suggestAccounts', (_e, q: string) => service.suggestAccounts(q))

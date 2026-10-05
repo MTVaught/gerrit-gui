@@ -10,7 +10,7 @@ import { MergersEditor } from './MergersEditor.tsx'
 import { visibleTabs } from './Board.tsx'
 import { PlugIcon } from './Icons.tsx'
 
-type SectionId = 'team' | 'mergers' | 'scope' | 'slack' | 'app-icon' | 'window' | 'menu-bar' | 'debug' | 'about'
+type SectionId = 'beta' | 'team' | 'mergers' | 'scope' | 'slack' | 'app-icon' | 'window' | 'menu-bar' | 'debug' | 'about'
 
 const SECTIONS: { id: SectionId; label: string; desktopOnly?: boolean }[] = [
   { id: 'team', label: 'Teams' },
@@ -20,6 +20,7 @@ const SECTIONS: { id: SectionId; label: string; desktopOnly?: boolean }[] = [
   { id: 'app-icon', label: 'App icon', desktopOnly: true },
   { id: 'window', label: 'Window', desktopOnly: true },
   { id: 'menu-bar', label: 'Menu bar', desktopOnly: true },
+  { id: 'beta', label: 'Beta' },
   { id: 'debug', label: 'Debug' },
   { id: 'about', label: 'About', desktopOnly: true },
 ]
@@ -101,6 +102,15 @@ export function SettingsPanel(props: {
             <h1>{current.label}</h1>
             <SyncPill state={sync} />
           </div>
+        )}
+        {section === 'beta' && (
+          <>
+            <label className="check">
+              <input type="checkbox" checked={s.localReview} onChange={(e) => void apply({ localReview: e.target.checked })} />
+              Open reviews in the app
+            </label>
+            <p className="muted small">Try the full-file review viewer. Each selected file loads completely, with all unchanged lines visible. Search and navigation work locally after loading. Comments and votes still use Gerrit.</p>
+          </>
         )}
         {section === 'team' && (
           <>

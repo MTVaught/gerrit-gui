@@ -1,4 +1,4 @@
-import type { AccountInfo, ChangeInfo, ChangeLink, FileInfo, SuggestedReviewerInfo } from '../shared/types.ts'
+import type { AccountInfo, ChangeInfo, ChangeLink, ReviewDiff, FileInfo, SuggestedReviewerInfo } from '../shared/types.ts'
 import { changePath } from '../shared/url.ts'
 
 const XSSI_PREFIX = ")]}'"
@@ -112,8 +112,19 @@ export class GerritClient {
    * their line counts. Both are patch set numbers; Gerrit takes them as
    * revision ids. Keys starting with "/" are the commit message and merge list.
    */
-  files(id: number, patchSet: number, base: number): Promise<Record<string, FileInfo>> {
-    return this.req('GET', `/changes/${id}/revisions/${patchSet}/files`, undefined, new URLSearchParams({ base: String(base) }))
+  files(id: number, patchSet: number, base?: number): Promise<Record<string, FileInfo>> {
+    return this.req('GET', `/changes/${id}/revisions/${patchSet}/files`, undefined, new URLSearchParams(base === undefined ? {} : { base: String(base) }))
+  }
+
+  /** Full context means both sides are complete, including every unchanged line. */
+  async diff(link: ChangeLink, path: string): Promise<ReviewDiff> {
+    if (!Number.isInteger(link.patchSet) || link.patchSet! < 1) throw new Error('A patch set is required for local review')
+    const query = new URLSearchParams({ context: 'ALL', whitespace: 'IGNORE_NONE' })
+    if (link.basePatchSet !== undefined) query.set('base', String(link.basePatchSet))
+    const diff = await this.req<ReviewDiff>('GET', `/changes/${link.id}/revisions/${link.patchSet}/files/${encodeURIComponent(path)}/diff`, undefined, query)
+    if (diff.binary) throw new Error('Binary files cannot be displayed in local review. Open this change in Gerrit.')
+    if (!Array.isArray(diff.content) || diff.content.some((c) => c.skip)) throw new Error('Gerrit did not return the full file. Open this change in Gerrit.')
+    return diff
   }
 
   setReady(id: number) {

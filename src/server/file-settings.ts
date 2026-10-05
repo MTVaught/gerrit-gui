@@ -24,6 +24,7 @@ interface Stored {
   compactOnTop?: boolean
   slackWorkspaces?: SlackWorkspace[]
   showAppBadge?: boolean
+  localReview?: boolean
   showTrayCounts?: boolean
 }
 
@@ -44,7 +45,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
   return {
     async getStatus(): Promise<SettingsStatus> {
       const s = await read()
-      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], ...storedTeams(s), mergers: s.mergers ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, compactOnTop: s.compactOnTop ?? true, slackWorkspaces: s.slackWorkspaces ?? [], hasPassword: Boolean(s.password), encrypted: false }
+      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], ...storedTeams(s), mergers: s.mergers ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, localReview: s.localReview === true, compactOnTop: s.compactOnTop ?? true, slackWorkspaces: s.slackWorkspaces ?? [], hasPassword: Boolean(s.password), encrypted: false }
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
@@ -66,6 +67,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
         slackWorkspaces: normalizeSlackWorkspaces(input.slackWorkspaces ?? []),
         showAppBadge: input.showAppBadge,
         showTrayCounts: input.showTrayCounts,
+        localReview: input.localReview === true,
       }
       await fs.mkdir(path.dirname(file), { recursive: true })
       await fs.writeFile(file, JSON.stringify(next, null, 2), { mode: 0o600 })

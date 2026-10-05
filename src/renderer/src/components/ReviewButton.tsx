@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeLink, ChangeView } from '../../../shared/types.ts'
 import { reviewLink } from '../../../shared/model.ts'
 import { api } from '../api.ts'
+import { useSettings } from '../settings-context.ts'
+import { LocalReview } from './LocalReview.tsx'
 
 /**
  * The reviewer's way into Gerrit. The main part opens the diff from the last
@@ -12,6 +14,8 @@ import { api } from '../api.ts'
  */
 export function ReviewButton(props: { view: ChangeView }) {
   const { view: v } = props
+  const { settings } = useSettings()
+  const [localLink, setLocalLink] = useState<ChangeLink | null>(null)
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
@@ -84,7 +88,8 @@ export function ReviewButton(props: { view: ChangeView }) {
 
   function go(link: ChangeLink) {
     setOpen(false)
-    void api.openChange(link)
+    if (settings?.localReview && link.patchSet !== undefined) setLocalLink(link)
+    else void api.openChange(link)
   }
 
   async function copy() {
@@ -97,7 +102,7 @@ export function ReviewButton(props: { view: ChangeView }) {
   const primary = v.needsMyReview ? ' primary' : ''
   return (
     <div className="split" ref={wrap}>
-      <button className={'btn split-main review-main' + primary} title={title} onClick={() => go(main)}>
+      <button className={'btn split-main review-main' + primary} title={settings?.localReview ? `Open full-file local review of patch set ${v.patchSet}` : title} onClick={() => go(main)}>
         {label}
         <span className="arrow" aria-hidden="true">
           ↗
@@ -113,6 +118,7 @@ export function ReviewButton(props: { view: ChangeView }) {
       >
         ▾
       </button>
+      {localLink && <LocalReview link={localLink} subject={v.change.subject} onClose={() => setLocalLink(null)} />}
       {open && pos && (
         <div className="menu" role="menu" style={{ top: pos.top, right: pos.right }}>
           {options.map((o) => (

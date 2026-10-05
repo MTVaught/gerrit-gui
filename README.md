@@ -100,6 +100,27 @@ The Verified vote on the current patch set is shown after the patch set
 number on an open change: a green check for +1, a red cross for −1, nothing
 while CI has not voted. A new patch set clears it, as it clears the vote.
 
+## Local review beta
+
+Settings → Beta → **Open reviews in the app** enables a read-only full-file
+viewer. It is off by default. With it enabled, the Review button and its
+patch-set comparison options open the local viewer. The comparison still
+starts from your last reviewed patch set, or from base on a first review.
+
+The selected file loads with all context on both sides. There are no collapsed
+sections. Scrolling, whole-file search, line jumps and change navigation use
+that loaded content without further Gerrit requests. Files opened during the
+same review stay cached until you close it, so memory use grows with the files
+you open. Each side can scroll horizontally; vertical scrolling is synchronized.
+Use Ctrl+F or Cmd+F to search the whole loaded file.
+
+The footer reports request/transfer time, row preparation time and the first
+frame delay to help compare large files. Rendering creates only the visible
+rows. Syntax and character-level highlighting, comments and voting are outside
+this initial proof of concept. Use **Open in Gerrit** for comments, votes and
+binary files. Gerrit still computes the diff, so a slow server response can
+still delay opening a file.
+
 ## How the states are related to Gerrit data
 
 The application has no database. The application calculates each state from

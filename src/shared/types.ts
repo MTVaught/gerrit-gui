@@ -274,7 +274,16 @@ export interface ChangeLink {
 /** How the macOS menu bar item shows the per-category action counts. */
 export type BadgeStyle = 'color' | 'glyph'
 
+export interface ReviewDiff {
+  meta_a?: { name: string; lines: number }
+  meta_b?: { name: string; lines: number }
+  binary?: boolean
+  content: { ab?: string[]; a?: string[]; b?: string[]; skip?: number }[]
+}
+
 export interface Settings {
+  /** Opt-in read-only full-file review proof of concept. */
+  localReview: boolean
   serverUrl: string
   username: string
   /** Colored pills, or monochrome glyphs for people who cannot tell the colors apart. */
