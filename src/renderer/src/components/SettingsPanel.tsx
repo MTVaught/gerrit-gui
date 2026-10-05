@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace } from '../../../shared/types.ts'
-import { STATE_LABEL, accountKeys, changeNumberOf, classify, explainView, groupsFor, isSlackTeamId, mergersReflect, slackWorkspacesReflect, teamPicks, teamTabLabel, type TeamSetup } from '../../../shared/model.ts'
+import type { AccountInfo, ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace } from '../../../shared/types.ts'
+import { STATE_LABEL, accountKeys, changeNumberOf, classify, displayName, explainView, groupsFor, isSlackTeamId, mergersReflect, preferredKey, slackWorkspacesReflect, teamPicks, teamTabLabel, type TeamSetup } from '../../../shared/model.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
 import { ago } from '../time.ts'
@@ -39,6 +39,10 @@ export function SettingsPanel(props: {
   compact: boolean
   /** Write these fields over the current settings. */
   save: (patch: Partial<SettingsInput>) => Promise<void>
+  /** Debug: who the board is shown as instead of the signed-in user, or null. */
+  pretend: AccountInfo | null
+  /** Debug: show the board as this person (username, email or id), or as oneself again with null. Rejects when no account matches. */
+  onPretend: (key: string | null) => Promise<void>
 }) {
   const sections = SECTIONS.filter((s) => !s.desktopOnly || !isBrowserMode)
   const [section, setSection] = useState<SectionId>('team')
@@ -232,7 +236,12 @@ export function SettingsPanel(props: {
             </p>
           </>
         )}
-        {section === 'debug' && <DebugSection setup={setup} connected={connected} />}
+        {section === 'debug' && (
+          <>
+            <PretendSection pretend={props.pretend} onPretend={props.onPretend} connected={connected} />
+            <DebugSection setup={setup} connected={connected} />
+          </>
+        )}
         {section === 'about' && <AboutSection />}
       </main>
     </div>
@@ -370,6 +379,121 @@ function SlackWorkspacesSection(props: { rows: SlackWorkspace[]; onSave: (rows: 
   )
 }
 
+/**
+ * See the board as someone else: the signed-in account is swapped for the
+ * one picked here in everything that is read, and every write is refused
+ * until it is switched off. The requests still carry the user's own
+ * credentials, so what the server lets them see or do stays their own:
+ * another person's private changes stay hidden and +2 rights are the user's.
+ */
+function PretendSection(props: { pretend: AccountInfo | null; onPretend: (key: string | null) => Promise<void>; connected: boolean }) {
+  const [q, setQ] = useState('')
+  const [suggestions, setSuggestions] = useState<AccountInfo[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!props.connected || q.trim().length < 2) {
+      setSuggestions([])
+      return
+    }
+    let cancelled = false
+    const t = setTimeout(() => {
+      api
+        .suggestAccounts(q.trim())
+        .then((s) => {
+          if (!cancelled) setSuggestions(s)
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestions([])
+        })
+    }, 200)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [q, props.connected])
+
+  async function pretend(key: string | null) {
+    setBusy(true)
+    setError(null)
+    setSuggestions([])
+    try {
+      await props.onPretend(key)
+      setQ('')
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <h3>See the board as someone else</h3>
+      <p className="muted">
+        Pick a person and the board, the tabs and the counts show what they see: their changes, the reviews asked of
+        them, their team tab. The switch waits for any actions in progress to finish. <b>Nothing can be changed while it is on</b>: every button on the board is refused, on
+        purpose, until you stop. Only what is read changes; the requests still go out as you, so private changes you
+        cannot see stay hidden and the +2 rights shown are yours, not theirs.
+      </p>
+      {props.pretend ? (
+        <div className="row pretend-current">
+          <span>
+            Shown as <b>{displayName(props.pretend)}</b>
+            <span className="muted"> {props.pretend.username ?? ''}{props.pretend.email ? ` <${props.pretend.email}>` : ''}</span>
+          </span>
+          <button type="button" className="btn" disabled={busy} onClick={() => void pretend(null)}>
+            {busy ? 'Stopping…' : 'Stop pretending'}
+          </button>
+        </div>
+      ) : (
+        <form
+          className="row inspect-form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (q.trim()) void pretend(q.trim())
+          }}
+        >
+          <div className="add-reviewer">
+            <input
+              value={q}
+              placeholder="Username, email or account id"
+              aria-label="Person to see the board as"
+              disabled={!props.connected || busy}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setSuggestions([])
+              }}
+            />
+            {suggestions.length > 0 && (
+              <ul className="suggestions">
+                {suggestions.map((a) => (
+                  <li key={a._account_id}>
+                    <button type="button" className="link" onClick={() => void pretend(preferredKey(a) ?? String(a._account_id))}>
+                      {displayName(a)} <span className="muted">{a.username ?? ''}{a.email ? ` <${a.email}>` : ''}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <button type="submit" className="btn" disabled={!props.connected || busy || q.trim() === ''}>
+            {busy ? 'Switching…' : 'Pretend'}
+          </button>
+        </form>
+      )}
+      {error && (
+        <p className="error small" role="alert">
+          {error}
+        </p>
+      )}
+      <p className="muted small">Lasts until you stop or quit the app. The look-up below reads the change as that person too.</p>
+      <h3>Look up a change</h3>
+    </>
+  )
+}
+
 type Inspection = { view: ChangeView; raw: ChangeInspection }
 
 /**
@@ -480,7 +604,7 @@ function InspectionReport(props: { r: Inspection; setup: TeamSetup }) {
       </h3>
       <p className="muted small">
         {c.project} · {c.branch} · {c.status} · owned by {c.owner.name ?? c.owner.username ?? c.owner._account_id}
-        {v.isMine ? ' (you)' : ''} · signed in as {raw.self.username ?? raw.self.name}
+        {v.isMine ? ' (you)' : ''} · seen as {raw.self.username ?? raw.self.name}
       </p>
       <h3>Why</h3>
       <ol className="steps">

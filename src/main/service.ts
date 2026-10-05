@@ -44,6 +44,10 @@ export interface Service {
   changeUrl(link: ChangeLink): Promise<string>
   /** One change read from NoteDb, plus the signed-in account, for the Debug page. */
   inspectChange(id: number): Promise<ChangeInspection>
+  /** The account the board is shown as instead of the signed-in one (Debug page), or null. */
+  getPretend(): Promise<AccountInfo | null>
+  /** Show the board as `key` sees it, read-only, or stop with null. Resolves with the account. */
+  setPretend(key: string | null): Promise<AccountInfo | null>
 }
 
 /**
@@ -82,10 +86,25 @@ export function explainConnectionError(e: unknown): string {
 }
 
 export function createService(store: SettingsStore, fetchImpl: FetchLike): Service {
-  async function client(): Promise<GerritClient> {
+  // Who the board is shown as, when not the signed-in user: set on the Debug
+  // page, kept for the life of the process only. Every client handed out
+  // while it is set is read-only (see GerritClient.pretendAs).
+  let pretend: AccountInfo | null = null
+  let switchingPretend = false
+  let activeActions = 0
+  let actionsDrained: (() => void) | undefined
+
+  /** A client as the signed-in user, whatever the Debug page says. */
+  async function realClient(): Promise<GerritClient> {
     const creds = await store.getCredentials()
     if (!creds) throw new Error('Gerrit server and credentials are not configured')
     return new GerritClient(creds.serverUrl, creds.username, creds.password, fetchImpl)
+  }
+
+  async function client(): Promise<GerritClient> {
+    const g = await realClient()
+    g.pretendAs = pretend
+    return g
   }
 
   return {
@@ -93,7 +112,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
     saveSettings: (input) => store.save(input),
 
     async testConnection() {
-      const g = await client()
+      const g = await realClient()
       try {
         return await g.self()
       } catch (e) {
@@ -111,94 +130,106 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
     },
 
     async act(action) {
-      const g = await client()
-      switch (action.type) {
-        case 'requestReview':
-          // A ready-to-merge tag (and the merger named with it) from an earlier
-          // patch set has no meaning once the author restarts the review, so
-          // it goes with the request.
-          if (action.clearTags?.length) await g.setHashtags(action.id, undefined, action.clearTags)
-          // The patch set joins the ones asked before, so the rounds stay on record.
-          // The kind goes with the request: an in-person one records its patch set, a pass-around one drops any earlier record.
-          await g.setCustomKeyedValues(
-            action.id,
-            { [REVIEW_REQUESTED_KEY]: requestedPatchSetsValue(action.history, action.patchSet), ...(action.inPerson ? { [IN_PERSON_REVIEW_KEY]: String(action.patchSet) } : {}) },
-            [...(action.inPerson ? [] : [IN_PERSON_REVIEW_KEY]), ...(action.clearTags?.length ? [READY_TO_MERGE_KEY] : [])],
-          )
-          return
-        case 'setReviewKind':
-          // The round stays as it is; only the kind of the open request changes.
-          await g.setCustomKeyedValues(action.id, action.inPerson ? { [IN_PERSON_REVIEW_KEY]: String(action.patchSet) } : {}, action.inPerson ? [] : [IN_PERSON_REVIEW_KEY])
-          return
-        case 'requestMerge': {
-          // The state tag and the addressee go in one request; a previous
-          // merger tag leaves in the same one, so exactly one person is named.
-          const tag = mergerTag(await usernameFor(g, action.merger))
-          const remove = (action.replace ?? []).filter((t) => t !== tag)
-          await g.setHashtags(action.id, [READY_TO_MERGE_TAG, tag], remove)
-          // The patch set the tag is for. Only the owner can write it, which
-          // is who asks; the clears leave it behind, since the tag gates it.
-          await g.setCustomKeyedValues(action.id, { [READY_TO_MERGE_KEY]: String(action.patchSet) })
-          return
-        }
-        case 'withdrawReview': {
-          // The latest round comes off the list; earlier ones stay on record.
-          // The kind marker is for the open request only, so it goes too.
-          const keep = action.history.slice(0, -1)
-          await g.setCustomKeyedValues(action.id, keep.length > 0 ? { [REVIEW_REQUESTED_KEY]: keep.join(',') } : {}, [...(keep.length > 0 ? [] : [REVIEW_REQUESTED_KEY]), IN_PERSON_REVIEW_KEY])
-          return
-        }
-        case 'setWip':
-          await (action.wip ? g.setWip(action.id) : g.setReady(action.id))
-          return
-        case 'setPrivate':
-          await g.setPrivate(action.id, action.private)
-          return
-        case 'hashtag':
-          await g.setHashtags(action.id, action.add, action.remove)
-          return
-        case 'setSequence':
-          // One request per change; Gerrit has no bulk tag write.
-          for (const n of action.add) await g.setHashtags(n, [SEQUENCE_TAG])
-          for (const n of action.remove) await g.setHashtags(n, [], [SEQUENCE_TAG])
-          return
-        case 'addReviewer':
-          await g.addReviewer(action.id, action.reviewer)
-          return
-        case 'removeReviewer':
-          await g.removeReviewer(action.id, action.accountId)
-          return
-        case 'addPrimaryReviewer': {
-          // The tag names a person, so the input has to be one account. The
-          // lookup also turns whatever was typed into the username (or the
-          // email of an account without one), which is what the tag stores.
-          let account: AccountInfo
-          try {
-            account = await g.account(action.reviewer)
-          } catch (e) {
-            if ((e as GerritError).status === 404) throw new Error(`No account matches "${action.reviewer}". A primary reviewer is one person; groups cannot be tagged.`)
-            throw e
+      if (pretend) throw new Error(`Nothing was changed: the board is shown as ${pretend.name ?? pretend.username ?? pretend._account_id} and read-only. Stop pretending in Settings › Debug first.`)
+      if (switchingPretend) throw new Error('Nothing was changed: waiting for outstanding actions before switching the board. Try again when the switch finishes.')
+      // Register before the first await, including time spent obtaining credentials.
+      activeActions++
+      try {
+        const g = await client()
+        switch (action.type) {
+          case 'requestReview':
+            // A ready-to-merge tag (and the merger named with it) from an earlier
+            // patch set has no meaning once the author restarts the review, so
+            // it goes with the request.
+            if (action.clearTags?.length) await g.setHashtags(action.id, undefined, action.clearTags)
+            // The patch set joins the ones asked before, so the rounds stay on record.
+            // The kind goes with the request: an in-person one records its patch set, a pass-around one drops any earlier record.
+            await g.setCustomKeyedValues(
+              action.id,
+              { [REVIEW_REQUESTED_KEY]: requestedPatchSetsValue(action.history, action.patchSet), ...(action.inPerson ? { [IN_PERSON_REVIEW_KEY]: String(action.patchSet) } : {}) },
+              [...(action.inPerson ? [] : [IN_PERSON_REVIEW_KEY]), ...(action.clearTags?.length ? [READY_TO_MERGE_KEY] : [])],
+            )
+            return
+          case 'setReviewKind':
+            // The round stays as it is; only the kind of the open request changes.
+            await g.setCustomKeyedValues(action.id, action.inPerson ? { [IN_PERSON_REVIEW_KEY]: String(action.patchSet) } : {}, action.inPerson ? [] : [IN_PERSON_REVIEW_KEY])
+            return
+          case 'requestMerge': {
+            // The state tag and the addressee go in one request; a previous
+            // merger tag leaves in the same one, so exactly one person is named.
+            const tag = mergerTag(await usernameFor(g, action.merger))
+            const remove = (action.replace ?? []).filter((t) => t !== tag)
+            await g.setHashtags(action.id, [READY_TO_MERGE_TAG, tag], remove)
+            // The patch set the tag is for. Only the owner can write it, which
+            // is who asks; the clears leave it behind, since the tag gates it.
+            await g.setCustomKeyedValues(action.id, { [READY_TO_MERGE_KEY]: String(action.patchSet) })
+            return
           }
-          const key = preferredKey(account)
-          if (!key) throw new Error(`${account.name ?? action.reviewer} has neither a username nor an email address, so there is nothing to tag.`)
-          // Adding an existing reviewer is a no-op in Gerrit, so no check first.
-          await g.addReviewer(action.id, String(account._account_id))
-          await g.setHashtags(action.id, [reviewerTag(key)])
-          return
-        }
-        case 'removePrimaryReviewer': {
-          // The tag is what makes the person primary and anyone may edit it;
-          // the reviewer row in Gerrit belongs to the owner, so that step may
-          // be refused and the person then stays on the change as a plain
-          // reviewer.
-          await g.setHashtags(action.id, [], [reviewerTag(action.key)])
-          if (action.accountId === undefined) return
-          try {
+          case 'withdrawReview': {
+            // The latest round comes off the list; earlier ones stay on record.
+            // The kind marker is for the open request only, so it goes too.
+            const keep = action.history.slice(0, -1)
+            await g.setCustomKeyedValues(action.id, keep.length > 0 ? { [REVIEW_REQUESTED_KEY]: keep.join(',') } : {}, [...(keep.length > 0 ? [] : [REVIEW_REQUESTED_KEY]), IN_PERSON_REVIEW_KEY])
+            return
+          }
+          case 'setWip':
+            await (action.wip ? g.setWip(action.id) : g.setReady(action.id))
+            return
+          case 'setPrivate':
+            await g.setPrivate(action.id, action.private)
+            return
+          case 'hashtag':
+            await g.setHashtags(action.id, action.add, action.remove)
+            return
+          case 'setSequence':
+            // One request per change; Gerrit has no bulk tag write.
+            for (const n of action.add) await g.setHashtags(n, [SEQUENCE_TAG])
+            for (const n of action.remove) await g.setHashtags(n, [], [SEQUENCE_TAG])
+            return
+          case 'addReviewer':
+            await g.addReviewer(action.id, action.reviewer)
+            return
+          case 'removeReviewer':
             await g.removeReviewer(action.id, action.accountId)
-          } catch (e) {
-            if ((e as GerritError).status !== 403) throw e
+            return
+          case 'addPrimaryReviewer': {
+            // The tag names a person, so the input has to be one account. The
+            // lookup also turns whatever was typed into the username (or the
+            // email of an account without one), which is what the tag stores.
+            let account: AccountInfo
+            try {
+              account = await g.account(action.reviewer)
+            } catch (e) {
+              if ((e as GerritError).status === 404) throw new Error(`No account matches "${action.reviewer}". A primary reviewer is one person; groups cannot be tagged.`)
+              throw e
+            }
+            const key = preferredKey(account)
+            if (!key) throw new Error(`${account.name ?? action.reviewer} has neither a username nor an email address, so there is nothing to tag.`)
+            // Adding an existing reviewer is a no-op in Gerrit, so no check first.
+            await g.addReviewer(action.id, String(account._account_id))
+            await g.setHashtags(action.id, [reviewerTag(key)])
+            return
           }
-          return
+          case 'removePrimaryReviewer': {
+            // The tag is what makes the person primary and anyone may edit it;
+            // the reviewer row in Gerrit belongs to the owner, so that step may
+            // be refused and the person then stays on the change as a plain
+            // reviewer.
+            await g.setHashtags(action.id, [], [reviewerTag(action.key)])
+            if (action.accountId === undefined) return
+            try {
+              await g.removeReviewer(action.id, action.accountId)
+            } catch (e) {
+              if ((e as GerritError).status !== 403) throw e
+            }
+            return
+          }
+        }
+      } finally {
+        activeActions--
+        if (activeActions === 0) {
+          actionsDrained?.()
+          actionsDrained = undefined
         }
       }
     },
@@ -211,6 +242,31 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
       const g = await client()
       const [self, change] = await Promise.all([g.self(), g.change(id)])
       return { self, change }
+    },
+
+    getPretend: async () => pretend,
+    async setPretend(key) {
+      if (switchingPretend) throw new Error('The board is already switching. Wait for the switch to finish.')
+      // Close admission before waiting, so new actions cannot prolong the wait
+      // or retain a writable client across the mode change.
+      switchingPretend = true
+      try {
+        if (activeActions > 0) await new Promise<void>((resolve) => { actionsDrained = resolve })
+        if (key === null || key.trim() === '') {
+          pretend = null
+          return null
+        }
+        const g = await realClient()
+        try {
+          pretend = await g.account(key.trim())
+        } catch (e) {
+          if ((e as GerritError).status === 404) throw new Error(`No account matches "${key}". Enter a username, an email address or an account id.`)
+          throw e
+        }
+        return pretend
+      } finally {
+        switchingPretend = false
+      }
     },
   }
 }

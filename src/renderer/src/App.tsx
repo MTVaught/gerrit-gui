@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, NO_TEAMS, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, defaultTeamPick, tabCounts, tabSegments, teamMembers, teamPicks, teamTabLabel, totalActions, withChange, type SortId, type TabSegment, type TeamPick, type TeamSetup, type ViewFilter } from '../../shared/model.ts'
+import type { AccountInfo, ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, NO_TEAMS, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, defaultTeamPick, displayName, tabCounts, tabSegments, teamMembers, teamPicks, teamTabLabel, totalActions, withChange, type SortId, type TabSegment, type TeamPick, type TeamSetup, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
@@ -27,6 +27,10 @@ export function App() {
   // Search and author filter last for the session; the sort is remembered.
   const [filter, setFilter] = useState<ViewFilter>(EMPTY_FILTER)
   const [compact, setCompact] = useState(false)
+  // Debug: the board is shown as this person sees it, read-only. Held by the main process, so a reload of the window keeps it.
+  const [pretend, setPretend] = useState<AccountInfo | null>(null)
+  const pretendRef = useRef(pretend)
+  pretendRef.current = pretend
   const [, setTick] = useState(0)
   const update = useUpdateState()
   const seenNeedsReview = useRef<Set<number> | null>(null)
@@ -47,6 +51,8 @@ export function App() {
       rememberAccounts([d.self, ...d.open.flatMap((c) => [c.owner, ...(c.reviewers?.REVIEWER ?? [])])])
       setData(d)
       setError(null)
+      // Someone else's board is not something to be notified about.
+      if (pretendRef.current) return
       notifyNewReviews(d, seenNeedsReview)
       notifyMergeRequests(d, seenMergeRequests)
     } catch (e) {
@@ -68,6 +74,7 @@ export function App() {
   useEffect(() => {
     void api.getSettings().then(setSettings)
     void api.getUi().then((u) => setCompact(u.compact))
+    void api.getPretend().then(setPretend, () => undefined)
     const offCompact = api.onCompactChanged(setCompact)
     const offSettings = api.onSettingsChanged(() => void api.getSettings().then(setSettings))
     const offRefresh = api.onRefreshRequested(() => void refresh())
@@ -116,6 +123,21 @@ export function App() {
       window.removeEventListener('focus', onFocus)
     }
   }, [configured, refresh])
+
+  // Debug: show the board as someone else, or (null) as oneself again. The
+  // board is re-read either way; the notifications start over as after a
+  // reconnect, so the switch back does not announce everything as new.
+  const changePretend = useCallback(
+    async (key: string | null) => {
+      const account = await api.setPretend(key)
+      setPretend(account)
+      seenNeedsReview.current = null
+      seenMergeRequests.current = null
+      setData(null)
+      await refresh()
+    },
+    [refresh],
+  )
 
   const setup = useMemo<TeamSetup>(() => (settings ? { teams: settings.teams, primaryTeam: settings.primaryTeam } : NO_TEAMS), [settings])
   // Everyone on a watched team: their open changes are fetched whole, so the list decides what is on the board.
@@ -166,6 +188,11 @@ export function App() {
   // the board shows what Gerrit has either way.
   const act = useCallback(
     async (action: ChangeAction) => {
+      // The service refuses too; this saves the round trip and the reload.
+      if (pretendRef.current) {
+        setError(`Nothing was changed: the board is shown as ${displayName(pretendRef.current)} and read-only. Stop pretending in Settings › Debug first.`)
+        return
+      }
       setBusy(true)
       try {
         await api.act(action)
@@ -333,6 +360,17 @@ export function App() {
         </div>
       </header>
 
+      {pretend && (
+        <div className="banner warn pretend" role="status">
+          <span>
+            <b>Read-only: shown as {displayName(pretend)}</b>
+            {pretend.username ? ` (${pretend.username})` : ''} would see it. Every button on the board is blocked. Private changes and +2 rights are still your own.
+          </span>
+          <button type="button" className="btn" onClick={() => void changePretend(null)}>
+            Stop pretending
+          </button>
+        </div>
+      )}
       {error && (
         <div className="banner error" role="alert">
           {error}
@@ -351,7 +389,7 @@ export function App() {
       )}
 
       {!settings ? null : showSettings ? (
-        <SettingsPanel settings={settings} compact={compact} save={settingsHandle.save} />
+        <SettingsPanel settings={settings} compact={compact} save={settingsHandle.save} pretend={pretend} onPretend={changePretend} />
       ) : !configured ? (
         <div className="panel empty not-connected">
           <p>Not connected to Gerrit yet.</p>

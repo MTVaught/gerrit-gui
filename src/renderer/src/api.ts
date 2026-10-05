@@ -35,6 +35,8 @@ function browserApi(): Api {
     },
     changeUrl: (link) => call('changeUrl', [link]),
     inspectChange: (id) => call('inspectChange', [id]),
+    getPretend: () => call('getPretend'),
+    setPretend: (key) => call('setPretend', [key]),
     openUrl: async (url) => {
       if (/^https:\/\//i.test(url)) window.open(url, '_blank', 'noopener')
     },

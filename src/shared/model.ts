@@ -1105,20 +1105,22 @@ function projectScope(projects: string[]): string {
  * A private change of another author is never shown, even when the user is
  * a reviewer or CC on it and Gerrit would return it, so every query leaves
  * those out; `isVisibleOnBoard` applies the same rule to the results.
+ *
+ * `selfRef` is what the queries call the user: `self` for the signed-in
+ * account, or an account id when the board is shown as someone else sees it
+ * (the Debug page in Settings).
  */
-export function dashboardQueries(projects: string[] = [], selfKeys: string[] = [], members: string[] = []): { direct: string; wipScan: string; merged: string; team: string } {
-  const mine = ['owner:self', 'reviewer:self', `hashtag:${READY_TO_MERGE_TAG}`, ...selfKeys.map((k) => `hashtag:${reviewerTag(k)}`)]
+export function dashboardQueries(projects: string[] = [], selfKeys: string[] = [], members: string[] = [], selfRef = 'self'): { direct: string; wipScan: string; merged: string; team: string } {
+  const mine = [`owner:${selfRef}`, `reviewer:${selfRef}`, `hashtag:${READY_TO_MERGE_TAG}`, ...selfKeys.map((k) => `hashtag:${reviewerTag(k)}`)]
   const owners = normalizeTeam(members).map((k) => `owner:${k}`)
+  const notOthersPrivate = `(owner:${selfRef} OR -is:private)`
   return {
-    direct: `is:open (${mine.join(' OR ')}) ${NOT_OTHERS_PRIVATE}`,
-    wipScan: `is:open is:wip -owner:self -is:private${projectScope(projects)}`,
-    merged: `is:merged (owner:self OR reviewer:self) -age:14d ${NOT_OTHERS_PRIVATE}`,
-    team: owners.length === 0 ? '' : `is:open -owner:self -is:private (${owners.join(' OR ')})${projectScope(projects)}`,
+    direct: `is:open (${mine.join(' OR ')}) ${notOthersPrivate}`,
+    wipScan: `is:open is:wip -owner:${selfRef} -is:private${projectScope(projects)}`,
+    merged: `is:merged (owner:${selfRef} OR reviewer:${selfRef}) -age:14d ${notOthersPrivate}`,
+    team: owners.length === 0 ? '' : `is:open -owner:${selfRef} -is:private (${owners.join(' OR ')})${projectScope(projects)}`,
   }
 }
-
-/** Query clause that keeps the user's own private changes and drops everyone else's. */
-const NOT_OTHERS_PRIVATE = '(owner:self OR -is:private)'
 
 /**
  * Whether the board may show a change: everything except a private change

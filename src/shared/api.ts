@@ -35,6 +35,15 @@ export interface Api {
   changeUrl(link: ChangeLink): Promise<string>
   /** One change by number, with the board's fields, for the Debug page in Settings. */
   inspectChange(id: number): Promise<ChangeInspection>
+  /** Debug: the account the board is shown as instead of the signed-in one, or null. Not kept across restarts. */
+  getPretend(): Promise<AccountInfo | null>
+  /**
+   * Debug: show the board as `key` (username, email or account id) sees it,
+   * read-only, until a null stops it. Waits for outstanding actions to finish
+   * before switching; new actions are refused during the switch. Resolves
+   * with the account, or throws when no account matches.
+   */
+  setPretend(key: string | null): Promise<AccountInfo | null>
   /** Open an https link (a Slack conversation) in the browser, or in the Slack app when Settings knows the workspace. */
   openUrl(url: string): Promise<void>
   getUi(): Promise<UiState>
