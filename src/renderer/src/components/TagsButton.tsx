@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { pastDraft } from '../../../shared/model.ts'
 import { NOISE_TRAILERS, messageBody, parseTrailers, shownTrailers } from '../../../shared/trailers.ts'
 import type { ReviewState } from '../../../shared/types.ts'
@@ -18,6 +18,14 @@ export function TagsButton(props: { message: string | undefined; state: ReviewSt
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
   const wrap = useRef<HTMLSpanElement>(null)
+  const popover = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (!open || !wrap.current || !popover.current) return
+    const r = wrap.current.getBoundingClientRect()
+    const width = popover.current.getBoundingClientRect().width
+    setPos({ top: r.bottom + 4, left: Math.max(4, Math.min(r.left, document.documentElement.clientWidth - width - 4)) })
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -47,9 +55,7 @@ export function TagsButton(props: { message: string | undefined; state: ReviewSt
     e.stopPropagation()
     if (!open && wrap.current) {
       const r = wrap.current.getBoundingClientRect()
-      // Keep the popover on screen when the button sits near the right edge.
-      const width = props.small ? 380 : 520
-      setPos({ top: r.bottom + 4, left: Math.max(4, Math.min(r.left, document.documentElement.clientWidth - width - 4)) })
+      setPos({ top: r.bottom + 4, left: r.left })
     }
     setOpen((o) => !o)
   }
@@ -66,7 +72,7 @@ export function TagsButton(props: { message: string | undefined; state: ReviewSt
         <span>{none ? 'no tags' : shown.length}</span>
       </button>
       {open && pos && (
-        <div className={'menu tags-pop' + (props.small ? ' sm' : '')} style={{ top: pos.top, left: pos.left }} onClick={(e) => e.stopPropagation()}>
+        <div ref={popover} className={'menu tags-pop' + (props.small ? ' sm' : '')} style={{ top: pos.top, left: pos.left }} onClick={(e) => e.stopPropagation()}>
           <div className="footer-block">
             {body && <div className="body">{body}</div>}
             {all.length === 0 && <div className="muted">The commit message has no tags.</div>}
