@@ -286,8 +286,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .tagbtn:hover, .tagbtn.open { color: var(--fg); border-color: var(--muted); background: var(--panel); }
 .tagbtn.missing, .tagbtn.missing:hover, .tagbtn.missing.open { color: #fff; border-color: var(--badge-red); background: var(--badge-red); font-weight: 600; }
 .tagbtn.sm { padding: 0 5px 0 4px; font-size: 10.5px; vertical-align: 1px; }
-.menu.tags-pop { width: 520px; max-width: calc(100vw - 8px); padding: 4px; }
-.menu.tags-pop.sm { width: 380px; }
+.menu.tags-pop { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; width: calc(80ch + 30px); max-width: calc(100vw - 8px); padding: 4px; }
+.menu.tags-pop.sm { font-size: 11px; }
 .footer-block { padding: 8px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; color: var(--fg); }
 .menu.tags-pop.sm .footer-block { font-size: 11px; }
 .footer-block .k { color: var(--muted); }
