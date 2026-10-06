@@ -291,6 +291,25 @@ test('bots and the owner do not count as reviewers', () => {
   assert.deepEqual(v.reviewers.map((r) => r.account._account_id), [2])
 })
 
+test('non-zero owner votes are shown as non-primary without deciding the review state', () => {
+  for (const ownerListed of [false, true]) {
+    for (const ownerVote of [-2, -1, 0, 1, 2]) {
+      const c = change({ reviewers: ownerListed ? [bob, alice] : [bob], primary: [bob, alice], votes: { 2: 1 }, requested: 3 })
+      c.labels!['Code-Review']!.all = [{ ...bob, value: 1 }, { ...alice, value: ownerVote }]
+      const v = classify(c, alice._account_id)
+      assert.deepEqual(v.otherReviewers.map((r) => [r.account._account_id, r.vote]), ownerVote === 0 ? [] : [[1, ownerVote]])
+      assert.deepEqual(v.reviewers.map((r) => r.account._account_id), [2])
+      assert.equal(v.state, 'approved')
+      assert.equal(v.iAmReviewer, false)
+
+      c.labels!['Code-Review']!.all = [{ ...bob, value: 0 }, { ...alice, value: ownerVote }]
+      assert.equal(classify(c, alice._account_id).state, 'needs-review')
+    }
+  }
+  const c = change({ reviewers: [bob, alice], primary: [bob] })
+  assert.deepEqual(classify(c, 1).otherReviewers, [], 'owner without a vote stays hidden')
+})
+
 test('request with no reviewers is needs-review with nobody pending (UI prevents this)', () => {
   const v = classify(change({ requested: 3 }), 1)
   assert.equal(v.state, 'needs-review')

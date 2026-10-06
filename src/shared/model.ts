@@ -545,6 +545,8 @@ export function classify(change: ChangeInfo, selfId: number, setup: TeamSetup = 
     reviewers.push({ account: standIn(key, reviewers.length), vote: 0, key, tagOnly: true })
   }
   const otherReviewers = everyone.filter((r) => !primaryIds.has(r.account._account_id))
+  const ownerVote = votes.get(change.owner._account_id) ?? 0
+  if (ownerVote !== 0) otherReviewers.push({ account: change.owner, vote: ownerVote })
   const pending = reviewers.filter((r) => r.vote === 0).map((r) => r.account)
   const negatives = reviewers.filter((r) => r.vote < 0)
   const isMine = change.owner._account_id === selfId
