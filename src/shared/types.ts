@@ -7,6 +7,7 @@ export interface AccountInfo {
   email?: string
   username?: string
   /** "SERVICE_USER" marks bots (members of the Service Users group). */
+  avatars?: { url: string; height: number }[]
   tags?: string[]
 }
 
@@ -90,6 +91,7 @@ export interface ChangeInfo {
   unresolved_comment_count?: number
   labels?: Record<string, LabelInfo>
   permitted_labels?: Record<string, string[]>
+  attention_set?: Record<string, { account: AccountInfo }>
   reviewers?: { REVIEWER?: AccountInfo[]; CC?: AccountInfo[]; REMOVED?: AccountInfo[] }
   current_revision?: string
   /**
@@ -116,6 +118,7 @@ export interface ChangeInfo {
 export interface FileInfo {
   status?: 'A' | 'D' | 'R' | 'C' | 'W' | 'M'
   binary?: boolean
+  old_path?: string
   lines_inserted?: number
   lines_deleted?: number
 }
@@ -278,7 +281,7 @@ export interface ReviewDiff {
   meta_a?: { name: string; lines: number }
   meta_b?: { name: string; lines: number }
   binary?: boolean
-  content: { ab?: string[]; a?: string[]; b?: string[]; skip?: number }[]
+  content: { ab?: string[]; a?: string[]; b?: string[]; skip?: number; due_to_rebase?: boolean }[]
 }
 
 export interface Settings {
@@ -531,6 +534,7 @@ export interface ReviewComment {
   id: string; patch_set: number; path: string; side?: 'REVISION' | 'PARENT'; parent?: number
   line?: number; range?: CommentRange; in_reply_to?: string; message?: string; updated: string
   author?: AccountInfo; unresolved?: boolean
+  context_lines?: { line_number: number; context_line: string }[]
   fix_suggestions?: FixSuggestion[]
 }
 export interface DraftCommentInput {
@@ -539,13 +543,26 @@ export interface DraftCommentInput {
   fix_suggestions?: FixSuggestion[]
 }
 export interface CommentAnchor { patchSet: number; path: string; side: 'REVISION' | 'PARENT'; parent?: number; line?: number; range?: CommentRange }
+/** Display coordinates are separate from the original comment's write anchor. */
+export interface ReviewCommentPosition { id: string; anchor: CommentAnchor }
 export interface ReviewDiscussion {
   comments: ReviewComment[]; drafts: ReviewComment[]; self: AccountInfo
   permittedLabels: Record<string, string[]>; labels: Record<string, LabelInfo>
+  updated?: string; reviewers?: Record<string, AccountInfo[]>; attention?: Record<string, { account: AccountInfo }>; owner?: AccountInfo
   latestPatchSet: number; readOnly: boolean; canDeletePublished: boolean
 }
 export interface SubmitReviewInput {
   labels: Record<string, number>; message?: string
   drafts: 'KEEP' | 'PUBLISH' | 'PUBLISH_ALL_REVISIONS'; draft_ids_to_publish?: string[]
+  reviewers?: { reviewer: string; state?: 'REVIEWER' | 'CC' }[]
+  add_to_attention_set?: { user: string; reason: string }[]
+  remove_from_attention_set?: { user: string; reason: string }[]
   notify: 'NONE' | 'OWNER' | 'OWNER_REVIEWERS' | 'ALL'
 }
+
+export interface GerritDiffPreferences {
+  context?: number; line_length?: number; tab_size?: number; font_size?: number
+  show_tabs?: boolean; show_whitespace_errors?: boolean; syntax_highlighting?: boolean
+  manual_review?: boolean; ignore_whitespace?: 'IGNORE_NONE' | 'IGNORE_TRAILING' | 'IGNORE_LEADING_AND_TRAILING' | 'IGNORE_ALL'
+}
+export interface ReviewBlame { author: string; id: string; time: number; commit_msg: string; ranges: { start: number; end: number }[] }

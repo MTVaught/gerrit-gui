@@ -117,8 +117,14 @@ function registerIpc(): void {
   ipcMain.handle('gerrit:testConnection', () => service.testConnection())
   ipcMain.handle('gerrit:fetchDashboard', () => service.fetchDashboard())
   ipcMain.handle('gerrit:fetchChange', (_e, id: number) => service.fetchChange(id))
+  ipcMain.handle('gerrit:reviewBlame', (_e, link: ChangeLink, path: string) => service.reviewBlame(link, path))
+  ipcMain.handle('gerrit:reviewDiffPreferences', () => service.reviewDiffPreferences())
+  ipcMain.handle('gerrit:saveReviewDiffPreferences', (_e, input: import('../shared/types.ts').GerritDiffPreferences) => service.saveReviewDiffPreferences(input))
+  ipcMain.handle('gerrit:previewReviewFix', (_e, id: number, patchSet: number, fix: import('../shared/types.ts').FixSuggestion) => service.previewReviewFix(id, patchSet, fix))
+  ipcMain.handle('gerrit:applyProvidedReviewFix', (_e, id: number, patchSet: number, fix: import('../shared/types.ts').FixSuggestion) => service.applyProvidedReviewFix(id, patchSet, fix))
   ipcMain.handle('gerrit:reviewFiles', (_e, link: ChangeLink) => service.reviewFiles(link))
   ipcMain.handle('gerrit:reviewDiff', (_e, link: ChangeLink, path: string) => service.reviewDiff(link, path))
+  ipcMain.handle('gerrit:reviewCommentPositions', (_e, link: ChangeLink) => service.reviewCommentPositions(link))
   ipcMain.handle('gerrit:reviewDiscussion', (_e, id: number) => service.reviewDiscussion(id))
   ipcMain.handle('gerrit:saveReviewDraft', (_e, id: number, patchSet: number, input: import('../shared/types.ts').DraftCommentInput) => service.saveReviewDraft(id, patchSet, input))
   ipcMain.handle('gerrit:deleteReviewDraft', (_e, id: number, patchSet: number, draftId: string) => service.deleteReviewDraft(id, patchSet, draftId))
@@ -140,8 +146,8 @@ function registerIpc(): void {
   ipcMain.handle('gerrit:getPretend', () => service.getPretend())
   ipcMain.handle('gerrit:setPretend', (_e, key: string | null) => service.setPretend(key))
   ipcMain.handle('app:openUrl', async (_e, url: string) => {
-    // The renderer only hands over links it built from a Slack tag; the check keeps any other scheme out of the shell.
-    if (!/^https:\/\//i.test(url)) throw new Error('Only https links can be opened')
+    // Comment and Slack links may open a browser. Keep other URI schemes out of the shell.
+    if (!/^https?:\/\//i.test(url)) throw new Error('Only http and https links can be opened')
     // A Slack link opens in the Slack app when Settings knows the workspace's team ID; the slack:// link is
     // built here from the stored ID, never taken from the renderer. Without Slack installed the open fails
     // (or on macOS does nothing), so the browser gets the https link then.

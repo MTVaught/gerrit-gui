@@ -126,3 +126,16 @@ export const CheckIcon = () => (
     <path d="M4 12.5l5 5L20 6.5" />
   </svg>
 )
+
+export const LinkIcon = () => (
+  <svg {...common}>
+    <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2" />
+    <path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2" />
+  </svg>
+)
+
+export const DeleteIcon = () => (
+  <svg {...common}>
+    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" />
+  </svg>
+)

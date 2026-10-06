@@ -41,6 +41,7 @@ export function loadReviewPreferences(): ReviewPreferences {
 }
 export function saveReviewPreferences(preferences: ReviewPreferences): void {
   localStorage.setItem(key, JSON.stringify(preferences))
+  localStorage.setItem('local-review-gerrit-preferences-synced', 'true')
 }
 
 /** Keep the displayed source untouched; normalization is only for diff computation. */
@@ -63,4 +64,22 @@ export function reviewSourceColumn(line: string, column: number, mode: ReviewWhi
     remaining--
   }
   return line.length + 1
+}
+
+export function fromGerritPreferences(input: import('../../shared/types.ts').GerritDiffPreferences, current = defaultReviewPreferences): ReviewPreferences {
+  return parseReviewPreferences({ ...current, context: input.context ?? current.context, diffWidth: input.line_length ?? current.diffWidth,
+    tabWidth: input.tab_size ?? current.tabWidth, fontSize: input.font_size ?? current.fontSize,
+    showTabs: input.show_tabs ?? false, showTrailingWhitespace: input.show_whitespace_errors ?? false,
+    syntaxHighlighting: input.syntax_highlighting ?? false, autoMarkReviewed: input.manual_review === undefined ? current.autoMarkReviewed : !input.manual_review,
+    ignoreWhitespace: input.ignore_whitespace ?? current.ignoreWhitespace })
+}
+export function toGerritPreferences(input: ReviewPreferences): import('../../shared/types.ts').GerritDiffPreferences {
+  return { context: input.context, line_length: input.diffWidth, tab_size: input.tabWidth, font_size: input.fontSize,
+    show_tabs: input.showTabs, show_whitespace_errors: input.showTrailingWhitespace, syntax_highlighting: input.syntaxHighlighting,
+    manual_review: !input.autoMarkReviewed, ignore_whitespace: input.ignoreWhitespace }
+}
+
+/** Preserve Whole file (or a legacy local choice) until the first account save. */
+export function reviewContextIsSynced(): boolean {
+  try { return localStorage.getItem('local-review-gerrit-preferences-synced') === 'true' } catch { return false }
 }

@@ -1,11 +1,13 @@
+import type { FileInfo, ReviewDiscussion, ReviewCommentPosition } from '../../../shared/types.ts'
+import { commentThreads } from '../review-comments.ts'
 import { useRef, useState, type Ref } from 'react'
 
-export function ReviewFileList({ paths, selected, reviewed, busy, onOpen, onReviewed, ref }: {
-  paths: string[]; selected: string; reviewed: Set<string> | null; busy: boolean
+export function ReviewFileList({ files, discussion, positions, paths, selected, reviewed, busy, onOpen, onReviewed, ref }: {
+  positions: ReviewCommentPosition[]; files: Record<string, FileInfo>; discussion: ReviewDiscussion | null; paths: string[]; selected: string; reviewed: Set<string> | null; busy: boolean
   onOpen: (path: string) => void; onReviewed: (path: string, reviewed: boolean) => void; ref: Ref<HTMLElement>
 }) {
   const [unreviewedOnly, setUnreviewedOnly] = useState(false)
-  const [width, setWidth] = useState(190)
+  const [width, setWidth] = useState(240)
   const drag = useRef<{ x: number; width: number } | null>(null)
   const visible = paths.filter((path) => !unreviewedOnly || !reviewed?.has(path))
   const groups = new Map<string, string[]>()
@@ -21,15 +23,21 @@ export function ReviewFileList({ paths, selected, reviewed, busy, onOpen, onRevi
       <div className="review-files-heading"><strong>Files</strong><span aria-live="polite">{reviewed ? `${count}/${paths.length} reviewed` : 'Loading status…'}</span></div>
       <label className="review-files-filter"><input type="checkbox" checked={unreviewedOnly} disabled={!reviewed} onChange={(e) => setUnreviewedOnly(e.target.checked)} />Unreviewed only</label>
       <div className="review-files-list">
-        {[...groups].map(([directory, files]) => <section key={directory} aria-label={directory || 'Root files'}>
+        {[...groups].map(([directory, groupedPaths]) => <section key={directory} aria-label={directory || 'Root files'}>
           {directory && <div className="review-directory" title={directory}>{directory}</div>}
-          {files.map((path) => {
+          {groupedPaths.map((path) => {
+            const info = files[path]
+            const threads = commentThreads([...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])]).filter(thread => thread.some(c => c.path === path || c.path === info?.old_path || positions.some(position => position.id === c.id && position.anchor.path === path)))
+            const unresolved = threads.filter(t => t.at(-1)?.unresolved).length
+            const drafts = discussion?.drafts.filter(c => c.path === path || c.path === info?.old_path || positions.some(position => position.id === c.id && position.anchor.path === path)).length ?? 0
+            const details = `${info?.status ?? 'M'} · +${info?.lines_inserted ?? 0} −${info?.lines_deleted ?? 0} · ${threads.length} threads · ${unresolved} unresolved · ${drafts} drafts`
             const done = Boolean(reviewed?.has(path))
             return <div key={path} className={'review-file-row' + (path === selected ? ' selected' : '') + (done ? ' is-reviewed' : '')}>
               <button className="review-status" aria-label={`${done ? 'Mark unreviewed' : 'Mark reviewed'}: ${path}`} aria-pressed={done} disabled={!reviewed || busy} title={done ? 'Reviewed. Click to mark unreviewed.' : 'Unreviewed. Click to mark reviewed.'} onClick={() => onReviewed(path, !done)}>
                 {done ? <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg> : <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" /></svg>}
               </button>
-              <button className="review-file-name" data-review-path={path} aria-label={`Open ${path}`} title={path} aria-current={path === selected} onClick={() => onOpen(path)}>{path === '/COMMIT_MSG' ? 'Commit message' : path.split('/').at(-1)}</button>
+              <button className="review-file-name" data-review-path={path} aria-label={`Open ${path}`} title={`${path} · ${details}`} aria-current={path === selected} onClick={() => onOpen(path)}>{path === '/COMMIT_MSG' ? 'Commit message' : path === '/MERGE_LIST' ? 'Merge list' : path.split('/').at(-1)}</button>
+              <span className="review-file-indicators" title={details} aria-label={details}>{info?.status ?? 'M'} · +{info?.lines_inserted ?? 0} −{info?.lines_deleted ?? 0}{(unresolved || drafts) ? ` · ${drafts ? `${drafts}d` : `${unresolved}u`}` : threads.length ? ` · ${threads.length}c` : ''}</span>
             </div>
           })}
         </section>)}

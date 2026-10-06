@@ -14,7 +14,19 @@ export function InlineReviewComment({ anchor, createHost, children, focus = fals
     return () => host?.dispose()
   }, [createHost, anchor.patchSet, anchor.path, anchor.side, anchor.line, anchor.range?.end_line])
   useLayoutEffect(() => {
-    if (focus && element) { element.querySelector<HTMLTextAreaElement>('textarea')?.focus({ preventScroll: true }); host?.reveal() }
+    if (!focus || !element) return
+    // Monaco hides offscreen view zones. Reveal before focusing, then wait for
+    // its render so a newly opened editor can receive focus.
+    host?.reveal()
+    let frame = 0
+    let attempts = 0
+    function focusEditor() {
+      const field = element!.querySelector<HTMLTextAreaElement>('textarea')
+      if (field && field.getBoundingClientRect().height > 0) { field.focus({ preventScroll: true }); host?.reveal(); return }
+      if (++attempts < 30) { host?.reveal(); frame = requestAnimationFrame(focusEditor) }
+    }
+    frame = requestAnimationFrame(focusEditor)
+    return () => cancelAnimationFrame(frame)
   }, [element, focus])
   return element ? createPortal(children, element) : null
 }

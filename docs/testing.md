@@ -48,7 +48,8 @@ Gerrit navigation shortcuts, safe typing, shortcut-help focus, background
 scroll locking, file caching, bounded rendered lines and worker loading under
 the CSP. Fit-to-screen checks also bound alignment spacer elements, not only
 visible text lines. The pinned Monaco package has a patch to skip zero-height
-alignment zones for wrapped unchanged lines. Keep the patch and the provider
+alignment zones for wrapped unchanged lines and preserve original-model inline
+decorations in unified deleted-code blocks. Keep the patch and the provider
 adapter in sync when upgrading Monaco. It also checks preferences save/cancel, font size and tab rendering,
 optional context limits, local whitespace comparison, both patch-set selectors,
 comparison caching, manual reviewed flags and automatic marking. Sidebar checks cover independent
@@ -58,6 +59,20 @@ cover all whitespace modes and source-column mapping; API tests verify reviewed
 flag endpoints and prevent writes in pretend mode.
 Set `REVIEW_SCREENSHOTS=1` to refresh `docs/screenshots/local-review/`.
 The sandbox flag is for the Xvfb test harness only.
+
+Rebase coloring has a separate small mixed-edit fixture:
+
+```sh
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-rebase-ui.cjs
+```
+
+It checks ordinary edits keep their colors, Gerrit's `due_to_rebase` edits use
+separate colors in both diff modes, whitespace-only edits follow preferences,
+dark mode remains readable, and no additional source requests are made. It also
+checks the compact header leaves space for code and Escape closes its menus
+without closing the review. It
+captures `docs/screenshots/local-review/rebase-diff-light.png` and
+`rebase-diff-dark.png`.
 
 
 The comment interaction test uses the same large-file fixture:
@@ -78,5 +93,17 @@ threads, alignment of both panes, real mouse focus in the draft textarea,
 resizing, and moving base-side threads between side-by-side and unified views.
 The baseline scroller test starts without comment fixtures; the comment test
 enables its own published-thread fixture before launching the renderer.
-Screenshots are written to `inline-review-comments.png`, `inline-review-draft.png`
-and `publish-review.png`.
+Screenshots are written as light/dark pairs for `inline-review-comments`,
+`inline-review-draft` and `publish-review`.
+
+The comment test also covers CommonMark rendering, author/resolution filters,
+summary autosave and deletion when cleared, reviewer and attention-set payloads,
+fix previews, Blame, the declaration outline and 30-second update polling.
+Incoming metadata must preserve the complete-file cache. The native fixture
+keeps the 100,000-line files virtualized throughout these operations. Screenshot
+pairs include `publish-review`, `inline-review-comments`, `inline-review-draft`
+and `suggested-fix-preview`, each with `-light` and `-dark` suffixes.
+
+Draft screenshots also assert that the textarea is visible and receives pointer
+hit testing in both themes. Inline comment zones retain their measured height
+while Monaco hides them offscreen, and editors reveal before receiving focus.

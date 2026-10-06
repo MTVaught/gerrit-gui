@@ -1,8 +1,21 @@
 diff --git a/esm/vs/editor/browser/widget/diffEditor/components/diffEditorViewZones/diffEditorViewZones.js b/esm/vs/editor/browser/widget/diffEditor/components/diffEditorViewZones/diffEditorViewZones.js
-index 581611800ff46bc2dc45e14591da225163555c4f..cf019c17107f22eb7705a9fe34f8db5e48f510c0 100644
+index 5816118..84c01d9 100644
 --- a/esm/vs/editor/browser/widget/diffEditor/components/diffEditorViewZones/diffEditorViewZones.js
 +++ b/esm/vs/editor/browser/widget/diffEditor/components/diffEditorViewZones/diffEditorViewZones.js
-@@ -239,6 +239,10 @@ let DiffEditorViewZones = class DiffEditorViewZones extends Disposable {
+@@ -188,6 +188,12 @@ let DiffEditorViewZones = class DiffEditorViewZones extends Disposable {
+                         for (const i of a.diff.innerChanges || []) {
+                             decorations.push(new InlineDecoration(i.originalRange.delta(-(a.diff.original.startLineNumber - 1)), diffDeleteDecoration.className, 0 /* InlineDecorationType.Regular */));
+                         }
++                        // Preserve model inline decorations in the unified deleted-code view.
++                        for (const decoration of originalModel.getDecorationsInRange(a.originalRange.toInclusiveRange())) {
++                            if (!decoration.options.inlineClassName) continue;
++                            const range = decoration.range.intersectRanges(a.originalRange.toInclusiveRange());
++                            if (range) decorations.push(new InlineDecoration(range.delta(-(a.originalRange.startLineNumber - 1)), decoration.options.inlineClassName, 0 /* InlineDecorationType.Regular */));
++                        }
+                         const result = renderLines(source, renderOptions, decorations, deletedCodeDomNode);
+                         const marginDomNode = document.createElement('div');
+                         marginDomNode.className = 'inline-deleted-margin-view-zone';
+@@ -239,6 +245,10 @@ let DiffEditorViewZones = class DiffEditorViewZones extends Disposable {
                  }
                  else {
                      const delta = a.modifiedHeightInPx - a.originalHeightInPx;

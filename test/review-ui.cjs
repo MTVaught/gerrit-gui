@@ -39,8 +39,14 @@ app.whenReady().then(async () => {
     if (!process.env.REVIEW_SCREENSHOTS) return
     const dir = name === 'review-test-failure' ? os.tmpdir() : path.join(__dirname, '../docs/screenshots/local-review')
     fs.mkdirSync(dir, { recursive: true })
-    await delay(250)
-    fs.writeFileSync(path.join(dir, name + '.png'), (await win.webContents.capturePage()).toPNG())
+    const previousTheme = nativeTheme.themeSource
+    for (const theme of ['light', 'dark']) {
+      nativeTheme.themeSource = theme
+      await delay(250)
+      fs.writeFileSync(path.join(dir, name + '-' + theme + '.png'), (await win.webContents.capturePage()).toPNG())
+    }
+    nativeTheme.themeSource = previousTheme
+    await delay(150)
   }
   await win.loadFile(path.join(__dirname, '../out/renderer/index.html'))
   await until(`Boolean(document.querySelector('.review-main'))`, 'review button')
@@ -53,7 +59,7 @@ app.whenReady().then(async () => {
   await run(`(() => { const spacer = document.createElement('div'); spacer.id = 'background-overflow-fixture'; spacer.style.height = '2000px'; document.body.append(spacer); })()`)
   const oldOverflow = await run(`({ html: document.documentElement.style.overflow, body: document.body.style.overflow })`)
   await click('.review-main')
-  await until(`Boolean(document.querySelector('${barSelector}')) && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, 'editor and worker diff')
+  await until(`Boolean(document.querySelector('${barSelector}')) && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'editor and worker diff')
   await until(`document.querySelectorAll('.review-editor .view-zones > div').length < 300`, 'fit to screen keeps alignment spacers bounded')
   assert.deepEqual(errors, [], 'workers, styles and language modules load under the packaged CSP')
   assert.equal(await run(`document.documentElement.clientWidth === window.innerWidth && document.documentElement.style.overflow === 'hidden' && document.body.style.overflow === 'hidden'`), true, 'background scrollbar is hidden')
@@ -131,13 +137,13 @@ app.whenReady().then(async () => {
   await press('J')
   assert.equal(await run(`document.activeElement.textContent`), 'types.ts', 'j navigates file list')
   await press('Enter')
-  await until(`document.querySelector('.review-side-head')?.textContent.includes('types.ts') && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, 'Enter opens file')
+  await until(`document.querySelector('.review-side-head')?.textContent.includes('types.ts') && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'Enter opens file')
   await press('[')
-  await until(`document.querySelector('.review-side-head')?.textContent.includes('batch-scheduler.ts') && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, '[ opens previous cached file')
+  await until(`document.querySelector('.review-side-head')?.textContent.includes('batch-scheduler.ts') && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, '[ opens previous cached file')
   await press(']')
-  await until(`document.querySelector('.review-side-head')?.textContent.includes('types.ts') && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, '] opens next cached file')
+  await until(`document.querySelector('.review-side-head')?.textContent.includes('types.ts') && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, '] opens next cached file')
   await press('[')
-  await until(`document.querySelector('.review-side-head')?.textContent.includes('batch-scheduler.ts') && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, 'return to cached file')
+  await until(`document.querySelector('.review-side-head')?.textContent.includes('batch-scheduler.ts') && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'return to cached file')
   await click('button[data-review-find]')
   await until(`Boolean(document.querySelector('${selector} .find-widget.visible'))`, 'editor find widget')
   // A delayed tooltip over search controls must not intercept actual mouse clicks.
@@ -169,9 +175,9 @@ app.whenReady().then(async () => {
   assert.equal(await run(`Boolean(document.querySelector('.local-review[open]'))`), true, 'typing u does not close review')
   // Returning to a previously loaded file uses the session cache.
   await click('[data-review-path="src/telemetry/types.ts"]')
-  await until(`document.querySelector('.review-side-head')?.textContent.includes('types.ts') && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, 'second file')
+  await until(`document.querySelector('.review-side-head')?.textContent.includes('types.ts') && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'second file')
   await click('[data-review-path="src/telemetry/batch-scheduler.ts"]')
-  await until(`document.querySelector('.review-side-head')?.textContent.includes('batch-scheduler.ts') && document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, 'cached file')
+  await until(`document.querySelector('.review-side-head')?.textContent.includes('batch-scheduler.ts') && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'cached file')
   // Gerrit-style preferences are transactional and keep source fully loaded.
   await press('Home', ['control'])
   const requestCountBeforePreferences = (await run('window.api.fixtureStats()')).requests
@@ -224,7 +230,7 @@ app.whenReady().then(async () => {
   // Test both selectors, source identity, and comparison-scoped session caching.
   async function comparisonSelect(label, value) {
     await run(`(() => {const el=document.querySelector('select[aria-label="${label}"]');el.value=${JSON.stringify(String(value))};el.dispatchEvent(new Event('change',{bubbles:true}));})()`)
-    await until(`document.querySelector('.review-stats')?.textContent.includes(' · Diff ')`, 'selected comparison ready')
+    await until(`document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'selected comparison ready')
     await run(`document.querySelector('${selector} .native-edit-context, ${selector} .inputarea').focus()`)
     await press('Home', ['control'])
   }
@@ -261,7 +267,7 @@ app.whenReady().then(async () => {
   assert.equal((await run('window.api.fixtureStats()')).requests, beforeSidebar, 'marking another file does not fetch its source')
   assert.equal(await run(`getComputedStyle(document.querySelector('.review-file-name')).fontSize`), '12px')
   assert.equal(await run(`document.querySelector('.review-file-row').getBoundingClientRect().height`), 24)
-  assert.equal(await run(`document.querySelector('[data-review-path]').title`), 'src/telemetry/batch-scheduler.ts', 'full path stays available')
+  assert.ok((await run(`document.querySelector('[data-review-path]').title`)).startsWith('src/telemetry/batch-scheduler.ts'), 'full path and change details stay available')
   const resizeBox = await run(`document.querySelector('.review-file-resize').getBoundingClientRect().toJSON()`)
   const resizeX = Math.round(resizeBox.x + resizeBox.width / 2), resizeY = Math.round(resizeBox.y + 100)
   win.webContents.sendInputEvent({type:'mouseDown',x:resizeX,y:resizeY,button:'left',clickCount:1})
@@ -270,9 +276,10 @@ app.whenReady().then(async () => {
   await delay(50)
   win.webContents.sendInputEvent({type:'mouseUp',x:resizeX+40,y:resizeY,button:'left',clickCount:1})
   await until(`Number(document.querySelector('.review-file-resize').getAttribute('aria-valuenow')) >= 225`, 'sidebar resizes with real mouse input')
+  const pointerWidth = await run(`Number(document.querySelector('.review-file-resize').getAttribute('aria-valuenow'))`)
   await run(`document.querySelector('.review-file-resize').focus()`)
   await press('Left')
-  assert.ok(await run(`Number(document.querySelector('.review-file-resize').getAttribute('aria-valuenow')) < 225`), 'sidebar resizes with keyboard')
+  assert.ok(await run(`Number(document.querySelector('.review-file-resize').getAttribute('aria-valuenow')) < ${pointerWidth}`), 'sidebar resizes with keyboard')
   await press('Left')
   await press('Left')
   await press('Left')
@@ -280,13 +287,16 @@ app.whenReady().then(async () => {
   await screenshot('compact-file-list')
   await click('.review-files-filter input')
   assert.equal(await run(`document.querySelectorAll('[data-review-path]').length`), 1, 'unreviewed filter hides reviewed files')
-  assert.equal(await run(`document.querySelector('.review-current-file').textContent.includes('batch-scheduler.ts')`), true, 'current filename stays visible')
+  assert.equal(await run(`document.querySelector('.review-side-head').textContent.includes('batch-scheduler.ts')`), true, 'current filename stays visible')
   await click('.review-files-filter input')
   assert.equal(await run(`document.querySelectorAll('[data-review-path]').length`), 2, 'all-files view restores reviewed entries')
   const requests = await run('window.api.fixtureStats()')
   assert.equal(requests.requests, 4, 'two original files plus two new comparisons; all other navigation and preferences remain local')
   const rendered = await run(`document.querySelectorAll('.review-editor .view-line').length`)
   assert.ok(rendered < 300, 'the DOM remains bounded for 100k lines')
+  await run(`document.querySelector('${selector} .native-edit-context, ${selector} .inputarea').focus()`); await press(','); await until(`Boolean(document.querySelector('.review-preferences[open]'))`, 'preferences shortcut'); await press('Escape')
+  await run(`document.querySelector('${selector} .native-edit-context, ${selector} .inputarea').focus()`); await press('R'); await until(`document.querySelector('[aria-label="File reviewed"]').checked`, 'reviewed shortcut marks current file'); await press('R'); await until(`!document.querySelector('[aria-label="File reviewed"]').checked`, 'reviewed shortcut unmarks current file')
+  await click('[aria-label="Mark unreviewed: src/telemetry/types.ts"]'); await run(`document.querySelector('${selector} .native-edit-context, ${selector} .inputarea').focus()`); await press('M', ['shift']); await until(`document.querySelector('[data-review-path="src/telemetry/types.ts"]').getAttribute('aria-current') === 'true' && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'mark and next-unreviewed shortcut')
   await click('button[data-review-find]')
   await run(`document.querySelector('${selector} .native-edit-context, ${selector} .inputarea').focus()`)
   await press('U')

@@ -26,11 +26,17 @@ function browserApi(): Api {
     testConnection: () => call('testConnection'),
     fetchDashboard: () => call('fetchDashboard'),
     fetchChange: (id) => call('fetchChange', [id]),
+    reviewBlame: (link, path) => call('reviewBlame', [link, path]),
+    reviewDiffPreferences: () => call('reviewDiffPreferences', []),
+    saveReviewDiffPreferences: input => call('saveReviewDiffPreferences', [input]),
+    previewReviewFix: (id, patchSet, fix) => call('previewReviewFix', [id, patchSet, fix]),
+    applyProvidedReviewFix: (id, patchSet, fix) => call('applyProvidedReviewFix', [id, patchSet, fix]),
     reviewFiles: (link) => call('reviewFiles', [link]),
     reviewDiff: (link, path) => call('reviewDiff', [link, path]),
     reviewPatchSets: (id) => call('reviewPatchSets', [id]),
     reviewReviewedFiles: (link) => call('reviewReviewedFiles', [link]),
     setReviewFileReviewed: (link, path, reviewed) => call('setReviewFileReviewed', [link, path, reviewed]),
+    reviewCommentPositions: (link) => call('reviewCommentPositions', [link]),
     reviewDiscussion: (id) => call('reviewDiscussion', [id]),
     saveReviewDraft: (id, patchSet, input) => call('saveReviewDraft', [id, patchSet, input]),
     deleteReviewDraft: (id, patchSet, draftId) => call('deleteReviewDraft', [id, patchSet, draftId]),
@@ -49,7 +55,7 @@ function browserApi(): Api {
     getPretend: () => call('getPretend'),
     setPretend: (key) => call('setPretend', [key]),
     openUrl: async (url) => {
-      if (/^https:\/\//i.test(url)) window.open(url, '_blank', 'noopener')
+      if (/^https?:\/\//i.test(url)) window.open(url, '_blank', 'noopener')
     },
     // Window/tray features have no browser equivalent.
     getUi: async () => ui,
