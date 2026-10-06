@@ -1,4 +1,4 @@
-import type { AccountInfo, ChangeInfo, ChangeLink, ReviewDiff, FileInfo, SuggestedReviewerInfo } from '../shared/types.ts'
+import type { AccountInfo, ChangeInfo, ChangeLink, ReviewDiff, FileInfo, SuggestedReviewerInfo, ReviewComment, DraftCommentInput, SubmitReviewInput } from '../shared/types.ts'
 import { changePath } from '../shared/url.ts'
 
 const XSSI_PREFIX = ")]}'"
@@ -125,6 +125,36 @@ export class GerritClient {
     if (diff.binary) throw new Error('Binary files cannot be displayed in local review. Open this change in Gerrit.')
     if (!Array.isArray(diff.content) || diff.content.some((c) => c.skip)) throw new Error('Gerrit did not return the full file. Open this change in Gerrit.')
     return diff
+  }
+
+  reviewedFiles(link: ChangeLink): Promise<string[]> {
+    return this.req('GET', `/changes/${link.id}/revisions/${link.patchSet}/files`, undefined, new URLSearchParams({ reviewed: '' }))
+  }
+
+  setFileReviewed(link: ChangeLink, path: string, reviewed: boolean): Promise<void> {
+    return this.req(reviewed ? 'PUT' : 'DELETE', `/changes/${link.id}/revisions/${link.patchSet}/files/${encodeURIComponent(path)}/reviewed`)
+  }
+
+  comments(id: number, drafts = false): Promise<Record<string, ReviewComment[]>> {
+    return this.req('GET', `/changes/${id}/${drafts ? 'drafts' : 'comments'}`)
+  }
+  capabilities(): Promise<Record<string, boolean>> { return this.req('GET', '/accounts/self/capabilities') }
+  async saveDraft(id: number, patchSet: number, input: DraftCommentInput): Promise<ReviewComment> {
+    const { id: draftId, ...body } = input
+    // IDs returned by Gerrit are already URL encoded, unlike file paths.
+    const draft = await this.req<ReviewComment>('PUT', `/changes/${id}/revisions/${patchSet}/drafts${draftId ? '/' + draftId : ''}`, body)
+    return { ...draft, path: draft.path ?? input.path, patch_set: patchSet }
+  }
+  deleteDraft(id: number, patchSet: number, draftId: string): Promise<void> {
+    return this.req('DELETE', `/changes/${id}/revisions/${patchSet}/drafts/${draftId}`)
+  }
+  async deleteComment(id: number, patchSet: number, commentId: string, reason: string): Promise<ReviewComment> {
+    const result = await this.req<ReviewComment>('POST', `/changes/${id}/revisions/${patchSet}/comments/${commentId}/delete`, { reason })
+    return { ...result, patch_set: patchSet }
+  }
+  async applyFix(id: number, patchSet: number, fixId: string): Promise<void> { await this.req('POST', `/changes/${id}/revisions/${patchSet}/fixes/${encodeURIComponent(fixId)}/apply`) }
+  submitReview(link: ChangeLink, input: SubmitReviewInput): Promise<void> {
+    return this.req('POST', `/changes/${link.id}/revisions/${link.patchSet}/review`, input)
   }
 
   setReady(id: number) {

@@ -8,6 +8,10 @@ import type {
   ChangeInspection,
   ChangeLink,
   ReviewDiff,
+  ReviewDiscussion,
+  ReviewComment,
+  DraftCommentInput,
+  SubmitReviewInput,
   FileInfo,
   DashboardData,
   SettingsInput,
@@ -27,6 +31,15 @@ export interface Api {
   fetchChange(id: number): Promise<ChangeInfo>
   reviewFiles(link: ChangeLink): Promise<Record<string, FileInfo>>
   reviewDiff(link: ChangeLink, path: string): Promise<ReviewDiff>
+  reviewPatchSets(id: number): Promise<number[]>
+  reviewReviewedFiles(link: ChangeLink): Promise<string[]>
+  setReviewFileReviewed(link: ChangeLink, path: string, reviewed: boolean): Promise<void>
+  reviewDiscussion(id: number): Promise<ReviewDiscussion>
+  saveReviewDraft(id: number, patchSet: number, input: DraftCommentInput): Promise<ReviewComment>
+  deleteReviewDraft(id: number, patchSet: number, draftId: string): Promise<void>
+  deleteReviewComment(id: number, patchSet: number, commentId: string, reason: string): Promise<ReviewComment>
+  applyReviewFix(id: number, patchSet: number, fixId: string): Promise<void>
+  submitReview(link: ChangeLink, input: SubmitReviewInput): Promise<void>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
   /** Gerrit accounts matching a name, username or email, for the team list in Settings. */

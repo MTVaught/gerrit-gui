@@ -282,7 +282,7 @@ export interface ReviewDiff {
 }
 
 export interface Settings {
-  /** Opt-in read-only full-file review proof of concept. */
+  /** Opt-in local full-file review viewer. */
   localReview: boolean
   serverUrl: string
   username: string
@@ -523,4 +523,29 @@ export interface UpdateState {
   /** Why the last step failed, or why updates are off. */
   message: string | null
   errorContext: 'check' | 'download' | 'install' | null
+}
+
+export interface CommentRange { start_line: number; start_character: number; end_line: number; end_character: number }
+export interface FixSuggestion { fix_id?: string; description: string; replacements: { path: string; range: CommentRange; replacement: string }[] }
+export interface ReviewComment {
+  id: string; patch_set: number; path: string; side?: 'REVISION' | 'PARENT'; parent?: number
+  line?: number; range?: CommentRange; in_reply_to?: string; message?: string; updated: string
+  author?: AccountInfo; unresolved?: boolean
+  fix_suggestions?: FixSuggestion[]
+}
+export interface DraftCommentInput {
+  id?: string; path: string; side?: 'REVISION' | 'PARENT'; parent?: number
+  line?: number; range?: CommentRange; in_reply_to?: string; message: string; unresolved: boolean
+  fix_suggestions?: FixSuggestion[]
+}
+export interface CommentAnchor { patchSet: number; path: string; side: 'REVISION' | 'PARENT'; parent?: number; line?: number; range?: CommentRange }
+export interface ReviewDiscussion {
+  comments: ReviewComment[]; drafts: ReviewComment[]; self: AccountInfo
+  permittedLabels: Record<string, string[]>; labels: Record<string, LabelInfo>
+  latestPatchSet: number; readOnly: boolean; canDeletePublished: boolean
+}
+export interface SubmitReviewInput {
+  labels: Record<string, number>; message?: string
+  drafts: 'KEEP' | 'PUBLISH' | 'PUBLISH_ALL_REVISIONS'; draft_ids_to_publish?: string[]
+  notify: 'NONE' | 'OWNER' | 'OWNER_REVIEWERS' | 'ALL'
 }

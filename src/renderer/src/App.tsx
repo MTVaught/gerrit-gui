@@ -12,6 +12,7 @@ import { ExpandIcon, GearIcon, LockIcon, PlugIcon, RefreshIcon, ShrinkIcon } fro
 import { api, isBrowserMode } from './api.ts'
 import { UpdatePill, useUpdateState } from './components/Update.tsx'
 import { rememberAccounts } from './names.ts'
+import { LocalReviewProvider } from './review-context.tsx'
 import { SettingsContext, type SettingsHandle } from './settings-context.ts'
 
 export function App() {
@@ -274,6 +275,10 @@ export function App() {
 
   return (
     <SettingsContext.Provider value={settingsHandle}>
+    <LocalReviewProvider onPublished={async id => {
+      try { const fresh = await api.fetchChange(id); rememberAccounts([fresh.owner, ...(fresh.reviewers?.REVIEWER ?? [])]); setData(d => d ? withChange(d, fresh, membersRef.current) : d) }
+      catch { await refresh() }
+    }}>
     <div className={'app' + (compact ? ' compact' : '')}>
       <header className="topbar" ref={topbarRef}>
         <nav className={'tabs' + (shortTabs ? ' short' : '')} role="tablist" ref={tabsRef}>
@@ -417,6 +422,7 @@ export function App() {
         />
       )}
     </div>
+    </LocalReviewProvider>
     </SettingsContext.Provider>
   )
 }

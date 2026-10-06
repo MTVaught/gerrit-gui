@@ -43,6 +43,40 @@ xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-ui.cjs
 
 The test sends wheel, scrollbar drag and keyboard input to the packaged
 renderer. It checks synchronized scrolling, whole-file navigation, the search
-widget, file caching, bounded rendered lines and worker loading under the CSP.
+widget, real mouse clicks through an overlapping search-control tooltip,
+Gerrit navigation shortcuts, safe typing, shortcut-help focus, background
+scroll locking, file caching, bounded rendered lines and worker loading under
+the CSP. Fit-to-screen checks also bound alignment spacer elements, not only
+visible text lines. The pinned Monaco package has a patch to skip zero-height
+alignment zones for wrapped unchanged lines. Keep the patch and the provider
+adapter in sync when upgrading Monaco. It also checks preferences save/cancel, font size and tab rendering,
+optional context limits, local whitespace comparison, both patch-set selectors,
+comparison caching, manual reviewed flags and automatic marking. Sidebar checks cover independent
+status toggles, progress, filtering, compact rows, full-path tooltips, and resizing
+with mouse and keyboard. Unit tests
+cover all whitespace modes and source-column mapping; API tests verify reviewed
+flag endpoints and prevent writes in pretend mode.
 Set `REVIEW_SCREENSHOTS=1` to refresh `docs/screenshots/local-review/`.
 The sandbox flag is for the Xvfb test harness only.
+
+
+The comment interaction test uses the same large-file fixture:
+
+```sh
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-comments-ui.cjs
+```
+
+It checks unchanged-line and selected-range comments, base-side anchors, server
+draft restoration after reopening, editing and discarding, replies and resolution,
+overall review drafts, label votes while keeping drafts private, explicit publishing,
+and suggested fix creation/application. It also exercises save failure and retry,
+and typing while a draft creation request is in flight. Comment operations must
+not refetch source files or render the complete file into the DOM. The fixture is
+an in-memory Gerrit API substitute; these tests do not publish to a live server.
+Inline checks verify default placement beneath code, expanding and collapsing
+threads, alignment of both panes, real mouse focus in the draft textarea,
+resizing, and moving base-side threads between side-by-side and unified views.
+The baseline scroller test starts without comment fixtures; the comment test
+enables its own published-thread fixture before launching the renderer.
+Screenshots are written to `inline-review-comments.png`, `inline-review-draft.png`
+and `publish-review.png`.
