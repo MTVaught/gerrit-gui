@@ -19,3 +19,13 @@ test('Gerrit whitespace modes normalize comparison only and map source columns',
   assert.equal(reviewSourceColumn(line, 4, 'IGNORE_ALL'), 8)
   assert.equal(reviewSourceColumn(line, 7, 'IGNORE_ALL'), line.length + 1)
 })
+
+test('Gerrit preference synchronization preserves local fit setting and manual-review inversion', async () => {
+  const { fromGerritPreferences, toGerritPreferences } = await import('./review-preferences.ts')
+  const local = { ...defaultReviewPreferences, fitToScreen: false, context: 20, autoMarkReviewed: true }
+  const remote = toGerritPreferences(local)
+  assert.equal(remote.manual_review, false)
+  assert.ok(!('fitToScreen' in remote))
+  assert.deepEqual(fromGerritPreferences(remote, local), local)
+  assert.equal(fromGerritPreferences({ context: -1 }).context, -1)
+})

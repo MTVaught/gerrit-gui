@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
+import { useEffect, useMemo, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import * as monaco from 'monaco-editor/editor/editor.api'
 import EditorWorker from 'monaco-editor/editor/editor.worker?worker'
 import 'monaco-editor/editor/browser/coreCommands'
@@ -29,9 +29,11 @@ import 'monaco-editor/languages/definitions/markdown/register'
 import 'monaco-editor/languages/definitions/ini/register'
 import 'monaco-editor/languages/definitions/dockerfile/register'
 import type { InlineCommentHost } from './InlineReviewComment.tsx'
-import type { CommentRange } from '../../../shared/types.ts'
+import { api } from '../api.ts'
+import { reviewOutline } from '../review-details.ts'
+import type { ChangeLink, ReviewBlame, CommentRange } from '../../../shared/types.ts'
 import type { ReviewShortcut } from '../review-shortcuts.ts'
-import { reviewLanguage, type ReviewContents } from '../review.ts'
+import { reviewLanguage, visibleRebaseRanges, type ReviewContents } from '../review.ts'
 import type { ReviewPreferences } from '../review-preferences.ts'
 import { reviewDiffFactory, configureReviewDiff } from '../review-diff-provider.ts'
 import { StandaloneServices } from 'monaco-editor/editor/standalone/browser/standaloneServices'
@@ -62,13 +64,27 @@ export interface LoadedReviewFile extends ReviewContents {
   prepareMs: number
   nameA: string
   nameB: string
+  blame?: ReviewBlame[]
   viewState?: monaco.editor.IDiffEditorViewState | null
 }
 
-export interface ReviewEditorHandle { createInlineHost(pane: 'original' | 'modified', line: number): InlineCommentHost | null; navigate(shortcut: ReviewShortcut): void; addComment(): void; revealComment(pane: 'original' | 'modified', line: number): void }
+export interface ReviewEditorHandle { outline(): void; blame(): void; highlightComment(location: EditorCommentLocation | null): void; createInlineHost(pane: 'original' | 'modified', line: number): InlineCommentHost | null; navigate(shortcut: ReviewShortcut): void; addComment(): void; find(): void; goToLine(): void; revealComment(pane: 'original' | 'modified', line: number): void }
 export interface EditorCommentLocation { pane: 'original' | 'modified'; line: number; range?: CommentRange; existing?: boolean }
 
-export default function ReviewEditor({ file, preferences, onReady, onComment, markers, ref }: { markers: { pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle> }) {
+export default function ReviewEditor({ file, link, preferences, onReady, onComment, markers, ref }: { link: ChangeLink; markers: { range?: CommentRange; pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle> }) {
+  const [tool, setTool] = useState<'outline' | 'blame' | null>(null)
+  const [showBlame, setShowBlame] = useState(false)
+  const [blames, setBlames] = useState<ReviewBlame[] | null>(null)
+  const [toolError, setToolError] = useState('')
+  const toolDialog = useRef<HTMLDialogElement>(null)
+  const highlights = useRef<monaco.editor.IEditorDecorationsCollection[]>([])
+  useEffect(() => { toolDialog.current?.showModal() }, [tool])
+  async function toggleBlame() {
+    if (showBlame) { setTool(null); setShowBlame(false); return }
+    setShowBlame(true); setTool('blame'); setToolError(''); setBlames(null)
+    try { const data = file.blame ?? await api.reviewBlame(link, file.path); file.blame = data; setBlames(data) } catch (e) { setToolError((e as Error).message) }
+  }
+  const outlineItems = useMemo(() => tool === 'outline' ? reviewOutline(file.modified) : [], [tool, file])
   const commentCallback = useRef(onComment)
   commentCallback.current = onComment
   const container = useRef<HTMLDivElement>(null)
@@ -77,7 +93,6 @@ export default function ReviewEditor({ file, preferences, onReady, onComment, ma
   const sideBySide = useRef(true)
   const [unified, setUnified] = useState(false)
   const lastFocus = useRef<'original' | 'modified'>('modified')
-  const [readyMs, setReadyMs] = useState<number | null>(null)
   const [diffMs, setDiffMs] = useState<number | null>(null)
   useEffect(() => {
     const start = performance.now()
@@ -134,16 +149,32 @@ export default function ReviewEditor({ file, preferences, onReady, onComment, ma
         commentCallback.current({ pane: lastFocus.current, line: event.target.position.lineNumber, existing: true })
       }),
     ])
-    const updated = diff.onDidUpdateDiff(() => setDiffMs(performance.now() - start))
+    const rebaseDecorations = [diff.getOriginalEditor(), diff.getModifiedEditor()].map(code => code.createDecorationsCollection())
+    const updateRebase = () => {
+      const ranges = visibleRebaseRanges(file.rebaseChanges ?? [], diff.getLineChanges() ?? [])
+      for (const [index, pane] of (['original', 'modified'] as const).entries()) {
+        const kind = pane === 'original' ? 'removed' : 'added'
+        rebaseDecorations[index]!.set(ranges.filter(range => range.pane === pane).map(range => ({
+          range: new monaco.Range(range.start, 1, range.end, Number.MAX_SAFE_INTEGER),
+          options: { isWholeLine: true, className: `review-rebase-${kind}`, inlineClassName: `review-rebase-${kind}-text`, zIndex: 20,
+            linesDecorationsClassName: `review-rebase-${kind}-gutter`, linesDecorationsTooltip: 'Change due to rebase',
+            hoverMessage: { value: 'Change due to rebase, identified by Gerrit.' },
+            overviewRuler: { color: kind === 'added' ? '#8ab4f8' : '#e9bb46', position: monaco.editor.OverviewRulerLane.Full } },
+        })))
+      }
+    }
+    const updated = diff.onDidUpdateDiff(() => { setDiffMs(performance.now() - start); updateRebase() })
     diff.setModel({ original, modified })
     if (file.viewState) diff.restoreViewState(file.viewState)
     diff.getModifiedEditor().focus()
-    const frame = requestAnimationFrame(() => { setReadyMs(performance.now() - start); onReady() })
+    const frame = requestAnimationFrame(onReady)
     return () => {
       commentActions.forEach(action => action.dispose())
       file.viewState = diff.saveViewState()
       cancelAnimationFrame(frame)
       updated.dispose()
+      rebaseDecorations.forEach(collection => collection.clear())
+      highlights.current.forEach(collection => collection.clear()); highlights.current = []
       originalFocus.dispose()
       modifiedFocus.dispose()
       appearance.removeEventListener('change', setTheme)
@@ -215,6 +246,15 @@ export default function ReviewEditor({ file, preferences, onReady, onComment, ma
     }))))
     return () => collections.forEach(collection => collection.clear())
   }, [file, markers])
+  useEffect(() => {
+    const code = editor.current?.getModifiedEditor()
+    if (!code || !showBlame || !blames) return
+    const decorations = code.createDecorationsCollection(blames.flatMap(blame => blame.ranges.map(range => ({
+      range: new monaco.Range(range.start, 1, range.end, Number.MAX_SAFE_INTEGER),
+      options: { linesDecorationsClassName: 'review-blame-gutter', linesDecorationsTooltip: `${blame.author} · ${blame.id.slice(0, 8)}\n${blame.commit_msg}`, hoverMessage: { value: `${blame.author} · ${blame.id.slice(0, 8)}\n\n${blame.commit_msg}` } },
+    }))))
+    return () => decorations.clear()
+  }, [file, showBlame, blames])
   function focusedEditor() {
     const diff = editor.current
     return lastFocus.current === 'original' ? diff?.getOriginalEditor() : diff?.getModifiedEditor()
@@ -237,7 +277,13 @@ export default function ReviewEditor({ file, preferences, onReady, onComment, ma
     if (!selection) return
     onComment({ pane: lastFocus.current, line: selection.endLineNumber, range: selection.isEmpty() ? undefined : { start_line: selection.startLineNumber, start_character: selection.startColumn - 1, end_line: selection.endLineNumber, end_character: selection.endColumn - 1 } })
   }
-  useImperativeHandle(ref, () => ({ createInlineHost(pane, line) {
+  useImperativeHandle(ref, () => ({ outline() { setTool(current => current === 'outline' ? null : 'outline') }, blame() { void toggleBlame() }, highlightComment(location) {
+    highlights.current.forEach(collection => collection.clear()); highlights.current = []
+    if (!location) return
+    const code = location.pane === 'original' ? editor.current?.getOriginalEditor() : editor.current?.getModifiedEditor()
+    const range = location.range
+    if (code) highlights.current = [code.createDecorationsCollection([{ range: range ? new monaco.Range(range.start_line, range.start_character + 1, range.end_line, range.end_character + 1) : new monaco.Range(location.line, 1, location.line, Number.MAX_SAFE_INTEGER), options: { className: 'review-comment-range', isWholeLine: !range, zIndex: 30 } }])]
+  }, createInlineHost(pane, line) {
     const diff = editor.current
     if (!diff) return null
     const node = document.createElement('div')
@@ -250,6 +296,7 @@ export default function ReviewEditor({ file, preferences, onReady, onComment, ma
     node.addEventListener('mousedown', event => event.stopPropagation())
     let code: monaco.editor.IStandaloneCodeEditor | null = null
     let zoneId = ''
+    let layoutSubscription: monaco.IDisposable | null = null
     let restoreAria = () => undefined as void
     let height = 1
     let disposed = false
@@ -257,6 +304,7 @@ export default function ReviewEditor({ file, preferences, onReady, onComment, ma
     function layout() {
       if (disposed || editor.current !== diff) return
       const target = pane === 'original' && sideBySide.current ? diff!.getOriginalEditor() : diff!.getModifiedEditor()
+      content.style.width = `${target.getLayoutInfo().contentWidth}px`
       let afterLine = line
       if (pane === 'original' && !sideBySide.current && line > 0) {
         let offset = 0
@@ -271,29 +319,41 @@ export default function ReviewEditor({ file, preferences, onReady, onComment, ma
       if (code !== target) {
         if (code && zoneId) code.changeViewZones(accessor => accessor.removeZone(zoneId))
         restoreAria()
+        layoutSubscription?.dispose()
         code = target
+        layoutSubscription = code.onDidLayoutChange(layout)
         code.changeViewZones(accessor => { zoneId = accessor.addZone(zone) })
         restoreAria = exposeInlineZone(node)
       } else code.changeViewZones(accessor => accessor.layoutZone(zoneId))
     }
     inlineLayouts.current.add(layout)
     layout()
-    function reveal() { if (code && editor.current === diff) code.setScrollTop(zone.afterLineNumber === 0 ? 0 : Math.max(0, code.getBottomForLineNumber(zone.afterLineNumber) - 50)) }
+    function reveal() {
+      if (!code || editor.current !== diff) return
+      if (zone.afterLineNumber === 0) { code.setScrollTop(0); return }
+      // The line bottom can include the comment's own view zone. Anchor to the
+      // last text position instead, keeping even wrapped-line editors in view.
+      const position = { lineNumber: zone.afterLineNumber, column: code.getModel()!.getLineMaxColumn(zone.afterLineNumber) }
+      const active = content.contains(document.activeElement) ? document.activeElement as HTMLElement : null
+      const offset = active ? Math.max(0, active.getBoundingClientRect().top - content.getBoundingClientRect().top) : 0
+      const anchorTop = code.getTopForPosition(position.lineNumber, position.column) + code.getLineHeightForPosition(position)
+      code.setScrollTop(Math.max(0, anchorTop + offset - 50))
+    }
     let frame = 0
     const observer = new ResizeObserver(() => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
-        const measured = Math.max(1, Math.ceil(content.getBoundingClientRect().height))
+        const measured = Math.ceil(content.getBoundingClientRect().height)
         if (measured > 0 && measured !== height) { height = measured; zone.heightInPx = height; layout(); if (content.contains(document.activeElement)) reveal() }
       })
     })
     observer.observe(content)
     return { element: content, reveal, dispose() {
-      disposed = true; observer.disconnect(); cancelAnimationFrame(frame); inlineLayouts.current.delete(layout)
+      disposed = true; observer.disconnect(); cancelAnimationFrame(frame); layoutSubscription?.dispose(); inlineLayouts.current.delete(layout)
       if (editor.current === diff && code && zoneId) code.changeViewZones(accessor => accessor.removeZone(zoneId))
       restoreAria()
     } }
-  }, addComment, revealComment(pane, line) {
+  }, addComment, find: () => action('actions.find'), goToLine: () => action('editor.action.gotoLine'), revealComment(pane, line) {
     const code = pane === 'original' ? editor.current?.getOriginalEditor() : editor.current?.getModifiedEditor()
     code?.setPosition({ lineNumber: line, column: 1 }); code?.revealLineInCenter(line); code?.focus()
   }, navigate(shortcut) {
@@ -361,16 +421,12 @@ export default function ReviewEditor({ file, preferences, onReady, onComment, ma
     void code?.getAction(id)?.run()
   }
   return <>
-    <div className="review-tools">
-      <button className="btn" onClick={addComment} title="Comment on the selected line or range (c)">Add comment</button>
-      <button className="btn" data-review-find onClick={() => action('actions.find')} title="Ctrl+F / Cmd+F">Find in file</button>
-      <button className="btn" onClick={() => action('editor.action.gotoLine')} title="Ctrl+G">Go to line</button>
-      <button className="btn" onClick={() => navigateChunk('previous')} title="Previous diff chunk (p)">Previous change</button>
-      <button className="btn" onClick={() => navigateChunk('next')} title="Next diff chunk (n)">Next change</button>
-      <span className="muted small">Select a symbol to highlight matching text. F1 opens editor commands.</span>
-    </div>
+    {tool && <dialog ref={toolDialog} className="review-send-dialog" onKeyDown={e => e.stopPropagation()} onCancel={e => { e.preventDefault(); e.stopPropagation(); setTool(null) }}>
+      <h2>{tool === 'outline' ? 'File outline' : 'Blame'} · {file.path.split('/').at(-1)}</h2>
+      {tool === 'outline' ? <><p className="muted">Declarations in the complete file.</p><ul className="review-outline">{outlineItems.map(item => <li key={item.line}><button className="btn" onClick={() => { setTool(null); const code = editor.current?.getModifiedEditor(); code?.setPosition({ lineNumber: item.line, column: 1 }); code?.revealLineInCenter(item.line); code?.focus() }}>{item.line}: {item.name}</button></li>)}</ul>{outlineItems.length === 0 && <p>No declarations found for this file.</p>}</> : <><p className="muted">Select a commit to reveal its code. Commit details also appear when you hover its gutter in the diff.</p>{toolError && <p className="error" role="alert">{toolError}</p>}{!blames && !toolError && <p role="status">Loading blame…</p>}<ul className="review-outline">{blames?.flatMap(blame => blame.ranges.map(range => <li key={`${blame.id}:${range.start}`}><button className="btn" title={blame.commit_msg} onClick={() => { setTool(null); const code = editor.current?.getModifiedEditor(); code?.setPosition({ lineNumber: range.start, column: 1 }); code?.revealLineInCenter(range.start); code?.focus() }}>{range.start}–{range.end} · {blame.author} · {blame.id.slice(0, 8)} · {blame.commit_msg.split('\n')[0]}</button></li>))}</ul></>}
+      <button className="btn" onClick={() => setTool(null)}>Close</button>
+    </dialog>}
     <div className={'review-side-head' + (unified ? ' unified' : '')}>{!unified && <button className="review-file-comment-header" aria-label="File comments on original" disabled={file.nameA === 'File added'} title="File-level comments" onClick={() => commentCallback.current({ pane: 'original', line: 0, existing: true })}>{file.nameA}</button>}<button className="review-file-comment-header" aria-label="File comments on modified" disabled={file.nameB === 'File deleted'} title="File-level comments" onClick={() => commentCallback.current({ pane: 'modified', line: 0, existing: true })}>{file.nameB}</button></div>
-    <div ref={container} className="review-editor" />
-    <footer className="review-stats">{file.originalLines.toLocaleString()} → {file.modifiedLines.toLocaleString()} lines · Complete file loaded · Load {Math.round(file.loadMs)} ms · Prepare {Math.round(file.prepareMs)} ms{readyMs !== null && ` · Editor ${Math.round(readyMs)} ms`}{diffMs !== null && ` · Diff ${Math.round(diffMs)} ms`}</footer>
+    <div ref={container} className="review-editor" data-blame={showBlame} data-review-ready={diffMs !== null} />
   </>
 }

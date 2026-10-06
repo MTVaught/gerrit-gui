@@ -12,7 +12,11 @@ import type {
   ChangeInspection,
   ChangeLink,
   ReviewDiff,
+  ReviewBlame,
+  GerritDiffPreferences,
+  FixSuggestion,
   ReviewDiscussion,
+  ReviewCommentPosition,
   ReviewComment,
   DraftCommentInput,
   SubmitReviewInput,
@@ -42,12 +46,18 @@ export interface Service {
   fetchDashboard(): Promise<DashboardData>
   /** One change, fresh from Gerrit, for updating the board after an action on it. */
   fetchChange(id: number): Promise<ChangeInfo>
+  reviewBlame(link: ChangeLink, path: string): Promise<ReviewBlame[]>
+  reviewDiffPreferences(): Promise<GerritDiffPreferences>
+  saveReviewDiffPreferences(input: GerritDiffPreferences): Promise<GerritDiffPreferences>
+  previewReviewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<Record<string, ReviewDiff>>
+  applyProvidedReviewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<void>
   reviewFiles(link: ChangeLink): Promise<Record<string, FileInfo>>
   reviewDiff(link: ChangeLink, path: string): Promise<ReviewDiff>
   reviewPatchSets(id: number): Promise<number[]>
   reviewReviewedFiles(link: ChangeLink): Promise<string[]>
   setReviewFileReviewed(link: ChangeLink, path: string, reviewed: boolean): Promise<void>
   reviewDiscussion(id: number): Promise<ReviewDiscussion>
+  reviewCommentPositions(link: ChangeLink): Promise<ReviewCommentPosition[]>
   saveReviewDraft(id: number, patchSet: number, input: DraftCommentInput): Promise<ReviewComment>
   deleteReviewDraft(id: number, patchSet: number, draftId: string): Promise<void>
   deleteReviewComment(id: number, patchSet: number, commentId: string, reason: string): Promise<ReviewComment>
@@ -162,12 +172,27 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
       return fetchChange(await client(), id)
     },
 
+    reviewBlame: async (link, path) => (await client()).blame(link, path),
+    reviewDiffPreferences: async () => (await client()).diffPreferences(),
+    saveReviewDiffPreferences: input => withWrite(async () => (await client()).diffPreferences(input)),
+    previewReviewFix: async (id, patchSet, fix) => (await client()).previewFix(id, patchSet, fix),
+    applyProvidedReviewFix: (id, patchSet, fix) => withWrite(async () => (await client()).applyProvidedFix(id, patchSet, fix)),
     reviewFiles: async (link) => (await client()).files(link.id, link.patchSet!, link.basePatchSet),
     reviewDiff: async (link, path) => (await client()).diff(link, path),
     reviewPatchSets: async (id) => Object.values((await (await client()).change(id)).revisions ?? {}).map((r) => r._number).sort((a, b) => a - b),
     reviewReviewedFiles: async (link) => (await client()).reviewedFiles(link),
     setReviewFileReviewed: (link, path, reviewed) => withWrite(async () => (await client()).setFileReviewed(link, path, reviewed)),
 
+    async reviewCommentPositions(link) {
+      if (!Number.isInteger(link.patchSet) || link.patchSet! < 1) throw new Error('A patch set is required for comment mapping')
+      const g = await client()
+      const revisions = [...new Set([link.patchSet!, ...(link.basePatchSet ? [link.basePatchSet] : [])])]
+      const results = await Promise.all(revisions.map(async patchSet => {
+        const maps = await Promise.all([g.portedComments(link.id, patchSet), pretend ? Promise.resolve({}) : g.portedComments(link.id, patchSet, true)])
+        return maps.flatMap(map => Object.entries(map).flatMap(([path, list]) => list.map(c => ({ id: c.id, anchor: { patchSet, path, side: c.side ?? 'REVISION', parent: c.parent, line: c.line, range: c.range } }))))
+      }))
+      return results.flat()
+    },
     async reviewDiscussion(id) {
       const g = await client()
       const [comments, drafts, self, change, capabilities] = await Promise.all([
@@ -175,7 +200,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
         pretend ? Promise.resolve({}) : g.capabilities().catch((e: GerritError) => { if (e.status === 403 || e.status === 404) return {}; throw e }),
       ])
       const flatten = (map: Record<string, ReviewComment[]>) => Object.entries(map).flatMap(([path, list]) => list.map((c) => ({ ...c, path })))
-      return { comments: flatten(comments), drafts: flatten(drafts), self,
+      return { comments: flatten(comments), drafts: flatten(drafts), self, updated: change.updated, reviewers: change.reviewers, attention: change.attention_set, owner: change.owner,
         permittedLabels: pretend ? {} : change.permitted_labels ?? {}, labels: change.labels ?? {},
         latestPatchSet: Math.max(0, ...Object.values(change.revisions ?? {}).map((r) => r._number)),
         readOnly: Boolean(pretend), canDeletePublished: Boolean((capabilities as Record<string, boolean>).administrateServer),

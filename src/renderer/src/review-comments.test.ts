@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { commentAnchor, commentThreads, commentPane } from './review-comments.ts'
+import { commentAnchor, commentThreads, commentPane, displayCommentAnchor } from './review-comments.ts'
 import type { ReviewComment } from '../../shared/types.ts'
 test('unchanged lines and ranges attach to the correct patch set and side, including renames', () => {
   const link = { id: 42, project: 'p', patchSet: 5 }
@@ -21,4 +21,21 @@ test('existing comments reveal the correct pane and never confuse parent with an
   assert.equal(commentPane(link, 'new.ts', 'old.ts', { ...comment, patch_set: 5, path: 'new.ts' }), 'modified')
   assert.equal(commentPane(link, 'new.ts', 'old.ts', { ...comment, patch_set: 5, path: 'new.ts', side: 'PARENT' }), null)
   assert.equal(commentPane({ ...link, basePatchSet: undefined }, 'new.ts', 'old.ts', { ...comment, patch_set: 5, path: 'new.ts', side: 'PARENT' }), 'original')
+})
+
+
+test('ported display coordinates preserve canonical anchors and require server mapping', () => {
+  const link = { id: 42, project: 'p', patchSet: 5, basePatchSet: 2 }
+  const comment: ReviewComment = { id: 'old', patch_set: 1, path: 'before.ts', line: 10000, updated: 'now' }
+  const mapped = { patchSet: 5, path: 'new.ts', side: 'REVISION' as const, line: 7, range: { start_line: 6, end_line: 7, start_character: 1, end_character: 4 } }
+  assert.equal(displayCommentAnchor(link, 'new.ts', 'old.ts', comment, []), null)
+  assert.deepEqual(displayCommentAnchor(link, 'new.ts', 'old.ts', comment, [{ id: 'old', anchor: mapped }]), mapped)
+  assert.equal(comment.line, 10000)
+  assert.equal(comment.patch_set, 1)
+  assert.equal(displayCommentAnchor(link, 'other.ts', 'other.ts', comment, [{ id: 'old', anchor: mapped }]), null)
+  const base = { ...mapped, patchSet: 2, path: 'old.ts', line: 8 }
+  assert.deepEqual(displayCommentAnchor(link, 'new.ts', 'old.ts', comment, [{ id: 'old', anchor: base }]), base)
+  assert.equal(displayCommentAnchor(link, 'new.ts', 'old.ts', comment, [{ id: 'old', anchor: { ...mapped, side: 'PARENT' } }]), null)
+  const selected = { ...comment, patch_set: 2, path: 'old.ts' }
+  assert.equal(displayCommentAnchor(link, 'new.ts', 'old.ts', selected, [{ id: 'old', anchor: mapped }])?.line, 10000)
 })

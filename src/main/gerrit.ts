@@ -1,4 +1,4 @@
-import type { AccountInfo, ChangeInfo, ChangeLink, ReviewDiff, FileInfo, SuggestedReviewerInfo, ReviewComment, DraftCommentInput, SubmitReviewInput } from '../shared/types.ts'
+import type { ReviewBlame, GerritDiffPreferences, FixSuggestion, AccountInfo, ChangeInfo, ChangeLink, ReviewDiff, FileInfo, SuggestedReviewerInfo, ReviewComment, DraftCommentInput, SubmitReviewInput } from '../shared/types.ts'
 import { changePath } from '../shared/url.ts'
 
 const XSSI_PREFIX = ")]}'"
@@ -48,7 +48,9 @@ export class GerritClient {
   }
 
   private async req<T>(method: string, path: string, body?: unknown, query?: URLSearchParams): Promise<T> {
-    if (this.pretendAs && method !== 'GET') throw new GerritError(`${method} ${path} refused: the board is read-only while shown as ${this.pretendAs.username ?? this.pretendAs._account_id}`, 0)
+    // This POST computes a diff and does not create or modify a change edit.
+    const fixPreview = method === 'POST' && /^\/changes\/\d+\/revisions\/\d+\/fix:preview$/.test(path)
+    if (this.pretendAs && method !== 'GET' && !fixPreview) throw new GerritError(`${method} ${path} refused: the board is read-only while shown as ${this.pretendAs.username ?? this.pretendAs._account_id}`, 0)
     const url = `${this.base}/a${path}${query ? '?' + query.toString() : ''}`
     let res: Response
     try {
@@ -135,8 +137,24 @@ export class GerritClient {
     return this.req(reviewed ? 'PUT' : 'DELETE', `/changes/${link.id}/revisions/${link.patchSet}/files/${encodeURIComponent(path)}/reviewed`)
   }
 
+  blame(link: ChangeLink, path: string): Promise<ReviewBlame[]> {
+    return this.req('GET', `/changes/${link.id}/revisions/${link.patchSet}/files/${encodeURIComponent(path)}/blame`)
+  }
+  diffPreferences(input?: GerritDiffPreferences): Promise<GerritDiffPreferences> {
+    return this.req(input ? 'PUT' : 'GET', '/accounts/self/preferences.diff', input)
+  }
+  previewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<Record<string, ReviewDiff>> {
+    return fix.fix_id ? this.req('GET', `/changes/${id}/revisions/${patchSet}/fixes/${encodeURIComponent(fix.fix_id)}/preview`)
+      : this.req('POST', `/changes/${id}/revisions/${patchSet}/fix:preview`, { fix_replacement_infos: fix.replacements })
+  }
+  async applyProvidedFix(id: number, patchSet: number, fix: FixSuggestion): Promise<void> {
+    await this.req('POST', `/changes/${id}/revisions/current/fix:apply`, { originalPatchsetForFix: patchSet, fix_replacement_infos: fix.replacements })
+  }
   comments(id: number, drafts = false): Promise<Record<string, ReviewComment[]>> {
-    return this.req('GET', `/changes/${id}/${drafts ? 'drafts' : 'comments'}`)
+    return this.req('GET', `/changes/${id}/${drafts ? 'drafts' : 'comments'}`, undefined, new URLSearchParams({ 'enable-context': 'true', 'context-padding': '2' }))
+  }
+  portedComments(id: number, patchSet: number, drafts = false): Promise<Record<string, ReviewComment[]>> {
+    return this.req('GET', `/changes/${id}/revisions/${patchSet}/${drafts ? 'ported_drafts' : 'ported_comments'}`)
   }
   capabilities(): Promise<Record<string, boolean>> { return this.req('GET', '/accounts/self/capabilities') }
   async saveDraft(id: number, patchSet: number, input: DraftCommentInput): Promise<ReviewComment> {
@@ -153,8 +171,10 @@ export class GerritClient {
     return { ...result, patch_set: patchSet }
   }
   async applyFix(id: number, patchSet: number, fixId: string): Promise<void> { await this.req('POST', `/changes/${id}/revisions/${patchSet}/fixes/${encodeURIComponent(fixId)}/apply`) }
-  submitReview(link: ChangeLink, input: SubmitReviewInput): Promise<void> {
-    return this.req('POST', `/changes/${link.id}/revisions/${link.patchSet}/review`, input)
+  async submitReview(link: ChangeLink, input: SubmitReviewInput): Promise<void> {
+    const result = await this.req<{ reviewers?: Record<string, { error?: string; confirm?: boolean }> }>('POST', `/changes/${link.id}/revisions/${link.patchSet}/review`, input)
+    const errors = Object.entries(result.reviewers ?? {}).flatMap(([reviewer, value]) => value.error ? [`${reviewer}: ${value.error}`] : value.confirm ? [`${reviewer}: Gerrit requires confirmation before adding this group. Add it in Gerrit, then retry.`] : [])
+    if (errors.length) throw new Error(errors.join('\n'))
   }
 
   setReady(id: number) {

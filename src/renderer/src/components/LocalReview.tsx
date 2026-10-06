@@ -1,16 +1,16 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
-import type { ChangeLink, FileInfo, ReviewComment, ReviewDiscussion } from '../../../shared/types.ts'
+import type { ChangeLink, FileInfo, ReviewComment, ReviewDiscussion, ReviewCommentPosition } from '../../../shared/types.ts'
 import { api } from '../api.ts'
 import { diffContents } from '../review.ts'
 import { reviewShortcut, REVIEW_SHORTCUT_HELP } from '../review-shortcuts.ts'
 import type { ReviewEditorHandle, LoadedReviewFile } from './ReviewEditor.tsx'
 import type { CreateInlineCommentHost } from './InlineReviewComment.tsx'
 import { ReviewComments, type ReviewCommentsHandle } from './ReviewComments.tsx'
-import { commentAnchor, commentPane } from '../review-comments.ts'
+import { commentAnchor, commentPane, displayCommentAnchor } from '../review-comments.ts'
 import { ReviewFileList } from './ReviewFileList.tsx'
 import { DiffPreferences } from './DiffPreferences.tsx'
-import { loadReviewPreferences, saveReviewPreferences, type ReviewPreferences } from '../review-preferences.ts'
+import { reviewContextIsSynced, fromGerritPreferences, toGerritPreferences, loadReviewPreferences, saveReviewPreferences, type ReviewPreferences } from '../review-preferences.ts'
 
 const ReviewEditor = lazy(() => import('./ReviewEditor.tsx'))
 
@@ -19,9 +19,23 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
   const pendingComment = useRef<ReviewComment | null>(null)
   const comments = useRef<ReviewCommentsHandle>(null)
   const [commentsOpen, setCommentsOpen] = useState(true)
+  const [commentControls, setCommentControls] = useState<HTMLDivElement | null>(null)
   function closeReview() { if (comments.current?.canClose() !== false) onClose() }
   const [link, setLink] = useState(initialLink)
   const [patchSets, setPatchSets] = useState<number[] | null>(null)
+  const preferenceVersion = useRef(0)
+  const [updateNotice, setUpdateNotice] = useState('')
+  useEffect(() => {
+    let active = true
+    const version = preferenceVersion.current
+    void api.reviewDiffPreferences().then(input => { if (active && version === preferenceVersion.current) setPreferences(current => fromGerritPreferences({ ...input, context: reviewContextIsSynced() ? input.context : current.context }, current)) }).catch(e => { if (active && version === preferenceVersion.current) setPreferenceError(`Could not load Gerrit preferences: ${e.message}`) })
+    const poll = async () => {
+      if (document.hidden) return
+      try { const sets = await api.reviewPatchSets(initialLink.id); if (active) { setPatchSets(current => { if (current && sets.some(set => !current.includes(set))) setUpdateNotice(`New patch set ${Math.max(...sets)} available.`); return sets }) } } catch { /* Keep the current comparison available during network outages. */ }
+    }
+    const timer = setInterval(() => void poll(), 30000)
+    return () => { active = false; clearInterval(timer) }
+  }, [initialLink.id])
   const [patchSetError, setPatchSetError] = useState('')
   const [preferences, setPreferences] = useState(loadReviewPreferences)
   const [preferencesOpen, setPreferencesOpen] = useState(false)
@@ -37,6 +51,21 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
   const currentPatchSet = useRef(link.patchSet)
   currentPatchSet.current = link.patchSet
   const comparison = `${link.basePatchSet ?? 0}:${link.patchSet}`
+  const positionCache = useRef(new Map<string, ReviewCommentPosition[]>())
+  const [mapped, setMapped] = useState<{ comparison: string; positions: ReviewCommentPosition[] } | null>(null)
+  const [mappingError, setMappingError] = useState('')
+  const [mappingRetry, setMappingRetry] = useState(0)
+  const positions = mapped?.comparison === comparison ? mapped.positions : []
+  useEffect(() => {
+    let active = true
+    setMapped(current => current?.comparison === comparison ? current : null); setMappingError('')
+    const cached = positionCache.current.get(comparison)
+    void (cached ? Promise.resolve(cached) : api.reviewCommentPositions(link)).then(positions => {
+      if (!active) return
+      positionCache.current.set(comparison, positions); setMapped({ comparison, positions })
+    }).catch((error: Error) => { if (active) setMappingError(error.message) })
+    return () => { active = false }
+  }, [link.id, comparison, mappingRetry])
   const fileLists = useRef(new Map<string, Record<string, FileInfo>>())
   const dialog = useRef<HTMLDialogElement>(null)
   const editor = useRef<ReviewEditorHandle>(null)
@@ -55,7 +84,11 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
     const overflow = elements.map((el) => el.style.overflow)
     elements.forEach((el) => { el.style.overflow = 'hidden' })
     dialog.current?.showModal()
-    return () => { elements.forEach((el, index) => { el.style.overflow = overflow[index]! }) }
+    const closeMenus = (event: PointerEvent) => {
+      dialog.current?.querySelectorAll<HTMLDetailsElement>('.review-menu[open]').forEach(menu => { if (!menu.contains(event.target as Node)) menu.open = false })
+    }
+    document.addEventListener('pointerdown', closeMenus)
+    return () => { document.removeEventListener('pointerdown', closeMenus); elements.forEach((el, index) => { el.style.overflow = overflow[index]! }) }
   }, [])
   useEffect(() => {
     let active = true
@@ -82,7 +115,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
       fileLists.current.set(comparison, result)
       setFilesComparison(comparison)
       setFiles(result)
-      setPath((previous) => previous in result ? previous : Object.keys(result).filter((p) => p !== '/MERGE_LIST').sort()[0] ?? '')
+      setPath((previous) => previous in result ? previous : Object.keys(result).sort()[0] ?? '')
     }).catch((e: Error) => { if (active) setError(e.message) })
     return () => { active = false }
   }, [link, retry])
@@ -109,8 +142,9 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
   }, [link, path, files, filesComparison, retry])
   const markers = [...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])].flatMap(comment => {
     if (!comment.line && !comment.range) return []
-    const pane = commentPane(link, path, loaded?.nameA ?? path, comment)
-    return pane ? [{ pane, line: comment.line ?? comment.range?.end_line ?? 1, draft: Boolean(discussion?.drafts.some(draft => draft.id === comment.id)), unresolved: Boolean(comment.unresolved) }] : []
+    const display = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions)
+    const pane = display ? commentPane(link, path, loaded?.nameA ?? path, { ...display, patch_set: display.patchSet, id: comment.id, updated: '' }) : null
+    return pane ? [{ pane, line: display!.line ?? display!.range?.end_line ?? 1, range: display!.range, draft: Boolean(discussion?.drafts.some(draft => draft.id === comment.id)), unresolved: Boolean(comment.unresolved) }] : []
   })
   const fileKey = `${comparison}:${path}`
   const createInlineHost = useCallback<CreateInlineCommentHost>(anchor => {
@@ -121,7 +155,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
   const isReviewed = reviewed && reviewed.patchSet === link.patchSet && reviewed.paths.has(path)
   async function markReviewed(value: boolean, targetPath = path) {
     const markKey = `${link.patchSet}:${targetPath}`
-    if (pendingMarks.current.has(markKey)) return
+    if (pendingMarks.current.has(markKey)) return false
     pendingMarks.current.add(markKey)
     setMarking(true)
     setReviewedError('')
@@ -133,7 +167,8 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
         if (value) next.add(targetPath); else next.delete(targetPath)
         return { patchSet: link.patchSet!, paths: next }
       })
-    } catch (e) { if (currentPatchSet.current === link.patchSet) setReviewedError((e as Error).message) }
+      return true
+    } catch (e) { if (currentPatchSet.current === link.patchSet) setReviewedError((e as Error).message); return false }
     finally { pendingMarks.current.delete(markKey); setMarking(pendingMarks.current.size > 0) }
   }
   useEffect(() => {
@@ -142,18 +177,22 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
     autoMarkedVisit.current = fileKey
     if (!isReviewed) void markReviewed(true)
   }, [preferences.autoMarkReviewed, readyFile, fileKey, reviewed, isReviewed])
-  function savePreferences(next: ReviewPreferences) {
+  async function savePreferences(next: ReviewPreferences) {
+    preferenceVersion.current++
     try {
+      await api.saveReviewDiffPreferences(toGerritPreferences(next))
       saveReviewPreferences(next)
       setPreferences(next)
       setPreferenceError('')
       return true
-    } catch { setPreferenceError('Could not save diff preferences. Check that local storage is available, then try again.'); return false }
+    } catch (e) { setPreferenceError(`Could not save diff preferences: ${(e as Error).message}`); return false }
   }
-  const paths = Object.keys(files ?? {}).filter((p) => p !== '/MERGE_LIST').sort()
+  const paths = Object.keys(files ?? {}).sort()
   function onKey(event: KeyboardEvent<HTMLDialogElement>) {
     if (help || preferencesOpen) return
     const target = event.target as HTMLElement
+    const menu = target.closest<HTMLDetailsElement>('.review-menu[open]')
+    if (menu && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); menu.open = false; menu.querySelector<HTMLElement>('summary')?.focus(); return }
     const inEditorWidget = Boolean(target.closest('.find-widget, .quick-input-widget, .suggest-widget, .rename-box, .context-view'))
     const codeInput = !inEditorWidget && target.matches('.inputarea, .native-edit-context') && Boolean(target.closest('.review-editor'))
     const textEntry = inEditorWidget || (!codeInput && Boolean(target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]')))
@@ -164,6 +203,16 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
     event.stopPropagation()
     const buttons = Array.from(fileList.current?.querySelectorAll<HTMLButtonElement>('[data-review-path]') ?? [])
     switch (shortcut) {
+      case 'blame': editor.current?.blame(); break
+      case 'preferences': setPreferencesOpen(true); break
+      case 'toggleReviewed': if (reviewed?.patchSet === link.patchSet) void markReviewed(!isReviewed); break
+      case 'nextUnreviewed': {
+        if (!reviewed || reviewed.patchSet !== link.patchSet) break
+        const index = paths.indexOf(path)
+        const next = [...paths.slice(index + 1), ...paths.slice(0, index)].find(candidate => !reviewed.paths.has(candidate))
+        void markReviewed(true).then(success => { if (success && next) setPath(next) })
+        break
+      }
       case 'help': setHelp(true); break
       case 'review': comments.current?.review(); break
       case 'toggleComments': setCommentsOpen(value => !value); break
@@ -194,15 +243,27 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
       if (help || preferencesOpen) return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault()
-        dialog.current?.querySelector<HTMLButtonElement>('button[data-review-find]')?.click()
+        editor.current?.find()
       }
     }}>
       <header className="local-review-header">
-        <div><h2 id="local-review-title">{subject}</h2><span className="muted">#{link.id} · {link.basePatchSet ? `PS ${link.basePatchSet}` : 'Base'} → PS {link.patchSet} · Local review beta</span></div>
-        <button className="btn" onClick={() => setCommentsOpen(true)}>Comments / review</button>
+        <div className="local-review-heading"><span className="muted">#{link.id}</span><h2 id="local-review-title">{subject}</h2></div>
+        <div ref={setCommentControls} />
         <button className="btn" data-review-preferences onClick={() => setPreferencesOpen(true)}>Diff preferences</button>
-        <button className="btn" onClick={() => setHelp(true)} title="Keyboard shortcuts (?)">Shortcuts</button>
-        <button className="btn" onClick={() => void api.openChange(link)}>Open in Gerrit</button>
+        <details className="review-menu" onClick={event => { if ((event.target as HTMLElement).closest('button')) event.currentTarget.open = false }}>
+          <summary className="btn" aria-label="More review actions">More</summary>
+          <div className="review-menu-items">
+            <button className="btn" data-review-find onClick={() => editor.current?.find()}>Find in file</button>
+            <button className="btn" onClick={() => editor.current?.outline()}>Outline</button>
+            <button className="btn" onClick={() => editor.current?.blame()}>Blame</button>
+            <button className="btn" onClick={() => editor.current?.goToLine()}>Go to line</button>
+            <button className="btn" onClick={() => editor.current?.addComment()}>Add comment</button>
+            <button className="btn" onClick={() => editor.current?.navigate('previousChunk')}>Previous change</button>
+            <button className="btn" onClick={() => editor.current?.navigate('nextChunk')}>Next change</button>
+            <button className="btn" onClick={() => setHelp(true)} title="Keyboard shortcuts (?)">Shortcuts</button>
+            <button className="btn" onClick={() => void api.openChange(link)}>Open in Gerrit</button>
+          </div>
+        </details>
         <button className="btn" onClick={closeReview}>Close review</button>
       </header>
       <div className="review-comparison" aria-label="Patch set comparison">
@@ -215,23 +276,32 @@ export function LocalReview({ link: initialLink, subject, onClose, onPublished }
           setLink({ ...link, patchSet, basePatchSet: link.basePatchSet === patchSet ? undefined : link.basePatchSet })
         }}>{(patchSets ?? [link.patchSet!]).map((n) => <option key={n} value={n}>Patch set {n}</option>)}</select></label>
         {patchSetError && <span role="alert" className="error">Could not load patch sets: {patchSetError}</span>}
-
+        {loaded?.comparison === comparison && loaded.path === path && <label className="reviewed-file"><input type="checkbox" aria-label="File reviewed" checked={Boolean(isReviewed)} disabled={marking || reviewed?.patchSet !== link.patchSet} onChange={(e) => void markReviewed(e.target.checked)} />Reviewed</label>}
       </div>
       {reviewedError && <div className="review-flag-error" role="alert">Reviewed flag: {reviewedError} <button className="btn" onClick={() => { autoMarkedVisit.current = ''; setReviewedRetry((n) => n + 1) }}>Retry</button></div>}
+      {mappingError && <div className="review-flag-error" role="alert">Could not place older comments: {mappingError} <button className="btn" onClick={() => { positionCache.current.delete(comparison); setMappingRetry(value => value + 1) }}>Retry</button></div>}
+      {updateNotice && <div className="review-comment-notice" role="status">{updateNotice} <button className="btn" onClick={() => { setLink(current => ({ ...current, patchSet: Math.max(...(patchSets ?? [current.patchSet!])), basePatchSet: undefined })); setUpdateNotice('') }}>Open latest patch set</button><button className="btn" onClick={() => setUpdateNotice('')}>Dismiss</button></div>}
       <div className="local-review-body">
-        <ReviewFileList ref={fileList} paths={paths} selected={path} reviewed={reviewed?.patchSet === link.patchSet ? reviewed!.paths : null} busy={marking} onOpen={setPath} onReviewed={(file, done) => void markReviewed(done, file)} />
+        <ReviewFileList positions={positions} files={files ?? {}} discussion={discussion} ref={fileList} paths={paths} selected={path} reviewed={reviewed?.patchSet === link.patchSet ? reviewed!.paths : null} busy={marking} onOpen={setPath} onReviewed={(file, done) => void markReviewed(done, file)} />
         <main className="review-file">
-          <div className="review-current-file"><span title={path}>{path === '/COMMIT_MSG' ? 'Commit message' : path}</span>
-            {loaded?.comparison === comparison && loaded.path === path && <label className="reviewed-file"><input type="checkbox" aria-label="File reviewed" checked={Boolean(isReviewed)} disabled={marking || reviewed?.patchSet !== link.patchSet} onChange={(e) => void markReviewed(e.target.checked)} />Reviewed</label>}
-          </div>
-        <ReviewComments ref={comments} createInlineHost={createInlineHost} hasEditor={Boolean(loaded && loaded.path === path && loaded.comparison === comparison)} onPublished={onPublished} onDiscussion={setDiscussion} link={link} path={path} originalPath={loaded?.nameA} visible={commentsOpen} onOpen={() => setCommentsOpen(true)} onHide={() => setCommentsOpen(false)} onReveal={comment => {
+        <ReviewComments ref={comments} positions={positions} controls={commentControls} createInlineHost={createInlineHost} hasEditor={Boolean(loaded && loaded.path === path && loaded.comparison === comparison)} onPublished={onPublished} onDiscussion={setDiscussion} onRefresh={() => { void api.reviewPatchSets(link.id).then(sets => { setPatchSets(sets); if (Math.max(...sets) > link.patchSet!) setUpdateNotice(`New patch set ${Math.max(...sets)} available.`) }).catch(e => setPatchSetError(e.message)); positionCache.current.clear(); setMappingRetry(value => value + 1) }} onHighlight={comment => { if (!comment) { editor.current?.highlightComment(null); return }; const mapped = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions); if (mapped) { const pane = commentPane(link, path, loaded?.nameA ?? path, { ...mapped, patch_set: mapped.patchSet, id: comment.id, updated: '' }); if (pane) editor.current?.highlightComment({ pane, line: mapped.line ?? mapped.range?.end_line ?? 1, range: mapped.range }) } }} link={link} path={path} originalPath={loaded?.nameA} visible={commentsOpen} onOpen={() => setCommentsOpen(true)} onHide={() => setCommentsOpen(false)} onReveal={(comment, original) => {
           if (comment.path === '/PATCHSET_LEVEL') return
-          const pane = commentPane(link, path, loaded?.nameA ?? path, comment)
-          if (pane) editor.current?.revealComment(pane, comment.line ?? comment.range?.end_line ?? 1)
-          else { pendingComment.current = comment; setLink({ ...link, patchSet: comment.patch_set, basePatchSet: undefined }); setPath(comment.path) }
+          const display = original ? null : displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions)
+          const pane = display ? commentPane(link, path, loaded?.nameA ?? path, { ...display, patch_set: display.patchSet, id: comment.id, updated: '' }) : null
+          if (pane) editor.current?.revealComment(pane, display!.line ?? display!.range?.end_line ?? 1)
+          else {
+            const mapped = original ? null : (positions.find(position => position.id === comment.id && position.anchor.patchSet === link.patchSet)?.anchor
+              ?? positions.find(position => position.id === comment.id && position.anchor.patchSet === link.basePatchSet)?.anchor
+              ?? (comment.patch_set === link.patchSet || comment.patch_set === link.basePatchSet ? { patchSet: comment.patch_set, path: comment.path, side: comment.side ?? 'REVISION', line: comment.line, range: comment.range } : null))
+            const targetPath = mapped && Object.keys(files ?? {}).find(candidate => candidate === mapped.path || files?.[candidate]?.old_path === mapped.path)
+            if (mapped && targetPath) {
+              pendingComment.current = { ...comment, patch_set: link.patchSet!, path: targetPath, line: mapped.line, range: mapped.range, side: mapped.patchSet === link.basePatchSet || mapped.side === 'PARENT' ? 'PARENT' : 'REVISION' }
+              setPath(targetPath)
+            } else { pendingComment.current = comment; setLink({ ...link, patchSet: comment.patch_set, basePatchSet: undefined }); setPath(comment.path) }
+          }
         }} />
           {error ? <div className="review-message" role="alert">{error}<p><button className="btn" onClick={() => { fileLists.current.delete(comparison); setRetry((v) => v + 1) }}>Retry</button></p></div>
-            : loaded && loaded.path === path && loaded.comparison === comparison ? <Suspense fallback={<p className="review-message" role="status">Opening review editor…</p>}><ReviewEditor ref={editor} key={fileKey} file={loaded} preferences={preferences} markers={markers} onComment={position => { const anchor = commentAnchor(link, path, loaded.nameA, position.pane, position.line, position.range); if (position.existing) comments.current?.openAt(anchor); else comments.current?.compose(anchor) }} onReady={() => {
+            : loaded && loaded.path === path && loaded.comparison === comparison ? <Suspense fallback={<p className="review-message" role="status">Opening review editor…</p>}><ReviewEditor ref={editor} key={fileKey} file={loaded} link={link} preferences={preferences} markers={markers} onComment={position => { const anchor = commentAnchor(link, path, loaded.nameA, position.pane, position.line, position.range); if (position.existing) comments.current?.openAt(anchor); else comments.current?.compose(anchor) }} onReady={() => {
               setReadyFile(fileKey); setEditorGeneration(generation => generation + 1)
               const comment = pendingComment.current
               if (comment && comment.patch_set === link.patchSet && comment.path === path) { editor.current?.revealComment(comment.side === 'PARENT' ? 'original' : 'modified', comment.line ?? comment.range?.end_line ?? 1); pendingComment.current = null }

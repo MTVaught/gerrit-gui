@@ -8,7 +8,11 @@ import type {
   ChangeInspection,
   ChangeLink,
   ReviewDiff,
+  ReviewBlame,
+  GerritDiffPreferences,
+  FixSuggestion,
   ReviewDiscussion,
+  ReviewCommentPosition,
   ReviewComment,
   DraftCommentInput,
   SubmitReviewInput,
@@ -29,12 +33,18 @@ export interface Api {
   fetchDashboard(): Promise<DashboardData>
   /** One change as the board shows it, read after an action on it so only that card is redrawn. */
   fetchChange(id: number): Promise<ChangeInfo>
+  reviewBlame(link: ChangeLink, path: string): Promise<ReviewBlame[]>
+  reviewDiffPreferences(): Promise<GerritDiffPreferences>
+  saveReviewDiffPreferences(input: GerritDiffPreferences): Promise<GerritDiffPreferences>
+  previewReviewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<Record<string, ReviewDiff>>
+  applyProvidedReviewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<void>
   reviewFiles(link: ChangeLink): Promise<Record<string, FileInfo>>
   reviewDiff(link: ChangeLink, path: string): Promise<ReviewDiff>
   reviewPatchSets(id: number): Promise<number[]>
   reviewReviewedFiles(link: ChangeLink): Promise<string[]>
   setReviewFileReviewed(link: ChangeLink, path: string, reviewed: boolean): Promise<void>
   reviewDiscussion(id: number): Promise<ReviewDiscussion>
+  reviewCommentPositions(link: ChangeLink): Promise<ReviewCommentPosition[]>
   saveReviewDraft(id: number, patchSet: number, input: DraftCommentInput): Promise<ReviewComment>
   deleteReviewDraft(id: number, patchSet: number, draftId: string): Promise<void>
   deleteReviewComment(id: number, patchSet: number, commentId: string, reason: string): Promise<ReviewComment>

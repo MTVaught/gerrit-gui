@@ -23,6 +23,9 @@ test('Gerrit review keys retain case and context', () => {
   assert.equal(reviewShortcut({ key: 'j' }, { fileList: true }), 'nextFileCursor')
   assert.equal(reviewShortcut({ key: 'Enter' }, { fileList: true }), 'openFile')
   assert.equal(reviewShortcut({ key: 'o' }), null)
+  assert.equal(reviewShortcut({ key: 'b' }), 'blame')
+  assert.equal(reviewShortcut({ key: ',' }), 'preferences')
+  assert.equal(reviewShortcut({ key: 'r' }), 'toggleReviewed')
 })
 
 test('typing, IME, modified keys, and repeats cannot accidentally navigate', () => {
@@ -32,6 +35,6 @@ test('typing, IME, modified keys, and repeats cannot accidentally navigate', () 
   }
   assert.equal(reviewShortcut({ key: 'n', repeat: true }), null)
   assert.equal(reviewShortcut({ key: 'J', shiftKey: true }), null)
-  assert.equal(reviewShortcut({ key: 'M', shiftKey: true }), null)
+  assert.equal(reviewShortcut({ key: 'M', shiftKey: true }), 'nextUnreviewed')
   assert.equal(reviewShortcut({ key: 'ArrowLeft' }), null)
 })
