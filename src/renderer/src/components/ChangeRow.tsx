@@ -523,7 +523,7 @@ export function Reviewers(props: ActProps) {
         ? `not primary, voted ${fmtVote(r.vote)} on patch set ${v.patchSet}; this vote does not change the state`
         : 'not primary, has not voted; not waited for',
     label: label(r),
-    children: body(r, promote(r), removeOther(r)),
+    children: r.account._account_id === c.owner._account_id ? body(r) : body(r, promote(r), removeOther(r)),
   }))
 
   return (
