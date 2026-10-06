@@ -3,19 +3,19 @@ import type { ChangeLink, ChangeView } from '../../../shared/types.ts'
 import { reviewLink } from '../../../shared/model.ts'
 import { api } from '../api.ts'
 import { useSettings } from '../settings-context.ts'
-import { LocalReview } from './LocalReview.tsx'
+import { useLocalReview } from '../review-context.tsx'
 
 /**
  * The reviewer's way into Gerrit. The main part opens the diff from the last
  * patch set they reviewed to the current one (or the current patch set against
  * base when they never reviewed it). The caret lists the other views: since
  * base, since the previous patch set, the change page, and a copyable link.
- * Voting itself happens in Gerrit.
+ * The beta viewer saves comments and votes directly to Gerrit.
  */
 export function ReviewButton(props: { view: ChangeView }) {
   const { view: v } = props
   const { settings } = useSettings()
-  const [localLink, setLocalLink] = useState<ChangeLink | null>(null)
+  const openLocalReview = useLocalReview()
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
@@ -88,7 +88,7 @@ export function ReviewButton(props: { view: ChangeView }) {
 
   function go(link: ChangeLink) {
     setOpen(false)
-    if (settings?.localReview && link.patchSet !== undefined) setLocalLink(link)
+    if (settings?.localReview && link.patchSet !== undefined) openLocalReview(link, v.change.subject)
     else void api.openChange(link)
   }
 
@@ -118,7 +118,6 @@ export function ReviewButton(props: { view: ChangeView }) {
       >
         ▾
       </button>
-      {localLink && <LocalReview link={localLink} subject={v.change.subject} onClose={() => setLocalLink(null)} />}
       {open && pos && (
         <div className="menu" role="menu" style={{ top: pos.top, right: pos.right }}>
           {options.map((o) => (

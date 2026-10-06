@@ -102,18 +102,37 @@ while CI has not voted. A new patch set clears it, as it clears the vote.
 
 ## Local review beta
 
-Settings → Beta → **Open reviews in the app** enables a read-only full-file
-viewer. It is off by default. With it enabled, the Review button and its
+Settings → Beta → **Open reviews in the app** enables the local diff viewer. It is off by default. With it enabled, the Review button and its
 patch-set comparison options open the local viewer. The comparison still
 starts from your last reviewed patch set, or from base on a first review.
 
-The selected file loads with all context on both sides. There are no collapsed
-sections. Scrolling, whole-file search, line jumps and change navigation use
-that loaded content without further Gerrit requests. Files opened during the
+The selected file loads with all context on both sides. Whole file is the
+default; Diff preferences can limit visible context while keeping both complete
+files in memory. Scrolling, whole-file search, line jumps and change navigation use
+that loaded content without further Gerrit requests. Files and comparisons opened during the
 same review stay cached until you close it, so memory use grows with the files
 you open. Each side can scroll horizontally; vertical scrolling is synchronized.
+The Base and Patch set selectors change either revision in the comparison.
+Returning to a comparison reuses its cached files and scroll positions.
+Diff preferences has the Gerrit options for context, fit to screen, diff width,
+tab width, font size, tabs, trailing whitespace, syntax highlighting, automatic
+reviewed flags and all four ignore-whitespace modes. Preferences are saved in
+this app, independently of Gerrit preferences. Display settings and whitespace
+comparisons apply locally without changing the source text or fetching it again.
+The compact, resizable file sidebar groups filenames by directory. Its checkmarks
+read and write Gerrit's reviewed flags independently of opening files. A progress
+count and Unreviewed only filter help track the remaining files. The current
+file's full path and Reviewed checkbox stay above the diff. Automatic marking is off until enabled in Diff preferences.
+
 The Monaco diff editor owns the scrollbars and text rendering. Ctrl+F or Cmd+F
 searches the focused side, Ctrl+G jumps to a line, and F1 opens editor commands.
+Gerrit navigation keys work in the review window: `j`/`k` or Up/Down for lines,
+`n`/`p` for diff chunks, `]`/`[` for files, Shift+Left/Right for panes, and `.`
+for visible code. Press `f` for the file list, where `j`/`k` select an entry and
+`o`/Enter opens it. `m` toggles unified/side-by-side mode, `u` returns to the
+board, and `?` shows shortcut help. Typing in search and other editor fields
+does not trigger navigation. Background scrolling is hidden during review
+and restored when you close it.
 Syntax and character-level highlighting, text selection and matching-text
 highlighting work locally. Editor models are disposed when you switch files;
 the cached file content and scroll position remain available for reopening.
@@ -121,8 +140,27 @@ the cached file content and scroll position remain available for reopening.
 The footer reports request/transfer time, file preparation, editor startup and
 local diff computation. The editor renders visible lines and computes alignment
 in a bundled worker. No source code is sent to a CDN or a language service.
-Comments, voting, Gerrit-specific shortcuts and semantic symbol hovers remain
-future work. Use **Open in Gerrit** for comments, votes and binary files. Gerrit
+Select any line or range on either side and press `c`, use Add comment or the
+editor context menu, or click the comment gutter. Unchanged lines accept comments.
+Comments and draft editors appear inline beneath the selected code, on the
+commented side of the comparison. Reply editors open inside their thread. Click
+a file header to add file-level comments above the first line.
+Both panes keep matching code aligned as threads expand, collapse or resize.
+Comments / review shows the compact controls; All comments opens a dialog for
+threads on other files or patch sets and overall review comments. Drafts autosave to Gerrit after typing pauses, with an explicit
+save button and Ctrl+Enter / Cmd+Enter or Ctrl+S / Cmd+S. They are private until
+Send review publishes them. No comment text is persisted in app storage. Save
+failures keep your edits available for retry, and in-flight saves are serialized.
+Inline threads support replies, Quote, Done, Ack, Resolve/Unresolve, draft editing
+and deletion, comment permalinks, and suggested replacements for selected ranges.
+Published suggested fixes can be applied to a Gerrit change edit; publishing that
+edit remains in Gerrit. Administrators can redact published comments with a reason.
+Press Shift+N / Shift+P to navigate threads, `h` to show or hide inline threads, or `a`
+to open the review dialog. The dialog offers permitted label votes on the latest
+patch set, selected-patch-set or all-change draft publishing, keeping drafts
+private, and notification recipients. Overall review text is a server draft too.
+The board reloads the change after publishing without closing the review window.
+Use **Open in Gerrit** for binary files and semantic symbol hovers. Gerrit
 still computes the API diff, so a slow server response can still delay opening
 a file.
 

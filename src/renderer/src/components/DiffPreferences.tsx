@@ -1,0 +1,47 @@
+import { useEffect, useRef, useState } from 'react'
+import { whitespaceOptions, type ReviewPreferences } from '../review-preferences.ts'
+
+export function DiffPreferences({ preferences, error, onSave, onClose }: {
+  preferences: ReviewPreferences; error: string; onSave: (preferences: ReviewPreferences) => boolean; onClose: () => void
+}) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  const previousFocus = useRef<HTMLElement | null>(null)
+  const [draft, setDraft] = useState({ ...preferences })
+  function close() { dialog.current?.close(); previousFocus.current?.focus(); onClose() }
+  useEffect(() => {
+    previousFocus.current = document.activeElement as HTMLElement
+    dialog.current!.showModal()
+    return () => { dialog.current?.close() }
+  }, [])
+  function checkbox(key: 'fitToScreen' | 'showTabs' | 'showTrailingWhitespace' | 'syntaxHighlighting' | 'autoMarkReviewed', label: string) {
+    return <label>{label}<input type="checkbox" checked={draft[key]} onChange={(e) => setDraft({ ...draft, [key]: e.target.checked })} /></label>
+  }
+  function number(key: 'diffWidth' | 'tabWidth' | 'fontSize', label: string, min: number, max: number) {
+    return <label>{label}<input type="number" required min={min} max={max} step="1" disabled={key === 'diffWidth' && draft.fitToScreen}
+      value={draft[key]} onChange={(e) => setDraft({ ...draft, [key]: Number(e.target.value) })} /></label>
+  }
+  return <dialog ref={dialog} className="review-preferences" aria-labelledby="diff-preferences-title" onCancel={(e) => { e.preventDefault(); e.stopPropagation(); close() }} onKeyDown={(e) => e.stopPropagation()}>
+    <form onSubmit={(e) => { e.preventDefault(); if (onSave(draft)) close() }}>
+      <h2 id="diff-preferences-title">Diff Preferences</h2>
+      <div className="review-preference-fields">
+        <label>Context<select value={draft.context} onChange={(e) => setDraft({ ...draft, context: Number(e.target.value) })}>
+          <option value={-1}>Whole file</option>{[3, 10, 25, 50, 100].map((n) => <option key={n} value={n}>{n} lines</option>)}
+        </select></label>
+        {checkbox('fitToScreen', 'Fit to screen')}
+        {number('diffWidth', 'Diff width', 20, 1000)}
+        {number('tabWidth', 'Tab width', 1, 16)}
+        {number('fontSize', 'Font size', 8, 32)}
+        {checkbox('showTabs', 'Show tabs')}
+        {checkbox('showTrailingWhitespace', 'Show trailing whitespace')}
+        {checkbox('syntaxHighlighting', 'Syntax highlighting')}
+        {checkbox('autoMarkReviewed', 'Automatically mark viewed files reviewed')}
+        <label>Ignore Whitespace<select value={draft.ignoreWhitespace} onChange={(e) => setDraft({ ...draft, ignoreWhitespace: e.target.value as ReviewPreferences['ignoreWhitespace'] })}>
+          {whitespaceOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select></label>
+      </div>
+      <p className="muted small">Preferences are saved in this app. The complete file stays loaded, including when context is limited. Reviewed flags sync with Gerrit.</p>
+      {error && <p role="alert" className="error">{error}</p>}
+      <footer><button className="btn" type="button" onClick={close}>Cancel</button><button className="btn primary" type="submit">Save</button></footer>
+    </form>
+  </dialog>
+}

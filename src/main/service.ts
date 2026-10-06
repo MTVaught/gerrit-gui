@@ -12,6 +12,10 @@ import type {
   ChangeInspection,
   ChangeLink,
   ReviewDiff,
+  ReviewDiscussion,
+  ReviewComment,
+  DraftCommentInput,
+  SubmitReviewInput,
   FileInfo,
   DashboardData,
   SettingsInput,
@@ -40,6 +44,15 @@ export interface Service {
   fetchChange(id: number): Promise<ChangeInfo>
   reviewFiles(link: ChangeLink): Promise<Record<string, FileInfo>>
   reviewDiff(link: ChangeLink, path: string): Promise<ReviewDiff>
+  reviewPatchSets(id: number): Promise<number[]>
+  reviewReviewedFiles(link: ChangeLink): Promise<string[]>
+  setReviewFileReviewed(link: ChangeLink, path: string, reviewed: boolean): Promise<void>
+  reviewDiscussion(id: number): Promise<ReviewDiscussion>
+  saveReviewDraft(id: number, patchSet: number, input: DraftCommentInput): Promise<ReviewComment>
+  deleteReviewDraft(id: number, patchSet: number, draftId: string): Promise<void>
+  deleteReviewComment(id: number, patchSet: number, commentId: string, reason: string): Promise<ReviewComment>
+  applyReviewFix(id: number, patchSet: number, fixId: string): Promise<void>
+  submitReview(link: ChangeLink, input: SubmitReviewInput): Promise<void>
   act(action: ChangeAction): Promise<void>
   suggestReviewers(id: number, q: string): Promise<SuggestedReviewerInfo[]>
   suggestAccounts(q: string): Promise<AccountInfo[]>
@@ -111,6 +124,22 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
     return g
   }
 
+  async function withWrite<T>(run: () => Promise<T>): Promise<T> {
+    if (pretend) throw new Error(`Nothing was changed: the board is shown as ${pretend.name ?? pretend.username ?? pretend._account_id} and read-only. Stop pretending in Settings › Debug first.`)
+    if (switchingPretend) throw new Error('Nothing was changed: waiting for outstanding actions before switching the board. Try again when the switch finishes.')
+    // Register before the first await, including time spent obtaining credentials.
+    activeActions++
+    try {
+      return await run()
+    } finally {
+      activeActions--
+      if (activeActions === 0) {
+        actionsDrained?.()
+        actionsDrained = undefined
+      }
+    }
+  }
+
   return {
     getSettings: () => store.getStatus(),
     saveSettings: (input) => store.save(input),
@@ -135,13 +164,31 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
 
     reviewFiles: async (link) => (await client()).files(link.id, link.patchSet!, link.basePatchSet),
     reviewDiff: async (link, path) => (await client()).diff(link, path),
+    reviewPatchSets: async (id) => Object.values((await (await client()).change(id)).revisions ?? {}).map((r) => r._number).sort((a, b) => a - b),
+    reviewReviewedFiles: async (link) => (await client()).reviewedFiles(link),
+    setReviewFileReviewed: (link, path, reviewed) => withWrite(async () => (await client()).setFileReviewed(link, path, reviewed)),
+
+    async reviewDiscussion(id) {
+      const g = await client()
+      const [comments, drafts, self, change, capabilities] = await Promise.all([
+        g.comments(id), pretend ? Promise.resolve({}) : g.comments(id, true), g.self(), g.change(id),
+        pretend ? Promise.resolve({}) : g.capabilities().catch((e: GerritError) => { if (e.status === 403 || e.status === 404) return {}; throw e }),
+      ])
+      const flatten = (map: Record<string, ReviewComment[]>) => Object.entries(map).flatMap(([path, list]) => list.map((c) => ({ ...c, path })))
+      return { comments: flatten(comments), drafts: flatten(drafts), self,
+        permittedLabels: pretend ? {} : change.permitted_labels ?? {}, labels: change.labels ?? {},
+        latestPatchSet: Math.max(0, ...Object.values(change.revisions ?? {}).map((r) => r._number)),
+        readOnly: Boolean(pretend), canDeletePublished: Boolean((capabilities as Record<string, boolean>).administrateServer),
+      }
+    },
+    saveReviewDraft: (id, patchSet, input) => withWrite(async () => (await client()).saveDraft(id, patchSet, input)),
+    deleteReviewDraft: (id, patchSet, draftId) => withWrite(async () => (await client()).deleteDraft(id, patchSet, draftId)),
+    deleteReviewComment: (id, patchSet, commentId, reason) => withWrite(async () => (await client()).deleteComment(id, patchSet, commentId, reason)),
+    applyReviewFix: (id, patchSet, fixId) => withWrite(async () => (await client()).applyFix(id, patchSet, fixId)),
+    submitReview: (link, input) => withWrite(async () => (await client()).submitReview(link, input)),
 
     async act(action) {
-      if (pretend) throw new Error(`Nothing was changed: the board is shown as ${pretend.name ?? pretend.username ?? pretend._account_id} and read-only. Stop pretending in Settings › Debug first.`)
-      if (switchingPretend) throw new Error('Nothing was changed: waiting for outstanding actions before switching the board. Try again when the switch finishes.')
-      // Register before the first await, including time spent obtaining credentials.
-      activeActions++
-      try {
+      return withWrite(async () => {
         const g = await client()
         switch (action.type) {
           case 'requestReview':
@@ -232,13 +279,7 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
             return
           }
         }
-      } finally {
-        activeActions--
-        if (activeActions === 0) {
-          actionsDrained?.()
-          actionsDrained = undefined
-        }
-      }
+      })
     },
 
     suggestReviewers: async (id, q) => (await client()).suggestReviewers(id, q),

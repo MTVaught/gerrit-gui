@@ -107,3 +107,47 @@ test('failed outstanding actions release the switch; failed lookups restore admi
   await svc.act({ type: 'hashtag', id: 1, add: ['tag'] })
   assert.deepEqual(await svc.setPretend('bob'), bob)
 })
+
+test('reviewed flag writes drain before pretend mode and cannot enter while switching', async () => {
+  const started = deferred()
+  const release = deferred()
+  let writes = 0
+  const svc = service(async (_url, init) => {
+    if (init.method === 'GET') return new Response(JSON.stringify(bob))
+    writes++
+    started.resolve()
+    await release.promise
+    return new Response(null, { status: 204 })
+  })
+  const link = { id: 1, project: 'test', patchSet: 3 }
+  const marking = svc.setReviewFileReviewed(link, 'file', true)
+  await started.promise
+  const switching = svc.setPretend('bob')
+  await assert.rejects(svc.setReviewFileReviewed(link, 'another', true), /waiting for outstanding actions/)
+  release.resolve()
+  await marking
+  assert.deepEqual(await switching, bob)
+  await assert.rejects(svc.setReviewFileReviewed(link, 'file', false), /read-only/)
+  assert.equal(writes, 1)
+})
+
+test('comment and review writes participate in the impersonation write barrier', async () => {
+  const started = deferred(), release = deferred()
+  let writes = 0
+  const svc = service(async (_url, init) => {
+    if (init.method === 'GET') return new Response(JSON.stringify(bob))
+    writes++; started.resolve(); await release.promise
+    return new Response(JSON.stringify({ id: 'draft', updated: 'now' }))
+  })
+  const draft = svc.saveReviewDraft(1, 3, { path: 'file', line: 10000, message: 'unchanged line', unresolved: true })
+  await started.promise
+  const switching = svc.setPretend('bob')
+  await assert.rejects(svc.deleteReviewDraft(1, 3, 'draft'), /waiting/)
+  release.resolve(); await draft; await switching
+  await assert.rejects(svc.saveReviewDraft(1, 3, { path: 'file', message: 'reply', unresolved: true }), /read-only/)
+  await assert.rejects(svc.deleteReviewDraft(1, 3, 'draft'), /read-only/)
+  await assert.rejects(svc.deleteReviewComment(1, 3, 'published', 'reason'), /read-only/)
+  await assert.rejects(svc.applyReviewFix(1, 3, 'fix'), /read-only/)
+  await assert.rejects(svc.submitReview({ id: 1, project: 'p', patchSet: 3 }, { labels: {}, drafts: 'PUBLISH_ALL_REVISIONS', notify: 'ALL' }), /read-only/)
+  assert.equal(writes, 1)
+})
