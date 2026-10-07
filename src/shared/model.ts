@@ -1491,8 +1491,9 @@ export function relatedSets(views: ChangeView[], parents: Map<number, ParentLink
 
 /**
  * The sequences on the board: among the tagged changes, the related sets
- * made of links between tagged changes only. So an untagged change in the
- * middle splits a line in two, a tagged change whose parent is not tagged
+ * made of links between tagged changes with the same owner only. An
+ * owner boundary or an untagged change in the middle splits a line in two;
+ * a tagged change whose parent is not tagged or has a different owner
  * is a base, and a tagged change with no tagged parent or child is not a
  * sequence at all and stays an ordinary card.
  */
@@ -1502,7 +1503,7 @@ export function sequenceChains(views: ChangeView[]): Chain[] {
   const own = new Map<number, ParentLink>()
   for (const v of tagged) {
     const p = links.get(v.change._number)
-    if (p && isSequenced(p.view.change)) own.set(v.change._number, p)
+    if (p && isSequenced(p.view.change) && p.view.change.owner._account_id === v.change.owner._account_id) own.set(v.change._number, p)
   }
   return relatedSets(tagged, own)
 }
