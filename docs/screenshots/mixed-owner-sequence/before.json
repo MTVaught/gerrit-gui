@@ -1,0 +1,309 @@
+{
+  "viewport": {
+    "width": 1600,
+    "height": 900
+  },
+  "dashboard": {
+    "self": {
+      "_account_id": 3,
+      "name": "Carol",
+      "username": "carol"
+    },
+    "open": [
+      {
+        "id": "demo~main~I1",
+        "change_id": "I1",
+        "_number": 101,
+        "project": "demo",
+        "branch": "main",
+        "subject": "Storage: add migration runner",
+        "status": "NEW",
+        "owner": {
+          "_account_id": 1,
+          "name": "Alice",
+          "username": "alice"
+        },
+        "hashtags": [
+          "sequence",
+          "reviewer:carol"
+        ],
+        "custom_keyed_values": {
+          "review-requested-ps": "1"
+        },
+        "reviewers": {
+          "REVIEWER": [
+            {
+              "_account_id": 3,
+              "name": "Carol",
+              "username": "carol"
+            }
+          ]
+        },
+        "labels": {
+          "Code-Review": {
+            "all": [
+              {
+                "_account_id": 3,
+                "name": "Carol",
+                "username": "carol",
+                "value": 0
+              }
+            ]
+          },
+          "Verified": {
+            "all": []
+          }
+        },
+        "permitted_labels": {
+          "Code-Review": [
+            "-1",
+            "0",
+            "+1"
+          ]
+        },
+        "current_revision": "commit-1",
+        "revisions": {
+          "commit-1": {
+            "_number": 1,
+            "created": "2026-10-07 12:00:00.000000000",
+            "commit": {
+              "subject": "Storage: add migration runner",
+              "message": "Storage: add migration runner",
+              "parents": [
+                {
+                  "commit": "branch-tip"
+                }
+              ]
+            }
+          }
+        },
+        "created": "2026-10-07 12:00:00.000000000",
+        "updated": "2026-10-07 12:00:00.000000000"
+      },
+      {
+        "id": "demo~main~I2",
+        "change_id": "I2",
+        "_number": 102,
+        "project": "demo",
+        "branch": "main",
+        "subject": "Storage: migrate settings table",
+        "status": "NEW",
+        "owner": {
+          "_account_id": 1,
+          "name": "Alice",
+          "username": "alice"
+        },
+        "hashtags": [
+          "sequence",
+          "reviewer:carol"
+        ],
+        "custom_keyed_values": {
+          "review-requested-ps": "1"
+        },
+        "reviewers": {
+          "REVIEWER": [
+            {
+              "_account_id": 3,
+              "name": "Carol",
+              "username": "carol"
+            }
+          ]
+        },
+        "labels": {
+          "Code-Review": {
+            "all": [
+              {
+                "_account_id": 3,
+                "name": "Carol",
+                "username": "carol",
+                "value": 0
+              }
+            ]
+          },
+          "Verified": {
+            "all": []
+          }
+        },
+        "permitted_labels": {
+          "Code-Review": [
+            "-1",
+            "0",
+            "+1"
+          ]
+        },
+        "current_revision": "commit-2",
+        "revisions": {
+          "commit-2": {
+            "_number": 1,
+            "created": "2026-10-07 12:00:00.000000000",
+            "commit": {
+              "subject": "Storage: migrate settings table",
+              "message": "Storage: migrate settings table",
+              "parents": [
+                {
+                  "commit": "commit-1"
+                }
+              ]
+            }
+          }
+        },
+        "created": "2026-10-07 12:00:00.000000000",
+        "updated": "2026-10-07 12:00:00.000000000"
+      },
+      {
+        "id": "demo~main~I3",
+        "change_id": "I3",
+        "_number": 103,
+        "project": "demo",
+        "branch": "main",
+        "subject": "Settings: read migrated table",
+        "status": "NEW",
+        "owner": {
+          "_account_id": 2,
+          "name": "Bob",
+          "username": "bob"
+        },
+        "hashtags": [
+          "sequence",
+          "reviewer:carol"
+        ],
+        "custom_keyed_values": {
+          "review-requested-ps": "1"
+        },
+        "reviewers": {
+          "REVIEWER": [
+            {
+              "_account_id": 3,
+              "name": "Carol",
+              "username": "carol"
+            }
+          ]
+        },
+        "labels": {
+          "Code-Review": {
+            "all": [
+              {
+                "_account_id": 3,
+                "name": "Carol",
+                "username": "carol",
+                "value": 0
+              }
+            ]
+          },
+          "Verified": {
+            "all": []
+          }
+        },
+        "permitted_labels": {
+          "Code-Review": [
+            "-1",
+            "0",
+            "+1"
+          ]
+        },
+        "current_revision": "commit-3",
+        "revisions": {
+          "commit-3": {
+            "_number": 1,
+            "created": "2026-10-07 12:00:00.000000000",
+            "commit": {
+              "subject": "Settings: read migrated table",
+              "message": "Settings: read migrated table",
+              "parents": [
+                {
+                  "commit": "commit-2"
+                }
+              ]
+            }
+          }
+        },
+        "created": "2026-10-07 12:00:00.000000000",
+        "updated": "2026-10-07 12:00:00.000000000"
+      },
+      {
+        "id": "demo~main~I4",
+        "change_id": "I4",
+        "_number": 104,
+        "project": "demo",
+        "branch": "main",
+        "subject": "Settings: remove legacy reader",
+        "status": "NEW",
+        "owner": {
+          "_account_id": 2,
+          "name": "Bob",
+          "username": "bob"
+        },
+        "hashtags": [
+          "sequence",
+          "reviewer:carol"
+        ],
+        "custom_keyed_values": {
+          "review-requested-ps": "1"
+        },
+        "reviewers": {
+          "REVIEWER": [
+            {
+              "_account_id": 3,
+              "name": "Carol",
+              "username": "carol"
+            }
+          ]
+        },
+        "labels": {
+          "Code-Review": {
+            "all": [
+              {
+                "_account_id": 3,
+                "name": "Carol",
+                "username": "carol",
+                "value": 0
+              }
+            ]
+          },
+          "Verified": {
+            "all": []
+          }
+        },
+        "permitted_labels": {
+          "Code-Review": [
+            "-1",
+            "0",
+            "+1"
+          ]
+        },
+        "current_revision": "commit-4",
+        "revisions": {
+          "commit-4": {
+            "_number": 1,
+            "created": "2026-10-07 12:00:00.000000000",
+            "commit": {
+              "subject": "Settings: remove legacy reader",
+              "message": "Settings: remove legacy reader",
+              "parents": [
+                {
+                  "commit": "commit-3"
+                }
+              ]
+            }
+          }
+        },
+        "created": "2026-10-07 12:00:00.000000000",
+        "updated": "2026-10-07 12:00:00.000000000"
+      }
+    ],
+    "merged": [],
+    "fetchedAt": "2026-10-07T12:00:00Z"
+  },
+  "chains": [
+    {
+      "header": "4 in sequence\n#101 to #104\nmain\n4 Needs Review\nreview from the top down · #101 is next for you\ndemo · Alice",
+      "changes": []
+    }
+  ],
+  "tab": "Needs Review\n1",
+  "scroll": {
+    "x": 0,
+    "y": 0
+  },
+  "errors": []
+}

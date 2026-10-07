@@ -1434,6 +1434,24 @@ test('sequence: only tagged changes linked through tagged changes form a chain; 
   assert.deepEqual(sequenceChains(views(tagged([62, 63, 65]))).map((c) => c.members.map((v) => v.change._number)), [[62, 63, 65]], 'a fork among tagged changes is one sequence, in reading order')
 })
 
+test('sequence: tagged dependencies across owners stay in separate sequences', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'], 65: ['sequence'] })
+  f.c63.owner = carol
+  f.c64.owner = carol
+  const views = classifyAll(Object.values(f), alice._account_id)
+  assert.equal(parentLinks(views).get(63)!.view.change._number, 62, 'the cross-owner commit dependency still exists')
+  const chains = sequenceChains(views)
+  assert.deepEqual(chains.map((s) => s.members.map((v) => v.change._number)), [[61, 62, 65], [63, 64]])
+  assert.equal(chains[1]!.parents.has(63), false, 'the second owner starts a new sequence')
+})
+
+test('sequence: an owner boundary leaves single tagged changes as ordinary cards, even when the owner returns later', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'] })
+  f.c63.owner = carol
+  const views = classifyAll(Object.values(f), alice._account_id)
+  assert.deepEqual(sequenceChains(views).map((s) => s.members.map((v) => v.change._number)), [[61, 62]])
+})
+
 test('sequence: the candidates are the owner\'s open related sets with no member tagged; the picker sees the whole set around a change', () => {
   const f = chainFixture()
   const views = classifyAll(Object.values(f), bob._account_id)
