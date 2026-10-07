@@ -1434,6 +1434,32 @@ test('sequence: only tagged changes linked through tagged changes form a chain; 
   assert.deepEqual(sequenceChains(views(tagged([62, 63, 65]))).map((c) => c.members.map((v) => v.change._number)), [[62, 63, 65]], 'a fork among tagged changes is one sequence, in reading order')
 })
 
+test('sequence: merged changes are excluded from members and parent links', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'] })
+  f.c61.status = 'MERGED'
+  const views = classifyAll(Object.values(f), bob._account_id)
+  const chains = sequenceChains(views)
+  assert.deepEqual(chains.map((s) => s.members.map((v) => v.change._number)), [[62, 63, 64]])
+  assert.equal(chains[0]!.key, f.c62.id)
+  assert.equal(chains[0]!.parents.has(62), false, 'the merged base is no longer a sequence parent')
+  assert.deepEqual(relatedSetOf(views, f.c62)!.members.map((v) => v.change._number), [62, 63, 64, 65])
+  assert.deepEqual(cardGroups('merged', views).find((g) => g.title === 'Merged in the last 14 days')!.items.map((v) => v.change._number), [61])
+})
+
+test('sequence: a merged member splits the chain and lone remaining members stay ordinary cards', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'] })
+  f.c62.status = 'MERGED'
+  const chains = () => sequenceChains(classifyAll(Object.values(f), alice._account_id))
+  assert.deepEqual(chains().map((s) => s.members.map((v) => v.change._number)), [[63, 64]])
+  assert.equal(chains()[0]!.parents.has(63), false)
+  f.c63.status = 'MERGED'
+  assert.deepEqual(chains(), [], 'the two remaining changes are disconnected')
+  f.c61.status = 'MERGED'
+  assert.deepEqual(chains(), [], 'one remaining change is not a sequence')
+  f.c64.status = 'MERGED'
+  assert.deepEqual(chains(), [], 'a fully merged sequence has no card')
+})
+
 test('sequence: tagged dependencies across owners stay in separate sequences', () => {
   const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'], 65: ['sequence'] })
   f.c63.owner = carol
