@@ -32,6 +32,8 @@ interface RowProps extends ActProps {
   search: string
   /** What the first cell shows instead of the branch: a sequence row leads with its step and subject. */
   lead?: ReactNode
+  /** A sequence member keeps its own Slack tab at the row's top right. */
+  slack?: boolean
 }
 
 /**
@@ -86,7 +88,6 @@ export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedS
   const owner = lead.isMine
   return (
     <li className={`change chain state-${lead.state}`}>
-      <SlackLink view={lead} onAct={props.onAct} variant="tab" />
       <div className="change-head">
         <span className="badge chain" title="These changes are built on each other; review them from the top down">
           <ChainIcon /> {chain.members.length} in sequence
@@ -120,6 +121,7 @@ export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedS
           onAct={props.onAct}
           sort={props.sort}
           search={props.search}
+          slack
           lead={
             <>
               <Step view={v} index={i} next={v === next} />
@@ -229,6 +231,7 @@ function BranchRow(props: RowProps) {
   const merger = mergerLabel(v, useNames(v.requestedMerger ? [v.requestedMerger] : []))
   return (
     <div className={open ? 'change-row' : 'change-row closed'}>
+      {props.slack && <SlackLink view={v} onAct={props.onAct} variant="tab" />}
       <span className="cell c-branch">
         {props.lead ?? (
           <button className="link" onClick={() => void api.openChange({ id: c._number, project: c.project })} title={`Open #${c._number} (${c.project}) in Gerrit`}>

@@ -360,6 +360,13 @@ row has the link as a pill. The owner and every reviewer of an open change
 may link or unlink; a change has one link, a new one replaces it. Only https links on `slack.com` or a workspace under it are accepted, so
 a tag written by hand cannot open another site.
 
+In a sequence, each Change-Id has its own Slack conversation. The full board
+keeps the hanging "Slack ↗" or "+ Slack" tab at the top right of each
+member's row; the compact window keeps the tab on each member's line.
+Linking or unlinking affects only that member's change, so every review in
+the sequence can have a different thread. A family card keeps its
+conversation on the lead change.
+
 The conversation opens in the browser, unless "Slack" in Settings lists the
 workspace. Slack's "Copy link" names the workspace by its subdomain
 (`acme` in `acme.slack.com`), but the Slack app opens a message only by the
