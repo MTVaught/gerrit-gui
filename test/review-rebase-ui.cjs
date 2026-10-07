@@ -31,7 +31,48 @@ app.whenReady().then(async () => {
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' }); win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
   await until(`!document.querySelector('.review-menu[open]')`)
   assert.ok(await run(`Boolean(document.querySelector('.local-review[open]'))`), 'Escape dismisses menu without closing review')
-  const colors = await run(`['.review-rebase-added-text', '.review-rebase-removed-text'].map(s => getComputedStyle(document.querySelector(s)).backgroundColor)`)
+  async function checkHighlightLayers(lineColors, textColors) {
+    for (const [index, kind] of ['added', 'removed'].entries()) {
+      const actual = await run(`(() => {
+        const row = document.querySelector('.view-overlays > div:has(.review-rebase-${kind})');
+        const line = row.querySelector('.line-${kind === 'added' ? 'insert' : 'delete'}');
+        const text = row.querySelector('.char-${kind === 'added' ? 'insert' : 'delete'}');
+        const token = document.querySelector('.review-rebase-${kind}-text');
+        return [getComputedStyle(line).backgroundColor, getComputedStyle(text).backgroundColor, getComputedStyle(token).backgroundColor];
+      })()`)
+      assert.deepEqual(actual, [lineColors[index], textColors[index], 'rgba(0, 0, 0, 0)'], 'rebase line and word layers use the same hue without opaque token backgrounds')
+    }
+    assert.ok(await run(`(() => {
+      const row = document.querySelector('.modified-in-monaco-diff-editor .view-overlays > div:has(.char-insert):not(:has(.review-rebase-added))');
+      return getComputedStyle(row.querySelector('.char-insert')).backgroundColor !== getComputedStyle(document.querySelector('.view-overlays > div:has(.review-rebase-added) .char-insert')).backgroundColor;
+    })()`), 'ordinary changed words retain their normal color')
+  }
+  await checkHighlightLayers(['rgb(215, 231, 255)', 'rgb(255, 240, 189)'], ['rgb(170, 203, 250)', 'rgb(245, 215, 117)'])
+  async function checkOverviewColors() {
+    const colors = await run(`Array.from(document.querySelectorAll('canvas.diffOverviewRuler')).map(canvas => {
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      const colors = new Set();
+      for (let i = 0; i < pixels.length; i += 4) if (pixels[i + 3]) colors.add(Array.from(pixels.slice(i, i + 4)).join(','));
+      return Array.from(colors);
+    })`)
+    assert.ok(colors[0].includes('233,187,70,255'), 'scrollbar shows rebase removals in yellow')
+    assert.ok(colors[1].includes('138,180,248,255'), 'scrollbar shows rebase additions in blue')
+    assert.ok(colors.every(pane => pane.length > 1), 'scrollbar also preserves ordinary edits in a mixed hunk')
+  }
+  await checkOverviewColors()
+  const adjacentMarkers = await run(`Array.from(document.querySelectorAll('canvas.diffOverviewRuler')).map((canvas, index) => {
+    const editor = document.querySelector(index ? '.modified-in-monaco-diff-editor' : '.original-in-monaco-diff-editor');
+    return ['feature', 'upstream', 'local'].map(name => {
+      const line = Array.from(editor.querySelectorAll('.view-lines > .view-line')).find(e => e.textContent.includes('const') && e.textContent.includes(name));
+      const y = Math.floor((line.offsetTop + line.offsetHeight / 2) * canvas.height / canvas.clientHeight);
+      return Array.from(canvas.getContext('2d').getImageData(Math.floor(canvas.width / 2), y, 1, 1).data).join(',');
+    });
+  })`)
+  for (const pane of adjacentMarkers) {
+    assert.equal(pane[0], pane[2], 'regular edit adjacent to a rebase edit keeps the ordinary marker color')
+    assert.notEqual(pane[1], pane[2], 'mixed hunk is split at the rebase boundary')
+  }
+  const colors = await run(`['.review-rebase-added', '.review-rebase-removed'].map(s => getComputedStyle(document.querySelector(s)).backgroundColor)`)
   assert.deepEqual(colors, ['rgb(215, 231, 255)', 'rgb(255, 240, 189)'])
   assert.ok(await run(`Array.from(document.querySelectorAll('.modified-in-monaco-diff-editor .view-line')).find(e => e.textContent.includes('feature')).querySelector('.review-rebase-added-text') === null`), 'ordinary edit retains normal coloring')
   assert.equal(await run(`Array.from(document.querySelectorAll('.review-rebase-added-text')).filter(e => e.textContent.includes('spacing')).length`), 1, 'default whitespace policy shows whitespace-only rebase edits')
@@ -40,13 +81,15 @@ app.whenReady().then(async () => {
   await run(`Array.from(document.querySelectorAll('.review-preferences button')).find(b => b.textContent === 'Save').click()`)
   await until(`!Array.from(document.querySelectorAll('.review-rebase-added-text')).some(e => e.textContent.includes('spacing'))`)
   nativeTheme.themeSource = 'dark'
-  await until(`getComputedStyle(document.querySelector('.review-rebase-added-text')).backgroundColor === 'rgb(36, 63, 97)'`)
+  await until(`getComputedStyle(document.querySelector('.review-rebase-added')).backgroundColor === 'rgb(36, 63, 97)'`)
+  await checkHighlightLayers(['rgb(36, 63, 97)', 'rgb(84, 69, 29)'], ['rgb(54, 91, 134)', 'rgb(128, 103, 41)'])
+  await checkOverviewColors()
   const dir = path.join(__dirname, '../docs/screenshots/local-review')
   fs.mkdirSync(dir, { recursive: true })
   await delay(200)
   fs.writeFileSync(path.join(dir, 'rebase-diff-dark.png'), (await win.webContents.capturePage()).toPNG())
   nativeTheme.themeSource = 'light'
-  await until(`getComputedStyle(document.querySelector('.review-rebase-added-text')).backgroundColor === 'rgb(215, 231, 255)'`)
+  await until(`getComputedStyle(document.querySelector('.review-rebase-added')).backgroundColor === 'rgb(215, 231, 255)'`)
   await delay(200)
   fs.writeFileSync(path.join(dir, 'rebase-diff-light.png'), (await win.webContents.capturePage()).toPNG())
   win.focus(); win.webContents.focus()
@@ -56,6 +99,8 @@ app.whenReady().then(async () => {
   assert.ok(await run(`Boolean(document.querySelector('.modified-in-monaco-diff-editor .review-rebase-added-text'))`), 'unified view retains rebase additions')
   await until(`Boolean(document.querySelector('.modified-in-monaco-diff-editor .view-zones .review-rebase-removed-text'))`)
   assert.equal(await run(`getComputedStyle(document.querySelector('.modified-in-monaco-diff-editor .view-zones .view-line:has(.review-rebase-removed-text)')).backgroundColor`), 'rgb(255, 240, 189)', 'unified removals retain rebase colors')
+  assert.equal(await run(`getComputedStyle(document.querySelector('.view-zones .view-line:has(.review-rebase-removed-text) .char-delete')).backgroundColor`), 'rgb(245, 215, 117)', 'unified changed words use rebase yellow')
+  await checkOverviewColors()
   assert.equal((await run('api.fixtureStats()')).requests, 1, 'no extra diff fetches')
   console.log(JSON.stringify({ rebaseColors: 'passed', ordinaryColors: 'passed', whitespacePolicy: 'passed', darkTheme: 'passed', unified: 'passed', noExtraFetch: 'passed' }))
   clearTimeout(timeout); win.destroy(); app.quit()

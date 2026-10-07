@@ -106,7 +106,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  monaco-editor@0.57.0: 37effa071e3981735e680bf70650c284a61cde5d1615c3c99efdf691589e05e5
+  monaco-editor@0.57.0: fe052e3e22f537588f33f47d300e938e62bf4a2b23d99008474aa65e96c396d0
 
 importers:
 
@@ -117,7 +117,7 @@ importers:
         version: 6.8.9(supports-color@7.2.0)
       monaco-editor:
         specifier: 0.57.0
-        version: 0.57.0(patch_hash=37effa071e3981735e680bf70650c284a61cde5d1615c3c99efdf691589e05e5)
+        version: 0.57.0(patch_hash=fe052e3e22f537588f33f47d300e938e62bf4a2b23d99008474aa65e96c396d0)
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -4086,7 +4086,7 @@ snapshots:
     dependencies:
       minimist: 1.2.8
 
-  monaco-editor@0.57.0(patch_hash=37effa071e3981735e680bf70650c284a61cde5d1615c3c99efdf691589e05e5):
+  monaco-editor@0.57.0(patch_hash=fe052e3e22f537588f33f47d300e938e62bf4a2b23d99008474aa65e96c396d0):
     dependencies:
       dompurify: 3.4.15
       marked: 14.0.0
