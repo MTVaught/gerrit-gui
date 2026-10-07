@@ -582,6 +582,11 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
  */
 .change.chain .c-branch { max-width: clamp(160px, 17vw, 320px); gap: 8px; }
 .change.chain .c-branch .subj-wrap { display: flex; flex-direction: column; min-width: 0; }
+/* Each sequence member has the same hanging Slack tab as an ordinary card. */
+.change.chain .change-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; position: relative; border-top: 1px solid var(--border); padding-top: 18px; }
+.change.chain .change-row + .change-row > .cell { border-top: none; }
+.change.chain .change-row > .tabmark { right: 0; }
+.change.chain .change-row:hover > .tabmark.add, .change.chain .change-row:focus-within > .tabmark.add { opacity: 1; }
 .change.chain .c-branch .subj { overflow: hidden; text-overflow: ellipsis; font-weight: 600; white-space: nowrap; display: block; }
 .change-row.closed .c-branch .subj { font-weight: 500; }
 .parent-note { font-size: 11px; color: var(--warn); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
