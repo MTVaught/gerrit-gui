@@ -116,6 +116,7 @@ contextBridge.exposeInMainWorld('api', {
       { a: ['const feature = false;'], b: ['const feature = true;'] },
       { ab: ['', '// Rebased upstream configuration'] },
       { a: ['const upstream = "old";'], b: ['const upstream = "new";'], due_to_rebase: true },
+      { a: ['const local = 0;'], b: ['const local = 1;'] },
       { ab: ['', '// Whitespace-only upstream edit'] },
       { a: ['const spacing = 1;   '], b: ['const spacing = 1;'], due_to_rebase: true },
       { ab: ['', '// End of comparison'] },

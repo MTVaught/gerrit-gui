@@ -742,15 +742,26 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-side-head .review-file-comment-header:hover { background: var(--panel); }
 
 /* Gerrit-classified rebase edits are distinct from ordinary red/green edits. */
-.local-review { --rebase-added: #d7e7ff; --rebase-removed: #fff0bd; }
+.local-review { --rebase-added: #d7e7ff; --rebase-removed: #fff0bd; --rebase-added-text: #aacbfa; --rebase-removed-text: #f5d775; }
 @media (prefers-color-scheme: dark) {
-  .local-review { --rebase-added: #243f61; --rebase-removed: #54451d; }
+  .local-review { --rebase-added: #243f61; --rebase-removed: #54451d; --rebase-added-text: #365b86; --rebase-removed-text: #806729; }
 }
-.review-rebase-added, .review-editor .review-rebase-added-text { background: var(--rebase-added) !important; }
-.review-rebase-removed, .review-editor .review-rebase-removed-text { background: var(--rebase-removed) !important; }
+.review-rebase-added { background: var(--rebase-added); }
+.review-rebase-removed { background: var(--rebase-removed); }
+/* Monaco renders line and character backgrounds in a separate overlay layer.
+   Recolor that layer, rather than painting opaque backgrounds on token spans. */
+.review-editor .view-overlays > div:has(.review-rebase-added) {
+  --vscode-diffEditor-insertedTextBackground: var(--rebase-added-text);
+  --vscode-diffEditor-insertedLineBackground: var(--rebase-added);
+}
+.review-editor .view-overlays > div:has(.review-rebase-removed),
+.review-editor .view-zones .view-line:has(.review-rebase-removed-text) {
+  --vscode-diffEditor-removedTextBackground: var(--rebase-removed-text);
+  --vscode-diffEditor-removedLineBackground: var(--rebase-removed);
+}
 .review-editor .review-rebase-added-gutter { border-left: 3px solid #6599df; }
 .review-editor .review-rebase-removed-gutter { border-left: 3px solid #bc8f24; }
-.review-editor .view-line:has(.review-rebase-removed-text) { background: var(--rebase-removed) !important; }
+.review-editor .view-zones .view-line:has(.review-rebase-removed-text) { background: var(--rebase-removed) !important; }
 
 /* One action header and one comparison row leave the file area to the diff. */
 .local-review-header { padding: 8px 12px; gap: 8px; }

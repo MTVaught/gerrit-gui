@@ -156,7 +156,7 @@ export default function ReviewEditor({ file, link, preferences, onReady, onComme
         const kind = pane === 'original' ? 'removed' : 'added'
         rebaseDecorations[index]!.set(ranges.filter(range => range.pane === pane).map(range => ({
           range: new monaco.Range(range.start, 1, range.end, Number.MAX_SAFE_INTEGER),
-          options: { isWholeLine: true, className: `review-rebase-${kind}`, inlineClassName: `review-rebase-${kind}-text`, zIndex: 20,
+          options: { description: 'review-rebase', isWholeLine: true, className: `review-rebase-${kind}`, inlineClassName: `review-rebase-${kind}-text`, zIndex: 20,
             linesDecorationsClassName: `review-rebase-${kind}-gutter`, linesDecorationsTooltip: 'Change due to rebase',
             hoverMessage: { value: 'Change due to rebase, identified by Gerrit.' },
             overviewRuler: { color: kind === 'added' ? '#8ab4f8' : '#e9bb46', position: monaco.editor.OverviewRulerLane.Full } },
