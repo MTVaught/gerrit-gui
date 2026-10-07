@@ -14,6 +14,7 @@ import { UpdatePill, useUpdateState } from './components/Update.tsx'
 import { rememberAccounts } from './names.ts'
 import { LocalReviewProvider } from './review-context.tsx'
 import { SettingsContext, type SettingsHandle } from './settings-context.ts'
+import { DashboardRefresh } from './dashboard-refresh.ts'
 
 export function App() {
   const [settings, setSettings] = useState<SettingsStatus | null>(null)
@@ -21,6 +22,7 @@ export function App() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const dashboardRefresh = useRef(new DashboardRefresh())
   const [tab, setTab] = useState<TabId>(initialTab)
   // Which team the team tab lists, once the user picked one on its caret; until then the default for the setup.
   const [teamPickChoice, setTeamPickChoice] = useState<TeamPick | null>(initialTeamPick)
@@ -46,9 +48,12 @@ export function App() {
   const configured = Boolean(settings?.serverUrl && settings?.username && settings?.hasPassword)
 
   const refresh = useCallback(async () => {
+    const isCurrent = dashboardRefresh.current.begin()
+    if (!isCurrent) return
     setBusy(true)
     try {
       const d = await api.fetchDashboard()
+      if (!isCurrent()) return
       rememberAccounts([d.self, ...d.open.flatMap((c) => [c.owner, ...(c.reviewers?.REVIEWER ?? [])])])
       setData(d)
       setError(null)
@@ -57,14 +62,16 @@ export function App() {
       notifyNewReviews(d, seenNeedsReview)
       notifyMergeRequests(d, seenMergeRequests)
     } catch (e) {
-      setError(String((e as Error).message ?? e))
+      if (isCurrent()) setError(String((e as Error).message ?? e))
     } finally {
-      setBusy(false)
+      if (isCurrent()) setBusy(false)
     }
   }, [])
 
   // New credentials from the connection window: forget the old server's board and start over.
   const reconnect = useCallback(async () => {
+    dashboardRefresh.current.invalidate()
+    setBusy(false)
     setSettings(await api.getSettings())
     setData(null)
     setError(null)
@@ -130,12 +137,20 @@ export function App() {
   // reconnect, so the switch back does not announce everything as new.
   const changePretend = useCallback(
     async (key: string | null) => {
-      const account = await api.setPretend(key)
-      setPretend(account)
-      seenNeedsReview.current = null
-      seenMergeRequests.current = null
-      setData(null)
-      await refresh()
+      if (!dashboardRefresh.current.pause()) throw new Error('The board is already switching. Wait for the switch to finish.')
+      setBusy(true)
+      try {
+        const account = await api.setPretend(key)
+        pretendRef.current = account
+        setPretend(account)
+        seenNeedsReview.current = null
+        seenMergeRequests.current = null
+        setData(null)
+      } finally {
+        // Resume even if account lookup failed; refresh the unchanged identity.
+        dashboardRefresh.current.resume()
+        await refresh()
+      }
     },
     [refresh],
   )
