@@ -23,6 +23,12 @@ app.whenReady().then(async () => {
   await run(`document.querySelector('button[aria-label="Settings"]').click()`)
   await run(`document.querySelector('.review-main').click()`)
   await until(`Boolean(document.querySelector('.review-rebase-added-text'))`)
+  const functionLines = await run(`(() => {
+    const lines = Array.from(document.querySelectorAll('.modified-in-monaco-diff-editor .view-lines > .view-line'));
+    const index = lines.findIndex(e => e.textContent.includes('rebasedFunction'));
+    return lines.slice(index, index + 3).map(e => Boolean(e.querySelector('.review-rebase-added-text')));
+  })()`)
+  assert.deepEqual(functionLines, [true, true, true], 'rebased function header, return and closing brace are all rebase edits')
   assert.ok(await run(`!document.querySelector('.review-rebase-legend, .review-tools, .review-stats, .review-current-file')`), 'diff has no legend, action strip, diagnostics footer or repeated file row')
   assert.ok(await run(`document.querySelector('.review-editor').getBoundingClientRect().top < 200`), 'code begins near the top of the window')
   await run(`document.querySelector('summary[aria-label="More review actions"]').click()`)

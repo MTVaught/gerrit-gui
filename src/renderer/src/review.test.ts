@@ -9,7 +9,7 @@ test('whole-file models preserve context, whitespace, blank lines and both sides
   assert.equal(contents.originalLines, 6)
   assert.equal(contents.modifiedLines, 6)
   assert.throws(() => diffContents({ content: [{ skip: 10 }] }), /missing/)
-  assert.deepEqual(diffContents({ content: [] }), { original: '', modified: '', originalLines: 0, modifiedLines: 0 })
+  assert.deepEqual(diffContents({ content: [] }), { original: '', modified: '', originalLines: 0, modifiedLines: 0, diffBlocks: [] })
   assert.equal(diffContents({ content: [{ b: ['added'] }] }).original, '')
   assert.equal(diffContents({ content: [{ a: ['deleted'] }] }).modified, '')
 })

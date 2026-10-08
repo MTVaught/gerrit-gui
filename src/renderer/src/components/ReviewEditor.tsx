@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useImperativeHandle, useRef, useState, type Ref } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import * as monaco from 'monaco-editor/editor/editor.api'
 import EditorWorker from 'monaco-editor/editor/editor.worker?worker'
 import 'monaco-editor/editor/browser/coreCommands'
@@ -71,7 +71,7 @@ export interface LoadedReviewFile extends ReviewContents {
 export interface ReviewEditorHandle { outline(): void; blame(): void; highlightComment(location: EditorCommentLocation | null): void; createInlineHost(pane: 'original' | 'modified', line: number): InlineCommentHost | null; navigate(shortcut: ReviewShortcut): void; addComment(): void; find(): void; goToLine(): void; revealComment(pane: 'original' | 'modified', line: number): void }
 export interface EditorCommentLocation { pane: 'original' | 'modified'; line: number; range?: CommentRange; existing?: boolean }
 
-export default function ReviewEditor({ file, link, preferences, onReady, onComment, markers, ref }: { link: ChangeLink; markers: { range?: CommentRange; pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle> }) {
+export default function ReviewEditor({ file, link, preferences, commentsVisible, onReady, onComment, markers, ref }: { link: ChangeLink; commentsVisible: boolean; markers: { range?: CommentRange; pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle> }) {
   const [tool, setTool] = useState<'outline' | 'blame' | null>(null)
   const [showBlame, setShowBlame] = useState(false)
   const [blames, setBlames] = useState<ReviewBlame[] | null>(null)
@@ -93,6 +93,42 @@ export default function ReviewEditor({ file, link, preferences, onReady, onComme
   const sideBySide = useRef(true)
   const [unified, setUnified] = useState(false)
   const lastFocus = useRef<'original' | 'modified'>('modified')
+  const commentScroll = useRef<{ code: monaco.editor.IStandaloneCodeEditor; position: monaco.IPosition; offset: number; frames: number } | null>(null)
+  const commentScrollFrame = useRef(0)
+  function restoreCommentScroll() {
+    const anchor = commentScroll.current
+    if (!anchor) return
+    anchor.frames = 3
+    const restore = () => anchor.code.setScrollTop(anchor.code.getTopForPosition(anchor.position.lineNumber, anchor.position.column) - anchor.offset)
+    restore()
+    if (commentScrollFrame.current) return
+    function settle() {
+      commentScrollFrame.current = 0
+      const current = commentScroll.current
+      if (!current) return
+      current.code.setScrollTop(current.code.getTopForPosition(current.position.lineNumber, current.position.column) - current.offset)
+      if (--current.frames > 0) commentScrollFrame.current = requestAnimationFrame(settle)
+      else commentScroll.current = null
+    }
+    commentScrollFrame.current = requestAnimationFrame(settle)
+  }
+  useLayoutEffect(() => {
+    const diff = editor.current
+    if (!diff) return
+    const code = lastFocus.current === 'original' && sideBySide.current ? diff.getOriginalEditor() : diff.getModifiedEditor()
+    let position: monaco.IPosition | null = code.getPosition()
+    if (!position) return
+    let offset = code.getTopForPosition(position.lineNumber, position.column) - code.getScrollTop()
+    // If the cursor was already offscreen, preserve the visible code instead.
+    if (offset < 0 || offset >= code.getLayoutInfo().height) {
+      const range = code.getVisibleRanges()[0]
+      if (!range) return
+      position = { lineNumber: range.startLineNumber, column: range.startColumn }
+      offset = code.getTopForPosition(position.lineNumber, position.column) - code.getScrollTop()
+    }
+    commentScroll.current = { code, position, offset, frames: 3 }
+    restoreCommentScroll()
+  }, [commentsVisible])
   const [diffMs, setDiffMs] = useState<number | null>(null)
   useEffect(() => {
     const start = performance.now()
@@ -103,7 +139,7 @@ export default function ReviewEditor({ file, link, preferences, onReady, onComme
     const setTheme = () => monaco.editor.setTheme(appearance.matches ? 'vs-dark' : 'vs')
     setTheme()
     appearance.addEventListener('change', setTheme)
-    configureReviewDiff(original, preferences.ignoreWhitespace)
+    configureReviewDiff(original, preferences.ignoreWhitespace, file.diffBlocks)
     const diff = monaco.editor.createDiffEditor(container.current!, {
       automaticLayout: true,
       readOnly: true,
@@ -136,6 +172,7 @@ export default function ReviewEditor({ file, link, preferences, onReady, onComme
     editor.current = diff
     const originalFocus = diff.getOriginalEditor().onDidFocusEditorText(() => { lastFocus.current = 'original' })
     const modifiedFocus = diff.getModifiedEditor().onDidFocusEditorText(() => { lastFocus.current = 'modified' })
+    const commentZoneChanges = [diff.getOriginalEditor(), diff.getModifiedEditor()].map(code => code.onDidChangeViewZones(restoreCommentScroll))
     const commentActions = [diff.getOriginalEditor(), diff.getModifiedEditor()].flatMap((code, index) => [
       code.addAction({ id: 'review.addComment', label: 'Add review comment', contextMenuGroupId: 'navigation', contextMenuOrder: 0, run: () => {
         lastFocus.current = index === 0 ? 'original' : 'modified'
@@ -177,6 +214,10 @@ export default function ReviewEditor({ file, link, preferences, onReady, onComme
       highlights.current.forEach(collection => collection.clear()); highlights.current = []
       originalFocus.dispose()
       modifiedFocus.dispose()
+      commentZoneChanges.forEach(subscription => subscription.dispose())
+      cancelAnimationFrame(commentScrollFrame.current)
+      commentScrollFrame.current = 0
+      commentScroll.current = null
       appearance.removeEventListener('change', setTheme)
       editor.current = null
       diff.dispose()
@@ -188,7 +229,7 @@ export default function ReviewEditor({ file, link, preferences, onReady, onComme
   useEffect(() => {
     const diff = editor.current
     if (!diff) return
-    configureReviewDiff(diff.getOriginalEditor().getModel()!, preferences.ignoreWhitespace)
+    configureReviewDiff(diff.getOriginalEditor().getModel()!, preferences.ignoreWhitespace, file.diffBlocks)
     diff.updateOptions({
       fontSize: preferences.fontSize, lineHeight: Math.round(preferences.fontSize * 1.65),
       wordWrap: 'wordWrapColumn', wordWrapColumn: preferences.diffWidth,
