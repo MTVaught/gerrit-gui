@@ -119,6 +119,10 @@ contextBridge.exposeInMainWorld('api', {
       { a: ['const local = 0;'], b: ['const local = 1;'] },
       { ab: ['', '// Whitespace-only upstream edit'] },
       { a: ['const spacing = 1;   '], b: ['const spacing = 1;'], due_to_rebase: true },
+      { ab: ['', 'function existing() {'] },
+      { a: ['  return false;'], b: ['  return true;'] },
+      { ab: ['}', ''] },
+      { b: ['function rebasedFunction() {', '  return false;', '}', ''], due_to_rebase: true },
       { ab: ['', '// End of comparison'] },
     ] }
     return { meta_a: { name: path, lines: 100000 }, meta_b: { name: path, lines: 100003 }, content: [

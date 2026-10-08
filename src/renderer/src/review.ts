@@ -6,7 +6,11 @@ export interface ReviewContents {
   originalLines: number
   modifiedLines: number
   rebaseChanges?: RebaseRange[]
+  /** Gerrit's authoritative changed blocks, with one-based exclusive ends. */
+  diffBlocks?: ReviewDiffBlock[]
 }
+
+export interface ReviewDiffBlock { original: [number, number]; modified: [number, number] }
 
 export interface RebaseRange { pane: 'original' | 'modified'; start: number; end: number }
 
@@ -15,8 +19,13 @@ export function diffContents(diff: ReviewDiff): ReviewContents {
   const original: string[] = []
   const modified: string[] = []
   const rebaseChanges: RebaseRange[] = []
+  const diffBlocks: ReviewDiffBlock[] = []
   for (const chunk of diff.content) {
     if (chunk.skip) throw new Error('The diff is missing file content')
+    if (!chunk.ab && (chunk.a?.length || chunk.b?.length)) diffBlocks.push({
+      original: [original.length + 1, original.length + 1 + (chunk.a?.length ?? 0)],
+      modified: [modified.length + 1, modified.length + 1 + (chunk.b?.length ?? 0)],
+    })
     if (chunk.due_to_rebase && !chunk.ab) {
       if (chunk.a?.length) rebaseChanges.push({ pane: 'original', start: original.length + 1, end: original.length + chunk.a.length })
       if (chunk.b?.length) rebaseChanges.push({ pane: 'modified', start: modified.length + 1, end: modified.length + chunk.b.length })
@@ -26,7 +35,7 @@ export function diffContents(diff: ReviewDiff): ReviewContents {
     for (const line of chunk.ab ?? chunk.b ?? []) modified.push(line)
   }
   return { original: original.join('\n'), modified: modified.join('\n'), originalLines: original.length, modifiedLines: modified.length,
-    ...(rebaseChanges.length ? { rebaseChanges } : {}) }
+    diffBlocks, ...(rebaseChanges.length ? { rebaseChanges } : {}) }
 }
 
 /** Only tint edits still visible under the selected whitespace policy. */

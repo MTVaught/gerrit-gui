@@ -4,11 +4,13 @@ import { LineRange } from 'monaco-editor/editor/common/core/ranges/lineRange'
 import DiffWorker from './review-diff.worker.ts?worker'
 import type { ReviewDiffResult } from './review-diff.ts'
 import type { ReviewWhitespace } from './review-preferences.ts'
+import type { ReviewDiffBlock } from './review.ts'
 
 /** Bundle computation locally and retain the original models for display and search. */
 export function reviewDiffProvider() {
   const worker = new DiffWorker()
   let whitespace: ReviewWhitespace = 'IGNORE_NONE'
+  let blocks: ReviewDiffBlock[] | undefined
   let nextId = 0
   const listeners = new Set<() => void>()
   const pending = new Map<number, { resolve: (result: ReturnType<typeof restore>) => void; reject: (error: Error) => void }>()
@@ -37,12 +39,13 @@ export function reviewDiffProvider() {
       const id = ++nextId
       return new Promise<ReturnType<typeof restore>>((resolve, reject) => {
         pending.set(id, { resolve, reject })
-        worker.postMessage({ id, original: original.getLinesContent(), modified: modified.getLinesContent(), whitespace, timeout: options.maxComputationTimeMs })
+        worker.postMessage({ id, original: original.getLinesContent(), modified: modified.getLinesContent(), whitespace, blocks, timeout: options.maxComputationTimeMs })
       })
     },
-    setWhitespace(mode: ReviewWhitespace) {
-      if (whitespace === mode) return
+    configure(mode: ReviewWhitespace, diffBlocks?: ReviewDiffBlock[]) {
+      if (whitespace === mode && blocks === diffBlocks) return
       whitespace = mode
+      blocks = diffBlocks
       // Monaco may resubscribe during notification. Iterate a snapshot.
       for (const listener of [...listeners]) listener()
     },
@@ -57,11 +60,11 @@ export function reviewDiffProvider() {
 
 // Model identity isolates providers across files and comparisons. Monaco's public
 // diffAlgorithm option only supports built-ins, so use its provider factory.
-const modes = new WeakMap<editor.ITextModel, ReviewWhitespace>()
+const modes = new WeakMap<editor.ITextModel, { mode: ReviewWhitespace; blocks?: ReviewDiffBlock[] }>()
 const providers = new WeakMap<editor.ITextModel, ReturnType<typeof reviewDiffProvider>>()
-export function configureReviewDiff(model: editor.ITextModel, mode: ReviewWhitespace) {
-  modes.set(model, mode)
-  providers.get(model)?.setWhitespace(mode)
+export function configureReviewDiff(model: editor.ITextModel, mode: ReviewWhitespace, blocks?: ReviewDiffBlock[]) {
+  modes.set(model, { mode, blocks })
+  providers.get(model)?.configure(mode, blocks)
 }
 export const reviewDiffFactory = {
   createDiffProvider() {
@@ -72,7 +75,8 @@ export const reviewDiffFactory = {
       if (!registered) {
         registered = true
         providers.set(original, provider)
-        provider.setWhitespace(modes.get(original) ?? 'IGNORE_NONE')
+        const config = modes.get(original)
+        provider.configure(config?.mode ?? 'IGNORE_NONE', config?.blocks)
         original.onWillDispose(() => { provider.dispose(); providers.delete(original) })
       }
       return compute(original, modified, options)

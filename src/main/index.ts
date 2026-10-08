@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, net, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, net, shell } from 'electron'
 import path from 'node:path'
 import { promises as fs } from 'node:fs'
 import * as settings from './settings.ts'
@@ -9,6 +9,17 @@ import { RELEASES_URL, updateAction } from '../shared/update.ts'
 import { slackDeepLink } from '../shared/model.ts'
 import type { BadgePayload, ChangeAction, ChangeLink, SettingsInput, TabId, UiState, WindowBounds } from '../shared/types.ts'
 import appIconPath from '../../resources/icon.png?asset'
+import { editorContextMenu } from './editor-context-menu.ts'
+
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('context-menu', (_event, params) => {
+    const template = editorContextMenu(params, {
+      replace: word => contents.replaceMisspelling(word),
+      addToDictionary: word => { contents.session.addWordToSpellCheckerDictionary(word) },
+    })
+    if (template.length) Menu.buildFromTemplate(template).popup({ window: BrowserWindow.fromWebContents(contents) ?? undefined })
+  })
+})
 
 const COMPACT_DEFAULT: WindowBounds = { x: 0, y: 0, width: 460, height: 720 }
 const NORMAL_DEFAULT: WindowBounds = { x: 0, y: 0, width: 1200, height: 800 }
