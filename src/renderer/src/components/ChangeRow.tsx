@@ -667,7 +667,7 @@ function Actions(props: ActProps) {
         {review && <MyLastReview view={v} slot />}
         <div className="btns">
           {buttons.map(button)}
-          {review && <ReviewButton view={v} />}
+          {open && (v.isMine || v.iAmReviewer) && <ReviewButton view={v} />}
         </div>
       </div>
     </>
