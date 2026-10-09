@@ -9,6 +9,11 @@ if (process.env.REVIEW_OWNED_FIXTURE) {
   change.reviewers = { REVIEWER: [owner] }
   change.hashtags = ['reviewer:sam']
   settings.localReview = true
+  if (['request', 'unassigned'].includes(process.env.OWNED_REVIEW_STATE)) {
+    change.custom_keyed_values = {}
+    if (process.env.OWNED_REVIEW_STATE === 'unassigned') { change.hashtags = []; change.reviewers = { REVIEWER: [] } }
+  }
+  if (process.env.OWNED_REVIEW_STATE === 'approved') change.labels['Code-Review'].all = [{ ...owner, value: 1 }]
 }
 const top = [
   '// Telemetry batch scheduler',
@@ -41,6 +46,7 @@ const unchanged = Array.from({ length: 99940 }, (_, i) => `export const delivery
 const patchSets = [1, 2, 3]
 let requests = 0
 const openedChanges = []
+const ownerActions = []
 const comparisons = []
 const reviewedFlags = new Map()
 const reviewedWrites = []
@@ -71,7 +77,7 @@ contextBridge.exposeInMainWorld('api', {
   applyProvidedReviewFix: async (id, patchSet, suggestion) => { appliedFixes.push({ id, patchSet, suggestion }) },
   openUrl: noOp,
   suggestReviewers: async () => [{ account: owner, count: 1 }],
-  act: noOp,
+  act: async action => { ownerActions.push(action) },
   reviewDiscussion: async () => ({ comments: [...comments], drafts: [...drafts.values()], self, permittedLabels: { 'Code-Review': ['-2', '-1', '0', '+1', '+2'] }, labels: { 'Code-Review': { ...change.labels['Code-Review'], values: { '+1': 'Looks good' } } }, latestPatchSet: Math.max(...patchSets), owner, reviewers: { REVIEWER: [self], CC: [owner] }, attention: { 1: { account: self } }, readOnly: false, canDeletePublished }),
   saveReviewDraft: async (id, patchSet, input) => {
     await new Promise(r => setTimeout(r, 120))
@@ -144,7 +150,7 @@ contextBridge.exposeInMainWorld('api', {
       { ab: ['', '// End of delivery fixtures.'] },
     ] }
   },
-  fixtureStats: async () => ({ requests, comparisons, reviewedWrites, commentWrites, reviews, drafts: [...drafts.values()], appliedFixes, openedChanges }),
+  fixtureStats: async () => ({ requests, comparisons, reviewedWrites, commentWrites, reviews, drafts: [...drafts.values()], appliedFixes, openedChanges, ownerActions }),
   openChange: async link => { openedChanges.push(link) }, changeUrl: async () => 'https://gerrit.example.com/c/telemetry/+/2481',
   openConnection: noOp, setCompact: noOp,
 })
