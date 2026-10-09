@@ -361,7 +361,7 @@ function LedgerRow(
                   </button>
                 ),
               )}
-              {reviewer && <ReviewButton view={v} />}
+              {open && (v.isMine || v.iAmReviewer) && <ReviewButton view={v} />}
               <button className="btn sm" onClick={() => void api.openChange({ id, project: c.project })}>
                 Open in Gerrit ↗
               </button>

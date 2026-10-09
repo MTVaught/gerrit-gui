@@ -849,6 +849,13 @@ test('review link is the current patch set against base when never reviewed or a
   assert.deepEqual(reviewLink(current), { id: 42, project: 'demo', patchSet: 5 })
 })
 
+test('owned review links start against base even after an earlier author reply', () => {
+  const owned = classify(change({ number: 42, owner: bob, patchSet: 5, messages: [msg(bob, 3)] }), bob._account_id)
+  assert.equal(owned.isMine, true)
+  assert.equal(owned.lastReviewedPatchSet, 3)
+  assert.deepEqual(reviewLink(owned), { id: 42, project: 'demo', patchSet: 5 })
+})
+
 test('groupByChangeId: cherry-picks share a family, in the order given', () => {
   const views = [
     change({ number: 1, changeId: 'Iaaa', branch: 'master' }),

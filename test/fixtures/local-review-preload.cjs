@@ -4,6 +4,12 @@ const self = { _account_id: 1, username: 'alex', name: 'Alex Rivera', email: 'al
 const owner = { _account_id: 2, username: 'sam', name: 'Sam Chen', email: 'sam@example.com' }
 const now = new Date().toISOString().replace('T', ' ').replace('Z', '')
 const change = { id: 'telemetry~main~Idemo', change_id: 'Idemo', _number: 2481, project: 'telemetry', branch: 'main', subject: 'Keep telemetry batches bounded under load', status: 'NEW', owner, created: now, updated: now, insertions: 8, deletions: 4, hashtags: ['reviewer:alex'], custom_keyed_values: { 'review-requested-ps': '3' }, reviewers: { REVIEWER: [self] }, labels: { 'Code-Review': { all: [{...self, value: 0}] } }, current_revision: 'demo-revision', revisions: { 'demo-revision': { _number: 3, created: now, commit: { subject: 'Keep telemetry batches bounded under load', message: 'Keep telemetry batches bounded under load\n\nFlush batches on size or timeout.' } } } }
+if (process.env.REVIEW_OWNED_FIXTURE) {
+  change.owner = self
+  change.reviewers = { REVIEWER: [owner] }
+  change.hashtags = ['reviewer:sam']
+  settings.localReview = true
+}
 const top = [
   '// Telemetry batch scheduler',
   '// Keep queued events bounded while preserving delivery order.',
@@ -34,6 +40,7 @@ const tail = ['', '    await this.transport.send(batch);', '  }', '}', '', '// D
 const unchanged = Array.from({ length: 99940 }, (_, i) => `export const deliveryCase${String(i + 1).padStart(5, '0')} = { retries: 2, timeoutMs: 5000 };`)
 const patchSets = [1, 2, 3]
 let requests = 0
+const openedChanges = []
 const comparisons = []
 const reviewedFlags = new Map()
 const reviewedWrites = []
@@ -137,7 +144,7 @@ contextBridge.exposeInMainWorld('api', {
       { ab: ['', '// End of delivery fixtures.'] },
     ] }
   },
-  fixtureStats: async () => ({ requests, comparisons, reviewedWrites, commentWrites, reviews, drafts: [...drafts.values()], appliedFixes }),
-  openChange: noOp, changeUrl: async () => 'https://gerrit.example.com/c/telemetry/+/2481',
+  fixtureStats: async () => ({ requests, comparisons, reviewedWrites, commentWrites, reviews, drafts: [...drafts.values()], appliedFixes, openedChanges }),
+  openChange: async link => { openedChanges.push(link) }, changeUrl: async () => 'https://gerrit.example.com/c/telemetry/+/2481',
   openConnection: noOp, setCompact: noOp,
 })

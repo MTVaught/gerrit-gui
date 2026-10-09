@@ -482,7 +482,7 @@ export function sinceReview(change: ChangeInfo, last: number | null, patchSet: n
 export function reviewLink(view: ChangeView): ChangeLink {
   const link: ChangeLink = { id: view.change._number, project: view.change.project, patchSet: view.patchSet }
   const last = view.lastReviewedPatchSet
-  if (last !== null && last < view.patchSet) link.basePatchSet = last
+  if (!view.isMine && last !== null && last < view.patchSet) link.basePatchSet = last
   return link
 }
 

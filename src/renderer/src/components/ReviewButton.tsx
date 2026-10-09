@@ -6,7 +6,7 @@ import { useSettings } from '../settings-context.ts'
 import { useLocalReview } from '../review-context.tsx'
 
 /**
- * The reviewer's way into Gerrit. The main part opens the diff from the last
+ * Open Gerrit or the local review editor. The main part opens the diff from the last
  * patch set they reviewed to the current one (or the current patch set against
  * base when they never reviewed it). The caret lists the other views: since
  * base, since the previous patch set, the change page, and a copyable link.
@@ -23,14 +23,16 @@ export function ReviewButton(props: { view: ChangeView }) {
 
   const main = reviewLink(v)
   const last = v.lastReviewedPatchSet
-  const upToDate = last !== null && last >= v.patchSet
+  const upToDate = !v.isMine && last !== null && last >= v.patchSet
   const prev = v.lastReviewedVote
   const label = upToDate
     ? `Open PS ${v.patchSet}`
     : main.basePatchSet !== undefined
       ? `${v.needsMyReview ? 'Review' : 'See'} PS ${main.basePatchSet} → ${v.patchSet}`
       : `Review PS ${v.patchSet}`
-  const title = upToDate
+  const title = v.isMine
+    ? `Opens your patch set ${v.patchSet} against base in Gerrit.`
+    : upToDate
     ? `You already reviewed patch set ${v.patchSet}. Opens it in Gerrit.`
     : main.basePatchSet !== undefined
       ? `Opens the diff from patch set ${main.basePatchSet}, the last one you reviewed, to patch set ${v.patchSet}. ${previousVote(prev, main.basePatchSet)}`
