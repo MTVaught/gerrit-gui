@@ -22,6 +22,8 @@ export interface ActionSpec {
   menu?: MenuItem[]
   /** Rendered as a split button: the main part runs `run`, the caret opens a menu of these other choices. */
   split?: MenuItem[]
+  /** Navigation offered alongside the owner's workflow choices. */
+  reviewOptions?: MenuItem[]
   run: () => void
 }
 

@@ -8,6 +8,7 @@ import { SequencePicker } from './SequencePicker.tsx'
 import { actionClass, changeActions, type ActionSpec } from './actions.ts'
 import { ago } from '../time.ts'
 import { ReviewButton } from './ReviewButton.tsx'
+import { useOwnerReviewOptions } from './OwnerReviewOptions.tsx'
 import { SplitButton } from './SplitButton.tsx'
 import { AddReviewer } from './AddReviewer.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
@@ -641,7 +642,7 @@ function ChipRow(props: { chips: Chip[]; trailing?: ReactNode; className?: strin
 function Actions(props: ActProps) {
   const { view: v } = props
   const open = v.change.status === 'NEW'
-  const actions = changeActions(v, props.onAct)
+  const actions = useOwnerReviewOptions(v, changeActions(v, props.onAct))
   const button = (a: ActionSpec) =>
     a.picker ? (
       <MergerPicker key={a.key} view={v} spec={a} onAct={props.onAct} />
@@ -667,7 +668,7 @@ function Actions(props: ActProps) {
         {review && <MyLastReview view={v} slot />}
         <div className="btns">
           {buttons.map(button)}
-          {open && (v.isMine || v.iAmReviewer) && <ReviewButton view={v} />}
+          {review && <ReviewButton view={v} />}
         </div>
       </div>
     </>

@@ -6,6 +6,7 @@ import { api } from '../api.ts'
 import { useNames } from '../names.ts'
 import { useSettings } from '../settings-context.ts'
 import { actionClass, type ActionSpec } from './actions.ts'
+import { OwnerReviewOptions } from './OwnerReviewOptions.tsx'
 
 const LAST_KEY = 'gerrit-gui.lastMerger'
 
@@ -118,7 +119,7 @@ export function MergerPicker(props: { view: ChangeView; spec: ActionSpec; onAct:
   const changing = spec.key === 'change-merger'
 
   async function confirm() {
-    if (!chosen) return
+    if (!chosen || spec.disabled) return
     setOpen(false)
     rememberLast(c.project, chosen)
     if (remember && otherKey === chosen) await save({ mergers: addMerger(rules, c.project, chosen) })
@@ -131,7 +132,7 @@ export function MergerPicker(props: { view: ChangeView; spec: ActionSpec; onAct:
       <button className={actionClass(spec, `split-main ${size}`)} title={spec.title} disabled={spec.disabled} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
         {props.small ? spec.short : spec.label}
       </button>
-      <button className={actionClass(spec, `split-caret ${size}`)} title={spec.title} aria-label={spec.title} disabled={spec.disabled} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+      <button className={actionClass(spec, `split-caret ${size}`)} title={spec.title} aria-label={spec.title} disabled={spec.disabled && !spec.reviewOptions?.length} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
         ▾
       </button>
       {open && pos && (
@@ -198,10 +199,13 @@ export function MergerPicker(props: { view: ChangeView; spec: ActionSpec; onAct:
                 Clear ready-to-merge
               </button>
             )}
-            <button type="button" className="btn primary" disabled={!chosen} onClick={() => void confirm()}>
+            <button type="button" className="btn primary" disabled={!chosen || spec.disabled} onClick={() => void confirm()}>
               {chosen ? `Ask ${chosenName} to merge` : 'Pick a person'}
             </button>
           </div>
+          {spec.reviewOptions?.length && <div role="menu" aria-label="Review options">
+            <OwnerReviewOptions items={spec.reviewOptions} close={() => setOpen(false)} />
+          </div>}
         </div>
       )}
     </div>

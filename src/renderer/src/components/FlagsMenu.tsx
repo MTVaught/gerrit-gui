@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { actionClass, type ActionSpec } from './actions.ts'
+import { OwnerReviewOptions } from './OwnerReviewOptions.tsx'
 
 /**
  * A button with a caret that opens a small menu: the owner's subtle "Mark
@@ -51,7 +52,7 @@ export function FlagsMenu(props: { spec: ActionSpec; small?: boolean }) {
         ▾
       </button>
       {open && pos && (
-        <div className="menu flags" role="menu" style={{ top: pos.top, right: pos.right }}>
+        <div className={`menu flags${spec.reviewOptions?.length ? ' owner-review-menu' : ''}`} role="menu" style={{ top: pos.top, right: pos.right }}>
           {items.map((m) => (
             <button
               key={m.key}
@@ -67,6 +68,7 @@ export function FlagsMenu(props: { spec: ActionSpec; small?: boolean }) {
               {m.detail && <span className="muted">{m.detail}</span>}
             </button>
           ))}
+          <OwnerReviewOptions items={spec.reviewOptions} close={() => setOpen(false)} />
         </div>
       )}
     </div>

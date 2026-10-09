@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { actionClass, type ActionSpec } from './actions.ts'
+import { OwnerReviewOptions } from './OwnerReviewOptions.tsx'
 
 /**
  * An owner's button with two parts: the main part runs the spec's default
@@ -52,7 +53,7 @@ export function SplitButton(props: { spec: ActionSpec; small?: boolean }) {
       </button>
       <button
         className={actionClass(spec, `split-caret ${size}`)}
-        disabled={spec.disabled}
+        disabled={spec.disabled && !spec.reviewOptions?.length}
         title="Other choices"
         aria-label="Other choices"
         aria-haspopup="menu"
@@ -62,13 +63,14 @@ export function SplitButton(props: { spec: ActionSpec; small?: boolean }) {
         ▾
       </button>
       {open && pos && (
-        <div className="menu" role="menu" style={{ top: pos.top, right: pos.right }}>
+        <div className={`menu${spec.reviewOptions?.length ? ' owner-review-menu' : ''}`} role="menu" style={{ top: pos.top, right: pos.right }}>
           {items.map((m) => (
             <button
               key={m.key}
               role="menuitem"
               className="menu-item"
               title={m.title}
+              disabled={spec.disabled}
               onClick={() => {
                 setOpen(false)
                 m.run()
@@ -78,6 +80,7 @@ export function SplitButton(props: { spec: ActionSpec; small?: boolean }) {
               {m.detail && <span className="muted">{m.detail}</span>}
             </button>
           ))}
+          <OwnerReviewOptions items={spec.reviewOptions} close={() => setOpen(false)} />
         </div>
       )}
     </div>

@@ -422,6 +422,8 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .menu.flags { width: 260px; }
 .menu.flags .menu-item { padding-left: 10px; }
 .menu.flags .menu-item .muted { font-size: 12px; }
+.menu.owner-review-menu { width: max-content; min-width: min(300px, calc(100vw - 32px)); max-width: calc(100vw - 32px); }
+.menu.owner-review-menu .menu-item span { white-space: normal; }
 
 
 /*

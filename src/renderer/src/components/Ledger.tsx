@@ -9,6 +9,7 @@ import { Highlight } from './Highlight.tsx'
 import { ChainIcon, CheckIcon, ForkIcon } from './Icons.tsx'
 import { SequencePicker } from './SequencePicker.tsx'
 import { ReviewButton, previousVote } from './ReviewButton.tsx'
+import { useOwnerReviewOptions } from './OwnerReviewOptions.tsx'
 import { SplitButton } from './SplitButton.tsx'
 import { SlackLink } from './SlackLink.tsx'
 import { actionClass, changeActions } from './actions.ts'
@@ -228,7 +229,7 @@ function LedgerRow(
   const id = c._number
   const open = c.status === 'NEW'
   const [expanded, setExpanded] = useState(false)
-  const actions = changeActions(v, props.onAct)
+  const actions = useOwnerReviewOptions(v, changeActions(v, props.onAct))
   const primary = actions.find((a) => a.primary)
   const rest = actions.filter((a) => a !== primary)
   const reviewer = open && v.iAmReviewer && !v.isMine
@@ -361,7 +362,7 @@ function LedgerRow(
                   </button>
                 ),
               )}
-              {open && (v.isMine || v.iAmReviewer) && <ReviewButton view={v} />}
+              {reviewer && <ReviewButton view={v} />}
               <button className="btn sm" onClick={() => void api.openChange({ id, project: c.project })}>
                 Open in Gerrit ↗
               </button>
