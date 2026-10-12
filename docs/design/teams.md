@@ -58,7 +58,8 @@ With one watched team it is a plain tab. With several it is a split tab,
 like the split buttons on the rows: the caret opens each watched team with
 its count, then "Watched" for all together, and picking one changes the
 list below. The label does not change; the check in the menu and the line
-above the list say which is showing. The default is the primary team, or
+above the list say which is showing. Clicking the label returns to the
+default list. The default is the primary team, or
 all watched teams without one. The tab keeps the id `team-reviews` in the
 code and the screenshot hook, with `&team=<name>` to pick a team and
 `&team=-` for all.

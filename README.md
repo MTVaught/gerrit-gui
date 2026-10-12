@@ -426,8 +426,9 @@ Review" like any other. The teams add two tabs:
   team, in groups by state, whether or not you are on it. With several
   watched teams the tab has a caret: it opens each team with its count,
   and "Watched" for all of them together. The label does not change; the
-  line above the list says which team is showing. The tab is there once a
-  team is watched.
+  line above the list says which team is showing. Clicking the label returns
+  to your default team, or all watched teams if you have no default.
+  The tab is there once a team is watched.
 - The "External Reviews" tab lists the open changes you are on, as a
   reviewer, a tagged primary reviewer or the asked merger, whose owner is
   not on your team. It is there only when you picked your team. A watched

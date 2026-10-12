@@ -309,8 +309,13 @@ export function App() {
                 pick={pick}
                 active={tab === t.id && !showSettings}
                 count={<TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />}
-                onPick={setTeamPickChoice}
+                onPick={(choice) => {
+                  setTeamPickChoice(choice)
+                  setTab(t.id)
+                  setShowSettings(false)
+                }}
                 onSelect={() => {
+                  setTeamPickChoice(null)
                   setTab(t.id)
                   setShowSettings(false)
                 }}

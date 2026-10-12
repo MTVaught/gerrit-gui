@@ -13,7 +13,7 @@ export function teamEntries(setup: TeamSetup, views: ChangeView[]): { pick: Team
  * split buttons on the rows: the caret opens a menu of the watched teams
  * and all of them together, and picking one changes the list below. The
  * label stays; the check in the menu and the line above the list say
- * which team is showing.
+ * which team is showing. Pressing the label returns to the default team.
  */
 export function TeamTab(props: {
   label: string
@@ -23,8 +23,9 @@ export function TeamTab(props: {
   active: boolean
   /** The count pill, styled like the other tabs'. */
   count: ReactNode
+  /** Show the picked team's list and bring the tab up. */
   onPick: (p: TeamPick) => void
-  /** Bring the tab up, as pressing any tab does. */
+  /** Show the default team's list and bring the tab up. */
   onSelect: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -32,7 +33,6 @@ export function TeamTab(props: {
   const caret = useRef<HTMLButtonElement>(null)
   // The strip scrolls sideways in the compact window and would clip the menu, so it is placed against the window.
   const [at, setAt] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
-  const showing = props.entries.find((e) => e.pick === props.pick)
 
   useEffect(() => {
     if (!open) return
@@ -54,8 +54,8 @@ export function TeamTab(props: {
     <button
       role="tab"
       aria-selected={props.active}
-      aria-label={showing && showing.label !== props.label ? `${props.label}, showing ${showing.label}` : props.label}
-      title={showing ? `Showing ${showing.label}` : 'Every open change of the team, whether or not you are on it'}
+      aria-label={props.label}
+      title={`Show ${props.label}'s open changes`}
       className={'tab' + (props.active ? ' active' : '')}
       onClick={() => {
         props.onSelect()
@@ -95,7 +95,6 @@ export function TeamTab(props: {
               className={'menu-item' + (e.pick === props.pick ? ' selected' : '')}
               onClick={() => {
                 props.onPick(e.pick)
-                props.onSelect()
                 setOpen(false)
               }}
             >
