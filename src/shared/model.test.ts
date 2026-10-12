@@ -1658,3 +1658,50 @@ test('sequence: fully overlapping sequences stay editable without duplicating th
   assert.equal(tabCounts(views).mine, 1)
   assert.equal(cardGroups('mine', views).flatMap((g) => g.items).length, 1)
 })
+
+test('sequence: ordinary mixed-state sequences stay in the highest-priority section', () => {
+  const scenarios = [
+    { states: ['approved', 'needs-review', 'needs-changes', 'in-progress', 'ready-to-merge'], winner: 'Needs Changes', tone: 'neg' },
+    { states: ['approved', 'needs-review', 'in-person-review', 'in-progress'], winner: 'In Person', tone: 'pending' },
+    { states: ['approved', 'ready-to-merge', 'needs-review', 'in-progress'], winner: 'Pass Around', tone: 'pending' },
+    { states: ['approved', 'ready-to-merge', 'in-progress'], winner: 'In Progress', tone: 'wip' },
+    { states: ['ready-to-merge', 'approved'], winner: 'Approved', tone: 'pos' },
+  ]
+  for (const scenario of scenarios) {
+    const changes = scenario.states.map((state, i) => change({
+      number: 301 + i, owner: bob, reviewers: [alice], changeId: `Iordinary${i}`,
+      branch: 'main', patchSet: 1, shas: [[`ordinary${i}`, 1]], parent: i === 0 ? 'tip' : `ordinary${i - 1}`,
+      requested: state === 'in-progress' ? undefined : 1,
+      inPersonPs: state === 'in-person-review' ? 1 : undefined,
+      votes: state === 'needs-changes' ? { 1: -1 } : state === 'approved' || state === 'ready-to-merge' ? { 1: 1 } : {},
+      hashtags: ['sequence', ...(state === 'ready-to-merge' ? ['ready-to-merge'] : [])],
+    }))
+    for (const input of [changes, changes.slice().reverse()]) {
+      const views = classifyAll(input, bob._account_id)
+      const cards = sequenceCards(views)
+      assert.equal(cards.length, 1)
+      assert.equal(chainViews(cards[0]!).length, changes.length)
+      const sections = cardGroups('mine', views)
+      assert.deepEqual(sections.map((s) => [s.title, s.items.length]), [[scenario.winner, 1]])
+      assert.equal(tabCounts(views).mine, 1)
+      if (scenario.tone !== 'wip') assert.deepEqual(tabSegments(views).mine!.map((s) => [s.tone, s.n]), [[scenario.tone, 1]])
+    }
+  }
+})
+
+test('sequence: identical commit SHAs outside the project or branch cannot split a mixed-state sequence', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'] }, { votes: { 61: { 1: -1 }, 62: { 1: 1 } } })
+  const sequence = [f.c61, f.c62, f.c63, f.c64]
+  for (const scope of [{ project: 'mirror', branch: 'master' }, { project: 'demo', branch: 'release' }]) {
+    const unrelated = { ...f.c61, ...scope, id: 'unrelated~90', _number: 90, owner: carol, hashtags: [] }
+    for (const input of [[...sequence, unrelated], [unrelated, ...sequence]]) {
+      const views = classifyAll(input, bob._account_id)
+      assert.deepEqual(sequenceChains(views).map((c) => c.members.map((v) => v.change._number)), [[61, 62, 63, 64]])
+      assert.equal(parentLinks(views).get(62)!.view.change.project, 'demo')
+      const cards = cardGroups('mine', views)
+      const sequenceCard = cards.find((g) => g.items.some((v) => v.change._number === 61))!
+      assert.equal(sequenceCard.title, 'Needs Changes')
+      assert.equal(cards.flatMap((g) => g.items).length, 1)
+    }
+  }
+})

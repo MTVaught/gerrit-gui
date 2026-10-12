@@ -1,0 +1,389 @@
+{
+  "self": {
+    "_account_id": 1,
+    "name": "Alice",
+    "username": "alice",
+    "email": "alice@example.com"
+  },
+  "open": [
+    {
+      "id": "demo~main~Istep0",
+      "change_id": "Istep0",
+      "_number": 301,
+      "project": "demo",
+      "branch": "main",
+      "subject": "Urgent correction",
+      "status": "NEW",
+      "owner": {
+        "_account_id": 1,
+        "name": "Alice",
+        "username": "alice",
+        "email": "alice@example.com"
+      },
+      "hashtags": [
+        "sequence",
+        "reviewer:bob"
+      ],
+      "custom_keyed_values": {
+        "review-requested-ps": "1"
+      },
+      "created": "2026-10-12 14:00:00.000000000",
+      "updated": "2026-10-12 14:00:00.000000000",
+      "reviewers": {
+        "REVIEWER": [
+          {
+            "_account_id": 2,
+            "name": "Bob",
+            "username": "bob",
+            "email": "bob@example.com"
+          }
+        ]
+      },
+      "labels": {
+        "Code-Review": {
+          "all": [
+            {
+              "_account_id": 2,
+              "name": "Bob",
+              "username": "bob",
+              "email": "bob@example.com",
+              "value": -1
+            }
+          ]
+        }
+      },
+      "current_revision": "sha301",
+      "revisions": {
+        "sha301": {
+          "_number": 1,
+          "created": "2026-10-12 14:00:00.000000000",
+          "commit": {
+            "subject": "Urgent correction",
+            "message": "Urgent correction",
+            "parents": [
+              {
+                "commit": "tip"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "demo~main~Istep1",
+      "change_id": "Istep1",
+      "_number": 302,
+      "project": "demo",
+      "branch": "main",
+      "subject": "Approved step",
+      "status": "NEW",
+      "owner": {
+        "_account_id": 1,
+        "name": "Alice",
+        "username": "alice",
+        "email": "alice@example.com"
+      },
+      "hashtags": [
+        "sequence",
+        "reviewer:bob"
+      ],
+      "custom_keyed_values": {
+        "review-requested-ps": "1"
+      },
+      "created": "2026-10-12 14:00:00.000000000",
+      "updated": "2026-10-12 14:00:00.000000000",
+      "reviewers": {
+        "REVIEWER": [
+          {
+            "_account_id": 2,
+            "name": "Bob",
+            "username": "bob",
+            "email": "bob@example.com"
+          }
+        ]
+      },
+      "labels": {
+        "Code-Review": {
+          "all": [
+            {
+              "_account_id": 2,
+              "name": "Bob",
+              "username": "bob",
+              "email": "bob@example.com",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "current_revision": "sha302",
+      "revisions": {
+        "sha302": {
+          "_number": 1,
+          "created": "2026-10-12 14:00:00.000000000",
+          "commit": {
+            "subject": "Approved step",
+            "message": "Approved step",
+            "parents": [
+              {
+                "commit": "sha301"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "demo~main~Istep2",
+      "change_id": "Istep2",
+      "_number": 303,
+      "project": "demo",
+      "branch": "main",
+      "subject": "Ready to merge step",
+      "status": "NEW",
+      "owner": {
+        "_account_id": 1,
+        "name": "Alice",
+        "username": "alice",
+        "email": "alice@example.com"
+      },
+      "hashtags": [
+        "sequence",
+        "reviewer:bob",
+        "ready-to-merge"
+      ],
+      "custom_keyed_values": {
+        "review-requested-ps": "1",
+        "ready-to-merge-ps": "1"
+      },
+      "created": "2026-10-12 14:00:00.000000000",
+      "updated": "2026-10-12 14:00:00.000000000",
+      "reviewers": {
+        "REVIEWER": [
+          {
+            "_account_id": 2,
+            "name": "Bob",
+            "username": "bob",
+            "email": "bob@example.com"
+          }
+        ]
+      },
+      "labels": {
+        "Code-Review": {
+          "all": [
+            {
+              "_account_id": 2,
+              "name": "Bob",
+              "username": "bob",
+              "email": "bob@example.com",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "current_revision": "sha303",
+      "revisions": {
+        "sha303": {
+          "_number": 1,
+          "created": "2026-10-12 14:00:00.000000000",
+          "commit": {
+            "subject": "Ready to merge step",
+            "message": "Ready to merge step",
+            "parents": [
+              {
+                "commit": "sha302"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "demo~main~Istep3",
+      "change_id": "Istep3",
+      "_number": 304,
+      "project": "demo",
+      "branch": "main",
+      "subject": "Pending review step",
+      "status": "NEW",
+      "owner": {
+        "_account_id": 1,
+        "name": "Alice",
+        "username": "alice",
+        "email": "alice@example.com"
+      },
+      "hashtags": [
+        "sequence",
+        "reviewer:bob"
+      ],
+      "custom_keyed_values": {
+        "review-requested-ps": "1"
+      },
+      "created": "2026-10-12 14:00:00.000000000",
+      "updated": "2026-10-12 14:00:00.000000000",
+      "reviewers": {
+        "REVIEWER": [
+          {
+            "_account_id": 2,
+            "name": "Bob",
+            "username": "bob",
+            "email": "bob@example.com"
+          }
+        ]
+      },
+      "labels": {
+        "Code-Review": {
+          "all": [
+            {
+              "_account_id": 2,
+              "name": "Bob",
+              "username": "bob",
+              "email": "bob@example.com",
+              "value": 0
+            }
+          ]
+        }
+      },
+      "current_revision": "sha304",
+      "revisions": {
+        "sha304": {
+          "_number": 1,
+          "created": "2026-10-12 14:00:00.000000000",
+          "commit": {
+            "subject": "Pending review step",
+            "message": "Pending review step",
+            "parents": [
+              {
+                "commit": "sha303"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "demo~main~Istep4",
+      "change_id": "Istep4",
+      "_number": 305,
+      "project": "demo",
+      "branch": "main",
+      "subject": "In-progress step",
+      "status": "NEW",
+      "owner": {
+        "_account_id": 1,
+        "name": "Alice",
+        "username": "alice",
+        "email": "alice@example.com"
+      },
+      "hashtags": [
+        "sequence",
+        "reviewer:bob"
+      ],
+      "custom_keyed_values": {},
+      "created": "2026-10-12 14:00:00.000000000",
+      "updated": "2026-10-12 14:00:00.000000000",
+      "reviewers": {
+        "REVIEWER": [
+          {
+            "_account_id": 2,
+            "name": "Bob",
+            "username": "bob",
+            "email": "bob@example.com"
+          }
+        ]
+      },
+      "labels": {
+        "Code-Review": {
+          "all": [
+            {
+              "_account_id": 2,
+              "name": "Bob",
+              "username": "bob",
+              "email": "bob@example.com",
+              "value": 0
+            }
+          ]
+        }
+      },
+      "current_revision": "sha305",
+      "revisions": {
+        "sha305": {
+          "_number": 1,
+          "created": "2026-10-12 14:00:00.000000000",
+          "commit": {
+            "subject": "In-progress step",
+            "message": "In-progress step",
+            "parents": [
+              {
+                "commit": "sha304"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "mirror~main~901",
+      "_number": 901,
+      "project": "mirror",
+      "branch": "main",
+      "subject": "Urgent correction",
+      "status": "NEW",
+      "owner": {
+        "_account_id": 2,
+        "name": "Bob",
+        "username": "bob",
+        "email": "bob@example.com"
+      },
+      "hashtags": [
+        "reviewer:alice"
+      ],
+      "custom_keyed_values": {
+        "review-requested-ps": "1"
+      },
+      "created": "2026-10-12 14:00:00.000000000",
+      "updated": "2026-10-12 14:00:00.000000000",
+      "reviewers": {
+        "REVIEWER": [
+          {
+            "_account_id": 1,
+            "name": "Alice",
+            "username": "alice",
+            "email": "alice@example.com"
+          }
+        ]
+      },
+      "labels": {
+        "Code-Review": {
+          "all": [
+            {
+              "_account_id": 1,
+              "name": "Alice",
+              "username": "alice",
+              "email": "alice@example.com",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "current_revision": "sha301",
+      "revisions": {
+        "sha301": {
+          "_number": 1,
+          "created": "2026-10-12 14:00:00.000000000",
+          "commit": {
+            "subject": "Urgent correction",
+            "message": "Urgent correction",
+            "parents": [
+              {
+                "commit": "tip"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "merged": [],
+  "fetchedAt": "2026-10-12T21:42:35.520Z",
+  "truncated": false
+}

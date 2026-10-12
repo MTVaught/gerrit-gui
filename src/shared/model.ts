@@ -1482,13 +1482,16 @@ function parentSha(change: ChangeInfo): string | null {
  */
 export function parentLinks(views: ChangeView[]): Map<number, ParentLink> {
   const bySha = new Map<string, { view: ChangeView; patchSet: number }>()
+  // The same commit may exist on another branch or in another project.
+  // Index within the dependency's scope so unrelated results cannot replace it.
+  const key = (v: ChangeView, sha: string) => JSON.stringify([v.change.project, v.change.branch, sha])
   for (const v of views) {
-    for (const [sha, r] of Object.entries(v.change.revisions ?? {})) bySha.set(sha, { view: v, patchSet: r._number })
+    for (const [sha, r] of Object.entries(v.change.revisions ?? {})) bySha.set(key(v, sha), { view: v, patchSet: r._number })
   }
   const out = new Map<number, ParentLink>()
   for (const v of views) {
     const sha = parentSha(v.change)
-    const p = sha ? bySha.get(sha) : undefined
+    const p = sha ? bySha.get(key(v, sha)) : undefined
     if (!p || p.view === v) continue
     if (p.view.change.project !== v.change.project || p.view.change.branch !== v.change.branch) continue
     out.set(v.change._number, { view: p.view, patchSet: p.patchSet, stale: p.patchSet < p.view.patchSet })
