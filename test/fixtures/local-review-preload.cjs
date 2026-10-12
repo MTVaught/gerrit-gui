@@ -1,5 +1,5 @@
 const { contextBridge } = require('electron')
-let settings = { serverUrl: 'https://gerrit.example.com', username: 'alex', projects: [], teams: [], primaryTeam: '', mergers: [], badgeStyle: 'color', showZeroCounts: false, showAppBadge: false, showTrayCounts: false, compactOnTop: true, slackWorkspaces: [], localReview: false, hasPassword: true, encrypted: true }
+let settings = { serverUrl: 'https://gerrit.example.com', username: 'alex', projects: [], teams: [], primaryTeam: '', mergers: [], badgeStyle: 'color', showZeroCounts: false, showAppBadge: false, showTrayCounts: false, trayClickAction: 'menu', compactOnTop: true, slackWorkspaces: [], localReview: false, hasPassword: true, encrypted: true }
 const self = { _account_id: 1, username: 'alex', name: 'Alex Rivera', email: 'alex@example.com' }
 const owner = { _account_id: 2, username: 'sam', name: 'Sam Chen', email: 'sam@example.com' }
 const now = new Date().toISOString().replace('T', ' ').replace('Z', '')

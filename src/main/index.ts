@@ -103,9 +103,11 @@ async function setCompactOnTop(on: boolean): Promise<void> {
   mainWindow?.webContents.send('app:settings')
 }
 
-/** Re-read the window-related user settings and apply them. */
+/** Re-read window and tray preferences and apply them. */
 async function refreshWindowPrefs(): Promise<void> {
-  compactOnTop = (await service.getSettings()).compactOnTop
+  const prefs = await service.getSettings()
+  compactOnTop = prefs.compactOnTop
+  tray?.setClickAction(prefs.trayClickAction)
   applyPinning()
   tray?.setCompactOnTop(compactOnTop)
 }
@@ -294,7 +296,8 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(async () => {
     ui = await settings.getUi()
-    compactOnTop = (await service.getSettings()).compactOnTop
+    const prefs = await service.getSettings()
+    compactOnTop = prefs.compactOnTop
     registerIpc()
     updater = createUpdater({
       onChange: (state) => {
@@ -329,6 +332,7 @@ if (!app.requestSingleInstanceLock()) {
       },
       ui.compact,
       compactOnTop,
+      prefs.trayClickAction,
     )
     tray.setUpdate(updater.getState())
     const win = createWindow()

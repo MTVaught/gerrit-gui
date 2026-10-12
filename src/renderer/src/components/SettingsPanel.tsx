@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { AccountInfo, ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace } from '../../../shared/types.ts'
+import type { AccountInfo, ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, TrayClickAction } from '../../../shared/types.ts'
 import { STATE_LABEL, accountKeys, changeNumberOf, classify, displayName, explainView, groupsFor, isSlackTeamId, mergersReflect, preferredKey, slackWorkspacesReflect, teamPicks, teamTabLabel, type TeamSetup } from '../../../shared/model.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
@@ -19,7 +19,7 @@ const SECTIONS: { id: SectionId; label: string; desktopOnly?: boolean }[] = [
   { id: 'slack', label: 'Slack', desktopOnly: true },
   { id: 'app-icon', label: 'App icon', desktopOnly: true },
   { id: 'window', label: 'Window', desktopOnly: true },
-  { id: 'menu-bar', label: 'Menu bar', desktopOnly: true },
+  { id: 'menu-bar', label: 'Menu bar / system tray', desktopOnly: true },
   { id: 'beta', label: 'Beta' },
   { id: 'debug', label: 'Debug' },
   { id: 'about', label: 'About', desktopOnly: true },
@@ -210,40 +210,42 @@ export function SettingsPanel(props: {
         )}
         {section === 'menu-bar' && (
           <>
-            <label className="check">
-              <input type="checkbox" checked={s.showTrayCounts} onChange={(e) => void apply({ showTrayCounts: e.target.checked })} />
-              Show counts on the menu bar icon
-            </label>
-            <p className="muted small">
-              Off, the menu bar keeps the plain icon. The tooltip and the menu still list what waits on you.
-            </p>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={s.badgeStyle === 'glyph'}
-                disabled={!s.showTrayCounts}
-                onChange={(e) => void apply({ badgeStyle: e.target.checked ? 'glyph' : 'color' })}
-              />
-              Show glyphs instead of colored counts
-            </label>
-            <p className="muted small">
-              The menu bar shows what waits on you as one colored count per category: Needs Review, Needs Changes, Approved,
-              Ready to Merge. Glyphs (◉ ✎ ◆ ⇧) replace the colors if you cannot tell them apart. The counts stand in for the
-              app icon, which shows only when nothing waits on you. The tray menu names each category with its count.
-            </p>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={s.showZeroCounts}
-                disabled={!s.showTrayCounts}
-                onChange={(e) => void apply({ showZeroCounts: e.target.checked })}
-              />
-              Always show Needs Review, Needs Changes and Approved, even at zero
-            </label>
-            <p className="muted small">
-              Keeps those counts in the menu bar so their position never changes. Ready to Merge appears only when you have
-              something to merge, since it needs +2 rights.
-            </p>
+            <SettingsChoices
+              name="tray-click"
+              label="When clicked"
+              hint="Right-click always opens the menu."
+              value={s.trayClickAction}
+              options={[
+                { value: 'menu', label: 'Show menu' },
+                { value: 'my-reviews', label: 'Open Needs Review' },
+              ]}
+              onChange={(value) => void apply({ trayClickAction: value as TrayClickAction })}
+            />
+            <SettingsChoices
+              name="tray-appearance"
+              label="Icon appearance"
+              value={s.showTrayCounts ? s.badgeStyle : 'icon'}
+              options={[
+                { value: 'icon', label: 'App icon' },
+                { value: 'color', label: 'Colored counts' },
+                { value: 'glyph', label: 'Glyph counts' },
+              ]}
+              onChange={(value) => void apply(value === 'icon'
+                ? { showTrayCounts: false }
+                : { showTrayCounts: true, badgeStyle: value as 'color' | 'glyph' })}
+            />
+            <SettingsChoices
+              name="tray-zero-counts"
+              label="Empty categories"
+              hint={s.showTrayCounts ? 'Ready to Merge is shown only when needed.' : 'Choose a count style to show empty categories.'}
+              value={s.showZeroCounts ? 'show' : 'hide'}
+              disabled={!s.showTrayCounts}
+              options={[
+                { value: 'hide', label: 'Hide' },
+                { value: 'show', label: 'Keep visible' },
+              ]}
+              onChange={(value) => void apply({ showZeroCounts: value === 'show' })}
+            />
           </>
         )}
         {section === 'debug' && (
@@ -255,6 +257,39 @@ export function SettingsPanel(props: {
         {section === 'about' && <AboutSection />}
       </main>
     </div>
+  )
+}
+
+/** Mutually exclusive settings, with the same control for each choice. */
+function SettingsChoices(props: {
+  name: string
+  label: string
+  hint?: string
+  value: string
+  options: { value: string; label: string }[]
+  disabled?: boolean
+  onChange: (value: string) => void
+}) {
+  const hintId = `${props.name}-hint`
+  return (
+    <fieldset className="settings-choice" disabled={props.disabled} aria-describedby={props.hint ? hintId : undefined}>
+      <legend>{props.label}</legend>
+      {props.hint && <p id={hintId} className="muted small">{props.hint}</p>}
+      <div className="settings-choice-options">
+        {props.options.map((option) => (
+          <label key={option.value} className="settings-choice-option">
+            <input
+              type="radio"
+              name={props.name}
+              value={option.value}
+              checked={props.value === option.value}
+              onChange={() => props.onChange(option.value)}
+            />
+            {option.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
   )
 }
 

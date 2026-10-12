@@ -1,9 +1,10 @@
 import { app, BrowserWindow, Menu, Tray, nativeImage, nativeTheme } from 'electron'
 import trayTemplatePath from '../../resources/trayTemplate.png?asset'
 import trayPath from '../../resources/tray.png?asset'
-import type { ActionCounts, ActionMenu, ActionMenuFamily, BadgePayload, BadgeStyle, ChangeLink, TabId, TrayStrip, UpdateState } from '../shared/types.ts'
+import type { ActionCounts, ActionMenu, ActionMenuFamily, BadgePayload, BadgeStyle, ChangeLink, TabId, TrayClickAction, TrayStrip, UpdateState } from '../shared/types.ts'
 import { ACTION_CATEGORIES, describeActions, glyphTitle, totalActions, type ActionCategoryInfo } from '../shared/model.ts'
 import { updateAction, updateMenuLabel } from '../shared/update.ts'
+import { TrayClickController } from './tray-click.ts'
 
 export interface TrayHandlers {
   show(): void
@@ -37,6 +38,7 @@ const MAX_SUBJECT = 60
  */
 export class TrayController {
   private tray: Tray | null = null
+  private clicks: TrayClickController | null = null
   private compact: boolean
   private compactOnTop: boolean
   private counts: ActionCounts = NO_ACTIONS
@@ -48,7 +50,7 @@ export class TrayController {
   private readonly base: Electron.NativeImage
   private readonly handlers: TrayHandlers
 
-  constructor(handlers: TrayHandlers, compact: boolean, compactOnTop: boolean) {
+  constructor(handlers: TrayHandlers, compact: boolean, compactOnTop: boolean, clickAction: TrayClickAction = 'menu') {
     this.handlers = handlers
     this.compact = compact
     this.compactOnTop = compactOnTop
@@ -56,13 +58,7 @@ export class TrayController {
     try {
       this.tray = new Tray(this.base)
       this.tray.setToolTip('Gerrit Review Board')
-      // A click opens the menu and nothing else; the board is raised from
-      // "Open board" or a row. macOS pops the context menu up by itself and
-      // Linux trays do not send clicks; Windows shows it on the right button
-      // only, so the left button gets it here.
-      this.tray.on('click', () => {
-        if (process.platform === 'win32') this.tray?.popUpContextMenu()
-      })
+      this.clicks = new TrayClickController(this.tray, () => this.handlers.showTab('needs-my-review'), clickAction)
       nativeTheme.on('updated', () => this.applyStrip())
       this.rebuildMenu()
     } catch (e) {
@@ -74,6 +70,10 @@ export class TrayController {
 
   get available(): boolean {
     return this.tray !== null
+  }
+
+  setClickAction(action: TrayClickAction): void {
+    this.clicks?.setAction(action)
   }
 
   setCompact(on: boolean): void {
@@ -149,33 +149,32 @@ export class TrayController {
       if (families.length === 0) return { label, click: () => this.handlers.showTab(k.tab) }
       return { label, submenu: this.categorySubmenu(k, families) }
     })
-    this.tray.setContextMenu(
-      Menu.buildFromTemplate([
-        ...categories,
-        { type: 'separator' },
-        { label: 'Open board', click: () => this.handlers.show() },
-        { label: 'Refresh now', click: () => this.handlers.refresh() },
-        {
-          label: 'Compact window',
-          type: 'checkbox',
-          checked: this.compact,
-          click: (item) => this.handlers.setCompact(item.checked),
-        },
-        {
-          label: 'Compact window stays on top',
-          type: 'checkbox',
-          checked: this.compactOnTop,
-          click: (item) => this.handlers.setCompactOnTop(item.checked),
-        },
-        { type: 'separator' },
-        // Which build is running, so an installed copy can be checked against the repo.
-        { label: `Version ${app.getVersion()}, build ${__BUILD_COMMIT__}`, enabled: false },
-        ...(this.updateRow
-          ? [{ label: this.updateRow.label, enabled: this.updateRow.enabled, click: () => this.handlers.update() }]
-          : []),
-        { label: 'Quit', click: () => this.handlers.quit() },
-      ]),
-    )
+    const menu = Menu.buildFromTemplate([
+      ...categories,
+      { type: 'separator' },
+      { label: 'Open board', click: () => this.handlers.show() },
+      { label: 'Refresh now', click: () => this.handlers.refresh() },
+      {
+        label: 'Compact window',
+        type: 'checkbox',
+        checked: this.compact,
+        click: (item) => this.handlers.setCompact(item.checked),
+      },
+      {
+        label: 'Compact window stays on top',
+        type: 'checkbox',
+        checked: this.compactOnTop,
+        click: (item) => this.handlers.setCompactOnTop(item.checked),
+      },
+      { type: 'separator' },
+      // Which build is running, so an installed copy can be checked against the repo.
+      { label: `Version ${app.getVersion()}, build ${__BUILD_COMMIT__}`, enabled: false },
+      ...(this.updateRow
+        ? [{ label: this.updateRow.label, enabled: this.updateRow.enabled, click: () => this.handlers.update() }]
+        : []),
+      { label: 'Quit', click: () => this.handlers.quit() },
+    ])
+    this.clicks?.setMenu(menu)
   }
 
   /**
@@ -211,6 +210,7 @@ export class TrayController {
   destroy(): void {
     this.tray?.destroy()
     this.tray = null
+    this.clicks = null
   }
 }
 
