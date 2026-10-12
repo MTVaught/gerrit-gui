@@ -659,7 +659,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-files-filter input { margin: 0; }
 .review-files-list { flex: 1; min-height: 0; overflow: auto; padding: 4px 0; }
 .review-directory { padding: 8px 10px 4px; color: var(--muted); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-.review-file-row { display: flex; align-items: center; height: 24px; padding: 0 4px 0 8px; }
+.review-file-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; min-height: 24px; padding: 0 8px; }
 .review-file-row.selected { background: var(--pending-bg); }
 .review-file-row button { background: none; border: 0; font: inherit; color: var(--fg); cursor: pointer; height: 24px; padding: 0; }
 .review-file-row .review-status { display: grid; place-items: center; flex: 0 0 24px; color: var(--muted); }
@@ -830,8 +830,16 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-comment-thread time { color: var(--muted); opacity: 1; }
 .review-comment-thread .comment-unresolved { color: var(--review-comment-unresolved-text); }
 
-.review-file-row { height: 24px; }
-.review-file-indicators { flex: 0 0 auto; max-width: 100px; margin: 0 4px; font-size: 10px; line-height: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.review-file-lines { display: flex; gap: 6px; padding-left: 6px; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.review-lines-added { color: #08783e; }
+.review-lines-removed { color: #bb2424; }
+@media (prefers-color-scheme: dark) {
+  .review-lines-added { color: #65d996; }
+  .review-lines-removed { color: #ff9292; }
+}
+.review-file-activity { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 2px 10px; padding: 0 4px 5px; font-size: 11px; line-height: 16px; color: var(--muted); }
+.review-file-drafts { color: var(--accent); }
+.review-file-unresolved { color: var(--warn); }
 .review-comment-range { background: #f9c64250; outline: 1px solid #b98932; }
 .review-markdown { overflow-wrap: anywhere; }
 .review-markdown p { white-space: normal; margin: 8px 0; }

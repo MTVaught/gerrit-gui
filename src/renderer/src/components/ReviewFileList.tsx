@@ -17,6 +17,7 @@ export function ReviewFileList({ files, discussion, positions, paths, selected, 
     groups.get(directory)!.push(path)
   }
   const count = paths.filter((path) => reviewed?.has(path)).length
+  const allThreads = commentThreads([...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])])
   function resize(next: number) { setWidth(Math.max(140, Math.min(360, next))) }
   return <>
     <nav ref={ref} className="review-files" aria-label="Changed files" style={{ width }}>
@@ -27,17 +28,30 @@ export function ReviewFileList({ files, discussion, positions, paths, selected, 
           {directory && <div className="review-directory" title={directory}>{directory}</div>}
           {groupedPaths.map((path) => {
             const info = files[path]
-            const threads = commentThreads([...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])]).filter(thread => thread.some(c => c.path === path || c.path === info?.old_path || positions.some(position => position.id === c.id && position.anchor.path === path)))
+            const threads = allThreads.filter(thread => thread.some(c => c.path === path || c.path === info?.old_path || positions.some(position => position.id === c.id && position.anchor.path === path)))
             const unresolved = threads.filter(t => t.at(-1)?.unresolved).length
+            const resolved = threads.filter(t => !t.at(-1)?.unresolved && t.some(c => discussion?.comments.some(published => published.id === c.id))).length
             const drafts = discussion?.drafts.filter(c => c.path === path || c.path === info?.old_path || positions.some(position => position.id === c.id && position.anchor.path === path)).length ?? 0
-            const details = `${info?.status ?? 'M'} · +${info?.lines_inserted ?? 0} −${info?.lines_deleted ?? 0} · ${threads.length} threads · ${unresolved} unresolved · ${drafts} drafts`
+            const status = ({ A: 'Added', D: 'Deleted', R: 'Renamed', C: 'Copied', W: 'Rewritten' } as Record<string, string>)[info?.status ?? 'M']
+            const inserted = info?.lines_inserted ?? 0
+            const deleted = info?.lines_deleted ?? 0
+            const details = `${status ?? 'Modified'} · ${inserted} lines added · ${deleted} lines removed · ${unresolved} unresolved · ${resolved} resolved · ${drafts} drafts`
             const done = Boolean(reviewed?.has(path))
             return <div key={path} className={'review-file-row' + (path === selected ? ' selected' : '') + (done ? ' is-reviewed' : '')}>
               <button className="review-status" aria-label={`${done ? 'Mark unreviewed' : 'Mark reviewed'}: ${path}`} aria-pressed={done} disabled={!reviewed || busy} title={done ? 'Reviewed. Click to mark unreviewed.' : 'Unreviewed. Click to mark reviewed.'} onClick={() => onReviewed(path, !done)}>
                 {done ? <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg> : <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" /></svg>}
               </button>
               <button className="review-file-name" data-review-path={path} aria-label={`Open ${path}`} title={`${path} · ${details}`} aria-current={path === selected} onClick={() => onOpen(path)}>{path === '/COMMIT_MSG' ? 'Commit message' : path === '/MERGE_LIST' ? 'Merge list' : path.split('/').at(-1)}</button>
-              <span className="review-file-indicators" title={details} aria-label={details}>{info?.status ?? 'M'} · +{info?.lines_inserted ?? 0} −{info?.lines_deleted ?? 0}{(unresolved || drafts) ? ` · ${drafts ? `${drafts}d` : `${unresolved}u`}` : threads.length ? ` · ${threads.length}c` : ''}</span>
+              <span className="review-file-lines" aria-label={`${inserted} lines added, ${deleted} lines removed`}>
+                {inserted > 0 && <span className="review-lines-added">+{inserted}</span>}
+                {deleted > 0 && <span className="review-lines-removed">−{deleted}</span>}
+              </span>
+              {(status || unresolved || drafts || resolved) ? <div className="review-file-activity">
+                {status && <span title={info?.old_path ? `${status} from ${info.old_path}` : status}>{status}</span>}
+                {drafts > 0 && <span className="review-file-drafts">{drafts} {drafts === 1 ? 'draft' : 'drafts'}</span>}
+                {unresolved > 0 && <span className="review-file-unresolved">{unresolved} unresolved</span>}
+                {resolved > 0 && <span>{resolved} resolved</span>}
+              </div> : null}
             </div>
           })}
         </section>)}
