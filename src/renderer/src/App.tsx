@@ -86,7 +86,10 @@ export function App() {
     const offCompact = api.onCompactChanged(setCompact)
     const offSettings = api.onSettingsChanged(() => void api.getSettings().then(setSettings))
     const offRefresh = api.onRefreshRequested(() => void refresh())
-    const offTab = api.onTabRequested(setTab)
+    const offTab = api.onTabRequested((tab) => {
+      setTab(tab)
+      setShowSettings(false)
+    })
     const offConnection = api.onConnectionChanged(() => void reconnect())
     return () => {
       offCompact()

@@ -4,7 +4,7 @@
 import { promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, Team } from '../shared/types.ts'
+import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, Team, TrayClickAction } from '../shared/types.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
 import { normalizeMergers, normalizePrimaryTeam, normalizeSlackWorkspaces, normalizeTeams, storedTeams } from '../shared/model.ts'
 import type { Credentials, SettingsStore } from '../main/service.ts'
@@ -26,6 +26,7 @@ interface Stored {
   showAppBadge?: boolean
   localReview?: boolean
   showTrayCounts?: boolean
+  trayClickAction?: TrayClickAction
 }
 
 export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-gui', 'web-settings.json')): SettingsStore {
@@ -45,7 +46,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
   return {
     async getStatus(): Promise<SettingsStatus> {
       const s = await read()
-      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], ...storedTeams(s), mergers: s.mergers ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, localReview: s.localReview === true, compactOnTop: s.compactOnTop ?? true, slackWorkspaces: s.slackWorkspaces ?? [], hasPassword: Boolean(s.password), encrypted: false }
+      return { serverUrl: s.serverUrl, username: s.username, projects: s.projects ?? [], ...storedTeams(s), mergers: s.mergers ?? [], badgeStyle: s.badgeStyle ?? 'color', showZeroCounts: s.showZeroCounts ?? false, showAppBadge: s.showAppBadge ?? true, showTrayCounts: s.showTrayCounts ?? true, trayClickAction: s.trayClickAction === 'my-reviews' ? 'my-reviews' : 'menu', localReview: s.localReview === true, compactOnTop: s.compactOnTop ?? true, slackWorkspaces: s.slackWorkspaces ?? [], hasPassword: Boolean(s.password), encrypted: false }
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
@@ -67,6 +68,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
         slackWorkspaces: normalizeSlackWorkspaces(input.slackWorkspaces ?? []),
         showAppBadge: input.showAppBadge,
         showTrayCounts: input.showTrayCounts,
+        trayClickAction: input.trayClickAction === 'my-reviews' ? 'my-reviews' : 'menu',
         localReview: input.localReview === true,
       }
       await fs.mkdir(path.dirname(file), { recursive: true })

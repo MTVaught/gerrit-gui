@@ -284,6 +284,8 @@ export interface ReviewDiff {
   content: { ab?: string[]; a?: string[]; b?: string[]; skip?: number; due_to_rebase?: boolean }[]
 }
 
+export type TrayClickAction = 'menu' | 'my-reviews'
+
 export interface Settings {
   /** Opt-in local full-file review viewer. */
   localReview: boolean
@@ -304,6 +306,8 @@ export interface Settings {
    * list the counts.
    */
   showTrayCounts: boolean
+  /** Left-click action for the menu bar / system tray icon. */
+  trayClickAction: TrayClickAction
   /**
    * Optional project scope for the WIP scan (exact names, or a prefix ending
    * in "*"). Gerrit's reviewer: operator hides WIP changes, so the app has to

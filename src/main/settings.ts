@@ -1,7 +1,7 @@
 import { app, safeStorage } from 'electron'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, Team, UiState } from '../shared/types.ts'
+import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, Team, TrayClickAction, UiState } from '../shared/types.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
 import { normalizeMergers, normalizePrimaryTeam, normalizeSlackWorkspaces, normalizeTeams, storedTeams } from '../shared/model.ts'
 
@@ -21,6 +21,7 @@ interface StoredSettings {
   showAppBadge?: boolean
   localReview?: boolean
   showTrayCounts?: boolean
+  trayClickAction?: TrayClickAction
   /** base64 of safeStorage ciphertext, or plaintext when no keychain is available. */
   password?: string
   passwordEncrypted?: boolean
@@ -53,6 +54,7 @@ export async function getStatus(): Promise<SettingsStatus> {
     slackWorkspaces: s.slackWorkspaces ?? [],
     showAppBadge: s.showAppBadge ?? true,
     showTrayCounts: s.showTrayCounts ?? true,
+    trayClickAction: s.trayClickAction === 'my-reviews' ? 'my-reviews' : 'menu',
     localReview: s.localReview === true,
     hasPassword: Boolean(s.password),
     encrypted: safeStorage.isEncryptionAvailable(),
@@ -83,6 +85,7 @@ export async function save(input: SettingsInput): Promise<void> {
     slackWorkspaces: normalizeSlackWorkspaces(input.slackWorkspaces ?? []),
     showAppBadge: input.showAppBadge,
     showTrayCounts: input.showTrayCounts,
+    trayClickAction: input.trayClickAction === 'my-reviews' ? 'my-reviews' : 'menu',
     localReview: input.localReview === true,
     password: prev.password,
     passwordEncrypted: prev.passwordEncrypted,

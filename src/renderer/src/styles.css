@@ -157,6 +157,16 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .settings label.check input { display: inline; width: auto; margin: 0; }
 .settings label.check:has(input:disabled) { opacity: 0.5; }
 .settings input { display: block; width: 100%; padding: 8px; font: inherit; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); margin-top: 4px; }
+.settings-choice { border: 0; padding: 0; margin: 20px 0 28px; min-width: 0; }
+.settings-choice legend { padding: 0; font-weight: 600; }
+.settings-choice > p { margin: 4px 0 0; }
+.settings-choice-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.settings .settings-choice-option { display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-weight: 500; cursor: pointer; }
+.settings-choice-option:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); }
+.settings-choice-option:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.settings .settings-choice-option input { display: inline; width: auto; margin: 0; padding: 0; accent-color: var(--accent); }
+.settings-choice:disabled { opacity: 0.5; }
+.settings-choice:disabled .settings-choice-option { cursor: default; }
 .row { display: flex; gap: 8px; margin-top: 16px; }
 .board { padding: 8px 16px 40px; width: 100%; }
 .group { margin-top: 20px; }
