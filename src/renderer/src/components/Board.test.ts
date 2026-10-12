@@ -87,6 +87,27 @@ test('Board keeps all three family branches inside their sequence step', async (
       assert.ok(html.includes(compact ? 'Edit release/1…' : 'Edit release/1 sequence…'))
       for (const number of [101, 102, 103, 104, 201]) assert.equal(html.split(`data-change-number="${number}"`).length - 1, 1)
     }
+    // A simple sequence stays together across workflow states without cherry-picks.
+    const mixed = [0, 1, 2, 3, 4].map((i) => change(301 + i, 'main', `Imixed${i}`, i === 0 ? 'tip' : `sha${300 + i}`, i === 1 || i === 2))
+    for (const c of mixed) c.hashtags!.push('sequence')
+    mixed[0]!.subject = 'Urgent correction'
+    mixed[0]!.labels!['Code-Review']!.all![0]!.value = -1
+    mixed[1]!.subject = 'Approved step'
+    mixed[2]!.hashtags!.push('ready-to-merge')
+    mixed[2]!.custom_keyed_values!['ready-to-merge-ps'] = '1'
+    mixed[4]!.custom_keyed_values = {}
+    const unrelated = { ...structuredClone(mixed[0]!), _number: 901, id: 'mirror~main~901', project: 'mirror', change_id: undefined, owner: reviewer, hashtags: [] }
+    for (const input of [mixed, [...mixed, unrelated], [unrelated, ...mixed]]) for (const compact of [false, true]) {
+      const html = renderToStaticMarkup(createElement(Board, {
+        tab: 'mine', views: classifyAll(input, owner._account_id), self: owner, compact,
+        loading: false, sort: DEFAULT_SORT, filter: EMPTY_FILTER, setup: NO_TEAMS, teamPick: undefined,
+        onAct: async () => {}, onFilter: () => {}, onGoTo: () => {},
+      }))
+      assert.match(html, /Needs Changes <span class="count">1<\/span>/,
+        `compact=${compact}: highest-priority state determines placement`)
+      for (const number of [301, 302, 303, 304, 305]) assert.equal(html.split(`data-change-number="${number}"`).length - 1, 1)
+      assert.doesNotMatch(html, /Approved <span class="count">/)
+    }
     const { SequenceFamilyReference } = await vite.ssrLoadModule('/src/components/ChangeRow.tsx')
     const { api } = await vite.ssrLoadModule('/src/api.ts')
     const reference = sequenceCards(classifyAll(overlapping, reviewer._account_id))[1]!.references![1]!

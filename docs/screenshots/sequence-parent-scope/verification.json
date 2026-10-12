@@ -1,0 +1,92 @@
+[
+  {
+    "name": "before",
+    "mode": "light",
+    "platform": "Linux Chromium",
+    "data": "synthetic Gerrit API fixture, including an unrelated project containing the same commit SHA",
+    "groups": [
+      "Needs Changes 1",
+      "Pass Around 1"
+    ],
+    "cards": 2,
+    "rows": [
+      "301",
+      "302",
+      "303",
+      "304",
+      "305"
+    ],
+    "errors": [],
+    "scroll": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "name": "before",
+    "mode": "dark",
+    "platform": "Linux Chromium",
+    "data": "synthetic Gerrit API fixture, including an unrelated project containing the same commit SHA",
+    "groups": [
+      "Needs Changes 1",
+      "Pass Around 1"
+    ],
+    "cards": 2,
+    "rows": [
+      "301",
+      "302",
+      "303",
+      "304",
+      "305"
+    ],
+    "errors": [],
+    "scroll": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "name": "after",
+    "mode": "light",
+    "platform": "Linux Chromium",
+    "data": "synthetic Gerrit API fixture, including an unrelated project containing the same commit SHA",
+    "groups": [
+      "Needs Changes 1"
+    ],
+    "cards": 1,
+    "rows": [
+      "301",
+      "302",
+      "303",
+      "304",
+      "305"
+    ],
+    "errors": [],
+    "scroll": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "name": "after",
+    "mode": "dark",
+    "platform": "Linux Chromium",
+    "data": "synthetic Gerrit API fixture, including an unrelated project containing the same commit SHA",
+    "groups": [
+      "Needs Changes 1"
+    ],
+    "cards": 1,
+    "rows": [
+      "301",
+      "302",
+      "303",
+      "304",
+      "305"
+    ],
+    "errors": [],
+    "scroll": {
+      "x": 0,
+      "y": 0
+    }
+  }
+]

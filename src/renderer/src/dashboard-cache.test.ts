@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { DashboardCache } from './dashboard-cache.ts'
-import { accountKeys, classifyAll, NO_TEAMS, tabSegments } from '../../shared/model.ts'
+import { accountKeys, classifyAll, NO_TEAMS, sequenceChains, cardGroups, tabSegments } from '../../shared/model.ts'
 import type { ChangeInfo, DashboardData } from '../../shared/types.ts'
 
 const alice = { _account_id: 1, username: 'alice' }
@@ -304,4 +304,27 @@ test('multi-change mutations also share the six-request detail limit', async () 
   await mutation
   assert.equal(maximum, 6)
   assert.ok(states(cache.snapshot!).every(state => state === 'needs-review'))
+})
+
+
+test('a mixed-state sequence stays together when one member is refreshed after an action', async () => {
+  const commits = [1, 2, 3].map((id) => ({ ...change(id, '2'), hashtags: ['reviewer:bob', 'sequence'],
+    current_revision: `commit${id}`, revisions: { [`commit${id}`]: { _number: 2,
+      commit: { parents: [{ commit: id === 1 ? 'tip' : `commit${id - 1}` }] } } },
+    labels: { 'Code-Review': { all: [{ ...bob, value: id === 1 ? -1 : 0 }] } }, messages: [] }))
+  const unrelated = { ...commits[0]!, id: 'mirror~90', _number: 90, project: 'mirror', owner: bob, hashtags: [] }
+  let fresh: ChangeInfo = commits[0]!
+  const { cache, snapshots } = await seed(async () => fresh, [...commits, unrelated])
+  await cache.mutate([1], async () => {
+    fresh = { ...fresh, updated: '2026-10-12 02:00:00.000000000', labels: { 'Code-Review': { all: [{ ...bob, value: 1 }] } } }
+  })
+  for (const snapshot of snapshots) {
+    const views = classifyAll(snapshot.open, alice._account_id)
+    assert.deepEqual(sequenceChains(views).map((c) => c.members.map((v) => v.change._number)), [[1, 2, 3]])
+    assert.equal(cardGroups('mine', views).flatMap((g) => g.items).length, 1)
+  }
+  const initial = classifyAll(snapshots[0]!.open, alice._account_id)
+  const final = classifyAll(cache.snapshot!.open, alice._account_id)
+  assert.equal(cardGroups('mine', initial)[0]!.title, 'Needs Changes')
+  assert.equal(cardGroups('mine', final)[0]!.title, 'Pass Around')
 })
