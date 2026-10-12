@@ -331,8 +331,10 @@ other, with the "sequence" hashtag on each one.
   parent or child is an ordinary card.
 - Nothing else changes. Request review, Ready to Merge, the reviewers and
   the votes stay per change, and only the owner sets or clears the tag. A
-  sequence is one card in the counts, like a family. A cherry-pick of a
-  member on another branch is a card of its own.
+  sequence is one card in the counts, like a family, except on Needs
+  Review, where each change in it that waits on you counts as a review of
+  its own, as in the tray. A cherry-pick of a member on another branch is a
+  card of its own.
 - In the compact window the sequence is a box like a family, the lines
   titled by their subjects with the step in front, and the dashed offer is
   one header line.
