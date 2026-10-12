@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
-import { DEFAULT_SORT, EMPTY_FILTER, NO_TEAMS, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, defaultTeamPick, displayName, tabCounts, tabSegments, teamMembers, teamPicks, teamTabLabel, totalActions, withChange, type SortId, type TabSegment, type TeamPick, type TeamSetup, type ViewFilter } from '../../shared/model.ts'
+import { DEFAULT_SORT, EMPTY_FILTER, NO_TEAMS, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, defaultTeamPick, displayName, tabCounts, tabSegments, teamMembers, teamPicks, teamTabLabel, totalActions, type SortId, type TabSegment, type TeamPick, type TeamSetup, type ViewFilter } from '../../shared/model.ts'
 import { POLL_INTERVAL_MS } from '../../shared/constants.ts'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { Board, groupsFor, type TabId, TABS, visibleTabs } from './components/Board.tsx'
@@ -15,13 +15,21 @@ import { rememberAccounts } from './names.ts'
 import { LocalReviewProvider } from './review-context.tsx'
 import { SettingsContext, type SettingsHandle } from './settings-context.ts'
 import { DashboardRefresh } from './dashboard-refresh.ts'
+import { DashboardCache } from './dashboard-cache.ts'
 
 export function App() {
   const [settings, setSettings] = useState<SettingsStatus | null>(null)
   const [showSettings, setShowSettings] = useState(initialSettingsOpen)
   const [data, setData] = useState<DashboardData | null>(null)
+  const dashboardCache = useRef<DashboardCache | null>(null)
+  if (!dashboardCache.current) dashboardCache.current = new DashboardCache(id => api.fetchChange(id), d => {
+    if (d) rememberAccounts([d.self, ...[...d.open, ...d.merged].flatMap(c => [c.owner, ...(c.reviewers?.REVIEWER ?? [])])])
+    setData(d)
+  })
   const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [refreshBusy, setBusy] = useState(false)
+  const [activeActions, setActiveActions] = useState(0)
+  const busy = refreshBusy || activeActions > 0
   const dashboardRefresh = useRef(new DashboardRefresh())
   const [tab, setTab] = useState<TabId>(initialTab)
   // Which team the team tab lists, once the user picked one on its caret; until then the default for the setup.
@@ -52,15 +60,18 @@ export function App() {
     if (!isCurrent) return
     setBusy(true)
     try {
+      const ticket = dashboardCache.current!.beginRefresh()
       const d = await api.fetchDashboard()
       if (!isCurrent()) return
-      rememberAccounts([d.self, ...d.open.flatMap((c) => [c.owner, ...(c.reviewers?.REVIEWER ?? [])])])
-      setData(d)
+      await dashboardCache.current!.acceptDashboard(d, ticket)
+      if (!isCurrent()) return
+      const reconciled = dashboardCache.current!.snapshot
+      if (!reconciled) return
       setError(null)
       // Someone else's board is not something to be notified about.
       if (pretendRef.current) return
-      notifyNewReviews(d, seenNeedsReview)
-      notifyMergeRequests(d, seenMergeRequests)
+      notifyNewReviews(reconciled, seenNeedsReview)
+      notifyMergeRequests(reconciled, seenMergeRequests)
     } catch (e) {
       if (isCurrent()) setError(String((e as Error).message ?? e))
     } finally {
@@ -72,12 +83,13 @@ export function App() {
   const reconnect = useCallback(async () => {
     dashboardRefresh.current.invalidate()
     setBusy(false)
-    setSettings(await api.getSettings())
-    setData(null)
+    dashboardCache.current!.reset()
     setError(null)
     seenNeedsReview.current = null
     seenMergeRequests.current = null
-  }, [])
+    setSettings(await api.getSettings())
+    await refresh()
+  }, [refresh])
 
   useEffect(() => {
     void api.getSettings().then(setSettings)
@@ -121,20 +133,6 @@ export function App() {
     tabsRef.current?.querySelector<HTMLElement>('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [compact, tab])
 
-  useEffect(() => {
-    if (!configured) return
-    void refresh()
-    const poll = setInterval(() => void refresh(), POLL_INTERVAL_MS)
-    const tick = setInterval(() => setTick((t) => t + 1), 30_000)
-    const onFocus = () => void refresh()
-    window.addEventListener('focus', onFocus)
-    return () => {
-      clearInterval(poll)
-      clearInterval(tick)
-      window.removeEventListener('focus', onFocus)
-    }
-  }, [configured, refresh])
-
   // Debug: show the board as someone else, or (null) as oneself again. The
   // board is re-read either way; the notifications start over as after a
   // reconnect, so the switch back does not announce everything as new.
@@ -148,7 +146,7 @@ export function App() {
         setPretend(account)
         seenNeedsReview.current = null
         seenMergeRequests.current = null
-        setData(null)
+        dashboardCache.current!.reset()
       } finally {
         // Resume even if account lookup failed; refresh the unchanged identity.
         dashboardRefresh.current.resume()
@@ -161,16 +159,29 @@ export function App() {
   const setup = useMemo<TeamSetup>(() => (settings ? { teams: settings.teams, primaryTeam: settings.primaryTeam } : NO_TEAMS), [settings])
   // Everyone on a watched team: their open changes are fetched whole, so the list decides what is on the board.
   const members = useMemo(() => teamMembers(setup), [setup])
-  const membersRef = useRef(members)
-  membersRef.current = members
   // The project scope and the teams change what is fetched, so a change to either reloads the board.
   const fetchKey = settings ? [...settings.projects, '|', ...members].join(',') : undefined
   const lastFetchKey = useRef<string | undefined>(undefined)
   useEffect(() => {
     if (fetchKey === undefined) return
+    dashboardCache.current!.setScope(members, settings!.projects)
     if (lastFetchKey.current !== undefined && lastFetchKey.current !== fetchKey && configured) void refresh()
     lastFetchKey.current = fetchKey
-  }, [fetchKey, configured, refresh])
+  }, [fetchKey, configured, refresh, members, settings])
+
+  useEffect(() => {
+    if (!configured) return
+    void refresh()
+    const poll = setInterval(() => void refresh(), POLL_INTERVAL_MS)
+    const tick = setInterval(() => setTick((t) => t + 1), 30_000)
+    const onFocus = () => void refresh()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      clearInterval(poll)
+      clearInterval(tick)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [configured, refresh])
 
   const views = useMemo<ChangeView[]>(
     () => (data ? classifyAll([...data.open, ...data.merged], data.self._account_id, setup, accountKeys(data.self)) : []),
@@ -201,43 +212,26 @@ export function App() {
     if (settings && !tabs.some((t) => t.id === tab)) setTab('needs-my-review')
   }, [settings, tabs, tab])
 
-  // After an action, only the change acted on is re-read; the rest of the
-  // board keeps what the last full refresh brought. The full refresh is the
-  // fallback when that read fails, and what an action that failed gets, so
-  // the board shows what Gerrit has either way.
+  // The cache protects confirmed writes from lagging dashboard searches.
   const act = useCallback(
     async (action: ChangeAction) => {
-      // The service refuses too; this saves the round trip and the reload.
       if (pretendRef.current) {
         setError(`Nothing was changed: the board is shown as ${displayName(pretendRef.current)} and read-only. Stop pretending in Settings › Debug first.`)
         return
       }
-      setBusy(true)
+      const context = dashboardCache.current!.context
+      setActiveActions(count => count + 1)
       try {
-        await api.act(action)
-        setError(null)
+        const ids = action.type === 'setSequence' ? [action.id, ...action.add, ...action.remove] : [action.id]
+        await dashboardCache.current!.mutate(ids, () => api.act(action))
+        if (context === dashboardCache.current!.context) setError(null)
       } catch (e) {
-        setError(String((e as Error).message ?? e))
-        await refresh()
-        return
-      }
-      // A sequence edit tags several changes, so the whole board is re-read.
-      if (action.type === 'setSequence') {
-        await refresh()
-        setBusy(false)
-        return
-      }
-      try {
-        const fresh = await api.fetchChange(action.id)
-        rememberAccounts([fresh.owner, ...(fresh.reviewers?.REVIEWER ?? [])])
-        setData((d) => (d ? withChange(d, fresh, membersRef.current) : d))
-      } catch {
-        await refresh()
+        if (context === dashboardCache.current!.context) setError(String((e as Error).message ?? e))
       } finally {
-        setBusy(false)
+        setActiveActions(count => count - 1)
       }
     },
-    [refresh],
+    [],
   )
 
   // The team tab's pill counts the list its label names, whatever the caret picked; the menu has the rest.
@@ -293,9 +287,17 @@ export function App() {
 
   return (
     <SettingsContext.Provider value={settingsHandle}>
-    <LocalReviewProvider onPublished={async id => {
-      try { const fresh = await api.fetchChange(id); rememberAccounts([fresh.owner, ...(fresh.reviewers?.REVIEWER ?? [])]); setData(d => d ? withChange(d, fresh, membersRef.current) : d) }
-      catch { await refresh() }
+    <LocalReviewProvider onMutate={async (id, write) => {
+      const context = dashboardCache.current!.context
+      let written = false
+      try {
+        await dashboardCache.current!.mutate([id], async () => { await write(); written = true })
+      } catch (e) {
+        // A confirmed publication must not invite resending just because its
+        // board detail read failed. The dirty entry will retry on refresh.
+        if (!written) throw e
+        if (context === dashboardCache.current!.context) setError(String((e as Error).message ?? e))
+      }
     }}>
     <div className={'app' + (compact ? ' compact' : '')}>
       <header className="topbar" ref={topbarRef}>

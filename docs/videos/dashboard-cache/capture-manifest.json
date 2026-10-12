@@ -1,0 +1,19 @@
+{
+  "platform": "Linux, Electron 44, isolated Xvfb desktop with Openbox",
+  "input": "Visible native pointer movement, two-second hover pauses, xdotool mouse clicks",
+  "before_commit": "c778e7a1ca50c7ecc02dd149715d707ec71e07ec",
+  "after": "Current working tree with DashboardCache",
+  "fixture": "Controlled Gerrit API fixture, not a live server. Same accounts, change, patch sets, timestamps, viewport, and scroll position in both themes.",
+  "scenarios": [
+    "Successful re-request overwritten by a pre-write stale search before caching",
+    "One re-request survives pre-write and post-write stale searches after caching",
+    "Search catch-up needs no additional detail read",
+    "A later external reviewer vote reaches Approved"
+  ],
+  "videos": [
+    "before-light.mp4",
+    "before-dark.mp4",
+    "after-light.mp4",
+    "after-dark.mp4"
+  ]
+}
