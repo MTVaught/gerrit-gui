@@ -1290,7 +1290,7 @@ test('withChange: the fresh copy replaces the old one in place, joins the list i
 
   // Abandoned: gone. Merged: moves lists.
   assert.deepEqual(withChange(board, change({ number: 10, owner: alice, status: 'ABANDONED' })).open.map((c) => c._number), [11])
-  const merged = withChange(board, change({ number: 10, owner: alice, status: 'MERGED' }))
+  const merged = withChange(board, change({ number: 10, owner: alice, status: 'MERGED', updated: '2026-10-12 00:00:00.000000000' }), [], [], Date.parse('2026-10-12T01:00:00Z'))
   assert.deepEqual(merged.open.map((c) => c._number), [11])
   assert.deepEqual(merged.merged.map((c) => c._number), [10])
 
@@ -1298,6 +1298,19 @@ test('withChange: the fresh copy replaces the old one in place, joins the list i
   const c = change({ number: 12, owner: carol })
   assert.deepEqual(withChange(board, c).open.map((x) => x._number), [10, 11])
   assert.deepEqual(withChange(board, c, TEAM).open.map((x) => x._number), [10, 11, 12])
+})
+
+test('withChange respects team project scope and the merged query age, while direct relationships stay unscoped', () => {
+  const board = { self: alice, open: [], merged: [], fetchedAt: '', truncated: false }
+  const teamChange = change({ owner: bob, reviewers: [] })
+  assert.equal(withChange(board, teamChange, ['bob'], ['other']).open.length, 0)
+  assert.equal(withChange(board, teamChange, ['bob'], ['demo*']).open.length, 1)
+  assert.equal(withChange(board, change({ owner: alice }), [], ['other']).open.length, 1)
+  assert.equal(withChange(board, change({ owner: bob, reviewers: [alice] }), [], ['other']).open.length, 1)
+  const now = Date.parse('2026-10-12T00:00:00Z')
+  const old = change({ status: 'MERGED', updated: '2026-09-27 00:00:00.000000000' })
+  assert.equal(withChange(board, old, [], [], now).merged.length, 0)
+  assert.equal(withChange(board, { ...old, updated: '2026-10-11 00:00:00.000000000' }, [], [], now).merged.length, 1)
 })
 
 test('teams: the team tab lists watched teams by owner; External Reviews is what I am on from outside my team', () => {

@@ -1148,15 +1148,17 @@ export function isVisibleOnBoard(change: ChangeInfo, selfId: number): boolean {
  * user taken off it). The rest of the board is left as it was, so this
  * is what the UI does after an action instead of fetching everything again.
  */
-export function withChange(data: DashboardData, fresh: ChangeInfo, members: string[] = []): DashboardData {
+export function withChange(data: DashboardData, fresh: ChangeInfo, members: string[] = [], projects: string[] = [], now = Date.now()): DashboardData {
   const selfId = data.self._account_id
   const keys = accountKeys(data.self)
   const mine = fresh.owner._account_id === selfId
-  const teamOwned = normalizeTeam(members).some((k) => accountKeys(fresh.owner).includes(k))
+  const inScope = projects.length === 0 || projects.some(p => projectMatches(p, fresh.project))
+  const teamOwned = inScope && normalizeTeam(members).some((k) => accountKeys(fresh.owner).includes(k))
   let list: 'open' | 'merged' | null = null
   if (isVisibleOnBoard(fresh, selfId)) {
     if (fresh.status === 'NEW' && (mine || isReviewer(fresh, selfId) || isTaggedReviewer(fresh, keys) || hasTag(fresh, READY_TO_MERGE_TAG) || teamOwned)) list = 'open'
-    else if (fresh.status === 'MERGED' && (mine || isReviewer(fresh, selfId))) list = 'merged'
+    else if (fresh.status === 'MERGED' && (mine || isReviewer(fresh, selfId)) &&
+      Date.parse(fresh.updated.replace(' ', 'T') + (fresh.updated.endsWith('Z') ? '' : 'Z')) > now - 14 * 24 * 60 * 60 * 1000) list = 'merged'
   }
   const place = (name: 'open' | 'merged', items: ChangeInfo[]): ChangeInfo[] => {
     const at = items.findIndex((c) => c._number === fresh._number)

@@ -1,0 +1,322 @@
+[
+  {
+    "variant": "before",
+    "theme": "light",
+    "steps": [
+      {
+        "label": "initial",
+        "seconds": "2.00",
+        "section": "Iterating 1",
+        "stats": {
+          "writes": 0,
+          "searches": 1,
+          "details": 0,
+          "held": false
+        }
+      },
+      {
+        "label": "confirmed request",
+        "seconds": "14.19",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 2,
+          "details": 1,
+          "held": true
+        }
+      },
+      {
+        "label": "stale search released",
+        "seconds": "22.04",
+        "section": "Iterating 1",
+        "stats": {
+          "writes": 1,
+          "searches": 2,
+          "details": 1,
+          "held": false
+        }
+      },
+      {
+        "label": "second click",
+        "seconds": "30.18",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 2,
+          "searches": 2,
+          "details": 2,
+          "held": false
+        }
+      }
+    ],
+    "duration": "34.80",
+    "video": "before-light.mp4",
+    "media": {
+      "programs": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1440,
+          "height": 900,
+          "pix_fmt": "yuv420p",
+          "r_frame_rate": "25/1"
+        }
+      ],
+      "format": {
+        "duration": "34.720000",
+        "size": "286480"
+      }
+    },
+    "sha256": "0cf2f84afcf9472c8c931da4568a930502414e32eef2a59d0d922ac21990d4a0"
+  },
+  {
+    "variant": "before",
+    "theme": "dark",
+    "steps": [
+      {
+        "label": "initial",
+        "seconds": "2.00",
+        "section": "Iterating 1",
+        "stats": {
+          "writes": 0,
+          "searches": 1,
+          "details": 0,
+          "held": false
+        }
+      },
+      {
+        "label": "confirmed request",
+        "seconds": "14.21",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 2,
+          "details": 1,
+          "held": true
+        }
+      },
+      {
+        "label": "stale search released",
+        "seconds": "22.05",
+        "section": "Iterating 1",
+        "stats": {
+          "writes": 1,
+          "searches": 2,
+          "details": 1,
+          "held": false
+        }
+      },
+      {
+        "label": "second click",
+        "seconds": "30.19",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 2,
+          "searches": 2,
+          "details": 2,
+          "held": false
+        }
+      }
+    ],
+    "duration": "34.79",
+    "video": "before-dark.mp4",
+    "media": {
+      "programs": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1440,
+          "height": 900,
+          "pix_fmt": "yuv420p",
+          "r_frame_rate": "25/1"
+        }
+      ],
+      "format": {
+        "duration": "34.720000",
+        "size": "286522"
+      }
+    },
+    "sha256": "bfae998836fc3189111173330532d7f63a9bccab67e49d80236967faef65bfe8"
+  },
+  {
+    "variant": "after",
+    "theme": "light",
+    "steps": [
+      {
+        "label": "initial",
+        "seconds": "2.00",
+        "section": "Iterating 1",
+        "stats": {
+          "writes": 0,
+          "searches": 1,
+          "details": 0,
+          "held": false
+        }
+      },
+      {
+        "label": "confirmed request",
+        "seconds": "14.22",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 2,
+          "details": 1,
+          "held": true
+        }
+      },
+      {
+        "label": "stale search released",
+        "seconds": "22.05",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 2,
+          "details": 2,
+          "held": false
+        }
+      },
+      {
+        "label": "post-write stale search",
+        "seconds": "26.39",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 3,
+          "details": 3,
+          "held": false
+        }
+      },
+      {
+        "label": "index caught up",
+        "seconds": "36.26",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 4,
+          "details": 3,
+          "held": false
+        }
+      },
+      {
+        "label": "external reviewer vote",
+        "seconds": "46.14",
+        "section": "Approved 1",
+        "stats": {
+          "writes": 1,
+          "searches": 6,
+          "details": 3,
+          "held": false
+        }
+      }
+    ],
+    "duration": "52.07",
+    "video": "after-light.mp4",
+    "media": {
+      "programs": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1440,
+          "height": 900,
+          "pix_fmt": "yuv420p",
+          "r_frame_rate": "25/1"
+        }
+      ],
+      "format": {
+        "duration": "52.000000",
+        "size": "430933"
+      }
+    },
+    "sha256": "36b311f34ee858e460a38a818086f95114adcea67216c0b56ef1df9ab61cf17d"
+  },
+  {
+    "variant": "after",
+    "theme": "dark",
+    "steps": [
+      {
+        "label": "initial",
+        "seconds": "2.00",
+        "section": "Iterating 1",
+        "stats": {
+          "writes": 0,
+          "searches": 1,
+          "details": 0,
+          "held": false
+        }
+      },
+      {
+        "label": "confirmed request",
+        "seconds": "14.21",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 2,
+          "details": 1,
+          "held": true
+        }
+      },
+      {
+        "label": "stale search released",
+        "seconds": "22.04",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 2,
+          "details": 2,
+          "held": false
+        }
+      },
+      {
+        "label": "post-write stale search",
+        "seconds": "26.39",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 3,
+          "details": 3,
+          "held": false
+        }
+      },
+      {
+        "label": "index caught up",
+        "seconds": "36.28",
+        "section": "Pass Around 1",
+        "stats": {
+          "writes": 1,
+          "searches": 4,
+          "details": 3,
+          "held": false
+        }
+      },
+      {
+        "label": "external reviewer vote",
+        "seconds": "46.17",
+        "section": "Approved 1",
+        "stats": {
+          "writes": 1,
+          "searches": 6,
+          "details": 3,
+          "held": false
+        }
+      }
+    ],
+    "duration": "52.07",
+    "video": "after-dark.mp4",
+    "media": {
+      "programs": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1440,
+          "height": 900,
+          "pix_fmt": "yuv420p",
+          "r_frame_rate": "25/1"
+        }
+      ],
+      "format": {
+        "duration": "52.000000",
+        "size": "434042"
+      }
+    },
+    "sha256": "12c47d2f6da129f95b67a7a4f946948a1d673b0860ad4bbda67bb8c3b4167c25"
+  }
+]

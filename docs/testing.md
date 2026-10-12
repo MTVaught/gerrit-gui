@@ -33,6 +33,16 @@ Updates are off when the application runs from the source tree. To exercise the 
 
 ## Local review editor
 
+The dashboard cache regression runs against independently controlled search
+and detail responses, with no Gerrit server or saved credentials. It checks
+that one re-request stays in Pass Around through stale searches, then accepts
+an external vote. It runs the same view and data in light and dark mode:
+
+```sh
+pnpm build
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/dashboard-cache-ui.cjs
+```
+
 Build the app and run the Electron interaction test with synthetic 100k-line
 files. It needs no Gerrit server or saved credentials:
 
