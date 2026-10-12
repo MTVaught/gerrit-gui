@@ -52,6 +52,14 @@ const reviewedFlags = new Map()
 const reviewedWrites = []
 const drafts = new Map()
 const comments = process.env.REVIEW_COMMENTS_FIXTURE ? [{ id: 'published-1', patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', line: 2, side: 'REVISION', message: 'Please explain the unchanged setup.', updated: now, unresolved: true, author: owner }] : []
+if (process.env.REVIEW_FILE_ACTIVITY_FIXTURE) {
+  settings.localReview = true
+  comments.push(
+    { id: 'activity-open', patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', line: 2, side: 'REVISION', message: 'Can we document the ordering guarantee?', updated: now, unresolved: true, author: owner },
+    { id: 'activity-resolved', patch_set: 3, path: 'src/telemetry/types.ts', line: 4, side: 'REVISION', message: 'The interface looks good now.', updated: now, unresolved: false, author: owner },
+  )
+  drafts.set('activity-draft', { id: 'activity-draft', patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', line: 2, side: 'REVISION', in_reply_to: 'activity-open', message: 'I will add that explanation.', updated: now, unresolved: true })
+}
 const commentWrites = []
 const reviews = []
 let failNextDraft = false
@@ -119,7 +127,12 @@ contextBridge.exposeInMainWorld('api', {
     reviewedFlags.set(link.patchSet, flags)
     reviewedWrites.push({ link, path, reviewed })
   },
-  reviewFiles: async () => ({ 'src/telemetry/batch-scheduler.ts': { lines_inserted: 8, lines_deleted: 4 }, 'src/telemetry/types.ts': { lines_inserted: 2 } }),
+  reviewFiles: async () => process.env.REVIEW_FILE_ACTIVITY_FIXTURE ? {
+    'src/telemetry/batch-scheduler.ts': { lines_inserted: 7, lines_deleted: 1 },
+    'src/telemetry/events.ts': { status: 'A', lines_inserted: 26 },
+    'src/telemetry/transport.ts': { lines_inserted: 12, lines_deleted: 4 },
+    'src/telemetry/types.ts': { status: 'R', old_path: 'src/telemetry/interfaces.ts', lines_inserted: 2, lines_deleted: 2 },
+  } : { 'src/telemetry/batch-scheduler.ts': { lines_inserted: 8, lines_deleted: 4 }, 'src/telemetry/types.ts': { lines_inserted: 2 } },
   reviewDiff: async (_link, path) => {
     requests++
     comparisons.push({ link: _link, path })
