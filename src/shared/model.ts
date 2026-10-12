@@ -776,7 +776,7 @@ export function groupsFor(tab: TabId, views: ChangeView[], pick?: TeamPick): Gro
  */
 export function tabCounts(views: ChangeView[], teamPick?: TeamPick): Record<TabId, number> {
   const c = {} as Record<TabId, number>
-  for (const tab of TAB_IDS) c[tab] = countFamilies(groupsFor(tab, views, tab === 'team-reviews' ? teamPick : undefined).flatMap((g) => g.items))
+  for (const tab of TAB_IDS) c[tab] = countFamilies(groupsFor(tab, views, tab === 'team-reviews' ? teamPick : undefined).flatMap((g) => g.items), views)
   return c
 }
 
@@ -810,14 +810,14 @@ export interface TabSegment {
  */
 export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegment[]>> {
   const bySection = (tab: TabId, title: string) =>
-    countFamilies(cardGroups(tab, views).filter((g) => g.title === title).flatMap((g) => g.items))
+    countFamilies(cardGroups(tab, views).filter((g) => g.title === title).flatMap((g) => g.items), views)
   const merged = cardGroups('merged', views)
   const segments: Partial<Record<TabId, TabSegment[]>> = {
     'needs-my-review': [
       { n: bySection('needs-my-review', 'Pass Around'), tone: 'hot', label: 'pass around' },
       { n: bySection('needs-my-review', 'In Person'), tone: 'plain', label: 'in person' },
     ],
-    merged: [{ n: countFamilies(merged.filter((g) => g.title !== 'Merged in the last 14 days').flatMap((g) => g.items)), tone: 'pos', label: 'ready to merge' }],
+    merged: [{ n: countFamilies(merged.filter((g) => g.title !== 'Merged in the last 14 days').flatMap((g) => g.items), views), tone: 'pos', label: 'ready to merge' }],
     mine: [
       { n: bySection('mine', STATE_LABEL['needs-changes']), tone: 'neg', label: 'need changes' },
       { n: bySection('mine', STATE_LABEL['approved']), tone: 'pos', label: 'approved' },
@@ -831,9 +831,10 @@ export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegme
   return segments
 }
 
-/** How many cards a list of changes makes: each Change-Id once, and a sequence once however many changes it has. */
-export function countFamilies(views: ChangeView[]): number {
-  return new Set(cardKeys(views).values()).size
+/** Count cards using the whole board to keep filtered sequence families together. */
+export function countFamilies(views: ChangeView[], allViews = views): number {
+  const keys = cardKeys(allViews)
+  return new Set(views.map((v) => keys.get(v))).size
 }
 
 /**
@@ -865,11 +866,12 @@ export function familyLeads(groups: Group[], views: ChangeView[]): Map<string, C
  */
 export function cardGroups(tab: TabId, views: ChangeView[]): Group[] {
   const groups = groupsFor(tab, views)
-  const chains = sequenceChains(views)
+  const chains = sequenceCards(views)
   const inChain = new Map<ChangeView, string>()
-  for (const c of chains) for (const v of c.members) inChain.set(v, c.key)
+  for (const c of chains) for (const v of chainViews(c)) inChain.set(v, c.key)
   // A change in a sequence is drawn there, so it is in no family.
-  const lead = familyLeads(groups, views.filter((v) => !inChain.has(v)))
+  const familyGroups = groups.map((g) => ({ ...g, items: g.items.filter((v) => !inChain.has(v)) }))
+  const lead = familyLeads(familyGroups, views.filter((v) => !inChain.has(v)))
   const chainLead = chainLeads(groups, chains)
   const leads = (v: ChangeView) => {
     const key = inChain.get(v)
@@ -904,15 +906,15 @@ export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
  *  fix     my change got a negative outcome; push corrections
  *  ready   my change is approved; mark it ready to merge
  *  merge   the author asked me to merge (or nobody was named and I may +2)
- * A Change-Id family is one card, so it counts once per category however
- * many of its branches need that action, the same as the tabs and sections.
- * A family with a branch to fix and another to mark ready is in both.
+ * Each board card counts once per category, including sequences with several
+ * Change-Id families. A card needing different actions is in each category.
  */
 export function actionCounts(views: ChangeView[]): ActionCounts {
   const keys: Record<ActionCategory, Set<string>> = { review: new Set(), fix: new Set(), ready: new Set(), merge: new Set() }
+  const cards = cardKeys(views)
   for (const v of views) {
     if (!countsForActions(v)) continue
-    const key = familyKey(v.change)
+    const key = cards.get(v)!
     for (const k of ACTION_CATEGORIES) if (needsAction(v, k.id)) keys[k.id].add(key)
   }
   return { review: keys.review.size, fix: keys.fix.size, ready: keys.ready.size, merge: keys.merge.size }
@@ -939,8 +941,8 @@ export function needsAction(v: ChangeView, category: ActionCategory): boolean {
 }
 
 /**
- * The changes behind each count, for the tray menu: one entry per family, so
- * the entries match the count. A family is listed whole, and a branch that
+ * The changes behind each count, for the tray menu: one entry per board card,
+ * so the entries match the count. Open members are listed, and a branch that
  * does not need the action carries a note saying why (the user already
  * voted, or the branch is in another state), so the family reads as it does
  * on its card. A review opens the diff the Review button opens; the other
@@ -948,13 +950,20 @@ export function needsAction(v: ChangeView, category: ActionCategory): boolean {
  */
 export function actionMenu(views: ChangeView[]): ActionMenu {
   const menu: ActionMenu = { review: [], fix: [], ready: [], merge: [] }
-  for (const f of groupByChangeId(views.filter(countsForActions))) {
+  const cards = sequenceCards(views)
+  const inSequence = new Set(cards.flatMap(chainViews))
+  const entries = [
+    ...cards.map((c) => ({ subject: chainTitle(c), members: chainViews(c).filter(countsForActions), sequence: true })),
+    ...groupByChangeId(views.filter((v) => countsForActions(v) && !inSequence.has(v))).map((f) => ({ subject: f.members[0]!.change.subject, members: f.members, sequence: false })),
+  ]
+  for (const f of entries) {
     for (const k of ACTION_CATEGORIES) {
       const needs = f.members.map((v) => needsAction(v, k.id))
       if (!needs.includes(true)) continue
       const lead = f.members[0]
       menu[k.id].push({
-        subject: lead.change.subject,
+        subject: f.subject,
+        ...(f.sequence ? { sequence: true } : {}),
         owner: displayName(lead.change.owner),
         members: f.members.map((v, i) => ({
           number: v.change._number,
@@ -1412,7 +1421,45 @@ export interface RelatedSet {
 }
 
 /** A sequence: the tagged members of a related set that are linked to each other through tagged members only, in reading order. */
-export type Chain = RelatedSet
+export interface Chain extends RelatedSet {
+  /** Each step retains its complete Change-Id family when rendered on the board. */
+  families?: ChangeFamily[]
+  /** A shared family renders once, in the sequence with the oldest base change. */
+  references?: ({ key: string; title: string; branch: string; number: number; project: string } | null)[]
+  /** Sequences whose steps all reference families already shown in other cards. */
+  linkedSequences?: { chain: RelatedSet; related: RelatedSet | null }[]
+}
+
+export function chainViews(chain: Chain): ChangeView[] {
+  return chain.families ? [...new Set(chain.families.flatMap((f, i) => chain.references?.[i] ? [] : f.members))] : chain.members
+}
+
+/** Display sequences with the complete cherry-pick family of each step. */
+export function sequenceCards(views: ChangeView[]): Chain[] {
+  const families = new Map(groupByChangeId(views).map((f) => [f.key, { ...f, members: sortByBranch(f.members) }]))
+  const chains = sequenceChains(views).sort((a, b) => a.members[0]!.change._number - b.members[0]!.change._number || a.key.localeCompare(b.key))
+  const owner = new Map<string, Chain>()
+  for (const chain of chains) for (const v of chain.members) {
+    const key = familyKey(v.change)
+    if (!owner.has(key)) owner.set(key, chain)
+  }
+  const cards: Chain[] = chains.map((chain) => ({
+    ...chain,
+    families: chain.members.map((v) => families.get(familyKey(v.change))!),
+    references: chain.members.map((v) => {
+      const other = owner.get(familyKey(v.change))!
+      const original = other.members.find((member) => familyKey(member.change) === familyKey(v.change))!
+      return other === chain ? null : { key: other.key, title: chainTitle(other), branch: other.members[0]!.change.branch, number: original.change._number, project: original.change.project }
+    }),
+  }))
+  for (const card of cards) {
+    if (chainViews(card).length > 0) continue
+    const host = cards.find((c) => c.key === card.references!.find((r) => r !== null)!.key)!
+    host.linkedSequences ??= []
+    host.linkedSequences.push({ chain: card, related: relatedSetOf(views, card.members[0]!.change) })
+  }
+  return cards.filter((card) => chainViews(card).length > 0)
+}
 
 export function isSequenced(change: ChangeInfo): boolean {
   return hasTag(change, SEQUENCE_TAG)
@@ -1537,15 +1584,31 @@ export function chainTitle(chain: RelatedSet): string {
 }
 
 /** The member the reviewer should read next: the lowest one that waits on them. Null when none does. */
-export function nextInChain(chain: RelatedSet): ChangeView | null {
-  return chain.members.find((v) => v.needsMyReview) ?? null
+export function nextInChain(chain: Chain): ChangeView | null {
+  for (const [i, member] of chain.members.entries()) {
+    if (chain.references?.[i]) continue
+    const family = chain.families?.[i]?.members ?? [member]
+    const next = [member, ...family.filter((v) => v !== member)].find((v) => v.needsMyReview)
+    if (next) return next
+  }
+  return null
+}
+
+/** A step is complete only when every branch in its family is approved or merged. */
+export function chainStepStatus(chain: Chain, index: number, next = nextInChain(chain)): { done: boolean; next: boolean } {
+  const members = chain.families?.[index]?.members ?? [chain.members[index]!]
+  return {
+    done: members.every((v) => v.state === 'approved' || v.state === 'ready-to-merge' || v.state === 'merged'),
+    next: !chain.references?.[index] && members.some((v) => v === next),
+  }
 }
 
 /** The key a change is counted under: its sequence when it is in one, else its Change-Id family. */
 export function cardKeys(views: ChangeView[]): Map<ChangeView, string> {
   const out = new Map<ChangeView, string>()
   for (const v of views) out.set(v, familyKey(v.change))
-  for (const c of sequenceChains(views)) for (const v of c.members) out.set(v, 'seq:' + c.key)
+  const chains = sequenceCards(views)
+  for (const c of chains) for (const v of chainViews(c)) out.set(v, 'seq:' + c.key)
   return out
 }
 
@@ -1556,7 +1619,7 @@ export function cardKeys(views: ChangeView[]): Map<ChangeView, string> {
  */
 export function chainLeads(groups: Group[], chains: Chain[]): Map<string, ChangeView> {
   const keyOf = new Map<ChangeView, string>()
-  for (const c of chains) for (const v of c.members) keyOf.set(v, c.key)
+  for (const c of chains) for (const v of chainViews(c)) keyOf.set(v, c.key)
   const lead = new Map<string, ChangeView>()
   for (const g of groups) {
     for (const v of g.items) {

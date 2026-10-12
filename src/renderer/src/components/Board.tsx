@@ -16,7 +16,8 @@ import {
   isFilterActive,
   relatedSetOf,
   sequenceCandidates,
-  sequenceChains,
+  sequenceCards,
+  chainViews,
   chainLeads,
   sortByBranch,
   sortViews,
@@ -144,13 +145,11 @@ export function Board(props: {
   onAct: (a: ChangeAction) => Promise<void>
   onGoTo: (tab: TabId) => void
 }) {
-  // The sequences in the whole data set, and which sequence each change is
-  // in. A change in a sequence is drawn there and in no Change-Id family:
-  // its cherry-picks on other branches form a family without it.
-  const chains = useMemo(() => sequenceChains(props.views), [props.views])
+  // Sequence steps keep their complete cherry-pick families inside the card.
+  const chains = useMemo(() => sequenceCards(props.views), [props.views])
   const chainOf = useMemo(() => {
     const m = new Map<ChangeView, Chain>()
-    for (const c of chains) for (const v of c.members) m.set(v, c)
+    for (const c of chains) for (const v of chainViews(c)) m.set(v, c)
     return m
   }, [chains])
   // Every Change-Id family in the whole data set, merged members included,
@@ -172,8 +171,8 @@ export function Board(props: {
   const all = groupsFor(props.tab, props.views, team ? props.teamPick : undefined)
   const groups = all.map((g) => ({ ...g, items: filterViews(g.items, props.filter) })).filter((g) => g.items.length > 0)
   // The counts are cards: a family counts once, however many branches.
-  const total = countFamilies(all.flatMap((g) => g.items))
-  const shown = countFamilies(groups.flatMap((g) => g.items))
+  const total = countFamilies(all.flatMap((g) => g.items), props.views)
+  const shown = countFamilies(groups.flatMap((g) => g.items), props.views)
   // A family is one card, led by its most urgent branch on this tab (see
   // URGENCY). It sits in that branch's section, at that branch's sort
   // position. A tie goes to the earliest section, so on Reviewing a branch
@@ -183,7 +182,9 @@ export function Board(props: {
   // A sequence is one card too, led the same way; a stub for an untagged
   // set goes above the card of its most urgent member on the tab.
   const sorted = groups.map((g) => sortViews(g.items, props.sort))
-  const lead = familyLeads(groups, props.views)
+  // Families inside sequences do not also get a separate card.
+  const familyGroups = groups.map((g) => ({ ...g, items: g.items.filter((v) => !chainOf.has(v)) }))
+  const lead = familyLeads(familyGroups, props.views.filter((v) => !chainOf.has(v)))
   const chainLead = chainLeads(groups, chains)
   const stubLead = chainLeads(groups, [...new Set(stubs.values())])
   const sections: Section[] = groups
@@ -194,7 +195,7 @@ export function Board(props: {
         const stubSet = stubs.get(v)
         const stub = stubSet && stubLead.get(stubSet.key) === v ? stubSet : null
         const chain = chainOf.get(v)
-        if (chain) return chainLead.get(chain.key) === v ? [{ ...none, view: v, chain, related: relatedSetOf(props.views, v.change) }] : []
+        if (chain) return chainLead.get(chain.key) === v ? [{ ...none, view: v, chain, related: relatedSetOf(props.views, chain.members[0]!.change) }] : []
         const key = familyKey(v.change)
         const f = families.get(key)
         if (!f || f.members.length === 1) return [{ ...none, view: v, stub }]

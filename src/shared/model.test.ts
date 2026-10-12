@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { NO_TEAMS, accountKeys, accountMatches, allMembers, defaultTeamPick, normalizeTeams, normalizePrimaryTeam, storedTeams, teamMembers, teamPicks, teamTabLabel, watchedTeams, type TeamSetup, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, type ViewFilter, parentLinks, relatedSets, sequenceChains, sequenceCandidates, relatedSetOf, chainTitle, nextInChain, chainLeads } from './model.ts'
+import { NO_TEAMS, accountKeys, accountMatches, allMembers, defaultTeamPick, normalizeTeams, normalizePrimaryTeam, storedTeams, teamMembers, teamPicks, teamTabLabel, watchedTeams, type TeamSetup, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, type ViewFilter, parentLinks, relatedSets, sequenceChains, sequenceCards, chainStepStatus, chainViews, sequenceCandidates, relatedSetOf, chainTitle, nextInChain, chainLeads } from './model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
@@ -1524,4 +1524,124 @@ test('sequence: a chain is one card on the tab counts and leads with its most ur
   const cards = cardGroups('mine', mine)
   assert.deepEqual(cards.map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Pass Around', [62, 58]], ['In Progress', [65]]])
   assert.deepEqual(tabSegments(mine).mine!.map((s) => [s.tone, s.n]), [['pending', 2], ['wip', 1]])
+})
+
+test('sequence: approved cherry-picks keep their complete family inside the sequence', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'] })
+  const original = { ...f.c62, change_id: 'Isettings' }
+  const picks = ['release-1', 'release-2'].map((branch, i) => change({
+    number: 70 + i, branch, changeId: 'Isettings', owner: bob,
+    reviewers: [alice], requested: 3, votes: { 1: 1 },
+  }))
+  const changes = [f.c61, original, ...picks]
+  for (const self of [bob, alice]) {
+    const views = classifyAll(changes, self._account_id)
+    const tab = self === bob ? 'mine' : 'reviewing'
+    const cards = cardGroups(tab, views)
+    assert.deepEqual(cards.flatMap((g) => g.items.map((v) => v.change._number)).sort((a, b) => a - b), [62],
+      'the sequence and its cherry-picks remain one card')
+    assert.equal(tabCounts(views)[tab], 1)
+    const [card] = sequenceCards(views)
+    assert.deepEqual(card!.families![1]!.members.map((v) => v.change._number), [62, 70, 71])
+    assert.equal(chainViews(card!).length, 4)
+    if (self === bob) {
+      assert.deepEqual(tabSegments(views).mine!.map((s) => [s.tone, s.n]), [['pending', 1]])
+    }
+  }
+})
+
+
+test('sequence: a cherry-pick can lead the complete sequence when it is the only change on a tab', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'] })
+  const original = { ...f.c62, change_id: 'Isettings' }
+  const pick = change({ number: 70, branch: 'release-1', changeId: 'Isettings', owner: bob,
+    reviewers: [alice], requested: 3, votes: { 1: 1 }, status: 'MERGED' })
+  const views = classifyAll([f.c61, original, pick], bob._account_id)
+  const cards = sequenceCards(views)
+  const onlyPick = [{ title: 'Merged', items: [views[2]!] }]
+  assert.equal(chainLeads(onlyPick, cards).get(cards[0]!.key), views[2])
+  assert.deepEqual(cards[0]!.families![1]!.members.map((v) => v.change._number), [62, 70])
+  assert.equal(tabCounts(views).mine, 1)
+})
+
+
+test('sequence: overlapping branch sequences assign shared families once and retain references', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'] })
+  const original = { ...f.c62, change_id: 'Isettings' }
+  const releaseBase = change({ number: 70, branch: 'release', owner: bob, reviewers: [alice],
+    requested: 1, shas: [['release-base', 1]], parent: 'tip', hashtags: ['sequence'] })
+  const releaseStep = change({ number: 71, branch: 'release', changeId: 'Isettings', owner: bob,
+    reviewers: [alice], requested: 1, shas: [['release-step', 1]], parent: 'release-base', hashtags: ['sequence'] })
+  const otherPick = change({ number: 72, branch: 'release-2', changeId: 'Isettings', owner: bob,
+    reviewers: [alice], requested: 3, votes: { 1: 1 } })
+  const changes = [f.c61, original, releaseBase, releaseStep, otherPick]
+  for (const input of [changes, changes.slice().reverse()]) {
+    const views = classifyAll(input, alice._account_id)
+    const cards = sequenceCards(views)
+    assert.deepEqual(cards.map((c) => chainViews(c).map((v) => v.change._number)), [[61, 62, 71, 72], [70]])
+    assert.equal(cards[1]!.references![1]!.key, cards[0]!.key)
+    assert.equal(cards[0]!.references![1], null)
+    assert.equal(tabCounts(views).reviewing, 2)
+    assert.equal(actionCounts(views).review, 2)
+    assert.equal(actionMenu(views).review.length, 2)
+    const menuNumbers = actionMenu(views).review.flatMap((f) => f.members.map((m) => m.number))
+    assert.equal(new Set(menuNumbers).size, menuNumbers.length)
+    const onlyPick = [{ title: 'Filtered', items: views.filter((v) => v.change._number === 72) }]
+    assert.deepEqual([...chainLeads(onlyPick, cards).keys()], [cards[0]!.key])
+  }
+})
+
+test('sequence: a pending cherry-pick is next and keeps its family step incomplete', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'] }, { votes: { 62: { 1: 1 } } })
+  const original = { ...f.c62, change_id: 'Isettings' }
+  const pick = change({ number: 70, branch: 'release', changeId: 'Isettings', owner: bob,
+    reviewers: [alice], requested: 3 })
+  const views = classifyAll([f.c61, original, pick], alice._account_id)
+  const [card] = sequenceCards(views)
+  assert.equal(nextInChain(card!)!.change._number, 70)
+  assert.deepEqual(chainStepStatus(card!, 0), { done: true, next: false })
+  assert.deepEqual(chainStepStatus(card!, 1), { done: false, next: true })
+  assert.equal(actionCounts(views).review, 1)
+  assert.equal(actionMenu(views).review.length, 1)
+  assert.equal(actionMenu(views).review[0]!.members.find((m) => m.number === 70)!.actionable, true)
+  const allApproved = classifyAll([f.c61, original, change({ number: 70, branch: 'release', changeId: 'Isettings',
+    owner: bob, reviewers: [alice], requested: 3, votes: { 1: 1 } })], alice._account_id)
+  const [finished] = sequenceCards(allApproved)
+  assert.equal(nextInChain(finished!), null)
+  assert.equal(chainStepStatus(finished!, 1).done, true)
+})
+
+test('sequence: action counts and menu entries use the same cards as the board', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'] })
+  const original = { ...f.c62, change_id: 'Isettings' }
+  const approvedPick = change({ number: 70, branch: 'release', changeId: 'Isettings', owner: bob,
+    reviewers: [alice], requested: 3, votes: { 1: 1 } })
+  for (const self of [alice, bob]) {
+    const views = classifyAll([f.c61, original, approvedPick], self._account_id)
+    const counts = actionCounts(views)
+    const menu = actionMenu(views)
+    for (const category of ['review', 'fix', 'ready', 'merge'] as const) assert.equal(counts[category], menu[category].length)
+    assert.equal(tabCounts(views)[self === alice ? 'needs-my-review' : 'mine'], 1)
+    if (self === alice) assert.equal(counts.review, 1)
+    assert.ok(Object.values(menu).flat().every((entry) => entry.sequence))
+  }
+})
+
+
+test('sequence: fully overlapping sequences stay editable without duplicating their family rows', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'] })
+  const mainBase = { ...f.c61, change_id: 'Ibase' }
+  const mainStep = { ...f.c62, change_id: 'Isettings' }
+  const releaseBase = change({ number: 70, branch: 'release', changeId: 'Ibase', owner: bob,
+    reviewers: [alice], requested: 1, shas: [['r70', 1]], parent: 'tip', hashtags: ['sequence'] })
+  const releaseStep = change({ number: 71, branch: 'release', changeId: 'Isettings', owner: bob,
+    reviewers: [alice], requested: 1, shas: [['r71', 1]], parent: 'r70', hashtags: ['sequence'] })
+  const views = classifyAll([mainBase, mainStep, releaseBase, releaseStep], bob._account_id)
+  const cards = sequenceCards(views)
+  assert.equal(cards.length, 1)
+  assert.equal(chainViews(cards[0]!).length, 4)
+  assert.deepEqual(cards[0]!.linkedSequences![0]!.chain.members.map((v) => v.change._number), [70, 71])
+  assert.deepEqual(cards[0]!.linkedSequences![0]!.related!.members.map((v) => v.change._number), [70, 71])
+  assert.equal(tabCounts(views).mine, 1)
+  assert.equal(cardGroups('mine', views).flatMap((g) => g.items).length, 1)
 })

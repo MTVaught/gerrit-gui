@@ -609,6 +609,14 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .badge.chain { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
 .badge.chain svg { color: var(--muted); }
 .change-head .next-hint b { color: var(--fg); }
+.sequence-family { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; background: var(--panel); }
+.change.chain .sequence-family-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 10px; }
+.change.chain .sequence-family-head .subj-wrap { min-width: 0; }
+.change.chain .sequence-family-head .subj { font-weight: 600; }
+.change.chain .sequence-family .c-branch { padding-left: 38px; }
+.ledger .sequence-family-head .n svg { width: 12px; height: 12px; vertical-align: -2px; }
+.change.chain .sequence-reference { grid-column: 1 / -1; padding: 12px 38px; text-align: left; border-top: 1px solid var(--border); }
+.linked-sequence { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 /* The stub: a dashed card offering to make a sequence of a set the owner has not tagged. */
 .change.stub { border-style: dashed; padding-top: 6px; padding-bottom: 6px; }
 .change.stub .change-head { margin-bottom: 0; align-items: center; }

@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, chainTitle, displayName, nextInChain, reviewLink, stateTally, type Chain, type ChangeFamily, type RelatedSet, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, chainTitle, chainStepStatus, displayName, nextInChain, reviewLink, stateTally, type Chain, type ChangeFamily, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
-import { CiMark, FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
+import { SequenceFamilyReference, CiMark, FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
 import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
@@ -130,49 +130,65 @@ function FamilyBox(props: { family: ChangeFamily; lead: ChangeView } & LineProps
 function ChainBox(props: { chain: Chain; lead: ChangeView; all: RelatedSet | null } & LineProps) {
   const { chain, lead, all, ...line } = props
   const next = nextInChain(chain)
+  const anchor = chain.members[0]!
   return (
     <>
       <tr className="fsp">
         <td colSpan={line.columns} />
       </tr>
-      <tr className="fh">
+      <tr id={`sequence:${chain.key}`} className="fh">
         <td colSpan={line.columns}>
-          <span className="t" title={`${chain.members.length} changes built on each other on ${lead.change.branch}; review them from the top down`}>
+          <span className="t" title={`${chain.members.length} changes built on each other on ${anchor.change.branch}; review them from the top down`}>
             <ChainIcon />
             <span className="txt">
               <Highlight text={chainTitle(chain)} term={line.search} />
             </span>
           </span>
           <span className="n muted">
-            {chain.members.length} in sequence · <code>{lead.change.branch}</code>
-            {next && !lead.isMine && (
+            {chain.members.length} in sequence · <code>{anchor.change.branch}</code>
+            {next && !anchor.isMine && (
               <>
                 {' · '}
                 <span className="tally needs-review">#{next.change._number} next</span>
               </>
             )}
           </span>
-          {lead.isMine && all && <SequencePicker set={all} from={lead} label="Edit…" title="Change which of the related changes are in the sequence" onAct={line.onAct} small />}
+          {anchor.isMine && all && <SequencePicker set={all} from={anchor} label="Edit…" title="Change which of the related changes are in the sequence" onAct={line.onAct} small />}
+          {chain.linkedSequences?.map(({ chain: linked, related }) => (
+            <span key={linked.key} className="linked-sequence">
+              <span className="n muted" title={chainTitle(linked)}>also {linked.members[0]!.change.branch} sequence</span>
+              {linked.members[0]!.isMine && related && <SequencePicker set={related} from={linked.members[0]!} label={`Edit ${linked.members[0]!.change.branch}…`} title="Edit the sequence sharing these families" onAct={line.onAct} small />}
+            </span>
+          ))}
         </td>
       </tr>
-      {chain.members.map((v, i) => (
-        <LedgerRow
-          key={v.change.id}
-          view={v}
-          {...line}
-          member={{
-            last: i === chain.members.length - 1,
-            title: (
-              <>
-                <span className={'step' + (v === next ? ' next' : v.state === 'approved' || v.state === 'ready-to-merge' || v.state === 'merged' ? ' done' : '')}>
-                  {v.state === 'approved' || v.state === 'ready-to-merge' || v.state === 'merged' ? <CheckIcon /> : i + 1}
-                </span>
-                <Highlight text={v.change.subject} term={line.search} />
-              </>
-            ),
-          }}
-        />
-      ))}
+      {chain.members.map((v, i) => {
+        const family = chain.families?.[i]
+        const reference = chain.references?.[i]
+        const status = chainStepStatus(chain, i, next)
+        const title = (
+          <>
+            <span className={'step' + (status.next ? ' next' : status.done ? ' done' : '')}>
+              {status.done ? <CheckIcon /> : i + 1}
+            </span>
+            <Highlight text={v.change.subject} term={line.search} />
+          </>
+        )
+        if (family && family.members.length > 1) return (
+          <Fragment key={v.change.id}>
+            <tr className="fh sequence-family-head"><td colSpan={line.columns}>
+              <span className="t">{title}</span>
+              <span className="n muted"><ForkIcon /> {family.members.length} branches
+                {stateTally(family.members).map((t) => <span key={t.state} className={`tally ${t.state}`}> · {t.count} {STATE_LABEL[t.state].toLowerCase()}</span>)}
+              </span>
+            </td></tr>
+            {reference ? <tr className="mem"><td colSpan={line.columns}><SequenceFamilyReference reference={reference} /></td></tr> : family.members.map((member, j) => (
+              <LedgerRow key={member.change.id} view={member} {...line} member={{ last: i === chain.members.length - 1 && j === family.members.length - 1 }} />
+            ))}
+          </Fragment>
+        )
+        return <LedgerRow key={v.change.id} view={v} {...line} member={{ last: i === chain.members.length - 1, title }} />
+      })}
       <tr className="fsp">
         <td colSpan={line.columns} />
       </tr>
@@ -263,7 +279,7 @@ function LedgerRow(
   const mem = props.member ? ` mem${props.member.title ? ' seq' : ''}${!open ? ' closed' : ''}${props.member.last && !expanded ? ' end' : ''}` : ''
   return (
     <>
-      <tr className={`lrow state-${v.state}${expanded ? ' open' : ''}${mem}`}>
+      <tr data-change-number={c._number} className={`lrow state-${v.state}${expanded ? ' open' : ''}${mem}`}>
         <td className="c" onClick={toggle}>
           {/* The conversation's tab hangs from the top edge of the line, over the right end of the subject. */}
           <SlackLink view={v} onAct={props.onAct} variant="tab" />
