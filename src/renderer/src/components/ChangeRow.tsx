@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, accountKeys, chainTitle, displayName, nextInChain, preferredKey, reviewerTag, reviewerTagsFor, stateTally, type Chain, type ChangeFamily, type ParentLink, type RelatedSet, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, accountKeys, chainViews, chainStepStatus, chainTitle, displayName, nextInChain, preferredKey, reviewerTag, reviewerTagsFor, stateTally, type Chain, type ChangeFamily, type ParentLink, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
 import { ChainIcon, CheckIcon, CommentIcon, ForkIcon, LockIcon } from './Icons.tsx'
@@ -84,11 +84,12 @@ export function FamilyCard(props: { family: ChangeFamily; lead: ChangeView; self
  */
 export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedSet | null; self: AccountInfo; onAct: (a: ChangeAction) => Promise<void>; sort: SortId; search: string }) {
   const { chain, lead } = props
-  const c = lead.change
+  const anchor = chain.members[0]!
+  const c = anchor.change
   const next = nextInChain(chain)
-  const owner = lead.isMine
+  const owner = anchor.isMine
   return (
-    <li className={`change chain state-${lead.state}`}>
+    <li id={`sequence:${chain.key}`} className={`change chain state-${lead.state}`}>
       <div className="change-head">
         <span className="badge chain" title="These changes are built on each other; review them from the top down">
           <ChainIcon /> {chain.members.length} in sequence
@@ -99,8 +100,8 @@ export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedS
         <span className="badge branch" title={`${c.project} · ${c.branch}`}>
           <code>{c.branch}</code>
         </span>
-        {stateTally(chain.members).map((t) => (
-          <span key={t.state} className={`badge tally ${t.state}`} title={`${t.count} of the ${chain.members.length} changes: ${STATE_LABEL[t.state]}`}>
+        {stateTally(chainViews(chain)).map((t) => (
+          <span key={t.state} className={`badge tally ${t.state}`} title={`${t.count} of the ${chainViews(chain).length} changes: ${STATE_LABEL[t.state]}`}>
             {t.count} {STATE_LABEL[t.state]}
           </span>
         ))}
@@ -112,32 +113,59 @@ export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedS
         <span className="muted small origin">
           {c.project} · {owner ? 'you' : displayName(c.owner)}
         </span>
-        {owner && props.all && <SequencePicker set={props.all} from={lead} label="Edit sequence…" title="Change which of the related changes are in the sequence" onAct={props.onAct} />}
+        {owner && props.all && <SequencePicker set={props.all} from={anchor} label="Edit sequence…" title="Change which of the related changes are in the sequence" onAct={props.onAct} />}
+        {chain.linkedSequences?.map(({ chain: linked, related }) => (
+          <span key={linked.key} className="linked-sequence">
+            <span className="badge branch" title={chainTitle(linked)}>also {linked.members[0]!.change.branch} sequence</span>
+            {linked.members[0]!.isMine && related && <SequencePicker set={related} from={linked.members[0]!} label={`Edit ${linked.members[0]!.change.branch} sequence…`} title="Edit the sequence sharing these families" onAct={props.onAct} />}
+          </span>
+        ))}
       </div>
-      {chain.members.map((v, i) => (
-        <BranchRow
-          key={v.change.id}
-          view={v}
-          self={props.self}
-          onAct={props.onAct}
-          sort={props.sort}
-          search={props.search}
-          slack
-          lead={
-            <>
-              <Step view={v} index={i} next={v === next} />
-              <span className="subj-wrap">
-                <button className="link subj" onClick={() => void api.openChange({ id: v.change._number, project: v.change.project })} title={`Open #${v.change._number} in Gerrit`}>
-                  <Highlight text={v.change.subject} term={props.search} />
-                </button>
-                <ParentNote link={chain.parents.get(v.change._number)} open={v.change.status === 'NEW'} />
-              </span>
-            </>
-          }
-        />
-      ))}
+      {chain.members.map((v, i) => {
+        const family = chain.families?.[i]
+        const reference = chain.references?.[i]
+        const status = chainStepStatus(chain, i, next)
+        const title = (
+          <>
+            <Step view={v} index={i} next={status.next} done={status.done} />
+            <span className="subj-wrap">
+              <button className="link subj" onClick={() => void api.openChange({ id: v.change._number, project: v.change.project })} title={`Open #${v.change._number} in Gerrit`}>
+                <Highlight text={v.change.subject} term={props.search} />
+              </button>
+              <ParentNote link={chain.parents.get(v.change._number)} open={v.change.status === 'NEW'} />
+            </span>
+          </>
+        )
+        if (family && family.members.length > 1) return (
+          <div key={v.change.id} className="sequence-family" role="group" aria-label={`${v.change.subject}: ${family.members.length} branches`}>
+            <div className="sequence-family-head">
+              {title}
+              <span className="badge branch" title={`Change-Id ${family.key}`}><ForkIcon /> {family.members.length} branches</span>
+              {stateTally(family.members).map((t) => (
+                <span key={t.state} className={`badge tally ${t.state}`}>{t.count} {STATE_LABEL[t.state]}</span>
+              ))}
+            </div>
+            {reference ? <SequenceFamilyReference reference={reference} /> : family.members.map((member) => (
+              <BranchRow key={member.change.id} view={member} self={props.self} onAct={props.onAct} sort={props.sort} search={props.search} slack />
+            ))}
+          </div>
+        )
+        return <BranchRow key={v.change.id} view={v} self={props.self} onAct={props.onAct} sort={props.sort} search={props.search} slack lead={title} />
+      })}
     </li>
   )
+}
+
+/** Navigate to the card containing a shared family's branch rows. */
+export function SequenceFamilyReference(props: { reference: NonNullable<NonNullable<Chain['references']>[number]> }) {
+  const { reference } = props
+  return <button className="link sequence-reference" title={`Show the family card, or open #${reference.number} in Gerrit if the card is hidden on this tab`} onClick={() => {
+    const card = document.getElementById(`sequence:${reference.key}`)
+    if (card) card.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    else void api.openChange({ id: reference.number, project: reference.project })
+  }}>
+    Branches shown in {reference.title} · {reference.branch}
+  </button>
 }
 
 /** Under the subject of a sequence row: the change is built on an older patch set of the one below it, so a rebase is due. */
@@ -152,9 +180,9 @@ function ParentNote(props: { link: ParentLink | undefined; open: boolean }) {
 }
 
 /** The circle before a sequence row: the step number, a tick once the change is approved or in, the accent on the reviewer's next one. */
-function Step(props: { view: ChangeView; index: number; next: boolean }) {
+function Step(props: { view: ChangeView; index: number; next: boolean; done: boolean }) {
   const { view: v } = props
-  const done = v.state === 'approved' || v.state === 'ready-to-merge' || v.state === 'merged'
+  const done = props.done
   if (done)
     return (
       <span className="step done" title={`Step ${props.index + 1}: ${STATE_LABEL[v.state]}`}>
@@ -231,7 +259,7 @@ function BranchRow(props: RowProps) {
   const age = ageCell(v, props.sort, false)
   const merger = mergerLabel(v, useNames(v.requestedMerger ? [v.requestedMerger] : []))
   return (
-    <div className={open ? 'change-row' : 'change-row closed'}>
+    <div data-change-number={c._number} className={open ? 'change-row' : 'change-row closed'}>
       {props.slack && <SlackLink view={v} onAct={props.onAct} variant="tab" />}
       <span className="cell c-branch">
         {props.lead ?? (

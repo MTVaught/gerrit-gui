@@ -407,10 +407,12 @@ export interface ActionMenuMember {
   note: string
 }
 
-/** A Change-Id family, or a single change, in one category of the tray menu. */
+/** A family, sequence, or single change in one category of the tray menu. */
 export interface ActionMenuFamily {
   subject: string
   owner: string
+  /** Sequence entries contain multiple steps, each with its own branches. */
+  sequence?: boolean
   /** In the family's order; at least one is actionable. */
   members: ActionMenuMember[]
 }

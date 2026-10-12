@@ -190,12 +190,12 @@ export class TrayController {
     const rows: Electron.MenuItemConstructorOptions[] = families.slice(0, MAX_ROWS).map((f) => {
       const subject = menuText(f.subject.length > MAX_SUBJECT ? f.subject.slice(0, MAX_SUBJECT - 1) + '…' : f.subject)
       const owner = withOwner ? ` · ${f.owner}` : ''
-      if (f.members.length === 1) {
+      if (f.members.length === 1 && !f.sequence) {
         const m = f.members[0]
         return { label: `#${m.number} ${subject} · ${m.branch}${owner}`, click: () => this.handlers.openChange(m.link) }
       }
       return {
-        label: `${subject} · ${f.members.length} branches${owner}`,
+        label: `${subject} · ${f.members.length} ${f.sequence ? 'changes' : 'branches'}${owner}`,
         submenu: f.members.map((m) => ({
           label: `${m.branch}  #${m.number}${m.actionable ? '' : ` · ${m.note}`}`,
           enabled: m.actionable,
