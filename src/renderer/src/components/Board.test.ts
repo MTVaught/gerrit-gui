@@ -108,6 +108,18 @@ test('Board keeps all three family branches inside their sequence step', async (
       for (const number of [301, 302, 303, 304, 305]) assert.equal(html.split(`data-change-number="${number}"`).length - 1, 1)
       assert.doesNotMatch(html, /Approved <span class="count">/)
     }
+    // Omitting the middle commit keeps the remaining steps on one card in both layouts.
+    const skipped = [change(401, 'main', 'Iskipbase', 'tip'),
+      change(402, 'main', 'Iskipmiddle', 'sha401'), change(403, 'main', 'Iskiptop', 'sha402')]
+    skipped[0]!.hashtags!.push('sequence')
+    skipped[2]!.hashtags!.push('sequence')
+    for (const compact of [false, true]) {
+      const html = render(skipped, compact)
+      assert.match(html, /2 in sequence/)
+      assert.equal(html.split('id="sequence:').length - 1, 1)
+      for (const number of [401, 402, 403]) assert.equal(html.split(`data-change-number="${number}"`).length - 1, 1)
+      assert.doesNotMatch(html, /Set up a sequence/)
+    }
     const { SequenceFamilyReference } = await vite.ssrLoadModule('/src/components/ChangeRow.tsx')
     const { api } = await vite.ssrLoadModule('/src/api.ts')
     const reference = sequenceCards(classifyAll(overlapping, reviewer._account_id))[1]!.references![1]!

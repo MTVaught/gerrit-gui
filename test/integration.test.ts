@@ -412,12 +412,12 @@ test('a sequence: parents link changes built on each other, the owner tags them 
   assert.deepEqual(sequenceChains(views).map((s) => s.members.map((v) => v.change._number)), [nums])
   assert.deepEqual(sequenceCandidates(views, bobSelf._account_id), [], 'nothing left to offer')
 
-  // Untagging the middle one splits the line: the base and the top are then alone, so there is no sequence.
+  // Untagging the middle one omits it while keeping the base and top in one sequence.
   await serviceAs('bob').act({ type: 'setSequence', id: base._number, add: [], remove: [mid._number] })
   views = board(await fetchDashboard(user('bob'), []))
-  assert.deepEqual(sequenceChains(views), [])
+  assert.deepEqual(sequenceChains(views).map((s) => s.members.map((v) => v.change._number)), [[base._number, top._number]])
   assert.deepEqual(relatedSetOf(views, views[0]!.change)!.members.map((v) => v.change._number), nums, 'the picker still sees the whole set')
-  assert.deepEqual(sequenceCandidates(views, bobSelf._account_id).map((s) => s.members.map((v) => v.change._number)), [nums], 'and the set is on offer again')
+  assert.deepEqual(sequenceCandidates(views, bobSelf._account_id), [], 'the remaining sequence keeps its edit button')
 })
 
 test('pretending to be someone else: their board is read, nothing is written', { skip: !reachable && 'no local Gerrit' }, async () => {
