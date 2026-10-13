@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { AccountInfo, ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, TrayClickAction } from '../../../shared/types.ts'
+import type { AccountInfo, ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, ThemePreference, TrayClickAction } from '../../../shared/types.ts'
 import { STATE_LABEL, accountKeys, changeNumberOf, classify, displayName, explainView, groupsFor, isSlackTeamId, mergersReflect, preferredKey, slackWorkspacesReflect, teamPicks, teamTabLabel, type TeamSetup } from '../../../shared/model.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
@@ -10,9 +10,10 @@ import { MergersEditor } from './MergersEditor.tsx'
 import { visibleTabs } from './Board.tsx'
 import { PlugIcon } from './Icons.tsx'
 
-type SectionId = 'beta' | 'team' | 'mergers' | 'scope' | 'slack' | 'app-icon' | 'window' | 'menu-bar' | 'debug' | 'about'
+type SectionId = 'appearance' | 'beta' | 'team' | 'mergers' | 'scope' | 'slack' | 'app-icon' | 'window' | 'menu-bar' | 'debug' | 'about'
 
 const SECTIONS: { id: SectionId; label: string; desktopOnly?: boolean }[] = [
+  { id: 'appearance', label: 'Appearance' },
   { id: 'team', label: 'Teams' },
   { id: 'mergers', label: 'Mergers' },
   { id: 'scope', label: 'Scope' },
@@ -102,6 +103,20 @@ export function SettingsPanel(props: {
             <h1>{current.label}</h1>
             <SyncPill state={sync} />
           </div>
+        )}
+        {section === 'appearance' && (
+          <SettingsChoices
+            name="theme"
+            label="Theme"
+            hint="System follows your device's appearance."
+            value={s.theme ?? 'system'}
+            options={[
+              { value: 'light', label: 'Light' },
+              { value: 'dark', label: 'Dark' },
+              { value: 'system', label: 'System' },
+            ]}
+            onChange={(value) => void apply({ theme: value as ThemePreference })}
+          />
         )}
         {section === 'beta' && (
           <>

@@ -1,8 +1,13 @@
 # Visual evidence requirements
 
-- For UI issues and code changes affecting visible appearance or interaction,
-  provide visual evidence in the final response. Choose the format that best
-  demonstrates the issue or change.
+- For every change, produce image or video evidence that demonstrates the
+  change works, and include it in the final response. This applies to all
+  changes, not only UI changes. Show the resulting behavior or verified
+  outcome, not just the edited code. Test output alone does not replace the
+  required image or video evidence.
+- Plan how to capture evidence before making the change. Run the changed
+  workflow, capture the result, and inspect the artifact before sharing it.
+  Choose the format that best demonstrates the change worked.
 - Use screenshots for static results such as layout, styling, text, or a new
   setting. Use video when the sequence, timing, or transition matters, such as
   clicking a tray icon, navigating, hiding/restoring a window, or opening a menu.
@@ -21,3 +26,6 @@
 - Use real input actions for behavioral proof. State when data or events are
   simulated and which platform was tested. If capture is blocked, report the
   specific limitation and the verification performed instead of claiming proof.
+  Try to resolve the capture limitation within the authorized scope. If it
+  remains blocked, explicitly mark visual verification as incomplete; do not
+  describe the change as fully verified.
