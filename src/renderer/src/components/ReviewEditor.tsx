@@ -68,7 +68,7 @@ export interface LoadedReviewFile extends ReviewContents {
   viewState?: monaco.editor.IDiffEditorViewState | null
 }
 
-export interface ReviewEditorHandle { outline(): void; blame(): void; highlightComment(location: EditorCommentLocation | null): void; createInlineHost(pane: 'original' | 'modified', line: number): InlineCommentHost | null; navigate(shortcut: ReviewShortcut): void; addComment(): void; find(): void; goToLine(): void; revealComment(pane: 'original' | 'modified', line: number): void }
+export interface ReviewEditorHandle { outline(): void; blame(): void; highlightComment(location: EditorCommentLocation | null): void; createInlineHost(pane: 'original' | 'modified', line: number): InlineCommentHost | null; navigate(shortcut: ReviewShortcut): void; addComment(): void; find(): void; goToLine(): void; revealComment(pane: 'original' | 'modified', line: number, preserveScroll?: boolean): void }
 export interface EditorCommentLocation { pane: 'original' | 'modified'; line: number; range?: CommentRange; existing?: boolean }
 
 export default function ReviewEditor({ file, link, preferences, commentsVisible, onReady, onComment, markers, ref }: { link: ChangeLink; commentsVisible: boolean; markers: { range?: CommentRange; pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle> }) {
@@ -369,15 +369,18 @@ export default function ReviewEditor({ file, link, preferences, commentsVisible,
     }
     inlineLayouts.current.add(layout)
     layout()
-    function reveal() {
+    function reveal(preserveScroll = true) {
       if (!code || editor.current !== diff) return
-      if (zone.afterLineNumber === 0) { code.setScrollTop(0); return }
       // The line bottom can include the comment's own view zone. Anchor to the
       // last text position instead, keeping even wrapped-line editors in view.
-      const position = { lineNumber: zone.afterLineNumber, column: code.getModel()!.getLineMaxColumn(zone.afterLineNumber) }
+      const position = { lineNumber: Math.max(1, zone.afterLineNumber), column: code.getModel()!.getLineMaxColumn(Math.max(1, zone.afterLineNumber)) }
+      const lineTop = zone.afterLineNumber === 0 ? 0 : code.getTopForPosition(position.lineNumber, position.column)
+      const anchorTop = zone.afterLineNumber === 0 ? 0 : lineTop + code.getLineHeightForPosition(position)
+      // Opening or resizing a comment at a visible selection must not move it.
+      const scrollTop = code.getScrollTop()
+      if (preserveScroll && anchorTop >= scrollTop && lineTop < scrollTop + code.getLayoutInfo().height) return
       const active = content.contains(document.activeElement) ? document.activeElement as HTMLElement : null
       const offset = active ? Math.max(0, active.getBoundingClientRect().top - content.getBoundingClientRect().top) : 0
-      const anchorTop = code.getTopForPosition(position.lineNumber, position.column) + code.getLineHeightForPosition(position)
       code.setScrollTop(Math.max(0, anchorTop + offset - 50))
     }
     let frame = 0
@@ -394,9 +397,11 @@ export default function ReviewEditor({ file, link, preferences, commentsVisible,
       if (editor.current === diff && code && zoneId) code.changeViewZones(accessor => accessor.removeZone(zoneId))
       restoreAria()
     } }
-  }, addComment, find: () => action('actions.find'), goToLine: () => action('editor.action.gotoLine'), revealComment(pane, line) {
+  }, addComment, find: () => action('actions.find'), goToLine: () => action('editor.action.gotoLine'), revealComment(pane, line, preserveScroll = false) {
     const code = pane === 'original' ? editor.current?.getOriginalEditor() : editor.current?.getModifiedEditor()
-    code?.setPosition({ lineNumber: line, column: 1 }); code?.revealLineInCenter(line); code?.focus()
+    code?.setPosition({ lineNumber: line, column: 1 })
+    if (!preserveScroll) code?.revealLineInCenter(line)
+    code?.focus()
   }, navigate(shortcut) {
     const diff = editor.current
     const code = focusedEditor()

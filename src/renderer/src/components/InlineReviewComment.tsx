@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CommentAnchor } from '../../../shared/types.ts'
-export interface InlineCommentHost { element: HTMLElement; dispose(): void; reveal(): void }
+export interface InlineCommentHost { element: HTMLElement; dispose(): void; reveal(preserveScroll?: boolean): void }
 export type CreateInlineCommentHost = (anchor: CommentAnchor) => InlineCommentHost | null
 // The editor owns layout; React owns the thread and its draft state.
-export function InlineReviewComment({ anchor, createHost, children, focus = false }: { anchor: CommentAnchor; createHost: CreateInlineCommentHost; children: React.ReactNode; focus?: boolean }) {
+export function InlineReviewComment({ anchor, createHost, children, focus = false, preserveScroll = false }: { anchor: CommentAnchor; createHost: CreateInlineCommentHost; children: React.ReactNode; focus?: boolean; preserveScroll?: boolean }) {
   const [host, setHost] = useState<InlineCommentHost | null>(null)
   const [element, setElement] = useState<HTMLElement | null>(null)
   useEffect(() => {
@@ -17,16 +17,16 @@ export function InlineReviewComment({ anchor, createHost, children, focus = fals
     if (!focus || !element) return
     // Monaco hides offscreen view zones. Reveal before focusing, then wait for
     // its render so a newly opened editor can receive focus.
-    host?.reveal()
+    host?.reveal(preserveScroll)
     let frame = 0
     let attempts = 0
     function focusEditor() {
       const field = element!.querySelector<HTMLTextAreaElement>('textarea')
-      if (field && field.getBoundingClientRect().height > 0) { field.focus({ preventScroll: true }); host?.reveal(); return }
-      if (++attempts < 30) { host?.reveal(); frame = requestAnimationFrame(focusEditor) }
+      if (field && field.getBoundingClientRect().height > 0) { field.focus({ preventScroll: true }); host?.reveal(preserveScroll); return }
+      if (++attempts < 30) { host?.reveal(preserveScroll); frame = requestAnimationFrame(focusEditor) }
     }
     frame = requestAnimationFrame(focusEditor)
     return () => cancelAnimationFrame(frame)
-  }, [element, focus])
+  }, [element, focus, preserveScroll])
   return element ? createPortal(children, element) : null
 }

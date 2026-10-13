@@ -35,7 +35,9 @@ app.whenReady().then(async () => {
     if (mode === 'original') { await press('Left', ['shift']); await goToLine() }
     if (mode === 'unified') { await press('Right', ['shift']); await press('m'); await goToLine() }
     const pane = mode === 'original' ? 'original' : 'modified'
-    const top = () => run(`Array.from(document.querySelectorAll('.${pane}-in-monaco-diff-editor .line-numbers')).find(e => e.textContent === '40')?.getBoundingClientRect().top`)
+    // Move the selection away from the center so a recentering jump is visible.
+    for (let i = 0; i < 2; i++) await press('Down')
+    const top = () => run(`Array.from(document.querySelectorAll('.${pane}-in-monaco-diff-editor .line-numbers')).find(e => e.textContent === '42')?.getBoundingClientRect().top`)
     const before = await top()
     assert.ok(before > 120 && before < 900, 'selected line is visible before toggling')
     await press('h'); await until(`!document.querySelector('.review-editor .review-comment-thread')`); await delay(250)
@@ -44,6 +46,22 @@ app.whenReady().then(async () => {
     await run(`Array.from(document.querySelectorAll('.review-comments button')).find(b => b.textContent === 'Show comments').click()`)
     await until(`Boolean(document.querySelector('.review-editor .review-comment-thread'))`); await delay(350)
     assert.ok(Math.abs((await top()) - before) < 2, `${mode}: showing comments preserves selected line position`)
+    await press('c')
+    await until(`document.activeElement?.getAttribute('aria-label') === 'Draft comment'`); await delay(350)
+    assert.ok(Math.abs((await top()) - before) < 2, `${mode}: opening a comment preserves selected line position`)
+    assert.equal(await run(`document.querySelector('.review-comment-compose').closest('[role="region"]').getAttribute('aria-label')`), `${pane === 'original' ? 'Original' : 'Modified'} comments after line 42`)
+    await win.webContents.insertText('A comment at the selected line.'); await delay(250)
+    assert.ok(Math.abs((await top()) - before) < 2, `${mode}: typing preserves selected line position`)
+    await press('Enter', ['control'])
+    await until(`!document.querySelector('.review-comment-compose')`); await delay(350)
+    assert.ok(Math.abs((await top()) - before) < 2, `${mode}: saving preserves selected line position`)
+    await press('c')
+    await until(`document.activeElement?.getAttribute('aria-label') === 'Draft comment'`)
+    await run(`Array.from(document.querySelectorAll('.review-comment-compose button')).find(b => b.textContent === 'Cancel').click()`)
+    await until(`!document.querySelector('.review-comment-compose')`); await delay(350)
+    assert.ok(Math.abs((await top()) - before) < 2, `${mode}: cancelling preserves selected line position`)
+    await run(`Array.from(document.querySelectorAll('.review-editor .comment-draft button')).find(b => b.textContent === 'Discard draft').click()`)
+    await until(`!document.querySelector('.review-editor .comment-draft')`)
   }
   assert.equal((await run('api.fixtureStats()')).requests, 1, 'toggling comments does not refetch source')
   console.log(JSON.stringify({ selectedLineAnchoring: 'passed', originalPane: 'passed', unified: 'passed', keyboardAndMenu: 'passed', noExtraFetch: 'passed' }))
