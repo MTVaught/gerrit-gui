@@ -286,7 +286,11 @@ export interface ReviewDiff {
 
 export type TrayClickAction = 'menu' | 'my-reviews'
 
+export type ThemePreference = 'light' | 'dark' | 'system'
+
 export interface Settings {
+  /** App appearance; system follows the operating system. */
+  theme: ThemePreference
   /** Opt-in local full-file review viewer. */
   localReview: boolean
   serverUrl: string

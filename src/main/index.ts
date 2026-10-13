@@ -126,6 +126,8 @@ function registerIpc(): void {
   ipcMain.handle('settings:save', async (_e, input: SettingsInput) => {
     await service.saveSettings(input)
     await refreshWindowPrefs()
+    mainWindow?.webContents.send('app:settings')
+    connectionWindow?.webContents.send('app:settings')
   })
   ipcMain.handle('gerrit:testConnection', () => service.testConnection())
   ipcMain.handle('gerrit:fetchDashboard', () => service.fetchDashboard())

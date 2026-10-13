@@ -135,10 +135,10 @@ export default function ReviewEditor({ file, link, preferences, commentsVisible,
     const language = reviewLanguage(file.path)
     const original = monaco.editor.createModel(file.original, language)
     const modified = monaco.editor.createModel(file.modified, language)
-    const appearance = matchMedia('(prefers-color-scheme: dark)')
-    const setTheme = () => monaco.editor.setTheme(appearance.matches ? 'vs-dark' : 'vs')
+    const setTheme = () => monaco.editor.setTheme(document.documentElement.dataset.theme === 'dark' ? 'vs-dark' : 'vs')
+    const appearance = new MutationObserver(setTheme)
     setTheme()
-    appearance.addEventListener('change', setTheme)
+    appearance.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
     configureReviewDiff(original, preferences.ignoreWhitespace, file.diffBlocks)
     const diff = monaco.editor.createDiffEditor(container.current!, {
       automaticLayout: true,
@@ -218,7 +218,7 @@ export default function ReviewEditor({ file, link, preferences, commentsVisible,
       cancelAnimationFrame(commentScrollFrame.current)
       commentScrollFrame.current = 0
       commentScroll.current = null
-      appearance.removeEventListener('change', setTheme)
+      appearance.disconnect()
       editor.current = null
       diff.dispose()
       original.dispose()

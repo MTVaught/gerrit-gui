@@ -1,0 +1,22 @@
+{
+  "platform": "Linux Electron 44",
+  "gerrit": "local empty-board fixture",
+  "systemAppearance": "simulated with Electron nativeTheme.themeSource",
+  "settings": "real production IPC and settings.json store",
+  "results": [
+    {
+      "startingMode": "light",
+      "realPointerClicks": true,
+      "explicitOverride": "passed",
+      "systemChanges": "passed",
+      "persistenceAfterReload": "passed"
+    },
+    {
+      "startingMode": "dark",
+      "realPointerClicks": true,
+      "explicitOverride": "passed",
+      "systemChanges": "passed",
+      "persistenceAfterReload": "passed"
+    }
+  ]
+}

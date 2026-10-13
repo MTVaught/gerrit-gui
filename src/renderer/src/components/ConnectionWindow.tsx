@@ -1,3 +1,4 @@
+import { useTheme } from '../theme.ts'
 import { useEffect, useState } from 'react'
 import type { SettingsStatus } from '../../../shared/types.ts'
 import { api, isBrowserMode } from '../api.ts'
@@ -11,6 +12,7 @@ import { api, isBrowserMode } from '../api.ts'
  */
 export function ConnectionWindow() {
   const [initial, setInitial] = useState<SettingsStatus | null>(null)
+  useTheme(initial?.theme)
   const [serverUrl, setServerUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -24,6 +26,13 @@ export function ConnectionWindow() {
       setServerUrl(s.serverUrl)
       setUsername(s.username)
     })
+    const reload = () => { void api.getSettings().then(setInitial) }
+    const offSettings = api.onSettingsChanged(reload)
+    window.addEventListener('focus', reload)
+    return () => {
+      offSettings()
+      window.removeEventListener('focus', reload)
+    }
   }, [])
 
   async function save() {

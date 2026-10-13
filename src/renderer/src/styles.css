@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --bg: #fff;
   --fg: #1a1a1a;
   --muted: #6b7280;
@@ -31,35 +31,35 @@
   --band-head: #e8ecf3;
   --band-border: #c9d1de;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111318;
-    --fg: #e6e6e6;
-    --muted: #9aa0ad;
-    --border: #2a2f3a;
-    --panel: #181b22;
-    --review-comment-resolved-bg: #3c3f43;
-    --review-comment-unresolved-bg: #614a19;
-    --review-comment-resolved-border: #727781;
-    --review-comment-unresolved-border: #ad8840;
-    --review-comment-muted: #c1c6ce;
-    --review-comment-link: #a8c7fa;
-    --review-comment-accent-fg: #202124;
-    --review-comment-unresolved-text: #fbd47c;
-    --accent: #3b82f6;
-    --pos: #4ade80;
-    --pos-bg: #14532d55;
-    --neg: #f87171;
-    --neg-bg: #7f1d1d55;
-    --warn: #fbbf24;
-    --warn-bg: #78350f55;
-    --pending-bg: #312e8155;
-    --pending: #c7d2fe;
-    --band: #1b1f28;
-    --band-head: #222734;
-    --band-border: #3b4353;
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111318;
+  --fg: #e6e6e6;
+  --muted: #9aa0ad;
+  --border: #2a2f3a;
+  --panel: #181b22;
+  --review-comment-resolved-bg: #3c3f43;
+  --review-comment-unresolved-bg: #614a19;
+  --review-comment-resolved-border: #727781;
+  --review-comment-unresolved-border: #ad8840;
+  --review-comment-muted: #c1c6ce;
+  --review-comment-link: #a8c7fa;
+  --review-comment-accent-fg: #202124;
+  --review-comment-unresolved-text: #fbd47c;
+  --accent: #3b82f6;
+  --pos: #4ade80;
+  --pos-bg: #14532d55;
+  --neg: #f87171;
+  --neg-bg: #7f1d1d55;
+  --warn: #fbbf24;
+  --warn-bg: #78350f55;
+  --pending-bg: #312e8155;
+  --pending: #c7d2fe;
+  --band: #1b1f28;
+  --band-head: #222734;
+  --band-border: #3b4353;
 }
+
 * { box-sizing: border-box; }
 body { margin: 0; font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--fg); }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
@@ -765,9 +765,8 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 
 /* Gerrit-classified rebase edits are distinct from ordinary red/green edits. */
 .local-review { --rebase-added: #d7e7ff; --rebase-removed: #fff0bd; --rebase-added-text: #aacbfa; --rebase-removed-text: #f5d775; }
-@media (prefers-color-scheme: dark) {
-  .local-review { --rebase-added: #243f61; --rebase-removed: #54451d; --rebase-added-text: #365b86; --rebase-removed-text: #806729; }
-}
+:root[data-theme="dark"] .local-review { --rebase-added: #243f61; --rebase-removed: #54451d; --rebase-added-text: #365b86; --rebase-removed-text: #806729; }
+
 .review-rebase-added { background: var(--rebase-added); }
 .review-rebase-removed { background: var(--rebase-removed); }
 /* Monaco renders line and character backgrounds in a separate overlay layer.
@@ -835,10 +834,9 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-file-lines { display: flex; gap: 6px; padding-left: 6px; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .review-lines-added { color: #08783e; }
 .review-lines-removed { color: #bb2424; }
-@media (prefers-color-scheme: dark) {
-  .review-lines-added { color: #65d996; }
-  .review-lines-removed { color: #ff9292; }
-}
+:root[data-theme="dark"] .review-lines-added { color: #65d996; }
+:root[data-theme="dark"] .review-lines-removed { color: #ff9292; }
+
 .review-file-activity { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 2px 10px; padding: 0 4px 5px; font-size: 11px; line-height: 16px; color: var(--muted); }
 .review-file-drafts { color: var(--accent); }
 .review-file-unresolved { color: var(--warn); }
@@ -871,10 +869,9 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-fix-preview span { display: inline; }
 .review-fix-added { background: #c8f7d0; color: #16391b; }
 .review-fix-removed { background: #ffd6d6; color: #582020; }
-@media (prefers-color-scheme: dark) {
-  .review-fix-added { background: #21442a; color: #c5ebcd; }
-  .review-fix-removed { background: #5c2929; color: #ffcece; }
-}
+:root[data-theme="dark"] .review-fix-added { background: #21442a; color: #c5ebcd; }
+:root[data-theme="dark"] .review-fix-removed { background: #5c2929; color: #ffcece; }
+
 .review-blame-gutter { border-left: 3px solid var(--accent); cursor: help; }
 .review-existing-participant { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 12px; }
 

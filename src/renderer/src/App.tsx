@@ -1,3 +1,4 @@
+import { useTheme } from './theme.ts'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
 import { DEFAULT_SORT, EMPTY_FILTER, NO_TEAMS, SORT_OPTIONS, accountKeys, actionCounts, actionMenu, classifyAll, defaultTeamPick, displayName, tabCounts, tabSegments, teamMembers, teamPicks, teamTabLabel, totalActions, type SortId, type TabSegment, type TeamPick, type TeamSetup, type ViewFilter } from '../../shared/model.ts'
@@ -19,6 +20,7 @@ import { DashboardCache } from './dashboard-cache.ts'
 
 export function App() {
   const [settings, setSettings] = useState<SettingsStatus | null>(null)
+  useTheme(settings?.theme)
   const [showSettings, setShowSettings] = useState(initialSettingsOpen)
   const [data, setData] = useState<DashboardData | null>(null)
   const dashboardCache = useRef<DashboardCache | null>(null)
