@@ -64,6 +64,8 @@ test('Board keeps all three family branches inside their sequence step', async (
       const pending = structuredClone(changes)
       for (const c of pending) c.labels!['Code-Review']!.all![0]!.value = c._number === 103 ? 0 : 1
       const pendingHtml = render(pending, compact)
+      assert.match(pendingHtml, /Sequences.*?class="count">1<\/span>/)
+      assert.match(pendingHtml, /1 needs your review/)
       assert.match(pendingHtml, /class="step next"/)
       assert.match(pendingHtml, /#103(?:<\/b> is next for you| next)/)
       const familyHeader = pendingHtml.match(compact ? /<tr class="fh sequence-family-head">.*?<\/tr>/ : /<div class="sequence-family-head">.*?<\/div>/)![0]
@@ -71,6 +73,7 @@ test('Board keeps all three family branches inside their sequence step', async (
       const filtered = structuredClone(overlapping)
       filtered.find((c) => c._number === 103)!.subject = 'Release-specific settings follow-up'
       const filteredHtml = render(filtered, compact, 'Release-specific')
+      assert.match(filteredHtml, /Sequences.*?class="count">1<\/span>/)
       assert.match(filteredHtml, /Showing.*?<b>1<\/b> of 2/)
       for (const number of [101, 102, 103, 104]) assert.equal(filteredHtml.split(`data-change-number="${number}"`).length - 1, 1)
       assert.doesNotMatch(filteredHtml, /data-change-number="201"/)
@@ -103,10 +106,28 @@ test('Board keeps all three family branches inside their sequence step', async (
         loading: false, sort: DEFAULT_SORT, filter: EMPTY_FILTER, setup: NO_TEAMS, teamPick: undefined,
         onAct: async () => {}, onFilter: () => {}, onGoTo: () => {},
       }))
-      assert.match(html, /Needs Changes <span class="count">1<\/span>/,
-        `compact=${compact}: highest-priority state determines placement`)
+      assert.match(html, /Sequences <span class="count">1<\/span>/,
+        `compact=${compact}: mixed states stay in the dedicated sequence section`)
       for (const number of [301, 302, 303, 304, 305]) assert.equal(html.split(`data-change-number="${number}"`).length - 1, 1)
       assert.doesNotMatch(html, /Approved <span class="count">/)
+    }
+    const mergedBase = structuredClone(mixed)
+    mergedBase[0]!.status = 'MERGED'
+    for (const compact of [false, true]) {
+      const html = renderToStaticMarkup(createElement(Board, {
+        tab: 'mine', views: classifyAll(mergedBase, owner._account_id), self: owner, compact,
+        loading: false, sort: DEFAULT_SORT, filter: { ...EMPTY_FILTER, search: 'Urgent correction' },
+        setup: NO_TEAMS, teamPick: undefined, onAct: async () => {}, onFilter: () => {}, onGoTo: () => {},
+      }))
+      assert.match(html, /No change on this tab matches the filter/, 'closed context cannot bring the card onto a tab')
+      const unfiltered = renderToStaticMarkup(createElement(Board, {
+        tab: 'mine', views: classifyAll(mergedBase, owner._account_id), self: owner, compact,
+        loading: false, sort: DEFAULT_SORT, filter: EMPTY_FILTER,
+        setup: NO_TEAMS, teamPick: undefined, onAct: async () => {}, onFilter: () => {}, onGoTo: () => {},
+      }))
+      assert.match(unfiltered, /Sequences.*?class="count">1<\/span>/)
+      assert.match(unfiltered, /Change which of the related changes are in the sequence/, 'merged base preserves the sequence editor')
+      for (const number of [301, 302, 303, 304, 305]) assert.equal(unfiltered.split(`data-change-number="${number}"`).length - 1, 1)
     }
     // Omitting the middle commit keeps the remaining steps on one card in both layouts.
     const skipped = [change(401, 'main', 'Iskipbase', 'tip'),

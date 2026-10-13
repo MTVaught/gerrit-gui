@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, chainTitle, chainStepStatus, displayName, nextInChain, reviewLink, stateTally, type Chain, type ChangeFamily, type RelatedSet, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, chainTitle, chainStepStatus, chainViews, displayName, nextInChain, reviewLink, sequenceTally, stateTally, type Chain, type ChangeFamily, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { SequenceFamilyReference, CiMark, FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
@@ -144,8 +144,9 @@ function ChainBox(props: { chain: Chain; lead: ChangeView; all: RelatedSet | nul
               <Highlight text={chainTitle(chain)} term={line.search} />
             </span>
           </span>
-          <span className="n muted">
+          <span className="n muted sequence-summary">
             {chain.members.length} in sequence · <code>{anchor.change.branch}</code>
+            {sequenceTally(chainViews(chain)).map((t) => <span key={t.key} className={`tally ${t.state}`}> · {t.count} {t.label.toLowerCase()}</span>)}
             {next && !anchor.isMine && (
               <>
                 {' · '}

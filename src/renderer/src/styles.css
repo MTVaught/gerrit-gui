@@ -498,6 +498,8 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .ledger tr.fh .t svg { flex: 0 0 auto; color: var(--muted); }
 .ledger tr.fh .t .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ledger tr.fh .n { font-size: 11px; margin-left: 6px; white-space: nowrap; vertical-align: 1px; }
+.ledger tr.fh .sequence-summary { display: block; margin-left: 0; white-space: normal; line-height: 1.6; }
+.ledger .sequence-summary .tally { display: inline-block; white-space: nowrap; }
 .ledger tr.mem td { background: var(--band); border-bottom-color: var(--band-border); }
 .ledger tr.mem td:last-child { border-right: 1px solid var(--band-border); }
 .ledger tr.mem td.c { padding-left: 14px; }

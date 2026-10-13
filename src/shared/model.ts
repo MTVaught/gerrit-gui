@@ -682,6 +682,18 @@ export interface Group {
   title: string
   hint?: string
   items: ChangeView[]
+  /** Sequence placement follows section order and uses the first eligible member as its anchor. */
+  sequencePlacement?: 'section'
+}
+
+/** Keep sequences together in their own section; standalone families retain their state sections. */
+function withSequences(groups: Group[], views: ChangeView[]): Group[] {
+  const members = new Set(sequenceCards(views).flatMap(chainViews))
+  const items = groups.flatMap((g) => g.items).filter((v) => members.has(v))
+  return [
+    { title: 'Sequences', items, sequencePlacement: 'section' as const },
+    ...groups.map((g) => ({ ...g, items: g.items.filter((v) => !members.has(v)) })),
+  ].filter((g) => g.items.length > 0)
 }
 
 /** One section per entry; an entry of several states is one section titled after its first. */
@@ -737,17 +749,16 @@ export function groupsFor(tab: TabId, views: ChangeView[], pick?: TeamPick): Gro
     case 'needs-my-review':
       // Pass-around requests first: those are read alone, at the reviewer's desk. In-person ones wait for the meeting.
       return [
-        { title: 'Pass Around', items: open.filter((v) => v.needsMyReview && v.state === 'needs-review') },
-        { title: 'In Person', items: open.filter((v) => v.needsMyReview && v.state === 'in-person-review') },
+        { title: 'Pass Around', items: open.filter((v) => v.needsMyReview && v.state === 'needs-review'), sequencePlacement: 'section' as const },
+        { title: 'In Person', items: open.filter((v) => v.needsMyReview && v.state === 'in-person-review'), sequencePlacement: 'section' as const },
       ].filter((g) => g.items.length > 0)
     case 'reviewing':
-      return reviewerGroups(open.filter((v) => v.iAmReviewer && !v.isMine))
+      return withSequences(reviewerGroups(open.filter((v) => v.iAmReviewer && !v.isMine)), views)
     case 'mine': {
-      // Private changes are kept apart at the bottom, whatever their state:
-      // nobody but the people on them can see them, so they are not part of
-      // the team's picture of what is out for review.
+      // Standalone private changes stay apart at the bottom; private sequence
+      // members keep their per-change lock within the Sequences section.
       const mine = open.filter((v) => v.isMine)
-      return [
+      return withSequences([
         ...byState(
           mine.filter((v) => !v.isPrivate),
           ['needs-changes', 'approved', 'ready-to-merge', 'needs-review', 'in-person-review', 'iterating', 'in-progress'],
@@ -758,7 +769,7 @@ export function groupsFor(tab: TabId, views: ChangeView[], pick?: TeamPick): Gro
           hint: 'Visible only to you, the reviewers and the CCs. The state of each is on its row.',
           items: mine.filter((v) => v.isPrivate),
         },
-      ].filter((g) => g.items.length > 0)
+      ].filter((g) => g.items.length > 0), views)
     }
     case 'merged':
       // The merger's queue above the history: what waits to be merged, then what already was.
@@ -800,7 +811,7 @@ export interface TabSegment {
  * The colored segments of the count pills: on Needs Review, the pass-around
  * requests in the accent and the in-person ones in plain grey, since those
  * wait for a meeting rather than for the user; on Merged, what waits to be
- * merged; on My Changes, one per section: what needs work, what is approved,
+ * merged; on My Changes, sequences counted neutrally, then what needs work, what is approved,
  * then what is out for review and what is still in progress, and the private
  * ones apart. Cards, like the totals, so a family counts once: in the section
  * its card is under, the same as the section headers, however many other
@@ -819,6 +830,7 @@ export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegme
     ],
     merged: [{ n: countFamilies(merged.filter((g) => g.title !== 'Merged in the last 14 days').flatMap((g) => g.items), views), tone: 'pos', label: 'ready to merge' }],
     mine: [
+      { n: bySection('mine', 'Sequences'), tone: 'plain', label: 'sequences' },
       { n: bySection('mine', STATE_LABEL['needs-changes']), tone: 'neg', label: 'need changes' },
       { n: bySection('mine', STATE_LABEL['approved']), tone: 'pos', label: 'approved' },
       { n: bySection('mine', 'Pass Around') + bySection('mine', 'In Person'), tone: 'pending', label: 'out for review' },
@@ -1265,6 +1277,20 @@ export function stateTally(members: ChangeView[]): { state: ReviewState; count: 
   return URGENCY.filter((st) => n.has(st)).map((state) => ({ state, count: n.get(state)! }))
 }
 
+/** Sequence headers describe the members, including whose review is still pending. */
+export function sequenceTally(members: ChangeView[]): { key: string; state: ReviewState; count: number; label: string }[] {
+  return stateTally(members).flatMap(({ state, count }) => {
+    if (state !== 'needs-review' || members.every((v) => v.isMine)) {
+      return [{ key: state as string, state, count, label: STATE_LABEL[state] }]
+    }
+    const pending = members.filter((v) => v.state === state && v.needsMyReview).length
+    return [
+      { key: 'my-review', state, count: pending, label: pending === 1 ? 'needs your review' : 'need your review' },
+      { key: 'other-review', state, count: count - pending, label: 'waiting on others' },
+    ].filter((t) => t.count > 0)
+  })
+}
+
 /** Short form of a Change-Id for labels: "I3f2a91c…". */
 export function shortChangeId(key: string): string {
   return key.length > 9 ? key.slice(0, 8) + '\u2026' : key
@@ -1458,7 +1484,7 @@ export function sequenceCards(views: ChangeView[]): Chain[] {
     if (chainViews(card).length > 0) continue
     const host = cards.find((c) => c.key === card.references!.find((r) => r !== null)!.key)!
     host.linkedSequences ??= []
-    host.linkedSequences.push({ chain: card, related: relatedSetOf(views, card.members[0]!.change) })
+    host.linkedSequences.push({ chain: card, related: relatedSetOf(views, card.members[0]!.change, true) })
   }
   return cards.filter((card) => chainViews(card).length > 0)
 }
@@ -1548,16 +1574,16 @@ export function relatedSets(views: ChangeView[], parents: Map<number, ParentLink
  * separate sets; fewer than two tagged members stay ordinary cards.
  */
 export function sequenceChains(views: ChangeView[]): Chain[] {
-  const unmerged = views.filter((v) => v.change.status !== 'MERGED')
-  const links = parentLinks(unmerged)
+  const links = parentLinks(views)
   const own = new Map<number, ParentLink>()
-  for (const v of unmerged) {
+  for (const v of views) {
     const p = links.get(v.change._number)
     if (p && p.view.change.owner._account_id === v.change.owner._account_id) own.set(v.change._number, p)
   }
-  return relatedSets(unmerged, own).flatMap((set) => {
+  return relatedSets(views, own).flatMap((set) => {
     const members = set.members.filter((v) => isSequenced(v.change))
-    if (members.length < 2) return []
+    // Keep closed steps as context until the last tagged member closes.
+    if (members.length < 2 || !members.some((v) => v.change.status === 'NEW')) return []
     // Keep actual commit dependencies for rebase notes, including omitted parents.
     const parents = new Map<number, ParentLink>()
     for (const v of members) {
@@ -1580,9 +1606,9 @@ export function sequenceCandidates(views: ChangeView[], selfId: number): Related
   return relatedSets(mine).filter((s) => !s.members.some((v) => chained.has(v)))
 }
 
-/** The related set a member belongs to, for the picker: the whole set, tagged or not, around the change. */
-export function relatedSetOf(views: ChangeView[], change: ChangeInfo): RelatedSet | null {
-  const same = views.filter((v) => v.change.status === 'NEW' && v.change.project === change.project && v.change.branch === change.branch && v.change.owner._account_id === change.owner._account_id)
+/** The owner's related set for the picker. Existing sequences can include closed steps as context. */
+export function relatedSetOf(views: ChangeView[], change: ChangeInfo, includeClosed = false): RelatedSet | null {
+  const same = views.filter((v) => (includeClosed || v.change.status === 'NEW') && v.change.project === change.project && v.change.branch === change.branch && v.change.owner._account_id === change.owner._account_id)
   return relatedSets(same).find((s) => s.members.some((v) => v.change._number === change._number)) ?? null
 }
 
@@ -1594,15 +1620,18 @@ export function chainTitle(chain: RelatedSet): string {
   return `#${chain.members[0]!.change._number} to #${chain.members.at(-1)!.change._number}`
 }
 
-/** The member the reviewer should read next: the lowest one that waits on them. Null when none does. */
+/** Next pending pass-around member in reading order, then an in-person request. */
 export function nextInChain(chain: Chain): ChangeView | null {
+  let inPerson: ChangeView | null = null
   for (const [i, member] of chain.members.entries()) {
     if (chain.references?.[i]) continue
     const family = chain.families?.[i]?.members ?? [member]
-    const next = [member, ...family.filter((v) => v !== member)].find((v) => v.needsMyReview)
+    const candidates = [member, ...family.filter((v) => v !== member)]
+    const next = candidates.find((v) => v.needsMyReview && v.state === 'needs-review')
     if (next) return next
+    inPerson ??= candidates.find((v) => v.needsMyReview) ?? null
   }
-  return null
+  return inPerson
 }
 
 /** A step is complete only when every branch in its family is approved or merged. */
@@ -1624,18 +1653,32 @@ export function cardKeys(views: ChangeView[]): Map<ChangeView, string> {
 }
 
 /**
- * The member that leads each sequence card on a tab, by sequence key: the
- * most urgent member among the sections, a tie going to the earliest
- * section. As `familyLeads`, for sequences.
+ * The member anchoring each sequence card. Dedicated sections and Needs
+ * Review use section order and the first eligible member in sequence order.
+ * Other tabs retain state urgency, with ties going to the earlier section.
  */
 export function chainLeads(groups: Group[], chains: Chain[]): Map<string, ChangeView> {
   const keyOf = new Map<ChangeView, string>()
   for (const c of chains) for (const v of chainViews(c)) keyOf.set(v, c.key)
   const lead = new Map<string, ChangeView>()
+  const sectionLed = new Set<string>()
   for (const g of groups) {
+    if (g.sequencePlacement === 'section') {
+      const eligible = new Set(g.items)
+      for (const c of chains) {
+        if (sectionLed.has(c.key)) continue
+        const first = chainViews(c).find((v) => eligible.has(v))
+        if (first) {
+          lead.set(c.key, first)
+          sectionLed.add(c.key)
+        }
+      }
+      continue
+    }
     for (const v of g.items) {
       const key = keyOf.get(v)
       if (key === undefined) continue
+      if (sectionLed.has(key)) continue
       const cur = lead.get(key)
       if (!cur || urgency(v.state) < urgency(cur.state)) lead.set(key, v)
     }

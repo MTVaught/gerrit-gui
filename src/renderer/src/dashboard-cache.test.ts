@@ -325,6 +325,6 @@ test('a mixed-state sequence stays together when one member is refreshed after a
   }
   const initial = classifyAll(snapshots[0]!.open, alice._account_id)
   const final = classifyAll(cache.snapshot!.open, alice._account_id)
-  assert.equal(cardGroups('mine', initial)[0]!.title, 'Needs Changes')
-  assert.equal(cardGroups('mine', final)[0]!.title, 'Pass Around')
+  assert.equal(cardGroups('mine', initial)[0]!.title, 'Sequences')
+  assert.equal(cardGroups('mine', final)[0]!.title, 'Sequences')
 })
