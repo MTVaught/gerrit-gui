@@ -1444,12 +1444,17 @@ test('sequence: a related set is every change linked to a base, base first, a fo
   assert.equal(sets[0]!.parents.get(64)!.view.change._number, 63)
 })
 
-test('sequence: only tagged changes linked through tagged changes form a chain; an untagged one in the middle splits it', () => {
+test('sequence: untagged changes are omitted without splitting the chain', () => {
   const tagged = (ns: number[]) => Object.fromEntries(ns.map((n) => [n, ['sequence']]))
   const views = (tags: Record<number, string[]>) => classifyAll(Object.values(chainFixture(tags)), alice._account_id)
   assert.deepEqual(sequenceChains(views(tagged([61, 62, 63, 64]))).map((c) => c.members.map((v) => v.change._number)), [[61, 62, 63, 64]])
   assert.deepEqual(sequenceChains(views(tagged([62, 63, 64]))).map((c) => c.members.map((v) => v.change._number)), [[62, 63, 64]], 'a tagged change whose parent is not tagged is the base')
-  assert.deepEqual(sequenceChains(views(tagged([61, 62, 64]))).map((c) => c.members.map((v) => v.change._number)), [[61, 62]], '64 is cut off by the untagged 63 and alone, so it is no sequence')
+  assert.deepEqual(sequenceChains(views(tagged([61, 62, 64]))).map((c) => c.members.map((v) => v.change._number)), [[61, 62, 64]], '64 stays in the sequence across the omitted 63')
+  assert.deepEqual(sequenceChains(views(tagged([61, 64]))).map((c) => c.members.map((v) => v.change._number)), [[61, 64]], 'multiple omitted changes preserve the sequence')
+  assert.deepEqual(sequenceChains(views(tagged([61, 64, 65]))).map((c) => c.members.map((v) => v.change._number)), [[61, 64, 65]], 'omitted fork points preserve reading order')
+  const [omitted] = sequenceChains(views(tagged([61, 63])))
+  assert.equal(omitted!.parents.get(63)!.view.change._number, 62, 'rebase notes retain the actual omitted parent')
+  assert.equal(omitted!.parents.get(63)!.stale, true)
   assert.deepEqual(sequenceChains(views(tagged([63]))), [], 'one tagged change with no tagged parent or child stays an ordinary card')
   assert.deepEqual(sequenceChains(views(tagged([62, 63, 65]))).map((c) => c.members.map((v) => v.change._number)), [[62, 63, 65]], 'a fork among tagged changes is one sequence, in reading order')
 })
@@ -1496,6 +1501,8 @@ test('sequence: an owner boundary leaves single tagged changes as ordinary cards
   f.c63.owner = carol
   const views = classifyAll(Object.values(f), alice._account_id)
   assert.deepEqual(sequenceChains(views).map((s) => s.members.map((v) => v.change._number)), [[61, 62]])
+  f.c63.hashtags = []
+  assert.deepEqual(sequenceChains(classifyAll(Object.values(f), alice._account_id)).map((s) => s.members.map((v) => v.change._number)), [[61, 62]], 'an omitted change owned by someone else still separates sequences')
 })
 
 test('sequence: the candidates are the owner\'s open related sets with no member tagged; the picker sees the whole set around a change', () => {
@@ -1505,8 +1512,8 @@ test('sequence: the candidates are the owner\'s open related sets with no member
   assert.deepEqual(sequenceCandidates(views, alice._account_id), [], 'not the reviewer\'s to set up')
   const tagged = classifyAll(Object.values(chainFixture({ 61: ['sequence'], 62: ['sequence'] })), bob._account_id)
   assert.deepEqual(sequenceCandidates(tagged, bob._account_id), [], 'a set with a sequence in it is edited from the sequence card, not offered again')
-  const split = classifyAll(Object.values(chainFixture({ 61: ['sequence'], 63: ['sequence'] })), bob._account_id)
-  assert.equal(sequenceCandidates(split, bob._account_id).length, 1, 'tags that make no sequence leave the set on offer, or the owner could not reach the picker')
+  const lone = classifyAll(Object.values(chainFixture({ 61: ['sequence'] })), bob._account_id)
+  assert.equal(sequenceCandidates(lone, bob._account_id).length, 1, 'a lone tagged change leaves the set on offer so the picker stays accessible')
   assert.deepEqual(relatedSetOf(tagged, f.c63)!.members.map((v) => v.change._number), [61, 62, 63, 64, 65])
   assert.equal(relatedSetOf(tagged, f.c58), null)
 })

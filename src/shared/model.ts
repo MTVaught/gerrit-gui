@@ -1422,7 +1422,7 @@ export interface RelatedSet {
   parents: Map<number, ParentLink>
 }
 
-/** A sequence: the tagged members of a related set that are linked to each other through tagged members only, in reading order. */
+/** A sequence: the tagged members of an owner's related set, in reading order. */
 export interface Chain extends RelatedSet {
   /** Each step retains its complete Change-Id family when rendered on the board. */
   families?: ChangeFamily[]
@@ -1542,31 +1542,37 @@ export function relatedSets(views: ChangeView[], parents: Map<number, ParentLink
 }
 
 /**
- * The sequences on the board: among the unmerged tagged changes, the related sets
- * made of links between tagged changes with the same owner only. An
- * owner boundary or an untagged change in the middle splits a line in two;
- * a tagged change whose parent is not tagged or has a different owner
- * is a base, and a tagged change with no tagged parent or child is not a
- * sequence at all and stays an ordinary card.
+ * The sequences on the board: tagged members of each owner's unmerged
+ * related set, in reading order. Untagged changes keep the set connected
+ * but are omitted from the sequence. Owner boundaries and merged changes
+ * separate sets; fewer than two tagged members stay ordinary cards.
  */
 export function sequenceChains(views: ChangeView[]): Chain[] {
   const unmerged = views.filter((v) => v.change.status !== 'MERGED')
-  const tagged = unmerged.filter((v) => isSequenced(v.change))
   const links = parentLinks(unmerged)
   const own = new Map<number, ParentLink>()
-  for (const v of tagged) {
+  for (const v of unmerged) {
     const p = links.get(v.change._number)
-    if (p && isSequenced(p.view.change) && p.view.change.owner._account_id === v.change.owner._account_id) own.set(v.change._number, p)
+    if (p && p.view.change.owner._account_id === v.change.owner._account_id) own.set(v.change._number, p)
   }
-  return relatedSets(tagged, own)
+  return relatedSets(unmerged, own).flatMap((set) => {
+    const members = set.members.filter((v) => isSequenced(v.change))
+    if (members.length < 2) return []
+    // Keep actual commit dependencies for rebase notes, including omitted parents.
+    const parents = new Map<number, ParentLink>()
+    for (const v of members) {
+      const p = set.parents.get(v.change._number)
+      if (p) parents.set(v.change._number, p)
+    }
+    return [{ key: members[0]!.change.id, members, parents }]
+  })
 }
 
 /**
  * The sets the owner could make a sequence of: their open changes built on
  * each other, with no member in a sequence yet. A set with tags left on it
- * that make no sequence (a lone tagged change, or two split by an untagged
- * one) is still offered, since its sequence card, and the Edit button on
- * it, do not exist.
+ * that make no sequence (a lone tagged change) is still offered, since its
+ * sequence card, and the Edit button on it, do not exist.
  */
 export function sequenceCandidates(views: ChangeView[], selfId: number): RelatedSet[] {
   const mine = views.filter((v) => v.change.status === 'NEW' && v.change.owner._account_id === selfId)
