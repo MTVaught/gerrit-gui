@@ -335,6 +335,9 @@ export default function ReviewEditor({ file, link, preferences, commentsVisible,
     content.className = 'review-inline-content'
     node.append(content)
     node.addEventListener('mousedown', event => event.stopPropagation())
+    // Monaco cancels context menus on view zones. Keep the native spelling
+    // and editing menu available without cancelling the browser's default.
+    node.addEventListener('contextmenu', event => event.stopPropagation())
     let code: monaco.editor.IStandaloneCodeEditor | null = null
     let zoneId = ''
     let layoutSubscription: monaco.IDisposable | null = null
