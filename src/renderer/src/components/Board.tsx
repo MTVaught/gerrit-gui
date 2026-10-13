@@ -179,8 +179,9 @@ export function Board(props: {
   // waiting on you beats one you already reviewed. A section whose only
   // changes are branches of a card led elsewhere is dropped: the header
   // counts the cards under it, and nothing would be under it.
-  // A sequence is one card too, led the same way; a stub for an untagged
-  // set goes above the card of its most urgent member on the tab.
+  // Sequences have their own section on My Changes and Reviewing; Needs
+  // Review follows request kind. Their first eligible member anchors the
+  // sort position. Other tabs and untagged stubs keep the urgency rule.
   const sorted = groups.map((g) => sortViews(g.items, props.sort))
   // Families inside sequences do not also get a separate card.
   const familyGroups = groups.map((g) => ({ ...g, items: g.items.filter((v) => !chainOf.has(v)) }))
@@ -195,7 +196,7 @@ export function Board(props: {
         const stubSet = stubs.get(v)
         const stub = stubSet && stubLead.get(stubSet.key) === v ? stubSet : null
         const chain = chainOf.get(v)
-        if (chain) return chainLead.get(chain.key) === v ? [{ ...none, view: v, chain, related: relatedSetOf(props.views, chain.members[0]!.change) }] : []
+        if (chain) return chainLead.get(chain.key) === v ? [{ ...none, view: v, chain, related: relatedSetOf(props.views, chain.members[0]!.change, true) }] : []
         const key = familyKey(v.change)
         const f = families.get(key)
         if (!f || f.members.length === 1) return [{ ...none, view: v, stub }]

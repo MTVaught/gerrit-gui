@@ -321,18 +321,22 @@ other, with the "sequence" hashtag on each one.
   topic, or the first and last change numbers), the branch, and how many
   changes are in each state. A change built on an older patch set of the
   one below it says so, "on #62 PS 1", since a rebase is due.
+- On My Changes and Reviewing, sequences have their own Sequences section.
+  The header summarizes member states without assigning one state to the
+  entire sequence. Needs Review includes the sequence while any member or
+  cherry-pick branch has a current request awaiting your vote. Reviewing one
+  member leaves it there until the last pending review is answered.
 - The head line of your own sequence has an "Edit sequence…" button. It
   opens the same checklist with the members ticked. Untick everything to
   dissolve the sequence.
-- The tag only says which changes to show together. Which change is built
-  on which comes from the commits: an untagged change in the middle of a
-  line splits the sequence in two, a tagged change whose parent is not
-  tagged is the base of its sequence, and a tagged change with no tagged
-  parent or child is an ordinary card.
+- The tag says which changes to show together. Commit dependencies determine
+  their reading order. Untagged changes can be omitted without splitting a
+  sequence. Merged steps remain as context while a tagged member is open;
+  a lone tagged change with no related tagged member is an ordinary card.
 - Nothing else changes. Request review, Ready to Merge, the reviewers and
   the votes stay per change, and only the owner sets or clears the tag. A
-  sequence is one card in the counts, like a family. A cherry-pick of a
-  member on another branch is a card of its own.
+  sequence is one card in the counts, like a family. Cherry-picks stay inside
+  their sequence steps, with their own states and actions.
 - In the compact window the sequence is a box like a family, the lines
   titled by their subjects with the step in front, and the dashed offer is
   one header line.

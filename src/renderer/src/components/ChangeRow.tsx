@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, accountKeys, chainViews, chainStepStatus, chainTitle, displayName, nextInChain, preferredKey, reviewerTag, reviewerTagsFor, stateTally, type Chain, type ChangeFamily, type ParentLink, type RelatedSet, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, accountKeys, chainViews, chainStepStatus, chainTitle, displayName, nextInChain, preferredKey, reviewerTag, reviewerTagsFor, sequenceTally, stateTally, type Chain, type ChangeFamily, type ParentLink, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
 import { ChainIcon, CheckIcon, CommentIcon, ForkIcon, LockIcon } from './Icons.tsx'
@@ -83,13 +83,13 @@ export function FamilyCard(props: { family: ChangeFamily; lead: ChangeView; self
  * from the head line.
  */
 export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedSet | null; self: AccountInfo; onAct: (a: ChangeAction) => Promise<void>; sort: SortId; search: string }) {
-  const { chain, lead } = props
+  const { chain } = props
   const anchor = chain.members[0]!
   const c = anchor.change
   const next = nextInChain(chain)
   const owner = anchor.isMine
   return (
-    <li id={`sequence:${chain.key}`} className={`change chain state-${lead.state}`}>
+    <li id={`sequence:${chain.key}`} className="change chain">
       <div className="change-head">
         <span className="badge chain" title="These changes are built on each other; review them from the top down">
           <ChainIcon /> {chain.members.length} in sequence
@@ -100,9 +100,9 @@ export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedS
         <span className="badge branch" title={`${c.project} · ${c.branch}`}>
           <code>{c.branch}</code>
         </span>
-        {stateTally(chainViews(chain)).map((t) => (
-          <span key={t.state} className={`badge tally ${t.state}`} title={`${t.count} of the ${chainViews(chain).length} changes: ${STATE_LABEL[t.state]}`}>
-            {t.count} {STATE_LABEL[t.state]}
+        {sequenceTally(chainViews(chain)).map((t) => (
+          <span key={t.key} className={`badge tally ${t.state}`} title={`${t.count} of the ${chainViews(chain).length} changes: ${t.label}`}>
+            {t.count} {t.label}
           </span>
         ))}
         {next && !owner && (
