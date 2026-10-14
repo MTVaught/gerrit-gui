@@ -58,7 +58,11 @@ const changes = [
   }),
 ]
 const variant = new URLSearchParams(location.search).get('variant')
-const active = variant === 'private-sequence' ? changes.map(c => c._number === 104 ? { ...c, is_private: true } : c) : variant === 'progress' ? changes.filter(c => c._number === 111) : variant === 'private' ? changes.filter(c => c.is_private) : variant === 'empty' ? [] : changes
+const conflictChanges = changes.map(c => ({ ...c,
+  mergeable: [102, 105, 106, 109, 112].includes(c._number) ? false : c._number === 108 ? undefined : true,
+  labels: { ...c.labels, Verified: { all: c._number === 109 ? [] : [{ ...carol, value: c._number === 106 ? -1 : 1 }] } },
+}))
+const active = variant === 'conflict' ? conflictChanges : variant === 'private-sequence' ? changes.map(c => c._number === 104 ? { ...c, is_private: true } : c) : variant === 'progress' ? changes.filter(c => c._number === 111) : variant === 'private' ? changes.filter(c => c.is_private) : variant === 'empty' ? [] : changes
 const subscribe = () => () => {}
 let onCompact = () => {}
 let badge = null
@@ -73,8 +77,13 @@ window.api = {
   onCompactChanged: cb => { onCompact = cb; return () => {} }, setCompact: async on => onCompact(on),
   setBadge: payload => { badge = payload }, lookupAccounts: async () => [self, bob, carol],
   suggestAccounts: async () => [self, bob, carol],
-  fetchDashboard: async () => ({ self, open: active.filter(c => c.status === 'NEW'), merged: active.filter(c => c.status === 'MERGED'), fetchedAt: new Date().toISOString(), truncated: false }),
-  fetchChange: async id => active.find(c => c._number === id),
+  fetchDashboard: async () => {
+    // Conflict checks mutate the simulated server between reads, never the
+    // renderer's previous snapshot. Absent mergeability simulates a failed lookup.
+    const snapshot = variant === 'conflict' ? structuredClone(active) : active
+    return { self, open: snapshot.filter(c => c.status === 'NEW'), merged: snapshot.filter(c => c.status === 'MERGED'), fetchedAt: new Date().toISOString(), truncated: false }
+  },
+  fetchChange: async id => variant === 'conflict' ? structuredClone(active.find(c => c._number === id)) : active.find(c => c._number === id),
   openChange: async () => {}, openUrl: async () => {},
 }
 await import('/src/main.tsx')

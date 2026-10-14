@@ -29,6 +29,21 @@ updates. It also ignores computed deltas and pagination, normalizes false
 privacy/WIP flags and empty request maps, and sorts hashtags and object keys.
 Equal-timestamp conflicts still require a direct read.
 
+Mergeability is branch-dependent metadata and is excluded from that review
+fingerprint. For the same revision, project, and destination branch, a current
+dashboard ticket replaces mergeability independently of protected review
+fields. This includes an absent value after a failed optional lookup. For
+example, an unchanged patch set can go from conflicted to mergeable after
+another change reaches its destination branch; its update timestamp and
+review state need not change. Unknown results remove an old warning without
+asserting a clean merge.
+
+Writes still advance the change generation. Pre-write tickets, pending
+writes, and older revisions cannot attach conflict metadata to a newer
+result. A per-entry mergeability version also prevents a detail read started
+before an accepted branch-status refresh from restoring older metadata for
+the same revision. Review fields retain their existing reconciliation rules.
+
 Automated coverage includes cache ordering, index lag, external changes,
 failure recovery, removals, scope changes, sequence edits, read deduplication,
 and concurrency limits. `test/dashboard-cache-ui.cjs` drives the built

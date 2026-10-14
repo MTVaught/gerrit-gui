@@ -3,7 +3,7 @@ import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../.
 import { STATE_LABEL, accountKeys, chainStepStatus, chainTitle, displayName, nextInChain, preferredKey, reviewerTag, reviewerTagsFor, type Chain, type ChangeFamily, type ParentLink, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
-import { ChainIcon, CheckIcon, CommentIcon, ForkIcon, LockIcon } from './Icons.tsx'
+import { ChainIcon, CheckIcon, CommentIcon, ConflictIcon, ForkIcon, LockIcon } from './Icons.tsx'
 import { SequencePicker } from './SequencePicker.tsx'
 import { actionClass, changeActions, type ActionSpec } from './actions.ts'
 import { ago } from '../time.ts'
@@ -268,7 +268,7 @@ function BranchRow(props: RowProps) {
         </button>
         <span className="ps muted">
           PS {v.patchSet}
-          {open && <CiMark view={v} />}
+          {open && <PatchSetIndicators view={v} />}
         </span>
       </span>
       <span className="cell c-tags">
@@ -334,19 +334,24 @@ export function MyLastReview(props: { view: ChangeView; slot?: boolean }) {
 }
 
 /**
- * The Verified vote on the current patch set, after "PS N": a green check
- * when CI passed, a red cross when it failed, nothing while CI has not voted.
- * It sits by the patch set number because that is what the vote is on; a new
- * patch set clears it. Ready to Merge needs the check.
+ * After "PS N", show the optional merge-conflict warning, then Verified:
+ * a green check when CI passed or a red cross when it failed. A conflict
+ * remains visible with no CI vote. Neither indicator changes review state.
  */
-export function CiMark(props: { view: ChangeView }) {
+export function PatchSetIndicators(props: { view: ChangeView }) {
   const { view: v } = props
-  if (v.verifiedVote === 0) return null
+  const conflict = v.change.mergeable === false
+  if (v.change.status !== 'NEW' || (!conflict && v.verifiedVote === 0)) return null
   const pos = v.verifiedVote > 0
+  const warning = `Merge conflict with ${v.change.branch}`
   return (
-    <span className={'ci-mark ' + (pos ? 'pos' : 'neg')} title={pos ? `Verified +1 on patch set ${v.patchSet}: CI passed` : `Verified −1 on patch set ${v.patchSet}: CI failed`}>
-      {' '}
-      {pos ? '✓' : '✕'}
+    <span className="patch-set-indicators">
+      {conflict && <span className="conflict-mark" title={warning} role="img" aria-label={warning}><ConflictIcon /></span>}
+      {v.verifiedVote !== 0 && (
+        <span className={'ci-mark ' + (pos ? 'pos' : 'neg')} title={pos ? `Verified +1 on patch set ${v.patchSet}: CI passed` : `Verified −1 on patch set ${v.patchSet}: CI failed`}>
+          {pos ? '✓' : '✕'}
+        </span>
+      )}
     </span>
   )
 }

@@ -33,6 +33,68 @@ function states(data: DashboardData) {
   return classifyAll(data.open, alice._account_id, NO_TEAMS, accountKeys(alice)).map(v => v.state)
 }
 
+test('branch-only mergeability refreshes at an unchanged revision and timestamp without detail reads', async () => {
+  let reads = 0
+  const initial = { ...change(), mergeable: false }
+  const { cache } = await seed(async () => { reads++; return initial }, [initial])
+  await cache.revalidate(1)
+  for (const mergeable of [true, false, undefined]) {
+    const before = reads
+    await cache.acceptDashboard(dashboard([{ ...initial, mergeable }]), cache.beginRefresh())
+    assert.equal(cache.snapshot!.open[0]!.mergeable, mergeable)
+    assert.equal(reads, before, 'mergeability does not trigger an equal-timestamp review conflict')
+    assert.deepEqual(states(cache.snapshot!), ['iterating'])
+  }
+})
+
+test('protected review fields accept branch metadata while failed detail validation preserves review state', async () => {
+  const latest = { ...change(1, '1,2'), mergeable: false }
+  let fail = false
+  const { cache } = await seed(async () => { if (fail) throw new Error('offline'); return latest }, [change()])
+  await cache.mutate([1], async () => {})
+  fail = true
+  for (const mergeable of [true, undefined]) {
+    await assert.rejects(cache.acceptDashboard(dashboard([{ ...change(), mergeable }]), cache.beginRefresh()), /offline/)
+    assert.equal(cache.snapshot!.open[0]!.mergeable, mergeable)
+    assert.deepEqual(states(cache.snapshot!), ['needs-review'], 'the protected request history remains')
+  }
+})
+
+test('pre-write and superseded refreshes cannot restore older conflict metadata', async () => {
+  const initial = { ...change(), mergeable: false }
+  const fresh = { ...change(1, '1,2'), mergeable: true }
+  const { cache } = await seed(async () => fresh, [initial])
+  const beforeWrite = cache.beginRefresh()
+  await cache.mutate([1], async () => {})
+  await cache.acceptDashboard(dashboard([initial]), beforeWrite)
+  assert.equal(cache.snapshot!.open[0]!.mergeable, true)
+  const stale = cache.beginRefresh()
+  await cache.acceptDashboard(dashboard([{ ...fresh, mergeable: undefined }]), cache.beginRefresh())
+  await cache.acceptDashboard(dashboard([initial]), stale)
+  assert.equal(cache.snapshot!.open[0]!.mergeable, undefined)
+})
+
+test('older revisions do not attach mergeability to protected newer patch sets', async () => {
+  const initial = { ...change(), mergeable: false }
+  const fresh = { ...change(1, '1,2'), current_revision: 'ps3', mergeable: undefined }
+  const { cache, snapshots } = await seed(async () => fresh, [initial])
+  await cache.mutate([1], async () => {})
+  const start = snapshots.length
+  await cache.acceptDashboard(dashboard([initial]), cache.beginRefresh())
+  assert.ok(snapshots.slice(start).every(data => data.open[0]?.current_revision === 'ps3' && data.open[0]?.mergeable === undefined))
+})
+
+test('late detail mergeability does not restore a conflict after a newer same-revision refresh', async () => {
+  const initial = { ...change(), mergeable: false }
+  const read = deferred<ChangeInfo>()
+  const { cache } = await seed(() => read.promise, [initial])
+  const pending = cache.revalidate(1)
+  await cache.acceptDashboard(dashboard([{ ...initial, mergeable: true }]), cache.beginRefresh())
+  read.resolve(initial)
+  await pending
+  assert.equal(cache.snapshot!.open[0]!.mergeable, true)
+})
+
 test('pre-write and post-write stale searches never roll back the section or tab count', async () => {
   for (const before of [true, false]) {
     const fresh = change(1, '1,2')
