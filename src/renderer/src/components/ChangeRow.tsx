@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, accountKeys, chainViews, chainStepStatus, chainTitle, displayName, nextInChain, preferredKey, reviewerTag, reviewerTagsFor, sequenceTally, stateTally, type Chain, type ChangeFamily, type ParentLink, type RelatedSet, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, accountKeys, chainStepStatus, chainTitle, displayName, nextInChain, preferredKey, reviewerTag, reviewerTagsFor, type Chain, type ChangeFamily, type ParentLink, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { Highlight } from './Highlight.tsx'
 import { ChainIcon, CheckIcon, CommentIcon, ForkIcon, LockIcon } from './Icons.tsx'
@@ -77,7 +77,7 @@ export function FamilyCard(props: { family: ChangeFamily; lead: ChangeView; self
  * A sequence: changes built on each other on one branch, one card with a
  * row per change, base first, so the rows read in review order. The
  * subject takes the branch column; the head line names the sequence (its
- * topic, or the first and last numbers), the branch, a tally of states and,
+ * topic, or the first and last numbers), the branch and,
  * for a reviewer, which change to read next. Each row keeps its own
  * reviewers and buttons, as in a family card. The owner edits the members
  * from the head line.
@@ -100,11 +100,6 @@ export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedS
         <span className="badge branch" title={`${c.project} · ${c.branch}`}>
           <code>{c.branch}</code>
         </span>
-        {sequenceTally(chainViews(chain)).map((t) => (
-          <span key={t.key} className={`badge tally ${t.state}`} title={`${t.count} of the ${chainViews(chain).length} changes: ${t.label}`}>
-            {t.count} {t.label}
-          </span>
-        ))}
         {next && !owner && (
           <span className="muted small next-hint">
             review from the top down · <b>#{next.change._number}</b> is next for you
@@ -141,9 +136,6 @@ export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedS
             <div className="sequence-family-head">
               {title}
               <span className="badge branch" title={`Change-Id ${family.key}`}><ForkIcon /> {family.members.length} branches</span>
-              {stateTally(family.members).map((t) => (
-                <span key={t.state} className={`badge tally ${t.state}`}>{t.count} {STATE_LABEL[t.state]}</span>
-              ))}
             </div>
             {reference ? <SequenceFamilyReference reference={reference} /> : family.members.map((member) => (
               <BranchRow key={member.change.id} view={member} self={props.self} onAct={props.onAct} sort={props.sort} search={props.search} slack />
@@ -234,12 +226,6 @@ function CardHead(props: { view: ChangeView; family?: ChangeFamily; search: stri
           <ForkIcon /> {f.members.length} branches
         </span>
       )}
-      {f &&
-        stateTally(f.members).map((t) => (
-          <span key={t.state} className={`badge tally ${t.state}`} title={`${t.count} of the ${f.members.length} branches: ${STATE_LABEL[t.state]}`}>
-            {t.count} {STATE_LABEL[t.state]}
-          </span>
-        ))}
       <span className="muted small origin">
         {c.project} · {v.isMine ? 'you' : displayName(c.owner)}
       </span>

@@ -15,6 +15,7 @@ import type {
   TabId,
   Team,
 } from './types.ts'
+import { WORKFLOW_COLORS } from './workflow-colors.ts'
 import { CODE_REVIEW, IN_PERSON_REVIEW_KEY, MERGER_TAG_PREFIX, READY_TO_MERGE_TAG, REVIEWER_TAG_PREFIX, REVIEW_REQUESTED_KEY, READY_TO_MERGE_KEY, SEQUENCE_TAG, SLACK_TAG_PREFIX, VERIFIED } from './constants.ts'
 
 export function isBot(a: AccountInfo): boolean {
@@ -782,43 +783,57 @@ export function groupsFor(tab: TabId, views: ChangeView[], pick?: TeamPick): Gro
 }
 
 /**
- * The number on each tab: how many cards its sections list before the View
- * filter. A Change-Id family is one card wherever it is, so it counts once.
+ * My Changes counts individual public open changes displayed in its cards. Other tabs count cards
+ * before the View filter, with each family or sequence counted once.
  */
 export function tabCounts(views: ChangeView[], teamPick?: TeamPick): Record<TabId, number> {
   const c = {} as Record<TabId, number>
-  for (const tab of TAB_IDS) c[tab] = countFamilies(groupsFor(tab, views, tab === 'team-reviews' ? teamPick : undefined).flatMap((g) => g.items), views)
+  for (const tab of TAB_IDS) {
+    c[tab] = tab === 'mine'
+      ? myChangeSegments(views).reduce((sum, s) => sum + s.n, 0)
+      : countFamilies(groupsFor(tab, views, tab === 'team-reviews' ? teamPick : undefined).flatMap((g) => g.items), views)
+  }
   return c
 }
 
 const TAB_IDS: readonly TabId[] = ['needs-my-review', 'reviewing', 'mine', 'external-reviews', 'team-reviews', 'merged']
 
-/** One colored part of a tab's count pill, left of the grey total. */
+/** One colored segment in a tab count summary. */
 export interface TabSegment {
   n: number
-  /**
-   * hot: waits on the user, in the accent of the plain Needs Review pill.
-   * plain: the grey of an ordinary count. pos/neg: waits on the user.
-   * pending/wip: waits on others, shown after a gap in muted tones. private:
-   * not a state; drawn as a lock beside the pill.
-   */
-  tone: 'hot' | 'plain' | 'pos' | 'neg' | 'pending' | 'wip' | 'private'
-  /** Names the count in the pill's tooltip: "3 ready to merge". */
+  tone: 'hot' | 'plain' | 'pos' | 'neg' | 'pending' | 'wip' | 'merge' | 'iterating'
   label: string
 }
 
-/**
- * The colored segments of the count pills: on Needs Review, the pass-around
- * requests in the accent and the in-person ones in plain grey, since those
- * wait for a meeting rather than for the user; on Merged, what waits to be
- * merged; on My Changes, sequences counted neutrally, then what needs work, what is approved,
- * then what is out for review and what is still in progress, and the private
- * ones apart. Cards, like the totals, so a family counts once: in the section
- * its card is under, the same as the section headers, however many other
- * sections its branches touch. A segment at zero is left out, as is in
- * progress when it is the only state: then it is the whole tab and the plain
- * total says as much.
- */
+/** My Changes counts changes, independently of card placement and View filters. */
+export function myChangeSegments(views: ChangeView[]): TabSegment[] {
+  // Use card membership only to find the tab's complete contents. Each public
+  // open member counts separately, including another owner's cherry-pick.
+  const keys = cardKeys(views)
+  const displayed = new Set(groupsFor('mine', views).flatMap(g => g.items).map(v => keys.get(v)))
+  const counts = new Map<ReviewState, number>()
+  const seen = new Set<string>()
+  for (const v of views) {
+    if (!displayed.has(keys.get(v)) || v.isPrivate || v.change.status !== 'NEW' || seen.has(v.change.id)) continue
+    seen.add(v.change.id)
+    const state = v.state === 'in-person-review' ? 'needs-review' : v.state
+    counts.set(state, (counts.get(state) ?? 0) + 1)
+  }
+  const order: { state: ReviewState; tone: TabSegment['tone']; label: string }[] = [
+    { state: 'needs-changes', tone: 'neg', label: 'needs changes' },
+    { state: 'ready-to-merge', tone: 'merge', label: 'ready to merge' },
+    { state: 'approved', tone: 'pos', label: 'approved' },
+    { state: 'needs-review', tone: 'pending', label: 'in review' },
+    { state: 'iterating', tone: 'iterating', label: 'iterating' },
+    { state: 'in-progress', tone: 'wip', label: 'in progress' },
+  ]
+  return order.flatMap(({ state, tone, label }) => {
+    const n = counts.get(state) ?? 0
+    return n ? [{ n, tone, label }] : []
+  })
+}
+
+/** Other tabs retain card-based counts and their existing eligibility rules. */
 export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegment[]>> {
   const bySection = (tab: TabId, title: string) =>
     countFamilies(cardGroups(tab, views).filter((g) => g.title === title).flatMap((g) => g.items), views)
@@ -828,18 +843,10 @@ export function tabSegments(views: ChangeView[]): Partial<Record<TabId, TabSegme
       { n: bySection('needs-my-review', 'Pass Around'), tone: 'hot', label: 'pass around' },
       { n: bySection('needs-my-review', 'In Person'), tone: 'plain', label: 'in person' },
     ],
-    merged: [{ n: countFamilies(merged.filter((g) => g.title !== 'Merged in the last 14 days').flatMap((g) => g.items), views), tone: 'pos', label: 'ready to merge' }],
-    mine: [
-      { n: bySection('mine', 'Sequences'), tone: 'plain', label: 'sequences' },
-      { n: bySection('mine', STATE_LABEL['needs-changes']), tone: 'neg', label: 'need changes' },
-      { n: bySection('mine', STATE_LABEL['approved']), tone: 'pos', label: 'approved' },
-      { n: bySection('mine', 'Pass Around') + bySection('mine', 'In Person'), tone: 'pending', label: 'out for review' },
-      { n: bySection('mine', STATE_LABEL['iterating']) + bySection('mine', STATE_LABEL['in-progress']), tone: 'wip', label: 'in progress' },
-      { n: bySection('mine', 'Private'), tone: 'private', label: 'private' },
-    ],
+    merged: [{ n: countFamilies(merged.filter((g) => g.title !== 'Merged in the last 14 days').flatMap((g) => g.items), views), tone: 'merge', label: 'ready to merge' }],
+    mine: myChangeSegments(views),
   }
   for (const tab of Object.keys(segments) as TabId[]) segments[tab] = segments[tab]!.filter((s) => s.n > 0)
-  if (!segments.mine!.some((s) => s.tone !== 'wip' && s.tone !== 'private')) segments.mine = segments.mine!.filter((s) => s.tone !== 'wip')
   return segments
 }
 
@@ -906,10 +913,10 @@ export interface ActionCategoryInfo {
 
 /** Fixed order everywhere the counts appear, so position carries meaning as well as color. */
 export const ACTION_CATEGORIES: readonly ActionCategoryInfo[] = [
-  { id: 'review', label: 'Needs Review', color: '#2563eb', glyph: '\u25c9', tab: 'needs-my-review' },
-  { id: 'fix', label: 'Needs Changes', color: '#dc2626', glyph: '\u270e', tab: 'mine' },
-  { id: 'ready', label: 'Approved', color: '#15803d', glyph: '\u25c6', tab: 'mine' },
-  { id: 'merge', label: 'Ready to Merge', color: '#7c3aed', glyph: '\u21e7', tab: 'merged' },
+  { id: 'review', label: 'Needs Review', color: WORKFLOW_COLORS.review.solid, glyph: '\u25c9', tab: 'needs-my-review' },
+  { id: 'fix', label: 'Needs Changes', color: WORKFLOW_COLORS.fix.solid, glyph: '\u270e', tab: 'mine' },
+  { id: 'ready', label: 'Approved', color: WORKFLOW_COLORS.approved.solid, glyph: '\u25c6', tab: 'mine' },
+  { id: 'merge', label: 'Ready to Merge', color: WORKFLOW_COLORS.merge.solid, glyph: '\u21e7', tab: 'merged' },
 ]
 
 /**
@@ -1464,7 +1471,7 @@ export function chainViews(chain: Chain): ChangeView[] {
 
 /** Display sequences with the complete cherry-pick family of each step. */
 export function sequenceCards(views: ChangeView[]): Chain[] {
-  const families = new Map(groupByChangeId(views).map((f) => [f.key, { ...f, members: sortByBranch(f.members) }]))
+  const families = new Map(groupByChangeId(views.filter(v => !v.isPrivate)).map((f) => [f.key, { ...f, members: sortByBranch(f.members) }]))
   const chains = sequenceChains(views).sort((a, b) => a.members[0]!.change._number - b.members[0]!.change._number || a.key.localeCompare(b.key))
   const owner = new Map<string, Chain>()
   for (const chain of chains) for (const v of chain.members) {
@@ -1490,7 +1497,7 @@ export function sequenceCards(views: ChangeView[]): Chain[] {
 }
 
 export function isSequenced(change: ChangeInfo): boolean {
-  return hasTag(change, SEQUENCE_TAG)
+  return !change.is_private && hasTag(change, SEQUENCE_TAG)
 }
 
 /** The parent SHA of the current commit, when Gerrit sent the commit. */
@@ -1570,10 +1577,12 @@ export function relatedSets(views: ChangeView[], parents: Map<number, ParentLink
 /**
  * The sequences on the board: tagged members of each owner's unmerged
  * related set, in reading order. Untagged changes keep the set connected
- * but are omitted from the sequence. Owner boundaries and merged changes
+ * but are omitted from the sequence. Owner boundaries and private changes
  * separate sets; fewer than two tagged members stay ordinary cards.
+ * Closed public steps can remain as context while a tagged member is open.
  */
 export function sequenceChains(views: ChangeView[]): Chain[] {
+  views = views.filter(v => !v.isPrivate)
   const links = parentLinks(views)
   const own = new Map<number, ParentLink>()
   for (const v of views) {
@@ -1601,14 +1610,14 @@ export function sequenceChains(views: ChangeView[]): Chain[] {
  * sequence card, and the Edit button on it, do not exist.
  */
 export function sequenceCandidates(views: ChangeView[], selfId: number): RelatedSet[] {
-  const mine = views.filter((v) => v.change.status === 'NEW' && v.change.owner._account_id === selfId)
+  const mine = views.filter((v) => !v.isPrivate && v.change.status === 'NEW' && v.change.owner._account_id === selfId)
   const chained = new Set(sequenceChains(views).flatMap((c) => c.members))
   return relatedSets(mine).filter((s) => !s.members.some((v) => chained.has(v)))
 }
 
 /** The owner's related set for the picker. Existing sequences can include closed steps as context. */
 export function relatedSetOf(views: ChangeView[], change: ChangeInfo, includeClosed = false): RelatedSet | null {
-  const same = views.filter((v) => (includeClosed || v.change.status === 'NEW') && v.change.project === change.project && v.change.branch === change.branch && v.change.owner._account_id === change.owner._account_id)
+  const same = views.filter((v) => !v.isPrivate && (includeClosed || v.change.status === 'NEW') && v.change.project === change.project && v.change.branch === change.branch && v.change.owner._account_id === change.owner._account_id)
   return relatedSets(same).find((s) => s.members.some((v) => v.change._number === change._number)) ?? null
 }
 

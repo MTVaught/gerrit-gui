@@ -83,17 +83,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .count.hot { background: var(--accent); color: var(--accent-fg); }
 .count.split { display: inline-flex; padding: 0; overflow: hidden; }
 .count.split > span { padding: 1px 7px; }
-/* Needs Review: pass-around requests in the accent, in-person ones in the plain grey of an ordinary count. */
-.count.split > .hot { background: var(--accent); color: var(--accent-fg); }
-.count.split > .pos { background: var(--pos-bg); color: var(--pos); }
-.count.split > .neg { background: var(--neg-bg); color: var(--neg); }
-.count.split > .pending { background: var(--pending-bg); color: var(--pending); }
-.count.split > .wip { background: var(--panel); color: var(--muted); }
+/* Workflow state colors are provided by shared/workflow-colors.ts. */
 /* A hairline between segments, so two pale ones still read as two. */
 .count.split > span + span { border-left: 1px solid var(--bg); }
-/* The private count: a lock pill after the capsule, outlined rather than filled. */
-.count.private { display: inline-flex; align-items: center; gap: 3px; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 0 6px; margin-left: -2px; }
-.count.private svg { width: 9px; height: 9px; }
 .btn { font: inherit; text-align: left; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--fg); cursor: pointer; white-space: nowrap; }
 .btn:hover:not(:disabled) { border-color: var(--muted); }
 .btn:disabled { opacity: 0.5; cursor: default; }
@@ -192,10 +184,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .changes { list-style: none; margin: 0; padding: 0; row-gap: 8px; }
 /* Each card is an island: its own border, corners and a gap, so a family's rows read as one block and a card edge is never mistaken for a row divider. */
 .change { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding: 8px 14px 8px 12px; border: 1px solid var(--border); border-left: 4px solid transparent; border-radius: 8px; position: relative; }
-.change.state-needs-review, .change.state-in-person-review { border-left-color: var(--pending); }
-.change.state-needs-changes { border-left-color: var(--neg); }
-.change.state-approved, .change.state-ready-to-merge { border-left-color: var(--pos); }
-.change.state-in-progress, .change.state-iterating { border-left-color: var(--muted); }
 .change-head { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 2px; }
 .subject { font-weight: 600; font-size: 15px; }
 .origin { white-space: nowrap; }
@@ -237,9 +225,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .mine { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .mine .pos { color: var(--pos); } .mine .neg { color: var(--neg); }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--border); white-space: nowrap; }
-.badge.needs-review, .badge.in-person-review { background: var(--pending-bg); color: var(--pending); }
-.badge.needs-changes { background: var(--neg-bg); color: var(--neg); }
-.badge.approved, .badge.ready-to-merge, .badge.merged { background: var(--pos-bg); color: var(--pos); }
+.badge.merged { background: var(--pos-bg); color: var(--pos); }
 .badge.wip { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
 .badge.active { background: var(--warn-bg); color: var(--warn); }
 /* The Verified vote, after the patch set number: a check when CI passed, a cross when it failed. */
@@ -248,10 +234,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .ci-mark.neg { color: var(--neg); }
 .badge.private { display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--border); color: var(--muted); }
 .badge.private svg { width: 10px; height: 10px; }
-.badge.tally { font-weight: 600; }
-.ledger .fh .tally.needs-changes { color: var(--neg); }
-.ledger .fh .tally.needs-review, .ledger .fh .tally.in-person-review { color: var(--pending); }
-.ledger .fh .tally.approved, .ledger .fh .tally.ready-to-merge { color: var(--pos); }
 .badge.branch { display: inline-flex; gap: 4px; align-items: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); border: 1px solid var(--border); color: var(--fg); }
 .btn.subtle { border-color: transparent; background: none; color: var(--muted); font-size: 12px; }
 .btn.subtle:hover:not(:disabled) { color: var(--fg); border-color: var(--border); }
@@ -473,10 +455,6 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .ledger td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .ledger td.c { border-left: 3px solid transparent; padding-left: 6px; overflow: hidden; cursor: pointer; }
 .ledger td.ci, .ledger td.r { cursor: pointer; white-space: nowrap; }
-.ledger tr.state-needs-review td.c, .ledger tr.state-in-person-review td.c { border-left-color: var(--pending); }
-.ledger tr.state-needs-changes td.c { border-left-color: var(--neg); }
-.ledger tr.state-approved td.c, .ledger tr.state-ready-to-merge td.c { border-left-color: var(--pos); }
-.ledger tr.state-in-progress td.c, .ledger tr.state-iterating td.c { border-left-color: var(--muted); }
 .ledger .t { display: block; width: 100%; font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ledger .t:hover { text-decoration: none; color: var(--accent); }
 .ledger .s { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

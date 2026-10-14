@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
-import { STATE_LABEL, chainTitle, chainStepStatus, chainViews, displayName, nextInChain, reviewLink, sequenceTally, stateTally, type Chain, type ChangeFamily, type RelatedSet, type SortId } from '../../../shared/model.ts'
+import { STATE_LABEL, chainTitle, chainStepStatus, displayName, nextInChain, reviewLink, type Chain, type ChangeFamily, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
 import { SequenceFamilyReference, CiMark, FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
@@ -58,7 +58,7 @@ export function Ledger(props: {
         <tbody key={g.title}>
           <tr className="g">
             <td colSpan={columns}>
-              {g.title} <span className="count">{g.rows.length}</span>
+              {g.title}
               {g.hint && <span className="hint">{g.hint}</span>}
             </td>
           </tr>
@@ -101,14 +101,6 @@ function FamilyBox(props: { family: ChangeFamily; lead: ChangeView } & LineProps
           </span>
           <span className="n muted">
             {f.members.length} branches
-            {stateTally(f.members).map((t) => (
-              <Fragment key={t.state}>
-                {' · '}
-                <span className={`tally ${t.state}`}>
-                  {t.count} {STATE_LABEL[t.state].toLowerCase()}
-                </span>
-              </Fragment>
-            ))}
           </span>
         </td>
       </tr>
@@ -146,11 +138,10 @@ function ChainBox(props: { chain: Chain; lead: ChangeView; all: RelatedSet | nul
           </span>
           <span className="n muted sequence-summary">
             {chain.members.length} in sequence · <code>{anchor.change.branch}</code>
-            {sequenceTally(chainViews(chain)).map((t) => <span key={t.key} className={`tally ${t.state}`}> · {t.count} {t.label.toLowerCase()}</span>)}
             {next && !anchor.isMine && (
               <>
                 {' · '}
-                <span className="tally needs-review">#{next.change._number} next</span>
+                <span className="next-hint needs-review">#{next.change._number} next</span>
               </>
             )}
           </span>
@@ -180,7 +171,6 @@ function ChainBox(props: { chain: Chain; lead: ChangeView; all: RelatedSet | nul
             <tr className="fh sequence-family-head"><td colSpan={line.columns}>
               <span className="t">{title}</span>
               <span className="n muted"><ForkIcon /> {family.members.length} branches
-                {stateTally(family.members).map((t) => <span key={t.state} className={`tally ${t.state}`}> · {t.count} {STATE_LABEL[t.state].toLowerCase()}</span>)}
               </span>
             </td></tr>
             {reference ? <tr className="mem"><td colSpan={line.columns}><SequenceFamilyReference reference={reference} /></td></tr> : family.members.map((member, j) => (

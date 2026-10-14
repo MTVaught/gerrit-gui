@@ -19,6 +19,37 @@ function service(fetchImpl: FetchLike, getCredentials: SettingsStore['getCredent
   }, fetchImpl)
 }
 
+test('sequence actions check every member before writing tags and reject private changes', async () => {
+  const writes: string[] = []
+  const svc = service(async (url, init) => {
+    if (init.method === 'GET') return new Response(JSON.stringify({ is_private: url.includes('/changes/2/') }))
+    writes.push(url)
+    return new Response('{}')
+  })
+  await assert.rejects(svc.act({ type: 'setSequence', id: 1, add: [1, 2], remove: [3] }), /Private changes cannot/)
+  assert.deepEqual(writes, [], 'a private member prevents all writes, including removals')
+  await assert.rejects(svc.act({ type: 'hashtag', id: 2, add: ['sequence'] }), /Private changes cannot/)
+  assert.deepEqual(writes, [])
+  await svc.act({ type: 'setSequence', id: 1, add: [1], remove: [3] })
+  assert.equal(writes.length, 2, 'public additions and tag removals still work')
+})
+
+test('making a change private also removes its sequence tag', async () => {
+  const writes: { url: string; method: string; body: unknown }[] = []
+  const svc = service(async (url, init) => {
+    writes.push({ url, method: init.method!, body: JSON.parse(String(init.body ?? '{}')) })
+    return new Response('{}')
+  })
+  await svc.act({ type: 'setPrivate', id: 1, private: true })
+  assert.equal(writes.length, 2)
+  assert.ok(writes[0]!.url.endsWith('/private'))
+  assert.ok(writes[1]!.url.endsWith('/hashtags'))
+  assert.deepEqual(writes[1]!.body, { add: [], remove: ['sequence'] })
+  writes.length = 0
+  await svc.act({ type: 'setPrivate', id: 1, private: false })
+  assert.equal(writes.length, 1, 'making a change public does not restore the old sequence tag')
+})
+
 test('pretend waits for every write in outstanding actions and closes admission while waiting', async () => {
   const firstStarted = deferred()
   const firstRelease = deferred()

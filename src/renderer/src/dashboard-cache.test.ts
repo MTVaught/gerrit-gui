@@ -44,7 +44,7 @@ test('pre-write and post-write stale searches never roll back the section or tab
     await cache.acceptDashboard(dashboard([change()]), ticket)
     assert.ok(snapshots.slice(start).every(d => states(d)[0] === 'needs-review'))
     const views = classifyAll(cache.snapshot!.open, 1, NO_TEAMS, accountKeys(alice))
-    assert.deepEqual(tabSegments(views).mine, [{ n: 1, tone: 'pending', label: 'out for review' }])
+    assert.deepEqual(tabSegments(views).mine, [{ n: 1, tone: 'pending', label: 'in review' }])
   }
 })
 

@@ -256,15 +256,25 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
             return
           case 'setPrivate':
             await g.setPrivate(action.id, action.private)
+            if (action.private) await g.setHashtags(action.id, [], [SEQUENCE_TAG])
             return
           case 'hashtag':
+            if (action.add?.includes(SEQUENCE_TAG) && (await g.change(action.id)).is_private) {
+              throw new Error('Private changes cannot be added to a sequence. Make the change public first.')
+            }
             await g.setHashtags(action.id, action.add, action.remove)
             return
-          case 'setSequence':
+          case 'setSequence': {
+            // Check all additions before the first write to avoid a partial sequence.
+            const members = await Promise.all(action.add.map(n => g.change(n)))
+            if (members.some(c => c.is_private)) {
+              throw new Error('Private changes cannot be added to a sequence. Make the changes public first.')
+            }
             // One request per change; Gerrit has no bulk tag write.
             for (const n of action.add) await g.setHashtags(n, [SEQUENCE_TAG])
             for (const n of action.remove) await g.setHashtags(n, [], [SEQUENCE_TAG])
             return
+          }
           case 'addReviewer':
             await g.addReviewer(action.id, action.reviewer)
             return
