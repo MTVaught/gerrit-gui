@@ -64,8 +64,10 @@ test('Board keeps all three family branches inside their sequence step', async (
       const pending = structuredClone(changes)
       for (const c of pending) c.labels!['Code-Review']!.all![0]!.value = c._number === 103 ? 0 : 1
       const pendingHtml = render(pending, compact)
-      assert.match(pendingHtml, /Sequences.*?class="count">1<\/span>/)
-      assert.match(pendingHtml, /1 needs your review/)
+      assert.match(pendingHtml, /Sequences/)
+      assert.doesNotMatch(pendingHtml, /(?:<h3>|<tr class="g">)[\s\S]*?class="count"/)
+      assert.doesNotMatch(pendingHtml, /class="badge tally|class="tally (?!needs-review)/)
+      assert.doesNotMatch(pendingHtml, /1 needs your review/)
       assert.match(pendingHtml, /class="step next"/)
       assert.match(pendingHtml, /#103(?:<\/b> is next for you| next)/)
       const familyHeader = pendingHtml.match(compact ? /<tr class="fh sequence-family-head">.*?<\/tr>/ : /<div class="sequence-family-head">.*?<\/div>/)![0]
@@ -73,7 +75,8 @@ test('Board keeps all three family branches inside their sequence step', async (
       const filtered = structuredClone(overlapping)
       filtered.find((c) => c._number === 103)!.subject = 'Release-specific settings follow-up'
       const filteredHtml = render(filtered, compact, 'Release-specific')
-      assert.match(filteredHtml, /Sequences.*?class="count">1<\/span>/)
+      assert.match(filteredHtml, /Sequences/)
+      assert.doesNotMatch(filteredHtml, /(?:<h3>|<tr class="g">)[\s\S]*?class="count"/)
       assert.match(filteredHtml, /Showing.*?<b>1<\/b> of 2/)
       for (const number of [101, 102, 103, 104]) assert.equal(filteredHtml.split(`data-change-number="${number}"`).length - 1, 1)
       assert.doesNotMatch(filteredHtml, /data-change-number="201"/)
@@ -106,7 +109,7 @@ test('Board keeps all three family branches inside their sequence step', async (
         loading: false, sort: DEFAULT_SORT, filter: EMPTY_FILTER, setup: NO_TEAMS, teamPick: undefined,
         onAct: async () => {}, onFilter: () => {}, onGoTo: () => {},
       }))
-      assert.match(html, /Sequences <span class="count">1<\/span>/,
+      assert.match(html, /Sequences/,
         `compact=${compact}: mixed states stay in the dedicated sequence section`)
       for (const number of [301, 302, 303, 304, 305]) assert.equal(html.split(`data-change-number="${number}"`).length - 1, 1)
       assert.doesNotMatch(html, /Approved <span class="count">/)
@@ -125,7 +128,8 @@ test('Board keeps all three family branches inside their sequence step', async (
         loading: false, sort: DEFAULT_SORT, filter: EMPTY_FILTER,
         setup: NO_TEAMS, teamPick: undefined, onAct: async () => {}, onFilter: () => {}, onGoTo: () => {},
       }))
-      assert.match(unfiltered, /Sequences.*?class="count">1<\/span>/)
+      assert.match(unfiltered, /Sequences/)
+      assert.doesNotMatch(unfiltered, /(?:<h3>|<tr class="g">)[\s\S]*?class="count"/)
       assert.match(unfiltered, /Change which of the related changes are in the sequence/, 'merged base preserves the sequence editor')
       for (const number of [301, 302, 303, 304, 305]) assert.equal(unfiltered.split(`data-change-number="${number}"`).length - 1, 1)
     }

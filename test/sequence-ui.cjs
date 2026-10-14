@@ -62,7 +62,7 @@ app.whenReady().then(async () => {
     await screenshot('mine')
     if (!process.env.SEQUENCE_SCREENSHOTS_ONLY) {
       await click(tab('Needs Review'))
-      await until(`document.querySelector('.group h3')?.textContent === 'Pass Around 1'`)
+      await until(`document.querySelector('.group h3')?.textContent.trim() === 'Pass Around'`)
       await caption('Two changes need your review. The sequence counts once. Gerrit data is simulated.')
       recorder = spawn('ffmpeg', ['-y', '-f', 'x11grab', '-draw_mouse', '1', '-framerate', '25', '-video_size', '1440x900', '-i', process.env.DISPLAY, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', path.join(evidence, `review-workflow-${theme}.mp4`)], { stdio: ['pipe', 'ignore', 'ignore'] })
       await delay(2500)
@@ -76,7 +76,6 @@ app.whenReady().then(async () => {
         await until(`document.body.textContent.includes('Review published to Gerrit.')`)
         await click(button('Close review'))
         if (id === 101) {
-          assert.ok(await run(`document.querySelector('.chain').textContent.includes('1 needs your review')`))
           assert.ok(await run(`document.querySelector('.next-hint').textContent.includes('#102')`))
           await caption('One review remains. The sequence stays in Needs Review; #102 is next.')
         } else {

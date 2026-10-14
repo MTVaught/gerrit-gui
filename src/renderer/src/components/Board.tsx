@@ -258,7 +258,7 @@ export function Board(props: {
         {sections.map((g) => (
           <section key={g.title} className="group">
             <h3>
-              {g.title} <span className="count">{g.rows.length}</span>
+              {g.title}
             </h3>
             {g.hint && <p className="muted small">{g.hint}</p>}
             <ul className="changes">

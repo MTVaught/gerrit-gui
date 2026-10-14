@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { NO_TEAMS, accountKeys, accountMatches, allMembers, defaultTeamPick, normalizeTeams, normalizePrimaryTeam, storedTeams, teamMembers, teamPicks, teamTabLabel, watchedTeams, type TeamSetup, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, sequenceTally, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, type ViewFilter, parentLinks, relatedSets, sequenceChains, sequenceCards, chainStepStatus, chainViews, sequenceCandidates, relatedSetOf, chainTitle, nextInChain, chainLeads } from './model.ts'
+import { ACTION_CATEGORIES, NO_TEAMS, accountKeys, accountMatches, allMembers, defaultTeamPick, normalizeTeams, normalizePrimaryTeam, storedTeams, teamMembers, teamPicks, teamTabLabel, watchedTeams, type TeamSetup, requestedPatchSets, requestedPatchSetsValue, preferredKey, actionCounts, actionMenu, addMerger, cardGroups, classify, classifyAll, dashboardQueries, describeActions, filterViews, glyphTitle, groupByChangeId, groupsFor, isExternalReview, linkedSlackUrl, slackTag, slackTags, slackUrl, slackDeepLink, normalizeSlackWorkspaces, slackWorkspacesReflect, isSlackTeamId, isTaggedReviewer, isTeamReview, isVisibleOnBoard, lastReviewedPatchSet, votedOnPatchSet, mergeWaitsOnMe, mergerTag, changeNumberOf, explainView, mergerTags, mergersFor, mergersReflect, normalizeMergers, normalizeTeam, ownersOf, primaryReviewerKeys, projectMatches, requestedMerger, reviewLink, reviewerTag, reviewerTags, reviewerTagsFor, shortChangeId, sortByBranch, sortViews, sequenceTally, stateTally, unseenLines, tabCounts, tabSegments, urgency, pastDraft, withChange, type ViewFilter, parentLinks, relatedSets, sequenceChains, sequenceCards, chainStepStatus, chainViews, sequenceCandidates, relatedSetOf, chainTitle, nextInChain, chainLeads } from './model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_KEY, REVIEW_REQUESTED_KEY } from './constants.ts'
+import { STATE_COLORS, WORKFLOW_COLORS } from './workflow-colors.ts'
 import type { AccountInfo, ChangeInfo, ChangeMessageInfo } from './types.ts'
 
 const alice: AccountInfo = { _account_id: 1, name: 'Alice', username: 'alice', email: 'alice@example.com' }
@@ -14,6 +15,103 @@ const erin: AccountInfo = { _account_id: 5, name: 'Erin', username: 'erin', emai
 const TEAM = ['bob', 'Carol@Example.com']
 /** That list as the primary team, and nothing else. */
 const TEAMS: TeamSetup = { teams: [{ name: 'Core', members: TEAM, watched: true }], primaryTeam: 'Core' }
+
+test('My Changes summarizes all displayed public open members regardless of owner', () => {
+  const changes = [
+    change({ number: 1, reviewers: [bob], requested: 3, votes: { 2: -1 } }),
+    change({ number: 2, reviewers: [bob], requested: 3, votes: { 2: 1 }, hashtags: ['ready-to-merge'] }),
+    change({ number: 3, reviewers: [bob], requested: 3, votes: { 2: 1 }, changeId: 'Ifamily' }),
+    change({ number: 4, reviewers: [bob], requested: 3, changeId: 'Ifamily', branch: 'release' }),
+    change({ number: 5, reviewers: [bob], requested: 3, inPersonPs: 3 }),
+    change({ number: 6, reviewers: [bob], requested: 2, messages: [vote(bob, 2, -1)] }),
+    change({ number: 7 }),
+    change({ number: 8, private: true, reviewers: [bob], votes: { 2: 1 } }),
+    change({ number: 9, status: 'MERGED', changeId: 'Ifamily', branch: 'old' }),
+    change({ number: 10, status: 'ABANDONED' }),
+    change({ number: 11, owner: carol, changeId: 'Ifamily', branch: 'other', reviewers: [bob], votes: { 2: 1 } }),
+    change({ number: 12, owner: carol, reviewers: [bob], votes: { 2: 1 } }),
+  ]
+  const views = classifyAll(changes, alice._account_id)
+  assert.deepEqual(tabSegments([...views, views[3]!, { ...views[3]! }]).mine, [
+    { n: 1, tone: 'neg', label: 'needs changes' },
+    { n: 1, tone: 'merge', label: 'ready to merge' },
+    { n: 2, tone: 'pos', label: 'approved' },
+    { n: 2, tone: 'pending', label: 'in review' },
+    { n: 1, tone: 'iterating', label: 'iterating' },
+    { n: 1, tone: 'wip', label: 'in progress' },
+  ])
+  assert.equal(tabCounts(views).mine, 8)
+  assert.deepEqual(tabSegments(views.slice(7)).mine, [])
+  assert.equal(tabCounts(views.slice(7)).mine, 0)
+  assert.deepEqual(tabSegments([]).mine, [])
+})
+
+test('workflow solid badge colors keep white digits readable and review modes agree', () => {
+  assert.equal(STATE_COLORS['needs-review'], STATE_COLORS['in-person-review'])
+  assert.notEqual(STATE_COLORS.approved, STATE_COLORS['ready-to-merge'])
+  assert.deepEqual(ACTION_CATEGORIES.map(c => c.color), [WORKFLOW_COLORS.review.solid, WORKFLOW_COLORS.fix.solid, WORKFLOW_COLORS.approved.solid, WORKFLOW_COLORS.merge.solid])
+  for (const color of Object.values(WORKFLOW_COLORS)) {
+    const rgb = color.solid.slice(1).match(/../g)!.map(h => parseInt(h, 16) / 255)
+    const linear = rgb.map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+    const luminance = linear[0]! * 0.2126 + linear[1]! * 0.7152 + linear[2]! * 0.0722
+    assert.ok(1.05 / (luminance + 0.05) >= 4.5, color.solid)
+  }
+})
+
+test('My Changes counts three public approved members inside a sequence and family', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'] })
+  const changes = [
+    f.c61,
+    { ...f.c62, change_id: 'Isettings' },
+    change({ number: 70, changeId: 'Isettings', branch: 'release', owner: bob, reviewers: [alice], votes: { 1: 1 } }),
+    change({ number: 71, changeId: 'Isettings', branch: 'other', owner: carol, reviewers: [alice], votes: { 1: 1 } }),
+    change({ number: 72, changeId: 'Isettings', branch: 'private', owner: bob, private: true, reviewers: [alice], votes: { 1: 1 } }),
+    change({ number: 73, changeId: 'Isettings', branch: 'merged', owner: bob, status: 'MERGED' }),
+    change({ number: 74, owner: carol, reviewers: [alice], votes: { 1: 1 } }),
+  ]
+  const views = classifyAll(changes, bob._account_id)
+  assert.equal(cardGroups('mine', views).flatMap(g => g.items).length, 2,
+    'the private branch is separate from the public sequence')
+  assert.deepEqual(tabSegments(views).mine, [
+    { n: 3, tone: 'pos', label: 'approved' },
+    { n: 1, tone: 'pending', label: 'in review' },
+  ])
+  assert.equal(tabCounts(views).mine, 4)
+  assert.equal(tabCounts(classifyAll([changes[3]!, changes[6]!], bob._account_id)).mine, 0,
+    'other-owner cards absent from My Changes do not count')
+})
+
+test('a private member does not hide a displayed public branch from the count', () => {
+  const views = classifyAll([
+    change({ number: 1, changeId: 'Ifamily', private: true }),
+    change({ number: 2, changeId: 'Ifamily', owner: carol, branch: 'release', reviewers: [bob], votes: { 2: 1 } }),
+  ], alice._account_id)
+  assert.deepEqual(tabSegments(views).mine, [{ n: 1, tone: 'pos', label: 'approved' }])
+})
+
+test('private changes stop sequence chains and stay out of candidate and picker sets', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'], 63: ['sequence'], 64: ['sequence'] })
+  f.c62.is_private = true
+  const views = classifyAll(Object.values(f), bob._account_id)
+  assert.deepEqual(sequenceChains(views).map(c => c.members.map(v => v.change._number)), [[63, 64]])
+  assert.equal(relatedSetOf(views, f.c61, true), null, 'a private parent separates the public sets')
+  const picker = relatedSetOf(views, f.c63, true)!
+  assert.deepEqual(picker.members.map(v => v.change._number), [63, 64])
+  const untagged = classifyAll(Object.values(f).map(c => ({ ...c, hashtags: [] })), bob._account_id)
+  const candidates = sequenceCandidates(untagged, bob._account_id)
+  assert.deepEqual(candidates.map(c => c.members.map(v => v.change._number)), [[63, 64]])
+})
+
+test('private cherry-picks stay outside public sequence cards', () => {
+  const f = chainFixture({ 61: ['sequence'], 62: ['sequence'] })
+  const views = classifyAll([
+    f.c61, { ...f.c62, change_id: 'Isettings' },
+    change({ number: 70, owner: bob, changeId: 'Isettings', branch: 'release', private: true }),
+  ], bob._account_id)
+  const cards = sequenceCards(views)
+  assert.deepEqual(chainViews(cards[0]!).map(v => v.change._number), [61, 62])
+  assert.deepEqual(cardGroups('mine', views).map(g => [g.title, g.items.length]), [['Sequences', 1], ['Private', 1]])
+})
 
 function change(opts: {
   reviewers?: AccountInfo[]
@@ -174,9 +272,9 @@ test('groupsFor: My Changes lists iterating above in progress; reviewer tabs fol
   assert.deepEqual(groupsFor('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Iterating', [1]], ['In Progress', [2]]])
   const bobs = classifyAll([iter, fresh], bob._account_id)
   assert.deepEqual(groupsFor('reviewing', bobs).map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Author iterating, no review requested', [1, 2]]])
-  assert.deepEqual(tabSegments(views).mine, [{ n: 2, tone: 'wip', label: 'in progress' }].filter(() => false), 'in progress alone is the whole tab, so no segment')
+  assert.deepEqual(tabSegments(views).mine, [{ n: 1, tone: 'iterating', label: 'iterating' }, { n: 1, tone: 'wip', label: 'in progress' }])
   const withReview = classifyAll([iter, fresh, change({ number: 3, reviewers: [bob], requested: 3 })], alice._account_id)
-  assert.deepEqual(tabSegments(withReview).mine, [{ n: 1, tone: 'pending', label: 'out for review' }, { n: 2, tone: 'wip', label: 'in progress' }])
+  assert.deepEqual(tabSegments(withReview).mine, [{ n: 1, tone: 'pending', label: 'in review' }, { n: 1, tone: 'iterating', label: 'iterating' }, { n: 1, tone: 'wip', label: 'in progress' }])
 })
 
 test('reviewers with no request are in-progress, nobody is asked, WIP or not', () => {
@@ -485,7 +583,7 @@ test('team: the owner sorts a change between the team tab and External Reviews; 
   assert.deepEqual(tabCounts(views), { 'needs-my-review': 2, reviewing: 3, mine: 1, merged: 3, 'team-reviews': 2, 'external-reviews': 2 })
   assert.deepEqual(
     tabSegments(views),
-    { 'needs-my-review': [{ n: 2, tone: 'hot', label: 'pass around' }], merged: [{ n: 1, tone: 'pos', label: 'ready to merge' }], mine: [{ n: 1, tone: 'pending', label: 'out for review' }] },
+    { 'needs-my-review': [{ n: 2, tone: 'hot', label: 'pass around' }], merged: [{ n: 1, tone: 'merge', label: 'ready to merge' }], mine: [{ n: 1, tone: 'pending', label: 'in review' }] },
     "both requests wait on Bob, and Erin's ready change on anyone who can merge",
   )
   // The tray counts follow the regular tabs, so the team makes no difference to them.
@@ -518,14 +616,14 @@ test('groupsFor: the tabs are sectioned by state and empty sections are left out
       ['In Progress', [3]],
     ],
   )
-  // The pill: one segment per section, private apart; in progress is dropped once it is the only state.
+  // The pill counts individual public changes, including In Progress on its own.
   assert.deepEqual(tabSegments(views).mine, [
-    { n: 1, tone: 'neg', label: 'need changes' },
-    { n: 1, tone: 'pending', label: 'out for review' },
+    { n: 1, tone: 'neg', label: 'needs changes' },
+    { n: 1, tone: 'pending', label: 'in review' },
     { n: 1, tone: 'wip', label: 'in progress' },
   ])
   const quiet = classifyAll([change({ number: 1, reviewers: [bob] }), change({ number: 2, reviewers: [bob], private: true })], alice._account_id)
-  assert.deepEqual(tabSegments(quiet).mine, [{ n: 1, tone: 'private', label: 'private' }])
+  assert.deepEqual(tabSegments(quiet).mine, [{ n: 1, tone: 'wip', label: 'in progress' }])
   const asBob = classifyAll(
     [
       change({ number: 1, reviewers: [bob], requested: 3 }),
@@ -604,7 +702,7 @@ test('in-person review: its own section on each tab, after the pass-around one; 
     { n: 1, tone: 'plain', label: 'in person' },
   ])
   assert.deepEqual(actionCounts(asBob), { review: 1, fix: 0, ready: 0, merge: 0 }, 'the in-person request is not in the tray')
-  // Only in-person requests waiting: the pill is plain, not the accent.
+  // Only in-person requests waiting: its count stays separate from pass-around.
   const quiet = classifyAll([changes[1]!], bob._account_id)
   assert.deepEqual(tabSegments(quiet)['needs-my-review'], [{ n: 1, tone: 'plain', label: 'in person' }])
   assert.deepEqual(actionCounts(quiet), { review: 0, fix: 0, ready: 0, merge: 0 })
@@ -616,7 +714,7 @@ test('in-person review: its own section on each tab, after the pass-around one; 
     ['In Progress', [5]],
   ])
   assert.deepEqual(tabSegments(asAlice).mine, [
-    { n: 4, tone: 'pending', label: 'out for review' },
+    { n: 4, tone: 'pending', label: 'in review' },
     { n: 1, tone: 'wip', label: 'in progress' },
   ])
 })
@@ -648,7 +746,7 @@ test('private: My Changes lists private changes in one section at the bottom, wh
   // Only private changes: the Private section alone, no empty state sections.
   const onlyPrivate = classifyAll([change({ number: 5, private: true })], alice._account_id)
   assert.deepEqual(groupsFor('mine', onlyPrivate).map((g) => g.title), ['Private'])
-  assert.deepEqual(tabCounts(views).mine, 4)
+  assert.deepEqual(tabCounts(views).mine, 2)
 })
 
 test('a private change of another author is never visible, reviewer or not', () => {
@@ -877,7 +975,7 @@ test('groupByChangeId: cherry-picks share a family, in the order given', () => {
   assert.deepEqual(views.map((v) => v.change._number), [1, 2, 3, 4, 5])
 })
 
-test('tabCounts: a Change-Id family counts once per tab; stateTally lists its states, most urgent first', () => {
+test('tabCounts: My Changes counts each branch while other tabs count cards; stateTally lists its states, most urgent first', () => {
   const views = [
     // Alice's change on three branches: one approved, two out for review. One card on My Changes.
     change({ number: 1, changeId: 'Iaaa', branch: 'master', reviewers: [bob], requested: 3 }),
@@ -885,13 +983,13 @@ test('tabCounts: a Change-Id family counts once per tab; stateTally lists its st
     change({ number: 3, changeId: 'Iaaa', branch: 'release-2.0', reviewers: [bob], requested: 3 }),
     change({ number: 4, reviewers: [bob], requested: 3 }),
   ].map((c) => classify(c, alice._account_id))
-  assert.equal(tabCounts(views).mine, 2)
-  // The card sits in the section of its most urgent branch, and the pill counts it there only: no approved segment.
+  assert.equal(tabCounts(views).mine, 4)
+  // The card stays in its lead section; the pill counts every public branch by its own state.
   assert.deepEqual(
     cardGroups('mine', views).map((g) => [g.title, g.items.map((v) => v.change._number)]),
     [['Pass Around', [1, 4]]],
   )
-  assert.deepEqual(tabSegments(views).mine, [{ n: 2, tone: 'pending', label: 'out for review' }])
+  assert.deepEqual(tabSegments(views).mine, [{ n: 1, tone: 'pos', label: 'approved' }, { n: 3, tone: 'pending', label: 'in review' }])
   // The tray counts cards as well: one approved card, however many approved branches.
   const twoApproved = [
     change({ number: 5, changeId: 'Ibbb', branch: 'master', reviewers: [bob], requested: 3, votes: { 2: 1 } }),
@@ -900,8 +998,8 @@ test('tabCounts: a Change-Id family counts once per tab; stateTally lists its st
     change({ number: 7, changeId: 'Ibbb', branch: 'release-2.0', reviewers: [bob], requested: 3, votes: { 2: -1 } }),
   ].map((c) => classify(c, alice._account_id))
   assert.deepEqual(actionCounts(twoApproved), { review: 0, fix: 1, ready: 1, merge: 0 })
-  // The pill, like the board, has the card under Needs Changes alone.
-  assert.deepEqual(tabSegments(twoApproved).mine, [{ n: 1, tone: 'neg', label: 'need changes' }])
+  // The pill counts all branches even when the card is under Needs Changes.
+  assert.deepEqual(tabSegments(twoApproved).mine, [{ n: 1, tone: 'neg', label: 'needs changes' }, { n: 2, tone: 'pos', label: 'approved' }])
   assert.deepEqual(stateTally(views.slice(0, 3)), [
     { state: 'needs-review', count: 2 },
     { state: 'approved', count: 1 },
@@ -1006,7 +1104,7 @@ test('Merged tab: only what is asked of me, plus unnamed tags for +2 users, plus
   )
   assert.equal(tabCounts(views).merged, 4)
   // The pill's green segment counts the queue, not the history.
-  assert.deepEqual(tabSegments(views).merged, [{ n: 3, tone: 'pos', label: 'ready to merge' }])
+  assert.deepEqual(tabSegments(views).merged, [{ n: 3, tone: 'merge', label: 'ready to merge' }])
   assert.equal(actionCounts(views).merge, 2, 'asked of me and the unnamed one I can +2')
   // My own ready change is on My Changes, not on the merger's queue.
   assert.ok(groupsFor('mine', views).some((g) => g.title === 'Ready to Merge' && g.items.some((v) => v.change._number === 1)))
@@ -1543,7 +1641,7 @@ test('sequence: a chain counts once and has a dedicated section except on Needs 
   const mine = classifyAll(Object.values(f), bob._account_id)
   const cards = cardGroups('mine', mine)
   assert.deepEqual(cards.map((g) => [g.title, g.items.map((v) => v.change._number)]), [['Sequences', [61]], ['Pass Around', [58]], ['In Progress', [65]]])
-  assert.deepEqual(tabSegments(mine).mine!.map((s) => [s.tone, s.n]), [['plain', 1], ['pending', 1], ['wip', 1]])
+  assert.deepEqual(tabSegments(mine).mine!.map((s) => [s.tone, s.n]), [['pos', 1], ['pending', 3], ['wip', 2]])
 })
 
 test('sequence: reviewing one member keeps the remaining requests visible, including cherry-picks', () => {
@@ -1621,16 +1719,16 @@ test('sequence: a merged base remains context while the last step is open', () =
   assert.equal(tabCounts(views).reviewing, 0)
 })
 
-test('sequence: private members remain in Sequences while standalone changes keep their state sections', () => {
+test('sequence: private changes with old tags stay outside sequence cards', () => {
   const f = chainFixture({ 61: ['sequence'], 62: ['sequence'] })
   f.c61.is_private = true
   f.c62.is_private = true
   const changes = [f.c61, f.c62, f.c58]
   const ownerViews = classifyAll(changes, bob._account_id)
-  assert.deepEqual(cardGroups('mine', ownerViews).map((g) => [g.title, g.items.length]), [['Sequences', 1], ['Pass Around', 1]])
-  assert.deepEqual(tabSegments(ownerViews).mine!.map((s) => [s.label, s.n]), [['sequences', 1], ['out for review', 1]])
+  assert.deepEqual(cardGroups('mine', ownerViews).map((g) => [g.title, g.items.length]), [['Pass Around', 1], ['Private', 2]])
+  assert.deepEqual(tabSegments(ownerViews).mine!.map((s) => [s.label, s.n]), [['in review', 1]])
   const reviewerViews = classifyAll(changes, alice._account_id, TEAMS)
-  assert.deepEqual(cardGroups('reviewing', reviewerViews).map((g) => [g.title, g.items.length]), [['Sequences', 1], ['Waiting on you', 1]])
+  assert.deepEqual(cardGroups('reviewing', reviewerViews).map((g) => [g.title, g.items.length]), [['Waiting on you', 2], ['Approved', 1]])
   assert.equal(groupsFor('team-reviews', reviewerViews).some((g) => g.title === 'Sequences'), false)
 })
 
@@ -1648,12 +1746,12 @@ test('sequence: approved cherry-picks keep their complete family inside the sequ
     const cards = cardGroups(tab, views)
     assert.deepEqual(cards.flatMap((g) => g.items.map((v) => v.change._number)).sort((a, b) => a - b), [61],
       'the sequence and its cherry-picks remain one card')
-    assert.equal(tabCounts(views)[tab], 1)
+    assert.equal(tabCounts(views)[tab], self === bob ? 4 : 1)
     const [card] = sequenceCards(views)
     assert.deepEqual(card!.families![1]!.members.map((v) => v.change._number), [62, 70, 71])
     assert.equal(chainViews(card!).length, 4)
     if (self === bob) {
-      assert.deepEqual(tabSegments(views).mine!.map((s) => [s.tone, s.n]), [['plain', 1]])
+      assert.deepEqual(tabSegments(views).mine!.map((s) => [s.tone, s.n]), [['pos', 3], ['pending', 1]])
     }
   }
 })
@@ -1669,7 +1767,7 @@ test('sequence: a cherry-pick can lead the complete sequence when it is the only
   const onlyPick = [{ title: 'Merged', items: [views[2]!] }]
   assert.equal(chainLeads(onlyPick, cards).get(cards[0]!.key), views[2])
   assert.deepEqual(cards[0]!.families![1]!.members.map((v) => v.change._number), [62, 70])
-  assert.equal(tabCounts(views).mine, 1)
+  assert.equal(tabCounts(views).mine, 2)
 })
 
 
@@ -1729,7 +1827,7 @@ test('sequence: action counts and menu entries use the same cards as the board',
     const counts = actionCounts(views)
     const menu = actionMenu(views)
     for (const category of ['review', 'fix', 'ready', 'merge'] as const) assert.equal(counts[category], menu[category].length)
-    assert.equal(tabCounts(views)[self === alice ? 'needs-my-review' : 'mine'], 1)
+    assert.equal(tabCounts(views)[self === alice ? 'needs-my-review' : 'mine'], self === alice ? 1 : 3)
     if (self === alice) assert.equal(counts.review, 1)
     assert.ok(Object.values(menu).flat().every((entry) => entry.sequence))
   }
@@ -1750,7 +1848,7 @@ test('sequence: fully overlapping sequences stay editable without duplicating th
   assert.equal(chainViews(cards[0]!).length, 4)
   assert.deepEqual(cards[0]!.linkedSequences![0]!.chain.members.map((v) => v.change._number), [70, 71])
   assert.deepEqual(cards[0]!.linkedSequences![0]!.related!.members.map((v) => v.change._number), [70, 71])
-  assert.equal(tabCounts(views).mine, 1)
+  assert.equal(tabCounts(views).mine, 4)
   assert.equal(cardGroups('mine', views).flatMap((g) => g.items).length, 1)
 })
 
@@ -1778,8 +1876,8 @@ test('sequence: mixed-state sequences stay in their dedicated section', () => {
       assert.equal(chainViews(cards[0]!).length, changes.length)
       const sections = cardGroups('mine', views)
       assert.deepEqual(sections.map((s) => [s.title, s.items.length]), [['Sequences', 1]])
-      assert.equal(tabCounts(views).mine, 1)
-      assert.deepEqual(tabSegments(views).mine!.map((s) => [s.label, s.tone, s.n]), [['sequences', 'plain', 1]])
+      assert.equal(tabCounts(views).mine, changes.length)
+      assert.equal(tabSegments(views).mine!.reduce((sum, s) => sum + s.n, 0), changes.length)
       const reviewing = classifyAll(input, alice._account_id)
       assert.deepEqual(cardGroups('reviewing', reviewing).map((s) => [s.title, s.items.length]), [['Sequences', 1]])
     }

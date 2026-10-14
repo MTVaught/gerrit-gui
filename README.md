@@ -29,12 +29,24 @@ application remembers the sort; the search and filter last for the session.
 
 | Tab | Contents |
 | --- | --- |
-| Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. Two sections: "Pass Around" for reviews you do on your own, "In Person" for reviews done together with the author. The count is split the same way; only the pass-around part is in the accent colour. |
+| Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. Two sections: "Pass Around" for reviews you do on your own, "In Person" for reviews done together with the author. The count is split the same way; both parts use the review color. |
 | Reviewing | All open changes on which you are a reviewer, primary or not, in groups by state. |
-| My Changes | Your open changes, in groups by state, with the actions of the owner. The count gains a red segment for changes that need work and a green one for approved changes. Private changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
+| My Changes | Your open changes, grouped into sections, with the actions of the owner. Pills count individual public open changes, including every displayed branch and sequence member regardless of owner, in fixed order: Needs Changes, Ready to Merge, Approved, In Review, Iterating, In Progress. Zero counts disappear; private changes contribute nothing. Counts cover the whole tab regardless of View filters. Private standalone changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
 | External Reviews | The open changes you are on whose owner is not on your team, in groups by state. Only when you picked your team. |
 | Team tab | Named after your team, or "Watched". Every open change owned by someone else on a watched team, in groups by state, whether or not you are on it. With several watched teams, a caret shows one at a time or all together. |
-| Merged | Approved changes that the author asked you, by name, to merge, above the changes that Gerrit merged in the last 14 days. The count gains a green segment while anything waits on you to merge. |
+| Merged | Approved changes that the author asked you, by name, to merge, above the changes that Gerrit merged in the last 14 days. The count gains a purple segment while anything waits on you to merge. |
+
+Workflow colors are consistent across state pills, badges, card borders, family and
+sequence member labels, the compact ledger, and colored tray indicators: red for Needs
+Changes, purple for Ready to Merge, green for Approved, indigo for both review
+modes, amber for Iterating, and gray for In Progress. Pills are informational and
+do not apply filters. State names remain available in the aggregate pill tooltip.
+If no public open changes remain, My Changes has no count pill. Other tabs and
+tray indicators retain their own eligibility and counting rules.
+
+Section titles on every tab omit counts in both standard and compact views.
+Family branch counts and sequence size remain. State totals are removed from their headers. Each member keeps its state label.
+
 
 ![Needs Review](docs/screenshots/needs-my-review.png)
 
@@ -287,10 +299,11 @@ change on one branch is a card with one row, so both read the same way.
   you can see that the change is already in on master. On the "Recently
   Merged" tab, the merged branch leads the card and the open branches are
   below it.
-- The counts on the tabs and on the sections count cards, not changes. A
-  family is one card, so it counts once however many branches it has, and
-  a section counts only the cards under it. The card header says how many
-  branches are in each state, for example "1 Approved · 2 Needs Review".
+- My Changes counts every public open branch displayed in the tab,
+  including branches owned by someone else. Other tab counts
+  count cards, so a family counts once however many branches it has.
+  Section headings have no counts. The card header shows the branch count. It has no state totals.
+  Each branch keeps its state label.
 - In the compact window the card is a box in the section: a header line
   with the subject and the number of branches, then one line per branch,
   titled by the branch. Each line opens like any other line of the ledger.
@@ -301,6 +314,11 @@ change on one branch is a card with one row, so both read the same way.
 The application uses mockup 3.
 
 ## A sequence of changes
+
+Private changes cannot join a sequence. They are not shown in sequence pickers
+or sequence cards, even if they have an old sequence tag. Private cherry-picks
+stay outside the sequence card. Making a change private removes its sequence
+tag. Make the change public before you add it to a sequence.
 
 Commits pushed together on one branch become one change each, and Gerrit
 submits a change only after the ones below it. The owner can show such
@@ -318,11 +336,11 @@ other, with the "sequence" hashtag on each one.
   with a step number in front: a tick once the change is approved or
   merged, blue on the change a reviewer should read next, which is the
   lowest one that waits on them. The head line names the sequence (its
-  topic, or the first and last change numbers), the branch, and how many
-  changes are in each state. A change built on an older patch set of the
-  one below it says so, "on #62 PS 1", since a rebase is due.
+  topic, or the first and last change numbers), the branch, and the sequence
+  size. It has no state totals. Each change keeps its state label.
+  A change built on an older patch set of the one below it says so, "on #62 PS 1", since a rebase is due.
 - On My Changes and Reviewing, sequences have their own Sequences section.
-  The header summarizes member states without assigning one state to the
+  The header has no state totals and does not assign a state to the
   entire sequence. Needs Review includes the sequence while any member or
   cherry-pick branch has a current request awaiting your vote. Reviewing one
   member leaves it there until the last pending review is answered.
@@ -335,7 +353,8 @@ other, with the "sequence" hashtag on each one.
   a lone tagged change with no related tagged member is an ordinary card.
 - Nothing else changes. Request review, Ready to Merge, the reviewers and
   the votes stay per change, and only the owner sets or clears the tag. A
-  sequence is one card in the counts, like a family. Cherry-picks stay inside
+  sequence counts as one card on other tabs. My Changes counts each public
+  open member shown in the sequence. Cherry-picks stay inside
   their sequence steps, with their own states and actions.
 - In the compact window the sequence is a box like a family, the lines
   titled by their subjects with the step in front, and the dashed offer is

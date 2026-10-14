@@ -9,7 +9,7 @@ import { TeamTab, teamEntries } from './components/TeamTab.tsx'
 import { ViewMenu } from './components/ViewMenu.tsx'
 import { ago } from './time.ts'
 import { renderBadgeIcon, trayStrips } from './badge.ts'
-import { ExpandIcon, GearIcon, LockIcon, PlugIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
+import { ExpandIcon, GearIcon, PlugIcon, RefreshIcon, ShrinkIcon } from './components/Icons.tsx'
 import { api, isBrowserMode } from './api.ts'
 import { UpdatePill, useUpdateState } from './components/Update.tsx'
 import { rememberAccounts } from './names.ts'
@@ -337,7 +337,7 @@ export function App() {
                 }}
               >
                 {compact || shortTabs ? t.short : t.label}
-                <TabCount total={counts[t.id]} hot={t.id === 'needs-my-review'} segments={segments[t.id] ?? []} />
+                <TabCount individual={t.id === 'mine'} total={counts[t.id]} hot={t.id === 'needs-my-review'} segments={segments[t.id] ?? []} />
               </button>
             ),
           )}
@@ -347,7 +347,7 @@ export function App() {
             {tabs.map((t) => (
               <span key={t.id} className="tab">
                 {t.id === 'team-reviews' ? teamTabLabel(setup) : t.label}
-                <TabCount total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />
+                <TabCount individual={t.id === 'mine'} total={counts[t.id]} hot={false} segments={segments[t.id] ?? []} />
                 {t.id === 'team-reviews' && entries.length > 0 && <span className="tab-caret">▾</span>}
               </span>
             ))}
@@ -464,56 +464,23 @@ function initialSort(): SortId {
   }
 }
 
-/**
- * The count beside a tab label. Colored segments sit to the left of a grey
- * remainder: first what waits on the user, then what waits on others in
- * muted tones; with no segment it is the plain pill. Each card is
- * counted once: the grey part is what no segment covers, and it is left out
- * when the segments cover everything. A private count is a lock pill after
- * the capsule, since private is not a state.
- */
+/** My Changes counts individual changes; other tabs retain their card summaries. */
 function TabCount(props: {
   total: number
-  /** Accent the plain pill when non-zero: the tab that waits on the user. */
   hot: boolean
   segments: TabSegment[]
+  individual?: boolean
 }) {
-  const priv = props.segments.find((s) => s.tone === 'private')
-  const segs = props.segments.filter((s) => s.tone !== 'private')
-  const lock = priv && (
-    <span className="count private" title={`${priv.n} private`}>
-      <LockIcon />
-      {priv.n}
-    </span>
-  )
-  if (segs.length === 0) {
-    const shown = Math.max(0, props.total - (priv?.n ?? 0))
-    return (
-      <>
-        <span className={'count' + (props.hot && shown > 0 ? ' hot' : '')}>{shown}</span>
-        {lock}
-      </>
-    )
-  }
-  // What no segment (nor the lock) covers: on My Changes, the cards waiting on the merger.
-  const rest = Math.max(0, props.total - props.segments.reduce((sum, s) => sum + s.n, 0))
-  const title = [...segs.map((s) => `${s.n} ${s.label}`), ...(rest > 0 ? [`${rest} other`] : []), `${props.total} total`].join(' · ')
-  const mine = segs.filter((s) => s.tone === 'hot' || s.tone === 'pos' || s.tone === 'neg')
-  const others = segs.filter((s) => !mine.includes(s))
-  const seg = (s: TabSegment) => (
-    <span key={s.label} className={s.tone}>
-      {s.n}
-    </span>
-  )
+  const { total, segments, individual } = props
+  if (individual && segments.length === 0) return null
+  if (segments.length === 0) return <span className={'count' + (props.hot && total > 0 ? ' hot' : '')}>{total}</span>
+  const rest = individual ? 0 : Math.max(0, total - segments.reduce((sum, s) => sum + s.n, 0))
+  const title = [...segments.map((s) => `${s.n} ${s.label}`), ...(rest > 0 ? [`${rest} other`] : []), `${total} total`].join(' · ')
   return (
-    <>
-      <span className="count split" title={title}>
-        {mine.map(seg)}
-        {others.map(seg)}
-        {rest > 0 && <span>{rest}</span>}
-      </span>
-      {lock}
-    </>
+    <span className="count split" title={title}>
+      {segments.map((s) => <span key={s.label} className={s.tone}>{s.n}</span>)}
+      {rest > 0 && <span>{rest}</span>}
+    </span>
   )
 }
 
