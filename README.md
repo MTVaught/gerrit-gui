@@ -112,6 +112,15 @@ The Verified vote on the current patch set is shown after the patch set
 number on an open change: a green check for +1, a red cross for −1, nothing
 while CI has not voted. A new patch set clears it, as it clears the vote.
 
+An amber or yellow warning triangle before the Verified glyph means Gerrit
+reports a merge conflict. Hover over it for "Merge conflict with <branch>".
+It also appears when CI has not voted. Each affected open branch or sequence
+member has its own warning, in standard and compact views. The warning is
+informational; it does not change review states, counts, or available actions.
+Missing mergeability data shows no warning and does not confirm a clean merge.
+Dashboard refresh and direct change reads update the result, including after
+the destination branch changes without a new patch set.
+
 ## Local review beta
 
 Settings → Beta → **Open reviews in the app** enables the local diff viewer. It is off by default. With it enabled, the Review button and its

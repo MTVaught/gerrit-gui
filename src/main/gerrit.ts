@@ -13,6 +13,10 @@ export class GerritError extends Error {
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>
 
+export interface MergeableInfo {
+  mergeable: boolean
+}
+
 /**
  * What the board needs on every change: labels, accounts, the current
  * revision and its commit message, hashtags, keyed values and messages.
@@ -107,6 +111,11 @@ export class GerritClient {
     const q = new URLSearchParams()
     for (const o of CHANGE_OPTIONS) q.append('o', o)
     return this.req('GET', `/changes/${id}/detail`, undefined, q)
+  }
+
+  /** Check one revision against the destination branch. This is not submit approval. */
+  mergeability(id: number, revision: string): Promise<MergeableInfo> {
+    return this.req('GET', `/changes/${id}/revisions/${encodeURIComponent(revision)}/mergeable`)
   }
 
   /**

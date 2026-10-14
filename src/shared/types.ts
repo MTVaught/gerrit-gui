@@ -86,6 +86,8 @@ export interface ChangeInfo {
   updated: string
   submitted?: string
   submittable?: boolean
+  /** Current revision mergeability. Absent when unknown; independent of submit approval and CI. */
+  mergeable?: boolean
   insertions?: number
   deletions?: number
   unresolved_comment_count?: number

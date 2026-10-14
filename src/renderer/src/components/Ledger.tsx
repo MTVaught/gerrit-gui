@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
 import { STATE_LABEL, chainTitle, chainStepStatus, displayName, nextInChain, reviewLink, type Chain, type ChangeFamily, type RelatedSet, type SortId } from '../../../shared/model.ts'
 import { ageCell } from '../age.ts'
-import { SequenceFamilyReference, CiMark, FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
+import { SequenceFamilyReference, PatchSetIndicators, FlagBadge, MyLastReview, Reviewers, SinceReview, mergerLabel } from './ChangeRow.tsx'
 import { MergerPicker } from './MergerPicker.tsx'
 import { useNames } from '../names.ts'
 import { Highlight } from './Highlight.tsx'
@@ -252,7 +252,7 @@ function LedgerRow(
   sub.push(
     <>
       PS {v.patchSet}
-      {open && <CiMark view={v} />}
+      {open && <PatchSetIndicators view={v} />}
     </>,
   )
   if (!v.isMine && open && v.lastReviewedPatchSet !== null && v.lastReviewedPatchSet < v.patchSet) sub.push(<MyLastReview view={v} />)

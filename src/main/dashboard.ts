@@ -31,7 +31,7 @@ export async function fetchDashboard(g: GerritClient, projects: string[], member
     }
   }
   const truncated = [direct!, wipScan!, merged!, teamOwned].some((list) => list.at(-1)?._more_changes === true)
-  await attachReviewDeltas(g, open, self._account_id, keys)
+  await Promise.all([attachReviewDeltas(g, open, self._account_id, keys), attachMergeability(g, open)])
   return { self, open, merged: merged!.filter(visible), fetchedAt: new Date().toISOString(), truncated }
 }
 
@@ -42,8 +42,40 @@ export async function fetchDashboard(g: GerritClient, projects: string[], member
  */
 export async function fetchChange(g: GerritClient, id: number): Promise<ChangeInfo> {
   const [self, c] = await Promise.all([g.self(), g.change(id)])
-  await attachReviewDeltas(g, [c], self._account_id, accountKeys(self))
+  await Promise.all([attachReviewDeltas(g, [c], self._account_id, accountKeys(self)), attachMergeability(g, [c])])
   return c
+}
+
+/**
+ * Some Gerrit servers omit mergeability from query/detail responses. Check
+ * only visible open changes whose value is missing, once per revision per
+ * read. A failed check remains unknown. Never cache by revision: the target
+ * branch can advance without a new patch set or change update timestamp.
+ */
+export async function attachMergeability(g: GerritClient, changes: ChangeInfo[]): Promise<void> {
+  const groups = new Map<string, ChangeInfo[]>()
+  for (const c of changes) {
+    if (c.status !== 'NEW' || typeof c.mergeable === 'boolean') continue
+    const key = `${c._number}/${c.current_revision ?? 'current'}`
+    const group = groups.get(key) ?? []
+    group.push(c)
+    groups.set(key, group)
+  }
+  const todo = [...groups.values()]
+  let index = 0
+  const worker = async () => {
+    while (index < todo.length) {
+      const group = todo[index++]!
+      const first = group[0]!
+      try {
+        const result = await g.mergeability(first._number, first.current_revision ?? 'current')
+        if (typeof result.mergeable === 'boolean') for (const c of group) c.mergeable = result.mergeable
+      } catch {
+        // The dashboard still loads when this optional read fails.
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(6, todo.length) }, worker))
 }
 
 /** Deltas already fetched. A pair of patch sets never changes, so an entry is good for the life of the process. */

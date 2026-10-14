@@ -8,6 +8,7 @@ interface Entry {
   protected: boolean
   detail: boolean
   needsDetail: boolean
+  mergeabilityVersion: number
 }
 
 export interface DashboardTicket {
@@ -17,7 +18,8 @@ export interface DashboardTicket {
 }
 
 // Detail can include additional Gerrit/plugin fields that search never returns.
-// Compare the server fields the board consumes, excluding deltas and pagination.
+// Compare review fields, excluding deltas, pagination, and branch-dependent
+// mergeability. Mergeability refreshes independently at an unchanged timestamp.
 const BOARD_FIELDS = [
   'id', 'change_id', '_number', 'project', 'branch', 'subject', 'status', 'owner',
   'work_in_progress', 'is_private', 'hashtags', 'topic', 'created', 'updated',
@@ -100,18 +102,29 @@ export class DashboardCache {
     for (const [id, change] of incoming) {
       const entry = this.entries.get(id)
       if (!entry) {
-        this.entries.set(id, { change, generation: 0, pending: false, protected: false, detail: false, needsDetail: false })
+        this.entries.set(id, { change, generation: 0, pending: false, protected: false, detail: false, needsDetail: false, mergeabilityVersion: 0 })
         continue
       }
       const superseded = (ticket.generations.get(id) ?? 0) !== entry.generation
       const same = entry.change !== null && fingerprint(entry.change) === fingerprint(change)
       const older = entry.change !== null && change.updated < entry.change.updated
       const equalConflict = entry.detail && entry.change?.updated === change.updated && !same
+      // Protected review fields can lag in search while branch mergeability is
+      // fresh. Replace even an absent result, but only for the same revision and
+      // before any newer write. Keep it out of equal-timestamp review conflicts.
+      if (!superseded && !entry.pending && entry.change && entry.change.status === 'NEW' &&
+          change.status === 'NEW' && entry.change.current_revision &&
+          entry.change.current_revision === change.current_revision &&
+          entry.change.branch === change.branch && entry.change.project === change.project) {
+        entry.change = { ...entry.change, mergeable: change.mergeable }
+        entry.mergeabilityVersion++
+      }
       if (entry.needsDetail || entry.pending || superseded || older || equalConflict || (entry.detail && entry.change === null) || (entry.protected && !same)) {
         entry.protected = true
         if (!entry.pending) validate.add(id)
       } else {
         entry.change = change
+        entry.mergeabilityVersion++
         entry.protected = false
       }
     }
@@ -175,6 +188,7 @@ export class DashboardCache {
     if (entry.pending) return Promise.resolve()
     const epoch = this.epoch
     const generation = entry.generation
+    const mergeabilityVersion = entry.mergeabilityVersion
     const current = () => epoch === this.epoch && entry.generation === generation && !entry.pending
     const existing = this.reads.get(id)
     if (existing?.generation === generation) return existing.promise
@@ -183,7 +197,13 @@ export class DashboardCache {
         const change = await this.loadChange(id, current)
         if (!change || !current()) return
         if (entry.change && change.updated < entry.change.updated) return
-        entry.change = change
+        // A detail read started before an accepted branch-status refresh must
+        // not restore its older mergeability for the same revision.
+        const keepMergeability = entry.mergeabilityVersion !== mergeabilityVersion &&
+          entry.change?.current_revision && entry.change.current_revision === change.current_revision &&
+          entry.change.branch === change.branch && entry.change.project === change.project
+        entry.change = keepMergeability ? { ...change, mergeable: entry.change!.mergeable } : change
+        entry.mergeabilityVersion++
       } catch (error) {
         if (!current()) return
         if (!inaccessible(error)) throw error
@@ -214,7 +234,7 @@ export class DashboardCache {
   private entry(id: number): Entry {
     let entry = this.entries.get(id)
     if (!entry) {
-      entry = { change: null, generation: 0, pending: false, protected: true, detail: false, needsDetail: true }
+      entry = { change: null, generation: 0, pending: false, protected: true, detail: false, needsDetail: true, mergeabilityVersion: 0 }
       this.entries.set(id, entry)
     }
     return entry

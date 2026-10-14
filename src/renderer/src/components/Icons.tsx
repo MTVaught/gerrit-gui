@@ -1,5 +1,13 @@
 const common = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
 
+export const ConflictIcon = () => (
+  <svg {...common} width={12} height={12} viewBox="0 0 16 16" strokeWidth={1.5}>
+    <path d="M8 1.8 14.2 13H1.8L8 1.8Z" />
+    <path d="M8 5.7v3.2" />
+    <circle cx="8" cy="11" r=".8" fill="currentColor" stroke="none" />
+  </svg>
+)
+
 export const RefreshIcon = () => (
   <svg {...common}>
     <path d="M21 12a9 9 0 1 1-2.64-6.36" />

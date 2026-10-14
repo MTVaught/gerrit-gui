@@ -23,6 +23,7 @@
   /* A saturated red for a solid badge with white text; --neg is too pale for that in dark mode. */
   --badge-red: #dc2626;
   --warn: #b45309;
+  --merge-conflict: #a16207;
   --warn-bg: #fef3c7;
   --pending-bg: #eef2ff;
   --pending: #3730a3;
@@ -52,6 +53,7 @@
   --neg: #f87171;
   --neg-bg: #7f1d1d55;
   --warn: #fbbf24;
+  --merge-conflict: #facc15;
   --warn-bg: #78350f55;
   --pending-bg: #312e8155;
   --pending: #c7d2fe;
@@ -229,6 +231,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .badge.wip { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
 .badge.active { background: var(--warn-bg); color: var(--warn); }
 /* The Verified vote, after the patch set number: a check when CI passed, a cross when it failed. */
+.patch-set-indicators { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; vertical-align: -1px; line-height: 1; white-space: nowrap; }
+.conflict-mark { display: inline-flex; color: var(--merge-conflict); }
 .ci-mark { font-weight: 700; }
 .ci-mark.pos { color: var(--pos); }
 .ci-mark.neg { color: var(--neg); }
