@@ -835,6 +835,19 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-account:hover .review-account-card, .review-account:focus-visible .review-account-card { display: grid; gap: 6px; }
 .review-comment-filters { display: flex; gap: 16px; margin: 12px 0; }
 .review-comment-filters label { display: flex; gap: 8px; align-items: center; }
+.review-comment-overview { width: 90vw; max-width: none; height: 88vh; max-height: 88vh; box-sizing: border-box; padding: 0; overflow: hidden; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; }
+.review-comment-overview[open] { display: flex; flex-direction: column; }
+.review-comment-overview > header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 24px; padding: 20px 24px 16px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+.review-comment-overview > header > div { min-width: 0; flex: 1 1 260px; }
+.review-comment-overview h2 { margin: 0 0 8px; font-size: 18px; }
+.review-comment-overview > header p { margin: 0; }
+.review-comment-return { display: flex; align-items: center; gap: 12px; white-space: nowrap; padding: 8px 12px; }
+.review-comment-return kbd { font: 11px system-ui; color: var(--muted); border: 1px solid var(--border); border-radius: 3px; padding: 2px 4px; }
+.review-comment-overview > .review-comment-filters { margin: 0; padding: 14px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+.review-comment-overview-list { overflow-y: auto; min-height: 0; padding: 20px 24px; flex: 1; overscroll-behavior: contain; }
+.review-comment-overview-list .review-comment-context { margin-top: 0; }
+.review-comment-overview-list .review-comment-thread { min-width: 0; }
+.review-comment-overview .review-comment-filters select { background: var(--bg); color: var(--fg); border: 1px solid var(--border); padding: 6px; font: inherit; max-width: 100%; min-width: 0; }
 .review-comment-context { padding: 8px; border: 1px solid var(--border); font-size: 11px; white-space: pre-wrap; }
 .review-send-dialog > label:has(textarea) { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 6px; }
 .review-send-dialog textarea, .review-participants input:not([type=checkbox]) { background: var(--bg); color: var(--fg); border: 1px solid var(--border); padding: 8px; font: inherit; width: 100%; box-sizing: border-box; }

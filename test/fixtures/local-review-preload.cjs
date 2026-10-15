@@ -3,7 +3,7 @@ if (process.env.REVIEW_SPELLING_FIXTURE) require('./spelling-preload.cjs')
 let settings = { serverUrl: 'https://gerrit.example.com', username: 'alex', projects: [], teams: [], primaryTeam: '', mergers: [], badgeStyle: 'color', showZeroCounts: false, showAppBadge: false, showTrayCounts: false, trayClickAction: 'menu', compactOnTop: true, slackWorkspaces: [], localReview: false, hasPassword: true, encrypted: true }
 const self = { _account_id: 1, username: 'alex', name: 'Alex Rivera', email: 'alex@example.com' }
 const owner = { _account_id: 2, username: 'sam', name: 'Sam Chen', email: 'sam@example.com' }
-const now = new Date().toISOString().replace('T', ' ').replace('Z', '')
+const now = process.env.REVIEW_FIXTURE_NOW ?? new Date().toISOString().replace('T', ' ').replace('Z', '')
 const change = { id: 'telemetry~main~Idemo', change_id: 'Idemo', _number: 2481, project: 'telemetry', branch: 'main', subject: 'Keep telemetry batches bounded under load', status: 'NEW', owner, created: now, updated: now, insertions: 8, deletions: 4, hashtags: ['reviewer:alex'], custom_keyed_values: { 'review-requested-ps': '3' }, reviewers: { REVIEWER: [self] }, labels: { 'Code-Review': { all: [{...self, value: 0}] } }, current_revision: 'demo-revision', revisions: { 'demo-revision': { _number: 3, created: now, commit: { subject: 'Keep telemetry batches bounded under load', message: 'Keep telemetry batches bounded under load\n\nFlush batches on size or timeout.' } } } }
 if (process.env.REVIEW_OWNED_FIXTURE) {
   change.owner = self
@@ -110,7 +110,7 @@ contextBridge.exposeInMainWorld('api', {
     ]
   },
   fixtureIncomingUpdate: async () => { patchSets.push(4); comments.push({ id: 'incoming', patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', line: 11, side: 'REVISION', message: 'New feedback from another reviewer.', updated: new Date().toISOString(), author: owner, unresolved: true }) },
-  fixtureOtherFileComment: async () => { comments.push({ id: 'other-file', patch_set: 3, path: 'src/telemetry/types.ts', line: 4, side: 'REVISION', message: 'Could we document this interface?', updated: new Date().toISOString(), author: owner, unresolved: true }) },
+  fixtureOtherFileComment: async () => { comments.push({ id: 'other-file', patch_set: 3, path: 'src/telemetry/types.ts', line: 4, side: 'REVISION', message: 'Could we document this interface?', updated: process.env.REVIEW_FIXTURE_NOW ?? new Date().toISOString(), author: owner, unresolved: true }) },
   fixtureAdmin: async value => { canDeletePublished = value },
   fixtureFailDraft: async () => { failNextDraft = true },
   applyReviewFix: async (id, patchSet, fixId) => { appliedFixes.push({ id, patchSet, fixId }) },
