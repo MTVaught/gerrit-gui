@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useImperativeHandle, type Ref } from 'react'
+import { useEffect, useRef, useState, useImperativeHandle, type Ref, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import type { ChangeLink, CommentAnchor, DraftCommentInput, FixSuggestion, ReviewComment, ReviewDiscussion, ReviewCommentPosition, SubmitReviewInput, ReviewDiff, AccountInfo, SuggestedReviewerInfo } from '../../../shared/types.ts'
 import { ReviewMarkdown } from './ReviewMarkdown.tsx'
@@ -16,6 +16,9 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
   link: ChangeLink; path: string; originalPath?: string; visible: boolean; onOpen(): void; onHide(): void; onReveal(comment: ReviewComment, original?: boolean, preserveScroll?: boolean): void; onHighlight(comment: ReviewComment | null): void; onRefresh(): void; onDiscussion(discussion: ReviewDiscussion): void; onMutate(write: () => Promise<void>): Promise<void>; createInlineHost: CreateInlineCommentHost; hasEditor: boolean; controls: HTMLElement | null; positions: ReviewCommentPosition[]; ref?: Ref<ReviewCommentsHandle>
 }) {
   const [discussion, setDiscussion] = useState<ReviewDiscussion | null>(null)
+  const commentsMenu = useRef<HTMLElement>(null)
+  const overview = useRef<HTMLDialogElement>(null)
+  function closeOverview() { overview.current?.close(); setAllFiles(false) }
   const [error, setError] = useState('')
   const pending = useRef(false)
   const [busy, setBusy] = useState(false)
@@ -66,7 +69,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     if (!canClose()) return false
     onOpen()
     if (!discussion || discussion.readOnly) return false
-    setAllFiles(false)
+    closeOverview()
     setError(''); setSent(''); setSaveState(comment && !reply ? 'Saved to Gerrit' : '')
     saved.current = comment && !reply ? JSON.stringify([comment.message ?? '', comment.unresolved ?? false, comment.fix_suggestions]) : ''
     const next: Composer = { anchor: reply ? replyAnchor(comment!) : anchor, id: reply ? undefined : comment?.id, inReplyTo: reply ? comment?.id : comment?.in_reply_to, message: message || (!reply ? comment?.message ?? '' : ''), unresolved: comment ? comment.unresolved ?? false : anchor.path !== '/PATCHSET_LEVEL', suggestions: !reply ? comment?.fix_suggestions : undefined }
@@ -190,7 +193,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
       void write(() => api.saveReviewDraft(link.id, patchSet, { ...position, in_reply_to: last.id, message, unresolved: false }))
     }
     return <section onMouseEnter={() => onHighlight(thread.find(comment => comment.range) ?? last)} onMouseLeave={() => onHighlight(null)} onFocusCapture={() => onHighlight(thread.find(comment => comment.range) ?? last)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) onHighlight(null) }} className="review-comment-thread" data-unresolved={replyingHere || editingHere ? composer!.unresolved : Boolean(last.unresolved)} data-review-thread-id={root.id} data-active={thread.some(c => c.id === activeId)} key={root.id}>
-      {!inline && <button className="review-comment-location" onClick={() => { setAllFiles(false); onReveal(root) }}>{location(anchor(root))}</button>}
+      {!inline && <button className="review-comment-location" onClick={() => { closeOverview(); onReveal(root) }}>{location(anchor(root))}</button>}
       {thread.filter(c => c.id !== composer?.id).map(c => {
         const draft = draftIds.has(c.id)
         const expanded = expandedComments.get(c.id) ?? (draft || Boolean(last.unresolved))
@@ -198,7 +201,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
         return <article data-review-comment-id={c.id} key={c.id} className={draft ? 'comment-draft' : ''}>
           <div className="review-comment-heading" onClick={event => { if (!(event.target as HTMLElement).closest('button')) setExpandedComments(current => new Map(current).set(c.id, !expanded)) }}>
             {draft ? <strong title="Only visible to you until published.">Draft</strong> : <ReviewAccount account={c.author} />}
-            {mapped && mapped.patchSet !== c.patch_set && <button className="review-comment-location review-comment-origin" onClick={() => { setAllFiles(false); onReveal(c, true) }}>From PS {c.patch_set}</button>}
+            {mapped && mapped.patchSet !== c.patch_set && <button className="review-comment-location review-comment-origin" onClick={() => { closeOverview(); onReveal(c, true) }}>From PS {c.patch_set}</button>}
             {!expanded && <span className="review-comment-preview">{c.message}</span>}
             {!draft && expanded && discussion?.canDeletePublished && <button className="review-comment-icon" aria-label="Delete published comment" title="Delete comment" disabled={busy} onClick={() => setRedact({ comment: c, reason: '' })}><DeleteIcon /></button>}
             {expanded && <time title={commentDate(c.updated).toLocaleString()} dateTime={Number.isFinite(commentDate(c.updated).getTime()) ? commentDate(c.updated).toISOString() : undefined}>{relativeCommentDate(c.updated)}</time>}
@@ -234,7 +237,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     {controls && createPortal(<div className="review-comments" aria-label="Review comments">
       <button className="btn primary" disabled={!discussion || discussion.readOnly || busy} onClick={review} title="Reply and vote (a)">Reply{discussion?.drafts.length ? ` (${discussion.drafts.length})` : ''}</button>
       <details className="review-menu" onClick={event => { if ((event.target as HTMLElement).closest('button')) event.currentTarget.open = false }}>
-        <summary className="btn">Comments</summary>
+        <summary ref={commentsMenu} className="btn">Comments</summary>
         <div className="review-menu-items">
           <button className="btn" onClick={() => setAllFiles(true)}>All comments ({threads.length})</button>
           <button className="btn" onClick={visible ? onHide : onOpen}>{visible ? 'Hide comments' : 'Show comments'}</button>
@@ -255,7 +258,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     })}
     {composer && composerPosition && !embeddedReply && <InlineReviewComment focus preserveScroll={editingStart.current === null && !composer.inReplyTo} anchor={composerPosition!} createHost={createInlineHost}>{composerForm}</InlineReviewComment>}
     {composer && !composerPosition && !sendOpen && <SendReview onClose={() => { if (canClose()) setComposer(null) }}><h2>{location(composer.anchor)}</h2>{composerForm}</SendReview>}
-    {allFiles && <SendReview onClose={() => setAllFiles(false)}><h2>All comment threads</h2><p className="muted">Threads on this comparison appear inline. Open other locations to view their code.</p><div className="review-comment-filters"><label>Show<select aria-label="Filter comments" value={commentFilter} onChange={e => setCommentFilter(e.target.value)}><option value="all">All comments</option><option value="unresolved">Unresolved</option><option value="resolved">Resolved</option><option value="drafts">My drafts</option></select></label><label>Author<select aria-label="Filter comment author" value={authorFilter} onChange={e => setAuthorFilter(e.target.value)}><option value="all">Everyone</option>{[...new Map([...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])].map(c => [c.author?._account_id ?? discussion?.self._account_id, c.author ?? discussion?.self])).values()].map(account => account && <option key={account._account_id} value={account._account_id}>{account.name ?? account.username}</option>)}</select></label></div>{threads.filter(thread => (commentFilter === 'all' || commentFilter === 'unresolved' && thread.at(-1)?.unresolved || commentFilter === 'resolved' && !thread.at(-1)?.unresolved || commentFilter === 'drafts' && thread.some(c => draftIds.has(c.id))) && (authorFilter === 'all' || thread.some(c => String(c.author?._account_id ?? discussion?.self._account_id) === authorFilter))).map(thread => <div key={thread[0]!.id}>{thread[0]!.context_lines?.length ? <pre className="review-comment-context">{thread[0]!.context_lines.map(line => `${line.line_number}: ${line.context_line}`).join('\n')}</pre> : null}{renderThread(thread)}</div>)}<button className="btn" onClick={() => setAllFiles(false)}>Close</button></SendReview>}
+    {allFiles && <CommentOverview dialog={overview} onClose={closeOverview} returnFocus={commentsMenu} filters={<div className="review-comment-filters"><label>Show<select aria-label="Filter comments" value={commentFilter} onChange={e => setCommentFilter(e.target.value)}><option value="all">All comments</option><option value="unresolved">Unresolved</option><option value="resolved">Resolved</option><option value="drafts">My drafts</option></select></label><label>Author<select aria-label="Filter comment author" value={authorFilter} onChange={e => setAuthorFilter(e.target.value)}><option value="all">Everyone</option>{[...new Map([...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])].map(c => [c.author?._account_id ?? discussion?.self._account_id, c.author ?? discussion?.self])).values()].map(account => account && <option key={account._account_id} value={account._account_id}>{account.name ?? account.username}</option>)}</select></label></div>}>{threads.filter(thread => (commentFilter === 'all' || commentFilter === 'unresolved' && thread.at(-1)?.unresolved || commentFilter === 'resolved' && !thread.at(-1)?.unresolved || commentFilter === 'drafts' && thread.some(c => draftIds.has(c.id))) && (authorFilter === 'all' || thread.some(c => String(c.author?._account_id ?? discussion?.self._account_id) === authorFilter))).map(thread => <div key={thread[0]!.id}>{thread[0]!.context_lines?.length ? <pre className="review-comment-context">{thread[0]!.context_lines.map(line => `${line.line_number}: ${line.context_line}`).join('\n')}</pre> : null}{renderThread(thread)}</div>)}</CommentOverview>}
     {redact && <SendReview onClose={() => { if (!busy) setRedact(null) }}><form className="review-comment-compose" onSubmit={e => { e.preventDefault(); void write(async () => { await onMutate(async () => { await api.deleteReviewComment(link.id, redact.comment.patch_set, redact.comment.id, redact.reason) }); setRedact(null) }) }}>
         <strong>Delete published comment</strong><p>This removes its text for all reviewers. Gerrit records the deletion reason.</p>
         <input aria-label="Deletion reason" placeholder="Reason" required value={redact.reason} disabled={busy} onChange={e => setRedact({ ...redact, reason: e.target.value })} />
@@ -297,6 +300,46 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     </SendReview>}
   </>
 }
+function CommentOverview({ children, filters, onClose, returnFocus, dialog }: { children: ReactNode; filters: ReactNode; onClose(): void; returnFocus: RefObject<HTMLElement | null>; dialog: RefObject<HTMLDialogElement | null> }) {
+  const back = useRef<HTMLButtonElement>(null)
+  const restoreFocus = useRef(false)
+  const backgroundPointer = useRef<number | null>(null)
+  useEffect(() => {
+    const element = dialog.current!
+    element.showModal()
+    back.current?.focus({ preventScroll: true })
+    return () => {
+      element.close()
+      if (restoreFocus.current) returnFocus.current?.focus({ preventScroll: true })
+    }
+  }, [returnFocus, dialog])
+  function close() { restoreFocus.current = true; onClose() }
+  function outside(event: { target: EventTarget; clientX: number; clientY: number }) {
+    const element = dialog.current!
+    const rect = element.getBoundingClientRect()
+    return event.target === element && (event.clientX < rect.left || event.clientX >= rect.right || event.clientY < rect.top || event.clientY >= rect.bottom)
+  }
+  return <dialog ref={dialog} className="review-comment-overview" aria-labelledby="review-comment-overview-title"
+    onKeyDown={event => event.stopPropagation()}
+    onCancel={event => { event.preventDefault(); event.stopPropagation(); close() }}
+    onPointerDown={event => { backgroundPointer.current = event.isPrimary && event.button === 0 && outside(event) ? event.pointerId : null }}
+    onPointerUp={event => { if (event.pointerId !== backgroundPointer.current || !outside(event)) backgroundPointer.current = null }}
+    onPointerCancel={() => { backgroundPointer.current = null }}
+    onClick={event => {
+      const dismiss = backgroundPointer.current !== null && outside(event)
+      backgroundPointer.current = null
+      if (outside(event)) { event.preventDefault(); event.stopPropagation() }
+      if (dismiss) close()
+    }}>
+    <header>
+      <div><h2 id="review-comment-overview-title">All comments</h2><p className="muted">Threads on this comparison appear inline. Open other locations to view their code.</p></div>
+      <button ref={back} className="btn review-comment-return" onClick={close}>Back to review <kbd>Esc</kbd></button>
+    </header>
+    {filters}
+    <div className="review-comment-overview-list">{children}</div>
+  </dialog>
+}
+
 function SendReview({ children, onClose }: { children: React.ReactNode; onClose(): void }) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => { const focus = document.activeElement as HTMLElement; dialog.current?.showModal(); dialog.current?.querySelector<HTMLTextAreaElement>('textarea')?.focus(); return () => { dialog.current?.close(); focus?.focus() } }, [])

@@ -191,6 +191,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate }: {
   function onKey(event: KeyboardEvent<HTMLDialogElement>) {
     if (help || preferencesOpen) return
     const target = event.target as HTMLElement
+    if (target.closest('.review-comment-overview')) return
     const menu = target.closest<HTMLDetailsElement>('.review-menu[open]')
     if (menu && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); menu.open = false; menu.querySelector<HTMLElement>('summary')?.focus(); return }
     const inEditorWidget = Boolean(target.closest('.find-widget, .quick-input-widget, .suggest-widget, .rename-box, .context-view'))
