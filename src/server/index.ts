@@ -12,6 +12,14 @@ import { createBrowserServer } from './browser-server.ts'
 const port = Number(process.env['PORT'] ?? 5174)
 const service = createService(fileSettings(process.env['GERRIT_GUI_WEB_SETTINGS']), (url, init) => fetch(url, init))
 const origin = process.env['WEB_ORIGIN'] ?? `http://localhost:${process.env['WEB_PORT'] ?? 5173}`
+// Clean legacy secrets before binding a socket or publishing a startup link.
+// Failure must keep old data and prevent a false readiness signal.
+try {
+  await service.getSettings()
+} catch (error) {
+  console.error('Browser startup failed while initializing settings:', error)
+  process.exit(1)
+}
 const { server, launchUrl } = createBrowserServer(service, origin)
 
 server.listen(port, '127.0.0.1', () => {

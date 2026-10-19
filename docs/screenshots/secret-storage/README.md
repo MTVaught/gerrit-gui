@@ -13,11 +13,15 @@ browser mode has no secure persistence backend. New passwords use a trusted
 OS keychain or bound process memory. Linux `basic_text`, unknown or missing
 backends and encryption errors cannot persist new passwords.
 
-On load, readable legacy plaintext or unversioned ciphertext migrates to trusted
+During normal application startup, readable legacy plaintext or unversioned ciphertext migrates to trusted
 keychain encryption if it succeeds. Otherwise, one atomic file replacement
 removes password, passwordEncrypted, passwordStorageVersion and passwordIdentity.
 Readable secrets can stay in memory for their ORIGINAL origin/account until
 process restart. Unreadable legacy data is removed and requires re-entry.
+Desktop awaits settings initialization before creating normal UI. The browser
+server awaits initialization before listening or printing its startup link. No
+Connection window, browser connection, save or Test action is needed. A startup
+failure reports an error and exits without a readiness signal or UI setup.
 The form has no removal checkbox or confirmation. It explains memory storage and
 re-entry after app or browser-server restart.
 
@@ -53,7 +57,8 @@ npm run build
 node_modules/.bin/vite build --config vite.web.config.ts --outDir ../../out/browser-secret-security
 ```
 
-Fresh type checks, 322 tests and both builds pass. Builds ran separately from
+Fresh type checks, 329 tests and both builds pass. The startup follow-up adds seven
+real browser-process cases; the earlier policy revision passed 322 tests. Builds ran separately from
 captures. Targeted tests cover missing/throwing/failed encryption, plaintext and
 old ciphertext, unreadable legacy data, locked trusted copies, failed replacements
 through all store operations, idempotence, environment snapshots, origin/account
@@ -71,17 +76,45 @@ password. Changing ONLY the isolated fixture identity back to A proves the memor
 copy still belongs to A. Save and window-state writes repair 0644 to 0600. The
 last process has no password. See electron-result.json for actual snapshots.
 
-The paired continuous native videos use production browser servers, protected
+The earlier connection-regression videos, captured at policy revision
+`0db20f982e74f1dfa2da55d98a7fec389d1b276b`, use production browser servers, protected
 API, renderer and file store. Only Gerrit responses and the trusted launch page
 are simulated. Native pointer movement, two-second hovers, clicks and explained
-shortcuts show loading a legacy fixture, automatic cleanup, a successful bound
+shortcuts show loading a legacy fixture, store cleanup on read, a successful bound
 memory connection, tab reload, actual server process restart, old-cookie rejection
 and a new startup link with no saved password. File snapshots confirm all four
 legacy fields are absent immediately on load, before Test and save.
 
-A paired native desktop screenshot captures an actual EACCES replacement failure.
-The isolated directory is temporarily unwritable. The UI reports failure, file
-bytes remain unchanged, then a retry after permission repair cleans successfully.
+The PRIMARY startup videos and before/after images use the current follow-up.
+A test observer displays actual snapshots of the SAME isolated file, including a
+dummy legacy password before startup and all four saved fields absent immediately
+after startup. Its controls only launch/restart processes and observe the normal
+board. They never invoke Connection, saveSettings or Test. Desktop loads the real
+built main entrypoint, preload and renderer with an isolated userData path; normal
+startup chooses its windows. Browser runs scripts/web.mjs and cleans before any
+client request. The observer is fixture UI, not product UI.
+
+Independent audit records capture the browser file before Server.listen and the
+desktop file at the first BrowserWindow constructor, after startup awaits and
+before renderer loading. They record timestamps and API/IPC requests, without
+password headers or startup keys. Both show zero saveSettings calls and zero user
+Connection/save/test actions. Normal boards then authenticate to the dummy Gerrit
+fixture using the bound process secret. Actual new processes have no password and
+send zero new Gerrit requests. Browser shows setup; desktop opens Connection for
+re-entry automatically. startup-result.json contains the observed snapshots,
+timestamps and audits. Desktop startup EACCES also exits 1, retains old bytes,
+creates zero windows and makes no readiness claim. Browser failure is a unit
+process regression with the same assertions before listen/readiness.
+
+The CURRENT focus-recovery videos and screenshots cover a separate UI regression.
+The initial load fails with actual EACCES. A native fixture-button click repairs
+only that directory. Returning native focus to the existing Connection window
+retries loading and populates the saved URL/account. A successful test confirms
+the original bound memory secret; no obsolete checkbox exists. Native Ctrl+A types
+a draft, then native focus moves away and back. The refreshed form keeps the
+unsaved draft, while disk retains the original URL. recovery-result.json records
+these assertions. These recovery videos include a later Test and save action;
+they are not the primary startup cleanup proof.
 
 The merged browser API workflow also runs in both themes. Its bootstrap, CSRF,
 foreign-origin 403 with cookies, unchanged settings, zero attacker requests, tab
@@ -98,17 +131,29 @@ frames, pointer, captions and result states are inspected before handoff.
 
 | Outcome | Light | Dark |
 | --- | --- | --- |
-| Automatic cleanup, reload and process restart | [Video](storage-session-light.mp4) | [Video](storage-session-dark.mp4) |
+| PRIMARY desktop normal startup, memory use, restart | [Video](startup-desktop-light.mp4) | [Video](startup-desktop-dark.mp4) |
+| PRIMARY browser normal startup, memory use, restart | [Video](startup-browser-light.mp4) | [Video](startup-browser-dark.mp4) |
+| Desktop file BEFORE startup | [Image](startup-desktop-before-light.png) | [Image](startup-desktop-before-dark.png) |
+| Desktop SAME file AFTER startup, zero saves | [Image](startup-desktop-after-light.png) | [Image](startup-desktop-after-dark.png) |
+| Browser file BEFORE startup | [Image](startup-browser-before-light.png) | [Image](startup-browser-before-dark.png) |
+| Browser SAME file AFTER startup, zero saves | [Image](startup-browser-after-light.png) | [Image](startup-browser-after-dark.png) |
+| Focus recovery and later draft preservation | [Video](cleanup-recovery-light.mp4) | [Video](cleanup-recovery-dark.mp4) |
+| Recovered first load has saved URL/account | [Image](recovery-light.png) | [Image](recovery-dark.png) |
+| Recovered memory connection | [Image](recovery-connected-light.png) | [Image](recovery-connected-dark.png) |
+| Later focus keeps an unsaved draft | [Image](recovery-draft-light.png) | [Image](recovery-draft-dark.png) |
+| Earlier Connection/reload/restart regression, not primary cleanup proof | [Video](storage-session-light.mp4) | [Video](storage-session-dark.mp4) |
 | Memory-only state after cleanup on load | [Image](cleanup-light.png) | [Image](cleanup-dark.png) |
 | Bound session connection | [Image](session-light.png) | [Image](session-dark.png) |
 | No password after process restart | [Image](restart-light.png) | [Image](restart-dark.png) |
-| Failed cleanup keeps old bytes | [Image](cleanup-error-light.png) | [Image](cleanup-error-dark.png) |
+| Connection load failure keeps old bytes | [Image](cleanup-error-light.png) | [Image](cleanup-error-dark.png) |
 | Actual JSON and file modes | [Image](verification-light.png) | [Image](verification-dark.png) |
 | A cleanup and separate-process B result | [Image](binding-light.png) | [Image](binding-dark.png) |
 | Credential replacement | [Image](../credential-binding/replacement-connected-light.png) | [Image](../credential-binding/replacement-connected-dark.png) |
 | HTTPS connection | [Image](../transport-security/https-connected-light.png) | [Image](../transport-security/https-connected-dark.png) |
 | Browser API workflow | [Video](../browser-api/browser-session-light.mp4) | [Video](../browser-api/browser-session-dark.mp4) |
 
+[startup-result.json](startup-result.json) and [recovery-result.json](recovery-result.json)
+contain current startup/recovery observations. Earlier policy artifacts are
 [browser-result.json](browser-result.json), [workflow-result.json](workflow-result.json)
 and [electron-result.json](electron-result.json) contain observed results.
 [verification.html](verification.html) and its PNG pairs render those actual files,
@@ -123,11 +168,14 @@ ACLs were not tested.
 
 ## Reproduce
 
-Build first, then run each capture separately:
+Build first, then run each capture separately. The first two commands produce the
+current startup and recovery evidence. Other existing captures were not rerun
+solely to update a commit stamp:
 
 ```sh
-xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/secret-storage-ui.cjs
+xvfb-run -a -s '-screen 0 1600x1000x24' node_modules/electron/dist/electron --no-sandbox test/secret-storage-startup-ui.cjs
 xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/secret-storage-error-ui.cjs
+xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/secret-storage-ui.cjs
 xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/credential-binding-ui.cjs
 xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/transport-ui.cjs
 xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/browser-api-ui.cjs
@@ -141,7 +189,8 @@ Run `node test/secret-storage-report.mjs` for file-outcome images.
 
 ## Integration
 
-This revision overlaps secret-storage.ts, settings-store.ts, shared types,
+The startup/recovery follow-up additionally overlaps src/main/index.ts and
+src/server/index.ts. The broader policy revision overlaps secret-storage.ts, settings-store.ts, shared types,
 ConnectionWindow.tsx, settings tests, README.md, fixtures and evidence. The earlier
 PR also changes settings.ts, file-settings.ts and settings-file.ts. Shared identity
 helpers, transport validation, Gerrit redirects and protected API implementation

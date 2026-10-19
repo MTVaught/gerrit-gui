@@ -611,7 +611,9 @@ Otherwise, new passwords stay in memory until the app restarts. A keychain error
 also keeps a new password in memory. The connection window shows its storage state.
 
 Readable legacy passwords migrate to trusted keychain encryption when it succeeds.
-Otherwise, the app automatically removes their saved fields by atomic replacement.
+Otherwise, normal application startup automatically removes their saved fields by
+atomic replacement, before desktop UI setup or browser API readiness. Opening
+Connection and saving are not required.
 A readable password can stay in memory for its original origin and account until
 restart. An unreadable legacy copy is removed and requires password re-entry.
 Already trusted, versioned keychain copies stay on disk even when locked. Each
@@ -743,7 +745,8 @@ origin remain trusted.
 The application writes the settings that you enter in the
 browser to `~/.config/gerrit-gui/web-settings.json`. New passwords stay in the
 server process memory until restart. Reloading a tab keeps that process alive.
-Legacy saved copies are automatically removed on load. Readable passwords stay
+Legacy saved copies are automatically removed when the browser server starts,
+before it accepts requests or prints its startup link. No browser needs to connect. Readable passwords stay
 bound to their original identity in server memory; re-enter them after restart.
 A failed replacement reports an error and keeps the old data intact. Environment
 passwords never enter JSON. As an alternative, set

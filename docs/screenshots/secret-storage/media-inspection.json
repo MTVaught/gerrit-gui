@@ -12,7 +12,8 @@
       },
       "durationSeconds": 33.45,
       "decodedAtPlaybackRate": 1,
-      "inspectionSampleSeconds": 5
+      "inspectionSampleSeconds": 5,
+      "revision": "Earlier policy revision 0db20f982e74f1dfa2da55d98a7fec389d1b276b"
     },
     {
       "file": "secret-storage/storage-session-dark.mp4",
@@ -26,7 +27,8 @@
       },
       "durationSeconds": 33.45,
       "decodedAtPlaybackRate": 1,
-      "inspectionSampleSeconds": 5
+      "inspectionSampleSeconds": 5,
+      "revision": "Earlier policy revision 0db20f982e74f1dfa2da55d98a7fec389d1b276b"
     },
     {
       "file": "browser-api/browser-session-light.mp4",
@@ -40,7 +42,8 @@
       },
       "durationSeconds": 57.9,
       "decodedAtPlaybackRate": 1,
-      "inspectionSampleSeconds": 5
+      "inspectionSampleSeconds": 5,
+      "revision": "Earlier policy revision 0db20f982e74f1dfa2da55d98a7fec389d1b276b"
     },
     {
       "file": "browser-api/browser-session-dark.mp4",
@@ -54,8 +57,100 @@
       },
       "durationSeconds": 57.9,
       "decodedAtPlaybackRate": 1,
-      "inspectionSampleSeconds": 5
+      "inspectionSampleSeconds": 5,
+      "revision": "Earlier policy revision 0db20f982e74f1dfa2da55d98a7fec389d1b276b"
+    },
+    {
+      "file": "secret-storage/startup-browser-light.mp4",
+      "sha256": "22294fdf02271b382c193139e137217d4862a9d14930e0c4449577ccf7173803",
+      "video": {
+        "codec_name": "h264",
+        "width": 1600,
+        "height": 1000,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 27.4,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5,
+      "revision": "Startup and focus-recovery follow-up"
+    },
+    {
+      "file": "secret-storage/startup-browser-dark.mp4",
+      "sha256": "c55385b242fe3e4e9beb58a23d78553b8e19ad2470530ca0a32c1328b75f0308",
+      "video": {
+        "codec_name": "h264",
+        "width": 1600,
+        "height": 1000,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 27.4,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5,
+      "revision": "Startup and focus-recovery follow-up"
+    },
+    {
+      "file": "secret-storage/startup-desktop-light.mp4",
+      "sha256": "3c7be1673f34388569c02ec47ace3b98f55e19344b6da9b7a9bff922c41fcc37",
+      "video": {
+        "codec_name": "h264",
+        "width": 1600,
+        "height": 1000,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 25.45,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5,
+      "revision": "Startup and focus-recovery follow-up"
+    },
+    {
+      "file": "secret-storage/startup-desktop-dark.mp4",
+      "sha256": "93df0ded5cfa751a5c04e8e17a40326b5b595a86363efbbe8d49772c10c404de",
+      "video": {
+        "codec_name": "h264",
+        "width": 1600,
+        "height": 1000,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 25.45,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5,
+      "revision": "Startup and focus-recovery follow-up"
+    },
+    {
+      "file": "secret-storage/cleanup-recovery-light.mp4",
+      "sha256": "7870c5cafcac0a26fd6f33da04ba54a38160ac85c550d3d7e684f6b99ad013a3",
+      "video": {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 900,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 30.2,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5,
+      "revision": "Startup and focus-recovery follow-up"
+    },
+    {
+      "file": "secret-storage/cleanup-recovery-dark.mp4",
+      "sha256": "e78eed7c89ec52b5ae3c223f7caeb2aad7b40497ad4eb79bc6f409326df365fd",
+      "video": {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 900,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 30.2,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5,
+      "revision": "Startup and focus-recovery follow-up"
     }
   ],
-  "visualInspection": "Both themes inspected through timestamped frames from each full clip decoded at normal playback rate. Pointer positions, captions, hover pacing and result states match. All paired static images inspected for readability and layout. No capture speed changes."
+  "visualInspection": "Both themes inspected through timestamped frames from each full clip decoded at normal playback rate. Pointer positions, captions, hover pacing and result states match. All paired static images inspected for readability and layout. No capture speed changes.",
+  "followUpVisualInspection": "All six current follow-up clips decoded fully at normal playback rate. Timestamped samples and final frames inspected in both themes. Primary startup clips show actual before/after JSON, zero saves, normal board use and process restart/re-entry. Separate recovery clips show actual permission repair, native focus recovery with populated fields, memory authentication and later draft preservation. All current paired static images inspected. Existing unrelated clips retained at their prior verified revision."
 }

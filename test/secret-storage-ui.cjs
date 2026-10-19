@@ -174,14 +174,16 @@ app.whenReady().then(async () => {
     await fs.chmod(settings, 0o644)
     const before = { mode: '644', data: JSON.parse(await fs.readFile(settings, 'utf8')) }
     let web = await startWeb()
+    const afterStartup = JSON.parse(await fs.readFile(settings, 'utf8'))
+    for (const key of ['password', 'passwordEncrypted', 'passwordStorageVersion', 'passwordIdentity']) assert.equal(key in afterStartup, false)
     const win = window('storage-' + theme + '-' + Date.now())
     await win.loadURL(fixtureOrigin + '/launch')
-    assert.equal(JSON.parse(await fs.readFile(settings, 'utf8')).password, 'dummy-old-password')
+    assert.equal(JSON.parse(await fs.readFile(settings, 'utf8')).password, undefined)
     const removeCaption = () => run(win, `document.getElementById('evidence-caption')?.remove()`)
     pointer = [30, 30]
     await command('xdotool', ['mousemove', '30', '30'])
     const finishRecording = await record(theme)
-    await caption(win, 'The isolated file contains an old dummy password. Open the startup link. Loading the connection automatically removes its legacy saved fields.')
+    await caption(win, 'The isolated server already cleaned the old dummy password during startup, before any browser connected. This separate regression checks Connection, reload and restart.')
     await delay(2000)
     await click(win, '#launch')
     await until(win, `document.body.textContent.includes('The current password is kept in memory only')`)
@@ -192,7 +194,7 @@ app.whenReady().then(async () => {
     assert.equal(afterReadMode, '600')
     await removeCaption()
     await screenshot(win, `cleanup-${theme}`)
-    await caption(win, 'Cleanup passed on load. No checkbox or confirmation is needed. Test the original dummy account with its bound memory password.')
+    await caption(win, 'Cleanup already passed at server startup. No checkbox or confirmation is needed. Test the original dummy account with its bound memory password.')
     await delay(2000)
     await click(win, 'button[type=submit]')
     await until(win, `document.body.textContent.includes('Connected as Dummy user')`)
@@ -235,7 +237,7 @@ app.whenReady().then(async () => {
     await finishRecording()
     const result = { theme, platform: 'Linux Electron Chromium, browser mode, no application preload',
       data: 'Dummy credentials. Simulated Gerrit account/search responses. Production API/session/store and native X11 input.',
-      before, afterLoad, afterReadMode, afterSave, afterSaveMode: ((await fs.stat(settings)).mode & 0o777).toString(8),
+      before, afterStartup, afterLoad, afterReadMode, afterSave, afterSaveMode: ((await fs.stat(settings)).mode & 0o777).toString(8),
       sessionHasPassword: true, tabReloadHasPassword: true, restartHasPassword: false, restartedOldCookieRejected: true, newStartupKeyRequired: true }
     results.push(result)
     if (theme === 'light') await fs.writeFile(path.join(staged, 'browser-result.json'), JSON.stringify(result, null, 2))

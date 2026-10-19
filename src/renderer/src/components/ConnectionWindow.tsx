@@ -1,5 +1,5 @@
 import { useTheme } from '../theme.ts'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SettingsStatus } from '../../../shared/types.ts'
 import { api, isBrowserMode } from '../api.ts'
 import { replacementPasswordMessage, sameCredentialIdentity } from '../../../shared/credentials.ts'
@@ -21,17 +21,29 @@ export function ConnectionWindow() {
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  const fieldsLoaded = useRef(false)
 
   useEffect(() => {
-    void api.getSettings().then((s) => {
-      setInitial(s)
-      setServerUrl(s.serverUrl)
-      setUsername(s.username)
-    }).catch(e => setLoadError(String(e.message ?? e)))
-    const reload = () => { void api.getSettings().then(s => { setInitial(s); setLoadError(null) }).catch(e => setLoadError(String(e.message ?? e))) }
+    let active = true
+    const reload = () => {
+      void api.getSettings().then(s => {
+        if (!active) return
+        // The first success can follow a failed load and a focus/settings refresh.
+        // Later refreshes update status without replacing unsaved form fields.
+        if (!fieldsLoaded.current) {
+          fieldsLoaded.current = true
+          setServerUrl(s.serverUrl)
+          setUsername(s.username)
+        }
+        setInitial(s)
+        setLoadError(null)
+      }).catch(e => { if (active) setLoadError(String(e.message ?? e)) })
+    }
+    reload()
     const offSettings = api.onSettingsChanged(reload)
     window.addEventListener('focus', reload)
     return () => {
+      active = false
       offSettings()
       window.removeEventListener('focus', reload)
     }
