@@ -4,10 +4,13 @@ import type { Api } from '../../shared/api.ts'
 import type { UiState } from '../../shared/types.ts'
 import { totalActions } from '../../shared/model.ts'
 import { RELEASES_URL, initialUpdateState } from '../../shared/update.ts'
+import { ensureBrowserSession } from './browser-session.ts'
 
 async function call<T>(method: string, args: unknown[] = []): Promise<T> {
+  await ensureBrowserSession()
   const res = await fetch(`/api/${method}`, {
     method: 'POST',
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(args),
   })

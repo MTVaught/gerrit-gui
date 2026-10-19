@@ -1,5 +1,6 @@
 // Browser mode: run the local API server and the Vite renderer dev server
-// together, no Electron and no display needed. Open http://localhost:5173/
+// together, no Electron and no display needed. Open the one-use link printed
+// by the API server after Vite is ready.
 // (VS Code forwards the port automatically over Remote SSH).
 import { spawn } from 'node:child_process'
 import path from 'node:path'
