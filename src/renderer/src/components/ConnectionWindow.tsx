@@ -2,6 +2,7 @@ import { useTheme } from '../theme.ts'
 import { useEffect, useState } from 'react'
 import type { SettingsStatus } from '../../../shared/types.ts'
 import { api, isBrowserMode } from '../api.ts'
+import { replacementPasswordMessage, sameCredentialIdentity } from '../../../shared/credentials.ts'
 
 /**
  * The connection window: server URL, username and HTTP password, and the one
@@ -56,6 +57,8 @@ export function ConnectionWindow() {
   }
 
   if (!initial) return null
+  const canReusePassword = initial.hasPassword && sameCredentialIdentity(initial, { serverUrl, username })
+  const identityChanged = !sameCredentialIdentity(initial, { serverUrl, username }) && Boolean(initial.serverUrl && initial.username)
   const ok = status?.startsWith('Connected')
   return (
     <div className="app connection">
@@ -73,18 +76,29 @@ export function ConnectionWindow() {
         </p>
         <label>
           Server URL
-          <input value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} placeholder="https://host/gerrit1  (paste any change URL; the app keeps the base)" autoFocus={!initial.serverUrl} />
+          <input value={serverUrl} disabled={busy} onChange={(e) => {
+            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl: e.target.value, username })) setPassword('')
+            setServerUrl(e.target.value)
+            setStatus(null)
+            setDone(false)
+          }} placeholder="https://host/gerrit1  (paste any change URL; the app keeps the base)" autoFocus={!initial.serverUrl} />
         </label>
         <label>
           Username
-          <input value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input value={username} disabled={busy} onChange={(e) => {
+            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl, username: e.target.value })) setPassword('')
+            setUsername(e.target.value)
+            setStatus(null)
+            setDone(false)
+          }} />
         </label>
         <label>
           HTTP password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={initial.hasPassword ? '(unchanged)' : ''} />
+          <input type="password" value={password} disabled={busy} onChange={(e) => setPassword(e.target.value)} placeholder={canReusePassword ? '(unchanged)' : 'Enter HTTP password'} aria-describedby={identityChanged ? 'credential-identity-hint' : undefined} />
         </label>
+        {identityChanged && <p id="credential-identity-hint" className="status" role="status">{replacementPasswordMessage}</p>}
         <div className="row">
-          <button type="submit" className="btn primary" disabled={busy || !serverUrl || !username || (!password && !initial.hasPassword)}>
+          <button type="submit" className="btn primary" disabled={busy || !serverUrl.trim() || !username.trim() || (!password && !canReusePassword)}>
             {busy ? 'Testing...' : 'Test and save'}
           </button>
           {!isBrowserMode && (

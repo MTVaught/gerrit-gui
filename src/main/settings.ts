@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { BadgeStyle, DiffThemePreference, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, Team, ThemePreference, TrayClickAction, UiState } from '../shared/types.ts'
 import { normalizeDiffTheme, normalizeTheme } from '../shared/theme.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
+import { requireReplacementPassword } from '../shared/credentials.ts'
 import { normalizeMergers, normalizePrimaryTeam, normalizeSlackWorkspaces, normalizeTeams, storedTeams } from '../shared/model.ts'
 
 interface StoredSettings {
@@ -77,6 +78,7 @@ export async function getCredentials(): Promise<{ serverUrl: string; username: s
 
 export async function save(input: SettingsInput): Promise<void> {
   const prev = await read()
+  requireReplacementPassword(prev, input)
   const next: StoredSettings = {
     theme: normalizeTheme(input.theme),
     diffTheme: normalizeDiffTheme(input.diffTheme),
