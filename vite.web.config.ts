@@ -11,6 +11,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '127.0.0.1',
+    cors: false,
     allowedHosts: [origin.hostname],
     port: Number(process.env['WEB_PORT'] ?? 5173),
     strictPort: true,

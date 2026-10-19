@@ -85,7 +85,7 @@ export function createBrowserServer(service: Service, originValue: string) {
 
       const cookies = (req.headers.cookie ?? '').split(';').map(part => part.trim().split('='))
       const matches = cookies.filter(([name]) => name === cookieName)
-      const authenticated = bootstrapped && matches.length === 1 && equalSecret(matches[0]?.[1] ?? '', session)
+      const authenticated = bootstrapped && matches.length === 1 && equalSecret(matches[0]?.slice(1).join('=') ?? '', session)
       if (req.url === '/api/session') {
         const args = await readArguments(req)
         if (!authenticated && (bootstrapped || args.length !== 1 || typeof args[0] !== 'string' || !equalSecret(args[0], bootstrapKey))) {
@@ -106,7 +106,7 @@ export function createBrowserServer(service: Service, originValue: string) {
       send(200, result ?? null)
     } catch (error) {
       const status = error instanceof RequestError ? error.status : 500
-      send(status, { error: (error as Error).message })
+      send(status, { error: error instanceof Error ? error.message : 'Request failed' })
       req.resume()
     }
   })

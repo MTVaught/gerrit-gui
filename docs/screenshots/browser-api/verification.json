@@ -1,0 +1,274 @@
+{
+  "platform": "Linux Electron Chromium, browser mode without application preload",
+  "localHttpFixtureOptIn": true,
+  "gerrit": "synthetic account and empty search responses",
+  "input": "native X11 pointer, clicks and keyboard via xdotool",
+  "results": [
+    {
+      "theme": "light",
+      "bootstrap": 200,
+      "saveAndTest": 200,
+      "foreignRequests": [
+        403,
+        403
+      ],
+      "foreignRequestsIncludedCookie": true,
+      "settingsUnchanged": true,
+      "attackerRequests": 0,
+      "reload": true,
+      "secondTab": true,
+      "unauthenticated": 401,
+      "responses": [
+        {
+          "path": "/api/session",
+          "status": 200
+        },
+        {
+          "path": "/api/getPretend",
+          "status": 200
+        },
+        {
+          "path": "/api/getPretend",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/saveSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/testConnection",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/saveSettings",
+          "status": 403
+        },
+        {
+          "path": "/api/testConnection",
+          "status": 403
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/fetchDashboard",
+          "status": 200
+        },
+        {
+          "path": "/api/fetchDashboard",
+          "status": 200
+        },
+        {
+          "path": "/api/fetchDashboard",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "theme": "dark",
+      "bootstrap": 200,
+      "saveAndTest": 200,
+      "foreignRequests": [
+        403,
+        403
+      ],
+      "foreignRequestsIncludedCookie": true,
+      "settingsUnchanged": true,
+      "attackerRequests": 0,
+      "reload": true,
+      "secondTab": true,
+      "unauthenticated": 401,
+      "responses": [
+        {
+          "path": "/api/session",
+          "status": 200
+        },
+        {
+          "path": "/api/getPretend",
+          "status": 200
+        },
+        {
+          "path": "/api/getPretend",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/saveSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/testConnection",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/saveSettings",
+          "status": 403
+        },
+        {
+          "path": "/api/testConnection",
+          "status": 403
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/fetchDashboard",
+          "status": 200
+        },
+        {
+          "path": "/api/fetchDashboard",
+          "status": 200
+        },
+        {
+          "path": "/api/fetchDashboard",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
+          "status": 200
+        }
+      ]
+    }
+  ]
+}
