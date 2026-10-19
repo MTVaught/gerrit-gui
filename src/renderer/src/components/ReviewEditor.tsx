@@ -71,7 +71,8 @@ export interface LoadedReviewFile extends ReviewContents {
 export interface ReviewEditorHandle { outline(): void; blame(): void; highlightComment(location: EditorCommentLocation | null): void; createInlineHost(pane: 'original' | 'modified', line: number): InlineCommentHost | null; navigate(shortcut: ReviewShortcut): void; addComment(): void; find(): void; goToLine(): void; revealComment(pane: 'original' | 'modified', line: number, preserveScroll?: boolean): void }
 export interface EditorCommentLocation { pane: 'original' | 'modified'; line: number; range?: CommentRange; existing?: boolean }
 
-export default function ReviewEditor({ file, link, preferences, commentsVisible, onReady, onComment, markers, ref }: { link: ChangeLink; commentsVisible: boolean; markers: { range?: CommentRange; pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle> }) {
+export default function ReviewEditor({ file, link, preferences, theme, commentsVisible, onReady, onComment, markers, ref }: { theme: 'light' | 'dark'; link: ChangeLink; commentsVisible: boolean; markers: { range?: CommentRange; pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle> }) {
+  useLayoutEffect(() => { monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs') }, [theme])
   const [tool, setTool] = useState<'outline' | 'blame' | null>(null)
   const [showBlame, setShowBlame] = useState(false)
   const [blames, setBlames] = useState<ReviewBlame[] | null>(null)
@@ -135,10 +136,6 @@ export default function ReviewEditor({ file, link, preferences, commentsVisible,
     const language = reviewLanguage(file.path)
     const original = monaco.editor.createModel(file.original, language)
     const modified = monaco.editor.createModel(file.modified, language)
-    const setTheme = () => monaco.editor.setTheme(document.documentElement.dataset.theme === 'dark' ? 'vs-dark' : 'vs')
-    const appearance = new MutationObserver(setTheme)
-    setTheme()
-    appearance.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
     configureReviewDiff(original, preferences.ignoreWhitespace, file.diffBlocks)
     const diff = monaco.editor.createDiffEditor(container.current!, {
       automaticLayout: true,
@@ -218,7 +215,6 @@ export default function ReviewEditor({ file, link, preferences, commentsVisible,
       cancelAnimationFrame(commentScrollFrame.current)
       commentScrollFrame.current = 0
       commentScroll.current = null
-      appearance.disconnect()
       editor.current = null
       diff.dispose()
       original.dispose()

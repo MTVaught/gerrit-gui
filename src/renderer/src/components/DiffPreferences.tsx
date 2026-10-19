@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import type { DiffThemePreference } from '../../../shared/types.ts'
+import { diffThemeOptions } from '../../../shared/theme.ts'
 import { whitespaceOptions, type ReviewPreferences } from '../review-preferences.ts'
 
-export function DiffPreferences({ preferences, error, onSave, onClose }: {
-  preferences: ReviewPreferences; error: string; onSave: (preferences: ReviewPreferences) => Promise<boolean>; onClose: () => void
+export function DiffPreferences({ preferences, diffTheme, error, onSave, onClose }: {
+  preferences: ReviewPreferences; diffTheme: DiffThemePreference; error: string; onSave: (preferences: ReviewPreferences, diffTheme: DiffThemePreference) => Promise<boolean>; onClose: () => void
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
   const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState({ ...preferences })
+  const [draftTheme, setDraftTheme] = useState(diffTheme)
   function close() { dialog.current?.close(); previousFocus.current?.focus(); onClose() }
   useEffect(() => {
     previousFocus.current = document.activeElement as HTMLElement
@@ -22,9 +25,12 @@ export function DiffPreferences({ preferences, error, onSave, onClose }: {
       value={draft[key]} onChange={(e) => setDraft({ ...draft, [key]: Number(e.target.value) })} /></label>
   }
   return <dialog ref={dialog} className="review-preferences" aria-labelledby="diff-preferences-title" onCancel={(e) => { e.preventDefault(); e.stopPropagation(); if (!saving) close() }} onKeyDown={(e) => e.stopPropagation()}>
-    <form onSubmit={(e) => { e.preventDefault(); if (saving) return; setSaving(true); void onSave(draft).then(ok => { if (ok) close() }).finally(() => setSaving(false)) }}>
+    <form onSubmit={(e) => { e.preventDefault(); if (saving) return; setSaving(true); void onSave(draft, draftTheme).then(ok => { if (ok) close() }).finally(() => setSaving(false)) }}>
       <h2 id="diff-preferences-title">Diff Preferences</h2>
       <fieldset disabled={saving} className="review-preference-fields" style={{ border: 0, margin: 0, minInlineSize: 0 }}>
+        <label>Diff theme<select value={draftTheme} onChange={e => setDraftTheme(e.target.value as DiffThemePreference)}>
+          {diffThemeOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select></label>
         <label>Context<select value={draft.context} onChange={(e) => setDraft({ ...draft, context: Number(e.target.value) })}>
           <option value={-1}>Whole file</option>{![-1, 3, 10, 25, 50, 100].includes(draft.context) && <option value={draft.context}>{draft.context} lines</option>}{[3, 10, 25, 50, 100].map((n) => <option key={n} value={n}>{n} lines</option>)}
         </select></label>
@@ -40,7 +46,7 @@ export function DiffPreferences({ preferences, error, onSave, onClose }: {
           {whitespaceOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select></label>
       </fieldset>
-      <p className="muted small">Preferences sync with your Gerrit account. Fit to screen stays local. The complete file stays loaded when context is limited.</p>
+      <p className="muted small">Preferences sync with your Gerrit account. Fit to screen and diff theme stay local. The complete file stays loaded when context is limited.</p>
       {error && <p role="alert" className="error">{error}</p>}
       <footer><button className="btn" type="button" disabled={saving} onClick={close}>Cancel</button><button className="btn primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button></footer>
     </form>

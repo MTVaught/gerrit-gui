@@ -1,0 +1,7 @@
+{
+  "platform": "linux",
+  "mode": "browser HTTP API",
+  "capture": false,
+  "checks": "Save, Cancel, theme sync, opposing themes, editor continuity, persistence, system changes, All comments, compact layout",
+  "writes": []
+}

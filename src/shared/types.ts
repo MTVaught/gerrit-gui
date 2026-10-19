@@ -289,10 +289,12 @@ export interface ReviewDiff {
 export type TrayClickAction = 'menu' | 'my-reviews'
 
 export type ThemePreference = 'light' | 'dark' | 'system'
+export type DiffThemePreference = 'light' | 'dark' | 'application'
 
 export interface Settings {
   /** App appearance; system follows the operating system. */
   theme: ThemePreference
+  diffTheme: DiffThemePreference
   /** Opt-in local full-file review viewer. */
   localReview: boolean
   serverUrl: string

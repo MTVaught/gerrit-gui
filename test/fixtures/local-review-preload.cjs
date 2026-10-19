@@ -1,4 +1,4 @@
-const { contextBridge } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron')
 if (process.env.REVIEW_SPELLING_FIXTURE) require('./spelling-preload.cjs')
 let settings = { serverUrl: 'https://gerrit.example.com', username: 'alex', projects: [], teams: [], primaryTeam: '', mergers: [], badgeStyle: 'color', showZeroCounts: false, showAppBadge: false, showTrayCounts: false, trayClickAction: 'menu', compactOnTop: true, slackWorkspaces: [], localReview: false, hasPassword: true, encrypted: true }
 const self = { _account_id: 1, username: 'alex', name: 'Alex Rivera', email: 'alex@example.com' }
@@ -71,7 +71,8 @@ let canDeletePublished = false
 const noOp = async () => undefined
 const subscribe = () => () => undefined
 contextBridge.exposeInMainWorld('api', {
-  getSettings: async () => ({ ...settings }), saveSettings: async (s) => { settings = { ...s } },
+  getSettings: async () => process.env.REVIEW_THEME_FIXTURE ? ipcRenderer.invoke('fixture:getSettings') : ({ ...settings }),
+  saveSettings: async (s) => { if (process.env.REVIEW_THEME_FIXTURE) await ipcRenderer.invoke('fixture:saveSettings', s); else settings = { ...s } },
   fetchChange: async () => change,
   fetchDashboard: async () => ({ self, open: [change], merged: [], fetchedAt: new Date().toISOString(), truncated: false }),
   getUi: async () => ({ compact: false }), getPretend: async () => null,
@@ -81,7 +82,7 @@ contextBridge.exposeInMainWorld('api', {
   reviewCommentPositions: async () => historicalPositions,
   reviewBlame: async () => [{ author: 'Sam Chen', id: 'abc12345', time: Date.now() / 1000, commit_msg: 'Bound telemetry batches', ranges: [{ start: 1, end: 40 }] }],
   reviewDiffPreferences: async () => ({ context: -1, line_length: 100, tab_size: 4, font_size: 13, show_tabs: false, show_whitespace_errors: true, syntax_highlighting: true, manual_review: true, ignore_whitespace: 'IGNORE_NONE' }),
-  saveReviewDiffPreferences: async input => input,
+  saveReviewDiffPreferences: async input => process.env.REVIEW_THEME_FIXTURE ? ipcRenderer.invoke('fixture:saveGerrit', input) : input,
   previewReviewFix: async (_id, _ps, suggestion) => Object.fromEntries(suggestion.replacements.map(part => [part.path, { content: [{ a: ['old source'], b: part.replacement.split('\n') }]}])),
   applyProvidedReviewFix: async (id, patchSet, suggestion) => { appliedFixes.push({ id, patchSet, suggestion }) },
   openUrl: noOp,

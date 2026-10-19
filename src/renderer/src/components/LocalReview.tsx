@@ -1,6 +1,10 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
-import type { ChangeLink, FileInfo, ReviewComment, ReviewDiscussion, ReviewCommentPosition } from '../../../shared/types.ts'
+import type { DiffThemePreference, ChangeLink, FileInfo, ReviewComment, ReviewDiscussion, ReviewCommentPosition } from '../../../shared/types.ts'
+import { resolveDiffTheme } from '../../../shared/theme.ts'
+import { useSettings } from '../settings-context.ts'
+import { useResolvedTheme } from '../theme.ts'
+import { commitDiffPreferences } from '../save-diff-preferences.ts'
 import { api } from '../api.ts'
 import { diffContents } from '../review.ts'
 import { reviewShortcut, REVIEW_SHORTCUT_HELP } from '../review-shortcuts.ts'
@@ -10,11 +14,15 @@ import { ReviewComments, type ReviewCommentsHandle } from './ReviewComments.tsx'
 import { commentAnchor, commentPane, displayCommentAnchor } from '../review-comments.ts'
 import { ReviewFileList } from './ReviewFileList.tsx'
 import { DiffPreferences } from './DiffPreferences.tsx'
-import { reviewContextIsSynced, fromGerritPreferences, toGerritPreferences, loadReviewPreferences, saveReviewPreferences, type ReviewPreferences } from '../review-preferences.ts'
+import { reviewContextIsSynced, fromGerritPreferences, loadReviewPreferences, saveReviewPreferences, type ReviewPreferences } from '../review-preferences.ts'
 
 const ReviewEditor = lazy(() => import('./ReviewEditor.tsx'))
 
 export function LocalReview({ link: initialLink, subject, onClose, onMutate }: { link: ChangeLink; subject: string; onClose: () => void; onMutate: (write: () => Promise<void>) => Promise<void> }) {
+  const settingsHandle = useSettings()
+  const diffTheme = settingsHandle.settings?.diffTheme ?? 'application'
+  const applicationTheme = useResolvedTheme(settingsHandle.settings?.theme)
+  const reviewTheme = resolveDiffTheme(diffTheme, applicationTheme)
   const [discussion, setDiscussion] = useState<ReviewDiscussion | null>(null)
   const pendingComment = useRef<ReviewComment | null>(null)
   const comments = useRef<ReviewCommentsHandle>(null)
@@ -177,12 +185,14 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate }: {
     autoMarkedVisit.current = fileKey
     if (!isReviewed) void markReviewed(true)
   }, [preferences.autoMarkReviewed, readyFile, fileKey, reviewed, isReviewed])
-  async function savePreferences(next: ReviewPreferences) {
+  async function savePreferences(next: ReviewPreferences, nextTheme: DiffThemePreference) {
     preferenceVersion.current++
     try {
-      await api.saveReviewDiffPreferences(toGerritPreferences(next))
-      saveReviewPreferences(next)
-      setPreferences(next)
+      await commitDiffPreferences(preferences, next, diffTheme, nextTheme, {
+        saveGerrit: input => api.saveReviewDiffPreferences(input),
+        saveLocal: (input, synced) => { saveReviewPreferences(input, synced); setPreferences(input) },
+        saveTheme: value => settingsHandle.save({ diffTheme: value }),
+      })
       setPreferenceError('')
       return true
     } catch (e) { setPreferenceError(`Could not save diff preferences: ${(e as Error).message}`); return false }
@@ -240,7 +250,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate }: {
     }
   }
   return createPortal(
-    <dialog ref={dialog} className="local-review" aria-labelledby="local-review-title" onCancel={e => { e.preventDefault(); closeReview() }} onKeyDownCapture={onKey} onKeyDown={(e) => {
+    <dialog ref={dialog} className="local-review" data-review-theme={reviewTheme} aria-labelledby="local-review-title" onCancel={e => { e.preventDefault(); closeReview() }} onKeyDownCapture={onKey} onKeyDown={(e) => {
       if (help || preferencesOpen) return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault()
@@ -302,7 +312,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate }: {
           }
         }} />
           {error ? <div className="review-message" role="alert">{error}<p><button className="btn" onClick={() => { fileLists.current.delete(comparison); setRetry((v) => v + 1) }}>Retry</button></p></div>
-            : loaded && loaded.path === path && loaded.comparison === comparison ? <Suspense fallback={<p className="review-message" role="status">Opening review editor…</p>}><ReviewEditor ref={editor} key={fileKey} file={loaded} link={link} preferences={preferences} commentsVisible={commentsOpen} markers={markers} onComment={position => { const anchor = commentAnchor(link, path, loaded.nameA, position.pane, position.line, position.range); if (position.existing) comments.current?.openAt(anchor); else comments.current?.compose(anchor) }} onReady={() => {
+            : loaded && loaded.path === path && loaded.comparison === comparison ? <Suspense fallback={<p className="review-message" role="status">Opening review editor…</p>}><ReviewEditor theme={reviewTheme} ref={editor} key={fileKey} file={loaded} link={link} preferences={preferences} commentsVisible={commentsOpen} markers={markers} onComment={position => { const anchor = commentAnchor(link, path, loaded.nameA, position.pane, position.line, position.range); if (position.existing) comments.current?.openAt(anchor); else comments.current?.compose(anchor) }} onReady={() => {
               setReadyFile(fileKey); setEditorGeneration(generation => generation + 1)
               const comment = pendingComment.current
               if (comment && comment.patch_set === link.patchSet && comment.path === path) { editor.current?.revealComment(comment.side === 'PARENT' ? 'original' : 'modified', comment.line ?? comment.range?.end_line ?? 1); pendingComment.current = null }
@@ -311,7 +321,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate }: {
         </main>
 
       </div>
-      {preferencesOpen && <DiffPreferences preferences={preferences} error={preferenceError} onSave={savePreferences} onClose={() => { setPreferencesOpen(false); setPreferenceError('') }} />}
+      {preferencesOpen && <DiffPreferences diffTheme={diffTheme} preferences={preferences} error={preferenceError} onSave={savePreferences} onClose={() => { setPreferencesOpen(false); setPreferenceError('') }} />}
       {help && <ShortcutHelp onClose={() => setHelp(false)} />}
     </dialog>, document.body,
   )

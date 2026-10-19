@@ -39,9 +39,9 @@ export function loadReviewPreferences(): ReviewPreferences {
   try { return parseReviewPreferences(JSON.parse(localStorage.getItem(key) ?? 'null')) }
   catch { return { ...defaultReviewPreferences } }
 }
-export function saveReviewPreferences(preferences: ReviewPreferences): void {
+export function saveReviewPreferences(preferences: ReviewPreferences, synced = true): void {
   localStorage.setItem(key, JSON.stringify(preferences))
-  localStorage.setItem('local-review-gerrit-preferences-synced', 'true')
+  if (synced) localStorage.setItem('local-review-gerrit-preferences-synced', 'true')
 }
 
 /** Keep the displayed source untouched; normalization is only for diff computation. */
