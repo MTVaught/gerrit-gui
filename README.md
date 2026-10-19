@@ -597,6 +597,10 @@ At the first start, a "Connection" window opens. Enter the server URL, your
 username and an HTTP password, and press "Test and save". The same window
 opens later from "Connection" at the bottom of the settings page; it is the
 only place that tests the connection and reloads the board.
+The app reuses a saved password only for the same server origin and username.
+An origin includes the scheme, host and port. If you change the origin or
+username, enter a replacement HTTP password before you test and save.
+
 Make the HTTP password in Gerrit under "Settings", "HTTP Credentials". The
 server URL is the base URL of Gerrit. Include the path prefix. For example,
 enter `https://host/gerrit1`, not only the host. You can also paste the URL of
@@ -693,7 +697,11 @@ development server is at http://localhost:5173/. VS Code forwards this port
 automatically. The application writes the settings that you enter in the
 browser to `~/.config/gerrit-gui/web-settings.json`. The password in this file
 is not encrypted. As an alternative, set `GERRIT_URL`, `GERRIT_USER` and
-`GERRIT_PASSWORD` in the environment. The tray icon, the badge and compact
+`GERRIT_PASSWORD` in the environment. A URL or username override cannot reuse
+a file password for a different origin or account. If `GERRIT_PASSWORD` is
+set, change the connection identity through the environment and restart
+browser mode. The form rejects identity changes while that override is active.
+The tray icon, the badge and compact
 mode do not operate in a browser. All other functions operate.
 
 ## Tests

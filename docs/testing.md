@@ -27,6 +27,30 @@ SHOT_LOGIN='http://localhost:8080/login/%23%2F?account_id=1000001' SHOT_DELAY=40
   xvfb-run -a ./node_modules/.bin/electron --no-sandbox docs/mockups/shot.cjs 'http://localhost:8080/c/demo/+/3' out.png 1180
 ```
 
+## Credential identity checks
+
+`pnpm test` checks both settings stores with dummy passwords and temporary
+settings files. The desktop checks replace Electron's keychain functions
+with reversible dummy encryption. They check origin and account changes,
+blank-password rejection, unchanged settings after rejection, replacement
+credentials, safe reuse and browser environment overrides. A request recorder
+checks the destination and Authorization header used by the real service.
+
+To check the connection form with real input on Linux:
+
+```sh
+pnpm build
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/credential-binding-ui.cjs
+```
+
+This check uses the built renderer and the production browser settings store
+and service. Gerrit responses are simulated. All passwords are dummy values,
+and all settings and browser profiles use temporary directories. The check
+confirms that origin and account changes disable submission, an identity
+change clears a typed password, and the new identity receives only the
+replacement password. Paired light/dark captures are saved under
+`docs/screenshots/credential-binding/` for the blocked and connected states.
+
 ## Update flow
 
 Updates are off when the application runs from the source tree. To exercise the check, download and restart flow in `pnpm dev`, set `GERRIT_GUI_DEV_UPDATE=1`. The updater then reads `dev-app-update.yml` (the GitHub repository to poll) in place of the metadata a packaged application carries. The download step needs a packaged application, and on macOS a signed one, so in `pnpm dev` it ends with an error, shown in the top bar button's tooltip and in Settings. The check and the top bar button work.
