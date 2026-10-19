@@ -1,0 +1,16 @@
+
+(electron:599448): dbind-WARNING **: 17:31:32.389: Couldn't connect to accessibility bus: Failed to connect to socket /run/user/1000/at-spi/bus: No such file or directory
+AssertionError [ERR_ASSERTION]: whole-file default
++ actual - expected
+
++ 'application'
+- '-1'
+
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/test/review-ui.cjs:187:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 'application',
+  expected: '-1',
+  operator: 'strictEqual',
+  diff: 'simple'
+}

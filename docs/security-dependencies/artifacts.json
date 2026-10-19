@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-10-19T22:36:13.876Z",
+  "buildSourceCommit": "5a7ea88083b9a621e8fbd164aac5621b8f527d91",
+  "baseCommit": "b6b0e67545826805a3b0fabc0820116309ef3f73",
+  "archive": {
+    "path": "dist/linux-unpacked/resources/app.asar",
+    "bytes": 33291595,
+    "sha256": "41b293aa771caa9128c821244d4064e8e9200b29647ef77a09b88f476dfda4dd"
+  },
+  "lockfileSha256": "ef66f4381b923fa949a4945fd7d487b4989887c584665248bfaf23e7cacbea6a",
+  "patchSha256": "4132aa53dabb814b2c044702ec13b212b116a5ea0cbca6455b7fc4f20a8d8365",
+  "results": [
+    {
+      "label": "renderer",
+      "scripts": 24,
+      "dompurify": "3.4.17",
+      "oldVersionFound": false
+    },
+    {
+      "label": "web",
+      "scripts": 33,
+      "dompurify": "3.4.17",
+      "oldVersionFound": false
+    },
+    {
+      "label": "app.asar",
+      "scripts": 632,
+      "dompurify": "3.4.17",
+      "oldVersionFound": false
+    }
+  ],
+  "currentRendererAssetsMatch": 24,
+  "currentMainAndPreloadMatch": true,
+  "unusedMonacoDistributionShipped": false,
+  "buildProxyLoggerShipped": false
+}

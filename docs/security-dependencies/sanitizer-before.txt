@@ -1,0 +1,10 @@
+Downloading Electron binary...
+AssertionError [ERR_ASSERTION]: {"version":"3.4.15","html":"<h3>Safe review text</h3><a>Review link</a>","checks":[{"name":"Monaco HTML","passed":true},{"name":"afterSanitizeElements","passed":false},{"name":"afterSanitizeAttributes","passed":false},{"name":"rawtext root rejected","passed":false},{"name":"no payload execution","passed":false}],"payloadExecutions":2}
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/test/security-dependencies-ui.cjs:36:12 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}

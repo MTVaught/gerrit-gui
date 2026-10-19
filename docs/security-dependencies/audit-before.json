@@ -1,0 +1,410 @@
+{
+  "advisories": {
+    "1240091": {
+      "findings": [
+        {
+          "version": "3.1.7",
+          "paths": [
+            ".>electron-builder>app-builder-lib>ajv>fast-uri",
+            ".>electron-builder>dmg-builder>app-builder-lib>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240091,
+      "title": "fast-uri vulnerable to inconsistent host case normalization via percent-encoded octets",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.8",
+      "patched_versions": ">=3.1.8",
+      "severity": "moderate",
+      "cwe": "CWE-178",
+      "github_advisory_id": "GHSA-hrr3-gc8f-f4qj",
+      "url": "https://github.com/advisories/GHSA-hrr3-gc8f-f4qj"
+    },
+    "1240100": {
+      "findings": [
+        {
+          "version": "1.1.18",
+          "paths": [
+            ".>electron-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240100,
+      "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": "<1.1.21",
+      "patched_versions": ">=1.1.21",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-q2hr-2g5m-vwhr",
+      "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+    },
+    "1240101": {
+      "findings": [
+        {
+          "version": "2.1.4",
+          "paths": [
+            ".>electron-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240101,
+      "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=2.0.0 <2.1.7",
+      "patched_versions": ">=2.1.7",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-q2hr-2g5m-vwhr",
+      "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+    },
+    "1240103": {
+      "findings": [
+        {
+          "version": "5.0.9",
+          "paths": [
+            ".>electron-builder>app-builder-lib>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240103,
+      "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=4.0.0 <5.0.12",
+      "patched_versions": ">=5.0.12",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-q2hr-2g5m-vwhr",
+      "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+    },
+    "1240104": {
+      "findings": [
+        {
+          "version": "1.1.18",
+          "paths": [
+            ".>electron-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240104,
+      "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": "<1.1.20",
+      "patched_versions": ">=1.1.20",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-qhr7-859c-m2p7",
+      "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+    },
+    "1240105": {
+      "findings": [
+        {
+          "version": "2.1.4",
+          "paths": [
+            ".>electron-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240105,
+      "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=2.0.0 <2.1.6",
+      "patched_versions": ">=2.1.6",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-qhr7-859c-m2p7",
+      "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+    },
+    "1240107": {
+      "findings": [
+        {
+          "version": "5.0.9",
+          "paths": [
+            ".>electron-builder>app-builder-lib>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240107,
+      "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=4.0.0 <5.0.11",
+      "patched_versions": ">=5.0.11",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-qhr7-859c-m2p7",
+      "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+    },
+    "1240108": {
+      "findings": [
+        {
+          "version": "1.1.18",
+          "paths": [
+            ".>electron-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240108,
+      "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": "<1.1.19",
+      "patched_versions": ">=1.1.19",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-6j4f-fj2g-mc7p",
+      "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+    },
+    "1240109": {
+      "findings": [
+        {
+          "version": "2.1.4",
+          "paths": [
+            ".>electron-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240109,
+      "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=2.0.0 <2.1.5",
+      "patched_versions": ">=2.1.5",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-6j4f-fj2g-mc7p",
+      "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+    },
+    "1240111": {
+      "findings": [
+        {
+          "version": "5.0.9",
+          "paths": [
+            ".>electron-builder>app-builder-lib>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>minimatch>brace-expansion"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240111,
+      "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=4.0.0 <5.0.10",
+      "patched_versions": ">=5.0.10",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-6j4f-fj2g-mc7p",
+      "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+    },
+    "1240621": {
+      "findings": [
+        {
+          "version": "3.4.15",
+          "paths": [
+            ".>monaco-editor>dompurify"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240621,
+      "title": "DOMPurify: IN_PLACE: node-removing afterSanitize hook leaves detached subtree event handlers armed, causing DOM XSS",
+      "module_name": "dompurify",
+      "vulnerable_versions": ">=3.4.13 <=3.4.15",
+      "patched_versions": ">=3.4.16",
+      "severity": "low",
+      "cwe": "CWE-79",
+      "github_advisory_id": "GHSA-p98j-92pf-mc4p",
+      "url": "https://github.com/advisories/GHSA-p98j-92pf-mc4p"
+    },
+    "1240991": {
+      "findings": [
+        {
+          "version": "4.2.0",
+          "paths": [
+            ".>electron-builder>app-builder-lib>@electron/get>got>cacheable-request>http-cache-semantics",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/get>got>cacheable-request>http-cache-semantics"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240991,
+      "title": "http-cache-semantics max-stale handling can disclose cross-user cached responses",
+      "module_name": "http-cache-semantics",
+      "vulnerable_versions": "<=4.2.0",
+      "patched_versions": ">=4.3.0",
+      "severity": "high",
+      "cwe": "CWE-524",
+      "github_advisory_id": "GHSA-ch52-4w7c-c8xp",
+      "url": "https://github.com/advisories/GHSA-ch52-4w7c-c8xp"
+    },
+    "1241202": {
+      "findings": [
+        {
+          "version": "1.1.3",
+          "paths": [
+            ".>electron-builder>app-builder-lib>@electron/get>global-agent>roarr>sprintf-js",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/get>global-agent>roarr>sprintf-js"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1241202,
+      "title": "sprintf-js vulnerable to denial of service through unbounded precision specifiers",
+      "module_name": "sprintf-js",
+      "vulnerable_versions": "<=1.1.3",
+      "patched_versions": null,
+      "patched_versions_unpublished": true,
+      "severity": "moderate",
+      "cwe": "CWE-1284",
+      "github_advisory_id": "GHSA-hp3w-g68c-fv3c",
+      "url": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c"
+    },
+    "1241204": {
+      "findings": [
+        {
+          "version": "3.4.15",
+          "paths": [
+            ".>monaco-editor>dompurify"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241204,
+      "title": "DOMPurify: IN_PLACE returns a force-removed rawtext root whose text carries attacker markup — pure HTML reparse executes",
+      "module_name": "dompurify",
+      "vulnerable_versions": "<=3.4.15",
+      "patched_versions": ">=3.4.16",
+      "severity": "low",
+      "cwe": "CWE-79",
+      "github_advisory_id": "GHSA-6688-9rhm-gjv2",
+      "url": "https://github.com/advisories/GHSA-6688-9rhm-gjv2"
+    },
+    "1241209": {
+      "findings": [
+        {
+          "version": "1.2.1",
+          "paths": [
+            ".>@vitejs/plugin-react>vite>postcss>source-map-js",
+            ".>electron-vite>vite>postcss>source-map-js",
+            ".>vite>postcss>source-map-js"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241209,
+      "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+      "module_name": "source-map-js",
+      "vulnerable_versions": ">=1.0.0 <1.2.2",
+      "patched_versions": ">=1.2.2",
+      "severity": "high",
+      "cwe": "CWE-1284",
+      "github_advisory_id": "GHSA-68fv-2mgg-jv7q",
+      "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 2,
+      "moderate": 5,
+      "high": 8,
+      "critical": 0
+    },
+    "dependencies": 108,
+    "devDependencies": 410,
+    "optionalDependencies": 130,
+    "totalDependencies": 527
+  }
+}

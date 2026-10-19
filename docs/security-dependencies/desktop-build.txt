@@ -1,0 +1,51 @@
+$ node scripts/ensure-electron.mjs && electron-vite build
+This kernel restricts unprivileged user namespaces, so Electron needs its setuid sandbox helper.
+Run once (and again after any pnpm install that replaces node_modules/electron):
+  sudo chown root:root /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/node_modules/electron/dist/chrome-sandbox && sudo chmod 4755 /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/node_modules/electron/dist/chrome-sandbox
+Alternative (system-wide, less secure): sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+vite v7.3.6 building ssr environment for production...
+transforming...
+✓ 24 modules transformed.
+rendering chunks...
+out/main/index.js  82.73 kB
+✓ built in 213ms
+vite v7.3.6 building ssr environment for production...
+transforming...
+✓ 1 modules transformed.
+rendering chunks...
+out/preload/index.js  4.52 kB
+✓ built in 15ms
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 1352 modules transformed.
+rendering chunks...
+../../out/renderer/index.html                                 0.50 kB
+../../out/renderer/assets/review-diff.worker-BjaB0xSV.js    148.91 kB
+../../out/renderer/assets/codicon-DF1abBS2.ttf              153.23 kB
+../../out/renderer/assets/editor.worker-DD3EztIk.js         589.40 kB
+../../out/renderer/assets/json.worker-B6HGQMPc.js           888.57 kB
+../../out/renderer/assets/jsonMode-3BBE6E73.css              53.53 kB
+../../out/renderer/assets/index-BMKc3Wai.css                 68.56 kB
+../../out/renderer/assets/ReviewEditor-BZ01JIG0.css         194.05 kB
+../../out/renderer/assets/javascript-DtwNm90F.js              1.34 kB
+../../out/renderer/assets/ini-BcQysCTb.js                     1.67 kB
+../../out/renderer/assets/xml-f-3DpqDH.js                     2.79 kB
+../../out/renderer/assets/dockerfile--oxj0cAH.js              3.02 kB
+../../out/renderer/assets/shell-vZEubQ82.js                   4.48 kB
+../../out/renderer/assets/go-brnMpFrj.js                      4.49 kB
+../../out/renderer/assets/java-Dt3iMn2o.js                    5.16 kB
+../../out/renderer/assets/yaml-BZgdmjuI.js                    5.85 kB
+../../out/renderer/assets/css-i3rI3_64.js                     6.10 kB
+../../out/renderer/assets/rust-B1c0VCeq.js                    6.27 kB
+../../out/renderer/assets/python-BLd-jEF1.js                  6.47 kB
+../../out/renderer/assets/markdown-B0YTnTxW.js                6.65 kB
+../../out/renderer/assets/csharp-BJeIuvde.js                  6.98 kB
+../../out/renderer/assets/html-C-NKhE6b.js                    7.59 kB
+../../out/renderer/assets/typescript-Czf-tHn5.js              7.88 kB
+../../out/renderer/assets/cpp-CcN6f0ik.js                     8.22 kB
+../../out/renderer/assets/scss-B42qMyAu.js                    9.07 kB
+../../out/renderer/assets/sql-BAGepFCR.js                    15.56 kB
+../../out/renderer/assets/index-Dg8TJBRb.js               1,227.82 kB
+../../out/renderer/assets/jsonMode-Bbw7tUPO.js            1,617.03 kB
+../../out/renderer/assets/ReviewEditor-CsAuBepD.js        6,249.16 kB
+✓ built in 6.41s

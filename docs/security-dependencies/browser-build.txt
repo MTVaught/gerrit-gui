@@ -1,0 +1,44 @@
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 1353 modules transformed.
+
+(!) outDir /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/web is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../../out/web/index.html                                 0.49 kB │ gzip:   0.32 kB
+../../out/web/assets/review-diff.worker-9Ru9bjeg.js     76.63 kB
+../../out/web/assets/codicon-DF1abBS2.ttf              153.23 kB
+../../out/web/assets/editor.worker-CHzQTjO0.js         275.63 kB
+../../out/web/assets/json.worker-BggoxaER.js           406.91 kB
+../../out/web/assets/jsonMode-DEmEO9Ra.css              41.13 kB │ gzip:   7.13 kB
+../../out/web/assets/index-BxO-Zo73.css                 53.00 kB │ gzip:  10.69 kB
+../../out/web/assets/ReviewEditor-5JRQyseo.css         145.41 kB │ gzip:  21.48 kB
+../../out/web/assets/javascript-C-vf967O.js              0.84 kB │ gzip:   0.46 kB
+../../out/web/assets/ini-Kd9XrMLS.js                     0.96 kB │ gzip:   0.50 kB
+../../out/web/assets/dockerfile-BG73LgW2.js              1.73 kB │ gzip:   0.63 kB
+../../out/web/assets/xml-BwwCfDmQ.js                     1.96 kB │ gzip:   0.76 kB
+../../out/web/assets/go-acbASCJo.js                      2.52 kB │ gzip:   1.11 kB
+../../out/web/assets/shell-DiJ1NA_G.js                   2.94 kB │ gzip:   1.16 kB
+../../out/web/assets/java-CXBNlu9o.js                    3.08 kB │ gzip:   1.36 kB
+../../out/web/assets/yaml-j1Tqjsf7.js                    3.58 kB │ gzip:   1.31 kB
+../../out/web/assets/markdown-BFxVWTOG.js                3.65 kB │ gzip:   1.35 kB
+../../out/web/assets/python-CZpnl8mZ.js                  3.76 kB │ gzip:   1.47 kB
+../../out/web/assets/rust-BzKRNQWT.js                    4.02 kB │ gzip:   1.79 kB
+../../out/web/assets/css-DdJfP1eB.js                     4.37 kB │ gzip:   1.34 kB
+../../out/web/assets/csharp-Co3qMtFm.js                  4.39 kB │ gzip:   1.69 kB
+../../out/web/assets/html-DMmD3Iz5.js                    4.57 kB │ gzip:   1.19 kB
+../../out/web/assets/typescript-DaT14O_U.js              4.94 kB │ gzip:   1.97 kB
+../../out/web/assets/cpp-BbWJElDN.js                     5.16 kB │ gzip:   2.06 kB
+../../out/web/assets/scss-CBJaRo0y.js                    6.27 kB │ gzip:   1.71 kB
+../../out/web/assets/sql-ClhHkBeG.js                    10.16 kB │ gzip:   3.79 kB
+../../out/web/assets/index-D1brCJnC.js                 529.72 kB │ gzip: 163.12 kB
+../../out/web/assets/jsonMode-BH35Zsgv.js              810.36 kB │ gzip: 213.09 kB
+../../out/web/assets/ReviewEditor-C4qIhvE-.js        3,238.01 kB │ gzip: 840.48 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.47s

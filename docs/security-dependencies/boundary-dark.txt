@@ -1,0 +1,408 @@
+
+(electron:600669): dbind-WARNING **: 17:33:21.855: Couldn't connect to accessibility bus: Failed to connect to socket /run/user/1000/at-spi/bus: No such file or directory
+connection
+Open in Slack: Fixture: Slack not installed
+Error occurred in handler for 'app:openUrl': Error: Only absolute http and https links can be opened
+    at externalWebUrl (/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1615:11)
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1824:20
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1678:16
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'app:openUrl': Error: Only absolute http and https links can be opened
+    at externalWebUrl (/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1615:11)
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1824:20
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1678:16
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'app:openUrl': Error: Only absolute http and https links can be opened
+    at externalWebUrl (/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1615:11)
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1824:20
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1678:16
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'app:openUrl': Error: Only absolute http and https links can be opened
+    at externalWebUrl (/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1615:11)
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1824:20
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1678:16
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'app:openUrl': Error: Invalid external web link
+    at externalWebUrl (/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1618:60)
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1824:20
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1678:16
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'app:openUrl': Error: Only absolute http and https links can be opened
+    at externalWebUrl (/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1615:11)
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1824:20
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1678:16
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'app:openUrl': Error: Only absolute http and https links can be opened
+    at externalWebUrl (/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1615:11)
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1824:20
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1678:16
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'app:openUrl': Error: Only absolute http and https links can be opened
+    at externalWebUrl (/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1615:11)
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1824:20
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1678:16
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+create rogue window
+load rogue document
+probe rogue channels
+Error occurred in handler for 'settings:get': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'settings:save': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:testConnection': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:fetchDashboard': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:fetchChange': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewBlame': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewDiffPreferences': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:saveReviewDiffPreferences': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:previewReviewFix': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:applyProvidedReviewFix': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewFiles': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewDiff': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewCommentPositions': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewDiscussion': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:saveReviewDraft': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:deleteReviewDraft': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:deleteReviewComment': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:applyReviewFix': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:submitReview': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewPatchSets': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewReviewedFiles': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:setReviewFileReviewed': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:act': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:suggestReviewers': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:suggestAccounts': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:lookupAccounts': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:openChange': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:changeUrl': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:inspectChange': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:getPretend': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:setPretend': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'app:openUrl': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'connection:open': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'connection:changed': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'connection:close': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'ui:get': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'ui:setCompact': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:get': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:check': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:download': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:install': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:openReleaseNotes': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+probe child frame
+Error occurred in handler for 'settings:get': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'settings:save': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:testConnection': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:fetchDashboard': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:fetchChange': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewBlame': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewDiffPreferences': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:saveReviewDiffPreferences': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:previewReviewFix': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:applyProvidedReviewFix': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewFiles': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewDiff': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewCommentPositions': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewDiscussion': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:saveReviewDraft': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:deleteReviewDraft': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:deleteReviewComment': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:applyReviewFix': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:submitReview': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewPatchSets': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:reviewReviewedFiles': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:setReviewFileReviewed': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:act': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:suggestReviewers': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:suggestAccounts': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:lookupAccounts': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:openChange': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:changeUrl': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:inspectChange': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:getPretend': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'gerrit:setPretend': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'app:openUrl': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'connection:open': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'connection:changed': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'connection:close': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'ui:get': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'ui:setCompact': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:get': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:check': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:download': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:install': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'update:openReleaseNotes': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+probe navigated app
+Error occurred in handler for 'settings:get': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'settings:save': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+Error occurred in handler for 'settings:get': Error: Untrusted IPC sender
+    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/out/main/index.js:1677:53
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:123650)
+    at Session.emit (node:events:514:28)
+probe redirect
+reload trusted app
+dark file: 42 channels reject rogue sender; child-frame and navigated app rejected; navigation and redirects blocked; real connection save, hash routing, reload, web links, Gerrit links, release notes and Slack fallback pass

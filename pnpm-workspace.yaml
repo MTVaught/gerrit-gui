@@ -7,3 +7,6 @@ allowBuilds:
   electron-winstaller: true
 patchedDependencies:
   monaco-editor@0.57.0: patches/monaco-editor@0.57.0.patch
+# Monaco pins DOMPurify. Its ESM bundled copy is updated in the patch above.
+overrides:
+  monaco-editor>dompurify: 3.4.17
