@@ -700,8 +700,32 @@ pnpm web
 
 This command starts two servers. The local API server is at 127.0.0.1:5174.
 This is the part of the application that does not use Electron. The Vite
-development server is at http://localhost:5173/. VS Code forwards this port
-automatically. The application writes the settings that you enter in the
+development server is at http://localhost:5173/. Open the one-use link printed
+in the terminal after Vite is ready. Its fragment holds a random startup key.
+The page removes this key from the URL and exchanges it for an HttpOnly,
+SameSite=Strict session cookie. The key works once. The session lasts until
+the API stops or you clear the cookie. Reloads and connection tabs use the
+same cookie. A new browser profile needs a new link from a server restart.
+Do not share the link or terminal output that contains it.
+
+Both servers bind to loopback. The API requires the session, an exact Origin
+and Host match, and a JSON array body of at most 1 MiB. It does not allow CORS.
+The default origin is `http://localhost:5173`. To use a different browser URL,
+set `WEB_ORIGIN` to that exact origin before you run `pnpm web`. Set `WEB_PORT`
+and `API_PORT` to change local ports. For example:
+
+```sh
+WEB_PORT=5183 API_PORT=5184 WEB_ORIGIN=http://localhost:5183 pnpm web
+```
+
+VS Code can forward the web port. Use its exact browser origin in `WEB_ORIGIN`.
+Forwarding must preserve the Host and Origin headers. The API does not trust
+`X-Forwarded-*` headers. Use HTTPS for a remote forwarding URL. HTTPS origins
+also get a Secure session cookie. Keep the development server private. Local
+processes that can read the startup link and scripts running at the approved
+origin remain trusted.
+
+The application writes the settings that you enter in the
 browser to `~/.config/gerrit-gui/web-settings.json`. The password in this file
 is not encrypted. As an alternative, set `GERRIT_URL`, `GERRIT_USER` and
 `GERRIT_PASSWORD` in the environment. A URL or username override cannot reuse
@@ -710,6 +734,7 @@ set, change the connection identity through the environment and restart
 browser mode. The form rejects identity changes while that override is active.
 The tray icon, the badge and compact
 mode do not operate in a browser. All other functions operate.
+For isolated tests, `GERRIT_GUI_WEB_SETTINGS` selects a separate settings file.
 
 ## Tests
 
