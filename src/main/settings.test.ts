@@ -77,14 +77,23 @@ for (const mode of ['browser', 'desktop plaintext', 'desktop encrypted']) {
       ]) {
         await store.save(seed)
         const before = await readFile(file, 'utf8')
+        const insecure = changed.serverUrl?.startsWith('http:')
         for (const password of [undefined, '']) {
-          await assert.rejects(svc.saveSettings({ ...seed, ...changed, password }), /Enter an HTTP password/)
+          await assert.rejects(svc.saveSettings({ ...seed, ...changed, password }), insecure ? /requires HTTPS/ : /Enter an HTTP password/)
           assert.equal(await readFile(file, 'utf8'), before, 'rejection must leave the stored identity and secret intact')
           sent.length = 0
           await svc.testConnection()
           assert.deepEqual(sent, [{ origin: 'https://old.example', authorization: 'Basic ' + Buffer.from('alice:dummy-old-secret').toString('base64') }], 'even a subsequent test can only use the original identity')
         }
         const replacement = { ...seed, ...changed, password: 'dummy-replacement-secret' }
+        if (insecure) {
+          sent.length = 0
+          await assert.rejects(svc.saveSettings(replacement), /requires HTTPS/)
+          assert.equal(await readFile(file, 'utf8'), before)
+          assert.deepEqual(await reopen().getCredentials(), old)
+          assert.deepEqual(sent, [], 'a replacement password cannot authorize remote HTTP')
+          continue
+        }
         await svc.saveSettings(replacement)
         assert.deepEqual(await reopen().getCredentials(), {
           serverUrl: replacement.serverUrl, username: replacement.username, password: replacement.password,
@@ -95,10 +104,47 @@ for (const mode of ['browser', 'desktop plaintext', 'desktop encrypted']) {
       }
       await store.save(seed)
       await store.save({ ...seed, serverUrl: 'https://OLD.example:443/other/c/demo/+/1', username: ' alice ', password: '' })
-      assert.deepEqual(await reopen().getCredentials(), { ...old, serverUrl: 'https://OLD.example:443/other' }, 'same-origin path changes and account whitespace can reuse a password')
+      assert.deepEqual(await reopen().getCredentials(), { ...old, serverUrl: 'https://old.example/other' }, 'same-origin path changes and account whitespace can reuse a password')
       assert.equal((await store.getStatus()).hasPassword, true)
       assert.ok(!JSON.stringify(await store.getStatus()).includes('dummy-old-secret'), 'status never exposes the secret')
     } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test(`${mode}: loopback test HTTP preserves password binding and still enforces transport`, async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'gerrit-loopback-binding-'))
+    const file = path.join(directory, 'settings.json')
+    const previousPolicy = process.env['GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP']
+    electron.state.directory = directory
+    electron.state.encrypted = mode === 'desktop encrypted'
+    const reopen = (): SettingsStore => mode === 'browser' ? browser(file) : {
+      getStatus: desktop.getStatus, getCredentials: desktop.getCredentials, save: desktop.save,
+    }
+    try {
+      process.env['GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP'] = '1'
+      for (const host of ['127.0.0.1', '[::1]']) {
+        const store = reopen()
+        const seed: SettingsInput = { ...await store.getStatus(), serverUrl: `http://${host}:8080/gerrit`, username: 'dummy', password: 'dummy-local-secret' }
+        await store.save(seed)
+        await store.save({ ...seed, serverUrl: `http://${host}:8080/other`, username: ' dummy ', password: '' })
+        assert.deepEqual(await reopen().getCredentials(), { serverUrl: `http://${host}:8080/other`, username: 'dummy', password: 'dummy-local-secret' })
+        const before = await readFile(file, 'utf8')
+        await assert.rejects(store.save({ ...seed, serverUrl: `http://${host}:8081/gerrit`, password: '' }), /Enter an HTTP password/)
+        await assert.rejects(store.save({ ...seed, username: 'other', password: '' }), /Enter an HTTP password/)
+        await assert.rejects(store.save({ ...seed, serverUrl: 'http://gerrit.example', password: 'dummy-replacement' }), /requires HTTPS/)
+        assert.equal(await readFile(file, 'utf8'), before)
+        delete process.env['GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP']
+        assert.equal((await store.getStatus()).serverUrl, `http://${host}:8080/other`)
+        await assert.rejects(store.getCredentials(), /requires HTTPS/)
+        let calls = 0
+        await assert.rejects(createService(store, async () => { calls++; return new Response('{}') }).testConnection(), /requires HTTPS/)
+        assert.equal(calls, 0)
+        process.env['GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP'] = '1'
+      }
+    } finally {
+      if (previousPolicy === undefined) delete process.env['GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP']
+      else process.env['GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP'] = previousPolicy
       await rm(directory, { recursive: true, force: true })
     }
   })
@@ -122,7 +168,7 @@ test('browser environment overrides never attach a file password to a different 
       assert.ok(!(await readFile(file, 'utf8')).includes(old.password))
     }
     await writeFile(file, JSON.stringify(old))
-    assert.deepEqual(await browser(file, { GERRIT_URL: 'https://OLD.example:443/other', GERRIT_USER: ' alice ' }).getCredentials(), { ...old, serverUrl: 'https://OLD.example:443/other' })
+    assert.deepEqual(await browser(file, { GERRIT_URL: 'https://OLD.example:443/other', GERRIT_USER: ' alice ' }).getCredentials(), { ...old, serverUrl: 'https://old.example/other' })
     const complete = browser(file, { GERRIT_URL: 'https://new.example', GERRIT_USER: 'bob', GERRIT_PASSWORD: 'dummy-env-secret' })
     assert.deepEqual(await complete.getCredentials(), { serverUrl: 'https://new.example', username: 'bob', password: 'dummy-env-secret' })
     await assert.rejects(complete.save({ ...await complete.getStatus(), serverUrl: 'https://third.example', password: '' }), /set by GERRIT_PASSWORD/)

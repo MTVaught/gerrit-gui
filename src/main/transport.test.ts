@@ -67,13 +67,23 @@ test('browser settings reject HTTP on save, legacy reads, and environment overri
   setEnv('GERRIT_URL', 'http://gerrit.example')
   setEnv('GERRIT_USER', 'dummy')
   setEnv('GERRIT_PASSWORD', 'dummy')
-  await assert.rejects(store.getCredentials(), /requires HTTPS/)
+  const remoteOverride = fileSettings(file)
+  assert.equal((await remoteOverride.getStatus()).serverUrl, 'http://gerrit.example')
+  await assert.rejects(remoteOverride.getCredentials(), /requires HTTPS/)
   setEnv('GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP', '1')
-  await assert.rejects(store.getCredentials(), /requires HTTPS/)
+  await assert.rejects(remoteOverride.getCredentials(), /requires HTTPS/)
   setEnv('GERRIT_URL', 'http://127.0.0.1:8080')
-  assert.equal((await store.getCredentials())?.serverUrl, 'http://127.0.0.1:8080')
+  const localOverride = fileSettings(file)
+  assert.equal((await localOverride.getCredentials())?.serverUrl, 'http://127.0.0.1:8080')
+  await assert.rejects(remoteOverride.getCredentials(), /requires HTTPS/, 'existing stores keep their startup environment identity')
   setEnv('GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP', undefined)
-  await assert.rejects(store.getCredentials(), /requires HTTPS/)
+  await assert.rejects(localOverride.getCredentials(), /requires HTTPS/)
+  for (const value of ['https://[', 'ftp://gerrit.example']) {
+    setEnv('GERRIT_URL', value)
+    const invalidOverride = fileSettings(file)
+    assert.equal((await invalidOverride.getStatus()).serverUrl, value, 'invalid environment URL remains visible')
+    await assert.rejects(invalidOverride.getCredentials(), /valid HTTPS|requires HTTPS/)
+  }
 })
 
 test('legacy or custom settings cannot bypass transport checks through service operations', async (t) => {

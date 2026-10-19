@@ -70,8 +70,9 @@ export async function getStatus(): Promise<SettingsStatus> {
 
 export async function getCredentials(): Promise<{ serverUrl: string; username: string; password: string } | null> {
   const s = await read()
-  if (!s.serverUrl || !s.username || !s.password) return null
+  if (!s.serverUrl) return null
   const serverUrl = normalizeServerUrl(s.serverUrl, allowLocalTestHttp())
+  if (!s.username || !s.password) return null
   const password = s.passwordEncrypted
     ? safeStorage.decryptString(Buffer.from(s.password, 'base64'))
     : s.password
@@ -80,11 +81,12 @@ export async function getCredentials(): Promise<{ serverUrl: string; username: s
 
 export async function save(input: SettingsInput): Promise<void> {
   const prev = await read()
+  const serverUrl = normalizeServerUrl(input.serverUrl, allowLocalTestHttp())
   requireReplacementPassword(prev, input)
   const next: StoredSettings = {
     theme: normalizeTheme(input.theme),
     diffTheme: normalizeDiffTheme(input.diffTheme),
-    serverUrl: normalizeServerUrl(input.serverUrl, allowLocalTestHttp()),
+    serverUrl,
     username: input.username.trim(),
     projects: input.projects.map((p) => p.trim()).filter(Boolean),
     teams: normalizeTeams(input.teams),

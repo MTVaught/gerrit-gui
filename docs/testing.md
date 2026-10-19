@@ -23,6 +23,12 @@ The transport test uses OpenSSL to create a temporary certificate. It checks
 that an untrusted certificate fails, a trusted HTTPS request works, and HTTP
 downgrade redirects never reach the HTTP listener. It needs `openssl` on PATH.
 
+Credential binding tests cover browser settings and both desktop storage modes.
+They check that loopback HTTP can reuse a password only for the same origin
+and account when the local test flag is enabled. Remote HTTP is rejected even
+with a replacement password. Invalid stored or startup environment URLs remain
+visible for correction, but cannot supply credentials to the transport.
+
 For a local Gerrit HTTP fixture, use `http://127.0.0.1:8080` and start the
 application or integration test with `GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP=1`.
 This exception is for dummy accounts only. It does not permit remote HTTP.
@@ -42,6 +48,9 @@ It checks that remote HTTP cannot save settings or call fetch, that HTTPS
 connects, and that Chromium rejects five HTTP downgrade redirects. Old desktop
 HTTP settings must also fail before fetch. The HTTP listener must receive zero
 requests. `--no-sandbox` is for this Xvfb test only.
+
+The harness also checks that changing the origin clears the typed password and
+disables submission. It enters the dummy password again for the HTTPS origin.
 
 The Linux/Electron captures are in `docs/screenshots/transport-security/`.
 `remote-http-blocked-light.png` and `remote-http-blocked-dark.png` show the
