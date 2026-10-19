@@ -1,0 +1,61 @@
+{
+  "clips": [
+    {
+      "file": "secret-storage/storage-session-light.mp4",
+      "sha256": "4f239b181d717022a1c9591837ad7e286e38cb18d9d4fb7c6d5990671e7dc312",
+      "video": {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 900,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 30.9,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5
+    },
+    {
+      "file": "secret-storage/storage-session-dark.mp4",
+      "sha256": "efa2419d7d4a5b623c229ca29ce5dc5962eef075a4ba7367337ed87e69bb65a7",
+      "video": {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 900,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 30.85,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5
+    },
+    {
+      "file": "browser-api/browser-session-light.mp4",
+      "sha256": "d1e7d720244d22ec49281ffea3b3fc15a5bbc20997525d6c4a221c1474439835",
+      "video": {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 900,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 57.95,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5
+    },
+    {
+      "file": "browser-api/browser-session-dark.mp4",
+      "sha256": "cdb00ef474cecf5925fa667970c4e74f0b04188c58aa62f0d03b5f0dc8338531",
+      "video": {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 900,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1"
+      },
+      "durationSeconds": 57.9,
+      "decodedAtPlaybackRate": 1,
+      "inspectionSampleSeconds": 5
+    }
+  ],
+  "visualInspection": "Both themes inspected through timestamped samples of each full clip decoded at normal playback rate. Captions, pointer actions, pacing and result states match. All paired static images inspected."
+}

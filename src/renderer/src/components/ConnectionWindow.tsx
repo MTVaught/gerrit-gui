@@ -17,6 +17,7 @@ export function ConnectionWindow() {
   const [serverUrl, setServerUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [removeLegacyPassword, setRemoveLegacyPassword] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
@@ -42,7 +43,9 @@ export function ConnectionWindow() {
     setDone(false)
     try {
       const current = await api.getSettings()
-      await api.saveSettings({ ...current, serverUrl, username, password: password || undefined })
+      await api.saveSettings({ ...current, serverUrl, username, password: password || undefined, removeLegacyPassword })
+      setRemoveLegacyPassword(false)
+      setInitial(await api.getSettings())
       const me = await api.testConnection()
       setStatus(`Connected as ${me.name ?? me.username} (${me.email ?? 'no email'})`)
       setDone(true)
@@ -71,13 +74,30 @@ export function ConnectionWindow() {
       >
         <h2>Gerrit connection</h2>
         <p className="muted">
-          Generate an HTTP password in Gerrit under Settings, HTTP Credentials. It is stored
-          {initial.encrypted ? ' encrypted with the OS keychain.' : ' in plain text (no OS keychain available).'}
+          Generate an HTTP password in Gerrit under Settings, HTTP Credentials.
+          {initial.passwordStorage === 'session'
+            ? ' The current password is kept in memory only. Enter it again after the app or browser server restarts.'
+            : initial.passwordStorage === 'environment'
+              ? ' The password comes from the server environment and is never saved by this app.'
+              : initial.encrypted
+                ? ' New passwords are encrypted with the OS keychain.'
+                : ' Secure storage is unavailable. New passwords are kept in memory only. Enter them again after the app or browser server restarts.'}
         </p>
+        {initial.passwordStorage === 'locked' && <p className="status error" role="status">The saved password cannot be read. Its saved copy was kept. Unlock the OS keychain or enter a password for this session.</p>}
+        {initial.legacyPasswordStored && (
+          <div role="status">
+            <p className="status error">An old password is still saved without secure encryption. The app has kept this copy so that you do not lose it.</p>
+            <label className="check">
+              <input type="checkbox" disabled={busy} checked={removeLegacyPassword} onChange={(e) => setRemoveLegacyPassword(e.target.checked)} />
+              Remove the old saved copy when I save. Keep the password in memory until restart.
+            </label>
+          </div>
+        )}
+        {initial.retainedPasswordStored && <p className="status" role="status">A saved password for another connection is kept on disk. It will not be used for this connection.</p>}
         <label>
           Server URL
           <input value={serverUrl} disabled={busy} onChange={(e) => {
-            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl: e.target.value, username })) setPassword('')
+            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl: e.target.value, username })) { setPassword(''); setRemoveLegacyPassword(false) }
             setServerUrl(e.target.value)
             setStatus(null)
             setDone(false)
@@ -87,7 +107,7 @@ export function ConnectionWindow() {
         <label>
           Username
           <input value={username} disabled={busy} onChange={(e) => {
-            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl, username: e.target.value })) setPassword('')
+            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl, username: e.target.value })) { setPassword(''); setRemoveLegacyPassword(false) }
             setUsername(e.target.value)
             setStatus(null)
             setDone(false)

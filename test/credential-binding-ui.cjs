@@ -34,7 +34,7 @@ app.whenReady().then(async () => {
   for (const theme of ['light', 'dark']) {
     await fetch(base + '/fixture/reset')
     nativeTheme.themeSource = theme
-    const win = new BrowserWindow({ width: 840, height: 600, useContentSize: true, webPreferences: { contextIsolation: true, sandbox: true } })
+    const win = new BrowserWindow({ width: 840, height: 800, useContentSize: true, webPreferences: { contextIsolation: true, sandbox: true } })
     const run = script => win.webContents.executeJavaScript(script)
     const errors = []
     win.webContents.on('console-message', details => { if (details.level === 'error') errors.push(details.message) })
@@ -56,7 +56,7 @@ app.whenReady().then(async () => {
       await win.webContents.insertText(value)
       await delay(50)
     }
-    const fields = ['label:nth-of-type(1) input', 'label:nth-of-type(2) input', 'input[type="password"]']
+    const fields = ['form > label:nth-of-type(1) input', 'form > label:nth-of-type(2) input', 'input[type="password"]']
     const stats = async () => (await fetch(base + '/fixture/stats')).json()
     await win.loadURL(base + '/#connection')
     await until(`document.querySelector('button[type="submit"]') && !document.querySelector('button[type="submit"]').disabled`)

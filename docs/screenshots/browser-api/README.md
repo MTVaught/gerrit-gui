@@ -10,7 +10,11 @@ combined code also has the merged origin/account binding and HTTPS protections.
 
 This branch is based on `f6401536cdf42225746b29f397bf024f828b8b3d`, which includes
 credential-binding PR #107 and HTTPS PR #108. Their implementation files,
-including the browser environment identity snapshot, have no changes here.
+including the browser environment identity snapshot, were unchanged in #109.
+The later password-storage integration moves persistence into a shared store
+and preserves those policies. Its current rerun uses memory-only browser
+passwords and asserts that the saved JSON has no password. All authentication,
+Origin, Host, cookie, and network-dispatch assertions remain intact.
 
 The browser API now requires a process session and exact configured Host and
 Origin values. It rejects absent, foreign, null, duplicate, and mismatched

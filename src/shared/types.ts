@@ -375,12 +375,17 @@ export interface MergerRule {
 
 export interface SettingsInput extends Settings {
   password?: string
+  /** Explicit consent to remove a readable legacy copy and keep it for this session. */
+  removeLegacyPassword?: boolean
 }
 
 export interface SettingsStatus extends Settings {
   hasPassword: boolean
   /** OS keychain encryption available for the stored password. */
   encrypted: boolean
+  passwordStorage?: 'secure' | 'session' | 'environment' | 'legacy' | 'locked' | 'none'
+  legacyPasswordStored?: boolean
+  retainedPasswordStored?: boolean
 }
 
 export interface WindowBounds {
