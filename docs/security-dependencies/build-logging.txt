@@ -1,5 +1,5 @@
 {"advisory":"GHSA-hp3w-g68c-fv3c","directCallThrows":true,"proxyRequest":"completed","externalDataInContext":true,"formatStrings":["configuration changed","global agent has been initialized","proxying request","connecting","%s","connected","proxying response"]}
-✔ global-agent keeps external data out of sprintf format strings (521.367905ms)
+✔ global-agent keeps external data out of sprintf format strings (57.865512ms)
 ℹ tests 1
 ℹ suites 0
 ℹ pass 1
@@ -7,4 +7,4 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 740.448068
+ℹ duration_ms 102.114317

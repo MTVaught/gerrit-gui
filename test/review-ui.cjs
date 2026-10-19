@@ -184,7 +184,7 @@ app.whenReady().then(async () => {
   await click('button[data-review-preferences]')
   await until(`Boolean(document.querySelector('.review-preferences[open]'))`, 'diff preferences')
   await screenshot('diff-preferences')
-  assert.equal(await run(`document.querySelector('.review-preferences select').value`), '-1', 'whole-file default')
+  assert.equal(await run(`Array.from(document.querySelectorAll('.review-preference-fields label')).find(label => label.childNodes[0].textContent === 'Context').querySelector('select').value`), '-1', 'whole-file default')
   async function preference(label, value) {
     await run(`(() => {
       const field = Array.from(document.querySelectorAll('.review-preference-fields label')).find(el => el.childNodes[0].textContent === ${JSON.stringify(label)}).querySelector('input,select');

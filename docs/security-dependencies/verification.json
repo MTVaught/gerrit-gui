@@ -1,21 +1,66 @@
 {
-  "checkedOn": "2026-10-19",
-  "platform": "Linux x64",
+  "checkedAt": "2026-10-19T22:37:07.139065+00:00",
+  "baseCommit": "b6b0e67545826805a3b0fabc0820116309ef3f73",
+  "buildSourceCommit": "5a7ea88083b9a621e8fbd164aac5621b8f527d91",
+  "preservationCommitBeforeRebase": "fab1747f051d38936268215f2ed4d5cd22d0945e",
+  "currentApplicationInputsMatchBuildSource": true,
+  "platform": "Linux x64, Electron 44.2.0, isolated Xvfb",
   "node": "24.22.0",
   "pnpm": "12.3.4",
-  "baselineCommit": "9d1925628ea0a02939d00ae41ee251123bf117bc",
+  "unitCommand": "node --test --test-concurrency=4 src/server/*.test.ts src/main/*.test.ts src/shared/*.test.ts src/renderer/src/*.test.ts src/renderer/src/components/*.test.ts",
   "unitTests": {
-    "passed": 248,
-    "failed": 0
+    "passed": 340,
+    "failed": 0,
+    "skipped": 0
   },
   "typecheck": "passed",
-  "electronBuild": "passed",
-  "webBuild": "passed",
-  "sanitizerBrowserProbes": "passed in light and dark; original vendored copy fails",
-  "buildProxyLoggingProbe": "passed",
-  "monacoRebaseUI": "passed",
-  "broadReviewUI": "pre-existing first-select assertion failure at test/review-ui.cjs:187, reproduced on baseline",
-  "archiveInspection": "pending",
+  "desktopBuild": "passed",
+  "browserBuild": "passed; existing large chunk warning",
+  "package": "passed; installed Electron dist and npmRebuild=false command overrides; production config unchanged",
+  "archiveInspection": {
+    "checkedAt": "2026-10-19T22:36:13.876Z",
+    "buildSourceCommit": "5a7ea88083b9a621e8fbd164aac5621b8f527d91",
+    "baseCommit": "b6b0e67545826805a3b0fabc0820116309ef3f73",
+    "archive": {
+      "path": "dist/linux-unpacked/resources/app.asar",
+      "bytes": 33291595,
+      "sha256": "41b293aa771caa9128c821244d4064e8e9200b29647ef77a09b88f476dfda4dd"
+    },
+    "lockfileSha256": "ef66f4381b923fa949a4945fd7d487b4989887c584665248bfaf23e7cacbea6a",
+    "patchSha256": "4132aa53dabb814b2c044702ec13b212b116a5ea0cbca6455b7fc4f20a8d8365",
+    "results": [
+      {
+        "label": "renderer",
+        "scripts": 24,
+        "dompurify": "3.4.17",
+        "oldVersionFound": false
+      },
+      {
+        "label": "web",
+        "scripts": 33,
+        "dompurify": "3.4.17",
+        "oldVersionFound": false
+      },
+      {
+        "label": "app.asar",
+        "scripts": 632,
+        "dompurify": "3.4.17",
+        "oldVersionFound": false
+      }
+    ],
+    "currentRendererAssetsMatch": 24,
+    "currentMainAndPreloadMatch": true,
+    "unusedMonacoDistributionShipped": false,
+    "buildProxyLoggerShipped": false
+  },
+  "sanitizerBrowserProbes": "passed in light and dark; real mouse click; zero payload executions; current archive/lockfile/patch hashes checked before capture",
+  "buildProxyLoggingProbe": "passed; direct sprintf defect remains; external log data stayed in context",
+  "monacoRebaseUI": "passed; visible native mouse targets, matched themes, both diff modes and patch behavior",
+  "broadReviewUI": "passed after targeting Context by label; previous ambiguous selector failure freshly reproduced on merged main",
+  "electronBoundaryUI": {
+    "light": "passed, 42 channels reject rogue sender",
+    "dark": "passed, 42 channels reject rogue sender"
+  },
   "fullAudit": {
     "info": 0,
     "low": 0,
@@ -30,10 +75,18 @@
     "high": 0,
     "critical": 0
   },
+  "captureInspection": "Both pairs inspected for same data, framing, scroll position, readable text, and claimed outcome.",
+  "captureInput": "Local sanitizer markup and simulated Gerrit review metadata; isolated temporary profiles; no live credentials.",
   "captures": {
-    "sanitizer-dark.png": "41f5a8d07063c58560aa6ea6ef00eeb04c925321619cfaa7a12ab2bc30755650",
-    "sanitizer-light.png": "f827292ef78584ae806eedb33228a92491f60c10e49a6995f90b192e53b60d03",
-    "review-dark.png": "8d542c68ca86988c73b40e161dcad8460cc40e1b5ceea4d2724660f17ea085ad",
-    "review-light.png": "92767a96b619d27e4a54790b269c32131d686eeae27fb338ffc29edf19141865"
-  }
+    "review-dark.png": "5e90d6cd1fd15729bee23bee5c34c0d02d75f7e0a4de2fc7b828824cfa3329eb",
+    "review-light.png": "c5c7aacb75bd033f2c5d8f99ef0cfb53cffd69d2a639422e0fd74892d7b2ae9b",
+    "sanitizer-dark.png": "cb5364e05f0ac264a92819acb9fcd5a7ba26333d8f05cd38d0f0d654b376cbf3",
+    "sanitizer-light.png": "24ae0f357e2f64d334e89f72c9afb89b0eaf66071de818e2c5bc11fd98c92ddd"
+  },
+  "limits": [
+    "Unsigned Linux directory package; macOS and Windows not built",
+    "No live Gerrit integration test",
+    "T3 preview AppArmor sandbox unavailable; documented Electron/Xvfb fallback used",
+    "One moderate optional build dependency advisory remains; no published fix"
+  ]
 }

@@ -28,22 +28,22 @@
         {
           "version": "1.1.18",
           "paths": [
+            ".>electron-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion",
-            ".>electron-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
-            ".>electron-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion"
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion"
           ],
           "dev": true,
           "optional": false,
@@ -65,10 +65,10 @@
         {
           "version": "2.1.4",
           "paths": [
-            ".>electron-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion"
+            ".>electron-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion"
           ],
           "dev": true,
           "optional": false,
@@ -113,22 +113,22 @@
         {
           "version": "1.1.18",
           "paths": [
+            ".>electron-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion",
-            ".>electron-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
-            ".>electron-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion"
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion"
           ],
           "dev": true,
           "optional": false,
@@ -150,10 +150,10 @@
         {
           "version": "2.1.4",
           "paths": [
-            ".>electron-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion"
+            ".>electron-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion"
           ],
           "dev": true,
           "optional": false,
@@ -198,22 +198,22 @@
         {
           "version": "1.1.18",
           "paths": [
+            ".>electron-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion",
-            ".>electron-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
-            ".>electron-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>dir-compare>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>@electron/asar>glob>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>minimatch>brace-expansion",
             ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>@electron/asar>glob>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>@electron/asar>glob>minimatch>brace-expansion"
+            ".>electron-builder>dmg-builder>app-builder-lib>electron-builder-squirrel-windows>electron-winstaller>temp>rimraf>glob>minimatch>brace-expansion"
           ],
           "dev": true,
           "optional": false,
@@ -235,10 +235,10 @@
         {
           "version": "2.1.4",
           "paths": [
-            ".>electron-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
             ".>electron-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
-            ".>electron-builder>dmg-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion"
+            ".>electron-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>ejs>jake>filelist>minimatch>brace-expansion",
+            ".>electron-builder>dmg-builder>app-builder-lib>@electron/universal>minimatch>brace-expansion"
           ],
           "dev": true,
           "optional": false,

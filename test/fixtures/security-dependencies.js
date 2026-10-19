@@ -1,8 +1,14 @@
 // Import the same ESM paths that the application uses through Monaco hover.
 import purify from 'monaco-editor/base/browser/dompurify/dompurify'
 import { sanitizeHtml } from 'monaco-editor/base/browser/domSanitize'
+import audit from '../../docs/security-dependencies/audit-after.json'
+import productionAudit from '../../docs/security-dependencies/audit-production.json'
+import artifacts from '../../docs/security-dependencies/artifacts.json'
 
 document.querySelector('#version').textContent = `Monaco ESM sanitizer: DOMPurify ${purify.version}`
+const counts = audit.metadata.vulnerabilities
+document.querySelector('#audit').textContent = `Full audit: ${counts.high} high, ${counts.moderate} moderate, ${counts.low} low. Remaining: optional build logger sprintf-js. Production audit: ${Object.values(productionAudit.metadata.vulnerabilities).reduce((sum, count) => sum + count, 0)} findings.`
+document.querySelector('#package').textContent = `Verified Linux app.asar ${artifacts.archive.sha256.slice(0, 12)}: fixed sanitizer present; unused Monaco distributions and build logger absent.`
 document.querySelector('#run').addEventListener('click', async () => {
   window.securityPayloads = 0
   const checks = []

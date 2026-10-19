@@ -2,13 +2,15 @@
 
 Checked on 2026-10-19 with pnpm 12.3.4 and Node 24.22.0 on Linux x64.
 The npm audit endpoint and the linked GitHub reviewed advisories are the sources
-for the affected ranges. Counts below describe this run only.
+for the affected ranges. Counts below describe this run only. This branch uses
+merged security base `b6b0e67545826805a3b0fabc0820116309ef3f73`.
 
 ## Result
 
-The fresh audit before the change reported 15 findings: 8 high, 5 moderate,
-and 2 low. The final full audit reports one moderate finding, in the optional
-build dependency `sprintf-js`. The production dependency audit reports zero.
+A fresh audit of the current main lockfile at the base above reported 15
+findings: 8 high, 5 moderate, and 2 low. The final full audit reports one moderate
+finding, in the optional build dependency `sprintf-js`. The production
+dependency audit reports zero.
 There are no audit exclusions or ignored advisories.
 
 Monaco is compiled into the renderer. It is now a development dependency so
@@ -66,7 +68,9 @@ The packaged application contains neither `global-agent` nor `sprintf-js`.
 In global-agent 3.0.0, logger messages are fixed strings. Destination URLs,
 proxy configuration, response headers, and serialized errors go into context
 objects. Roarr 2.15.4 formats the message string, rather than the context.
-Logging is disabled unless `ROARR_LOG` enables it.
+Logging is disabled unless `ROARR_LOG` enables it. Exact installed source
+paths and hashes are recorded in
+[reachability.json](security-dependencies/reachability.json).
 
 `test/security-build-logging.test.cjs` enables logging, intercepts actual
 `sprintf` format arguments, and sends a request through a local HTTP proxy.
@@ -85,43 +89,80 @@ Raw audit results and recorded check results are in
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm audit --json
-pnpm audit --prod --json
-pnpm test
+pnpm audit --json > docs/security-dependencies/audit-after.json
+pnpm audit --prod --json > docs/security-dependencies/audit-production.json
+node --test --test-concurrency=4 src/server/*.test.ts src/main/*.test.ts src/shared/*.test.ts src/renderer/src/*.test.ts src/renderer/src/components/*.test.ts
 pnpm typecheck
 pnpm build
 pnpm exec vite build --config vite.web.config.ts --outDir ../../out/web
 node node_modules/electron-builder/cli.js --dir --linux --publish never -c.npmRebuild=false -c.electronDist=node_modules/electron/dist
-node test/security-dependencies-artifacts.cjs
+node test/security-dependencies-artifacts.cjs > docs/security-dependencies/artifacts.json
 node --test test/security-build-logging.test.cjs
 xvfb-run -a node_modules/.bin/electron --no-sandbox test/security-dependencies-ui.cjs
-xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-rebase-ui.cjs
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-ui.cjs
+REBASE_SCREENSHOT_DIR=/tmp/dependency-review-captures xvfb-run -a -s '-screen 0 1440x1000x24' node_modules/.bin/electron --no-sandbox test/review-rebase-ui.cjs
 ```
 
 The sandbox flag is for the isolated Linux test process. No live credentials,
 Gerrit connection, account changes, or deployment are used. The tests use local
 markup, simulated review data, and temporary profile directories.
-The final archive inspection skips a repeat of the native dependency rebuild,
-which completed during the first final package attempt. A normal Linux
-directory packaging run also passed before Monaco moved to development
-dependencies. These dependency updates add no native module.
-The final package uses the already installed Electron distribution after the
-download-based package attempt stalled under host load.
+The successful Linux directory package uses two command-only overrides.
+`npmRebuild=false` skips native addon rebuilding, and `electronDist` uses the
+installed vendor Electron 44.2.0 distribution. These dependencies add no native
+module. Production packaging configuration is unchanged. The first interrupted
+pass stalled during download-based packaging; the new package completed after
+the host load stabilized.
 
-All 248 unit tests, type checking, Electron build, and web build pass.
-The sanitizer regression fails against the original Monaco 3.4.15 copy and
-passes against the patched path in both themes. Both removal hooks strip the
-retained image handler, the raw text root throws, safe HTML still renders, and
-the payload execution count is zero. A real mouse click starts each probe run.
+All 340 unit tests pass with `--test-concurrency=4`, including server API,
+credential identity, HTTPS, secret retention, startup cleanup, and Electron
+boundary assertions. Type checking, desktop build, and browser build pass.
+Vite reports its existing warning about large browser chunks.
 
-The separate Monaco rebase UI test passes for both diff modes, whitespace
-preferences, overview markers, and no extra source requests. Paired static
-captures show the resulting renderer. The broader `test/review-ui.cjs` stops
-at line 187 because its first-select query reads the new Diff theme field
-value `application` instead of the Context value `-1`. The same failure occurs
-in a clean copy of baseline commit `9d1925628ea0a02939d00ae41ee251123bf117bc`.
-That unrelated test selector is unchanged here. Live Gerrit integration tests
-are outside this dependency check and were not run.
+The actual `dist/linux-unpacked/resources/app.asar` is 33,291,595 bytes.
+Its SHA-256 is
+`41b293aa771caa9128c821244d4064e8e9200b29647ef77a09b88f476dfda4dd`.
+[artifacts.json](security-dependencies/artifacts.json) records the source/base,
+archive hash, lockfile and patch hashes, and inspection results. The archive
+has the fixed compiled sanitizer. None of its 632 JavaScript files contains
+`3.4.15`; the Monaco package, unused distributions, and optional build proxy
+logger are absent. All 24 renderer scripts plus main and preload match the
+current production build byte for byte. The archive build source is rebased
+commit `5a7ea88083b9a621e8fbd164aac5621b8f527d91`; later changes in this branch
+only refine tests, reports, and evidence.
+
+Fresh sanitizer probes use the same Monaco ESM paths as the application.
+Both removal hooks strip the retained image handler, the raw text root throws,
+safe HTML still renders, and the payload execution count is zero. A real mouse
+click starts each run. Paired captures also display the current audit counts
+and the verified archive hash. The older `sanitizer-before.txt` records the
+original failing 3.4.15 control from the first pass; it is historical evidence.
+The capture harness rejects stale archive, lockfile, or Monaco patch hashes
+before it renders the report.
+
+The broad `test/review-ui.cjs` still failed at the first-select assertion on
+rebased main, reading Diff theme `application` instead of Context `-1`.
+`review-ui-before-selector-fix.txt` records that fresh failure. The assertion now
+selects Context by its visible label. The full test then passes for 100,000-line
+virtualization, wheel and scrollbar input, synchronized panes, keyboard and
+search behavior, tooltip hit testing, preferences, caching, comparisons, and
+reviewed flags. The earlier `baseline-review-ui.txt` is historical evidence
+from pre-security baseline `9d1925628ea0a02939d00ae41ee251123bf117bc`.
+
+The separate Monaco rebase test uses real mouse clicks on visible controls,
+opens More before Go to line, and restores code focus before keyboard input.
+It checks both diff modes, inline decorations, whitespace preferences, overview
+markers, and no extra source requests. Its paired captures wait for both the
+application and Monaco theme. No product control or security assertion was
+removed to make a fixture pass.
+
+The unchanged real-main Electron boundary UI test also passes in light and dark
+mode. All 42 IPC channels reject rogue senders; child frames and a navigated app
+are rejected; popup/navigation/redirect guards, connection save, reload, hash
+routing, and external link handling pass. This test uses its existing explicit
+process loopback opt-in and dummy credentials. No live settings are used.
+The full unit suite also exercises browser session authentication, origin/CSRF
+checks, and cleanup before listeners start. Live Gerrit integration tests were
+not run.
 
 The T3 preview could not start because the host AppArmor policy blocks its
 sandbox. The documented Electron/Xvfb workflow supplied the captures instead.
@@ -136,6 +177,15 @@ Only Linux x64 was tested. Windows and macOS packages were not built.
 
 Dependency changes touch `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`,
 and `patches/monaco-editor@0.57.0.patch`. Keep the Monaco dependency placement,
-override, patch, and regenerated lockfile together. No application source files
-or other security threads were merged. New test and evidence files are limited
-to this dependency review.
+override, patch, and regenerated lockfile together. The rebase onto all five
+merged security fixes had no conflicts. The test script still includes server
+tests. Application source files, IPC and popup guards, HTTPS policy, credential
+binding, API protection, and secret storage controls are unchanged from the
+merged base. Test-only changes repair the Context selector, require visible
+mouse targets, and allow dependency captures in a separate output directory.
+
+The only remaining advisory is the documented optional build dependency. No
+major tooling rewrite or audit suppression was used. The production audit,
+compiled-code checks, and archive inspection have separate recorded results.
+The current captures replace the old screenshots; they are from the rebased
+build and isolated fixtures described above.

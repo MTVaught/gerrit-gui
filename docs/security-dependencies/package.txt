@@ -1,0 +1,9 @@
+  • electron-builder  version=26.16.1 os=6.8.0-147-generic
+  • loaded configuration  file=package.json ("build" field)
+  • detected workspace root for project using packageManager field  pm=pnpm config=pnpm@12.3.4+sha512.961aa41fb077da3a04a441d9f8e15ebc0c96da8ef710b2eb67bf9ee7cb0610eabd48f1fd85f51cffe73846785fa0f87c56a3a872a1d893f8446741b5cce45457 resolved=/home/dev/.t3/worktrees/gerrit-gui/security-dependencies projectDir=/home/dev/.t3/worktrees/gerrit-gui/security-dependencies
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=linux arch=x64 electron=44.2.0 appOutDir=dist/linux-unpacked
+  • using custom unpacked Electron distribution  electronDist=node_modules/electron/dist
+  • copying unpacked Electron  source=/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/node_modules/electron/dist destination=/home/dev/.t3/worktrees/gerrit-gui/security-dependencies/dist/linux-unpacked
+  • searching for node modules  pm=pnpm searchDir=/home/dev/.t3/worktrees/gerrit-gui/security-dependencies
+  • duplicate dependency references  dependencies=["unified@11.0.5","unist-util-visit@5.1.0","vfile@6.0.3","vfile-message@4.0.3","micromark-util-sanitize-uri@2.0.1","mdast-util-from-markdown@2.1.0","unist-util-is@6.0.1","unist-util-stringify-position@4.0.0","micromark-util-character@2.1.1","micromark-util-decode-numeric-character-reference@2.0.2","micromark-util-normalize-identifier@2.0.1","micromark-util-classify-character@2.0.1","micromark-factory-space@2.1.0","micromark-util-chunked@2.0.1","micromark-util-edit-map@1.0.0","micromark-util-resolve-all@2.0.1","micromark-util-subtokenize@2.1.0"]

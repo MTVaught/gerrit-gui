@@ -1,0 +1,470 @@
+(node:598523) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/editor-context-menu.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ spelling actions replace the clicked word and update the dictionary (2.301455ms)
+✔ ordinary text fields keep edit actions; unknown words allow dictionary additions (0.526339ms)
+(node:598524) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/mergeability.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ mergeability reads the specified revision and preserves both boolean outcomes (30.322495ms)
+✔ mergeability preserves HTTP errors for the caller to handle (0.756534ms)
+✔ enrichment checks missing values once per change and revision without caching across reads (0.9979ms)
+✔ individual failures and malformed outcomes stay unknown and do not stop other checks (0.680226ms)
+✔ mergeability enrichment bounds concurrent reads to six (23.997136ms)
+✔ dashboard enriches only visible open members, including owned private changes (5.022261ms)
+✔ detail uses the same enrichment and a failed lookup still returns the change (1.969135ms)
+(node:598530) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/renderer-boundary.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ external links accept absolute HTTP(S), preserving Gerrit paths and Slack web links (5.372158ms)
+✔ external links reject OS schemes, relative links, malformed URLs and credentials (1.308413ms)
+✔ only the pinned document and hash routes can navigate in the main frame (3.452243ms)
+✔ navigation, frame navigation, redirects and webview attachment are guarded (0.483713ms)
+✔ IPC requires a registered live contents and its exact current main frame, document and origin (0.775206ms)
+✔ popups never dispatch externally because the initiator cannot be authenticated (1.205474ms)
+✔ all wrapped invoke and send handlers reject hostile senders before side effects (0.965452ms)
+✔ child and detached initiators cannot navigate the main frame to the pinned document (0.285388ms)
+✔ stale frame identities and disposed frame access fail closed (2.820807ms)
+(node:598531) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/review.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ review requests full context, preserves whitespace and pins both patch sets (20.946439ms)
+✔ incomplete and binary diffs fail instead of pretending to show the whole file (1.387518ms)
+✔ beta defaults off and persists opt-in across reopening settings (31.320901ms)
+✔ reviewed flags are Gerrit state, scoped to revision and encoded file path (2.690909ms)
+✔ comment CRUD preserves encoded IDs, range coordinates, draft privacy and publish scope (2.740124ms)
+✔ published comment redaction and suggested fixes use revision-pinned Gerrit endpoints (7.164428ms)
+(node:598613) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/service.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ sequence actions check every member before writing tags and reject private changes (34.306736ms)
+✔ making a change private also removes its sequence tag (1.453077ms)
+✔ pretend waits for every write in outstanding actions and closes admission while waiting (8.475531ms)
+✔ pretend also waits for actions still obtaining credentials (0.726533ms)
+✔ failed outstanding actions release the switch; failed lookups restore admission (1.635165ms)
+✔ reviewed flag writes drain before pretend mode and cannot enter while switching (0.859868ms)
+✔ comment and review writes participate in the impersonation write barrier (3.462468ms)
+✔ ported comments and private drafts are mapped for both comparison revisions (1.355581ms)
+✔ pretend comment mapping never fetches private drafts (1.374215ms)
+✔ review detail APIs preserve file paths and separate fix previews from writes (1.654224ms)
+✔ a rejected reviewer is reported even when Gerrit returns HTTP 200 (0.471915ms)
+(node:598616) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/settings-file.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ failed serialization preserves the original credentials and removes private temporary files (43.413553ms)
+✔ reads reject a symlink instead of reading or changing its target (3.455871ms)
+✔ invalid JSON settings shape null stays intact (2.286227ms)
+✔ invalid JSON settings shape [] stays intact (2.415692ms)
+✔ invalid JSON settings shape "invalid" stays intact (2.974439ms)
+✔ invalid JSON settings shape 42 stays intact (2.352644ms)
+✔ parse errors do not disclose file contents (1.65026ms)
+(node:598630) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/settings-store.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ basic_text: new passwords stay in bound memory across ordinary saves (55.017353ms)
+✔ unknown: new passwords stay in bound memory across ordinary saves (24.876965ms)
+✔ future-unknown-backend: new passwords stay in bound memory across ordinary saves (12.488345ms)
+✔ missing keychain: legacy plaintext is removed automatically and stays in bound memory (10.520834ms)
+✔ throwing keychain: legacy plaintext is removed automatically and stays in bound memory (15.446318ms)
+✔ encrypt-error keychain: legacy plaintext is removed automatically and stays in bound memory (13.210807ms)
+✔ linux: trusted keychain saves and migrates legacy secrets across restart (7.732984ms)
+✔ darwin: trusted keychain saves and migrates legacy secrets across restart (17.683966ms)
+✔ win32: trusted keychain saves and migrates legacy secrets across restart (9.5494ms)
+✔ readable old ciphertext migrates to trusted encryption without changing its original binding (7.221024ms)
+✔ realistic basic_text legacy ciphertext is removed on load, without a new encryption call (11.476597ms)
+✔ plaintext: cleanup beside B settings never binds the old A password to B (4.78341ms)
+✔ old-ciphertext: cleanup beside B settings never binds the old A password to B (13.491949ms)
+✔ unreadable: cleanup beside B settings never binds the old A password to B (13.148889ms)
+✔ missing: unreadable unversioned ciphertext is removed and requires re-entry (8.90752ms)
+✔ decrypt-error: unreadable unversioned ciphertext is removed and requires re-entry (10.420431ms)
+✔ a version marker on plaintext does not exempt it from cleanup (6.488739ms)
+✔ trusted versioned ciphertext is kept under unavailable, including a B session replacement (14.938988ms)
+✔ trusted versioned ciphertext is kept under encrypt-error, including a B session replacement (13.092696ms)
+✔ trusted versioned ciphertext is kept under locked, including a B session replacement (17.367394ms)
+✔ failed automatic cleanup through status leaves the old file intact and commits no memory (7.232623ms)
+✔ failed automatic cleanup through credentials leaves the old file intact and commits no memory (15.565931ms)
+✔ failed automatic cleanup through ui leaves the old file intact and commits no memory (9.837247ms)
+✔ failed automatic cleanup through save-ui leaves the old file intact and commits no memory (10.638067ms)
+✔ failed automatic cleanup through save leaves the old file intact and commits no memory (11.125993ms)
+✔ failed cleanup cannot replace an existing B memory secret or change its binding (10.816642ms)
+✔ failed save keeps the previous identity and memory/secure secret (secure=false) (7.615941ms)
+✔ failed save keeps the previous identity and memory/secure secret (secure=true) (8.743449ms)
+✔ blank identity edits are blocked for every usable secret (browser) (18.20636ms)
+✔ blank identity edits are blocked for every usable secret (gnome_libsecret) (36.376403ms)
+✔ blank identity edits are blocked for every usable secret (basic_text) (26.869634ms)
+✔ startup environment snapshots stay bound while legacy cleanup removes the file password (23.138033ms)
+✔ partial environment overrides cannot adopt cleaned A memory under B identity (25.317387ms)
+✔ invalid legacy transport remains visible but is rejected before credential decryption/migration (22.985688ms)
+✔ malformed settings are kept and errors never include password contents (1.908342ms)
+✔ concurrent reads clean only once and concurrent settings/UI saves preserve both outcomes (42.062065ms)
+✔ separate Node processes cannot return/send cleaned or retained plaintext A credentials for B (333.654349ms)
+✔ separate Node processes cannot return/send cleaned or retained old-ciphertext A credentials for B (295.045752ms)
+✔ separate Node processes cannot return/send cleaned or retained unreadable A credentials for B (348.646294ms)
+✔ separate Node processes cannot return/send cleaned or retained trusted-locked A credentials for B (391.30186ms)
+(node:598632) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/settings.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ browser: identity changes require replacement credentials before save or network use (112.650488ms)
+✔ browser: loopback test HTTP preserves password binding and still enforces transport (24.782482ms)
+✔ desktop plaintext: identity changes require replacement credentials before save or network use (85.208021ms)
+✔ desktop plaintext: loopback test HTTP preserves password binding and still enforces transport (24.960033ms)
+✔ desktop encrypted: identity changes require replacement credentials before save or network use (52.156543ms)
+✔ desktop encrypted: loopback test HTTP preserves password binding and still enforces transport (18.556021ms)
+✔ browser environment overrides never attach a file password to a different origin or account (46.891245ms)
+✔ a password-only environment override stays bound to its startup identity (16.534459ms)
+(node:598649) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/transport.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ transport policy blocks remote HTTP before any fetch, including with the local opt-in (1.545278ms)
+✔ HTTPS and explicit loopback tests send Basic auth with redirects disabled (4.649586ms)
+✔ browser settings reject HTTP on save, legacy reads, and environment overrides (27.433341ms)
+✔ legacy or custom settings cannot bypass transport checks through service operations (1.13511ms)
+✔ real fetch uses verified TLS and refuses all HTTP downgrade redirects without contacting HTTP (475.121804ms)
+(node:598660) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/main/tray-click.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ win32: default clicks preserve the native menu behavior (2.674768ms)
+✔ win32: saved opt-in opens reviews on click and double-click (0.33897ms)
+✔ win32: changing the setting takes effect immediately and can restore the default (0.416642ms)
+✔ darwin: default clicks preserve the native menu behavior (0.245364ms)
+✔ darwin: saved opt-in opens reviews on click and double-click (0.267705ms)
+✔ darwin: changing the setting takes effect immediately and can restore the default (0.231069ms)
+✔ linux: default clicks preserve the native menu behavior (1.583714ms)
+✔ linux: saved opt-in opens reviews on click and double-click (0.229833ms)
+✔ linux: changing the setting takes effect immediately and can restore the default (0.254179ms)
+✔ click action defaults to menu in existing settings and persists across reopening (56.519255ms)
+(node:598707) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/components/Board.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Board keeps all three family branches inside their sequence step (1240.633089ms)
+(node:598715) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/components/actions.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Withdraw is offered while a request is open, whichever round, and pops only the latest one (2.710786ms)
+✔ Request review carries the earlier requests along and says Re-request only after a round was answered (0.456833ms)
+✔ Request review is a split button: pass-around by default, in-person from the caret (0.276003ms)
+✔ An open request can switch kind: from the Withdraw caret on a first request, from its own button on a later round (0.443631ms)
+✔ Ready to Merge is enabled only for an active, verified, approved change (0.209215ms)
+✔ Ready to Merge is disabled on a WIP change, and says why (0.259751ms)
+✔ Ready to Merge is disabled without Verified +1, and says why (0.185311ms)
+✔ A stale ready-to-merge tag gives the named merger no buttons; the owner keeps Ready to Merge, which writes over it (0.186302ms)
+(node:598752) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/dashboard-cache.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ branch-only mergeability refreshes at an unchanged revision and timestamp without detail reads (17.093614ms)
+✔ protected review fields accept branch metadata while failed detail validation preserves review state (3.770803ms)
+✔ pre-write and superseded refreshes cannot restore older conflict metadata (2.812844ms)
+✔ older revisions do not attach mergeability to protected newer patch sets (1.158022ms)
+✔ late detail mergeability does not restore a conflict after a newer same-revision refresh (1.309175ms)
+✔ pre-write and post-write stale searches never roll back the section or tab count (7.473853ms)
+✔ an outstanding search cannot replace a change while its write is pending (0.986353ms)
+✔ index catch-up settles, then an external vote or patch set reaches the board (1.383497ms)
+✔ equal-timestamp conflicts revalidate even after index catch-up; computed fields do not conflict (1.122037ms)
+✔ detail-only fields and omitted false flags do not prevent search catch-up (0.985829ms)
+✔ a partial write failure reconciles actual state and preserves the write error (0.676323ms)
+✔ failed detail after a write remains dirty even when search matches the old entity (1.618428ms)
+✔ an older search cannot undo a settled detail result, and old detail cannot lower its freshness (1.048282ms)
+✔ failed partial writes keep the original error even when the recovery read also fails (1.10445ms)
+✔ intersecting writes serialize through detail, while different changes proceed (0.86507ms)
+✔ detail reads deduplicate and an obsolete detail cannot undo a later mutation (0.528917ms)
+✔ removal and permission loss cannot resurrect an entity from stale search (2.735652ms)
+✔ omitted locally changed entities revalidate, while truncated membership is preserved (0.455731ms)
+✔ sequence edits reconcile every affected ID even after a partial failure (0.770621ms)
+✔ scope changes filter team-only entities and invalidate outstanding searches (0.469726ms)
+✔ reset rejects outstanding reads, searches, and queued writes from the previous context (0.43771ms)
+✔ a dashboard for a different account discards the previous account cache (0.298371ms)
+✔ conflicting detail revalidation is bounded to six requests (3.375665ms)
+✔ multi-change mutations also share the six-request detail limit (1.81262ms)
+✔ a mixed-state sequence stays together when one member is refreshed after an action (1.0879ms)
+(node:598761) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/dashboard-refresh.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ a delayed real-user refresh cannot overwrite the debug board after switching (1.613732ms)
+✔ a stale refresh error cannot replace the current error or clear loading (0.220157ms)
+✔ reconnecting discards outstanding responses and a failed switch can resume refreshing (0.233515ms)
+(node:598802) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/review-comments.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ unchanged lines and ranges attach to the correct patch set and side, including renames (2.186097ms)
+✔ threads retain orphan comments and order replies independently of API map ordering (10.393109ms)
+✔ existing comments reveal the correct pane and never confuse parent with an older patch set (0.339929ms)
+✔ ported display coordinates preserve canonical anchors and require server mapping (0.526897ms)
+(node:598811) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/review-details.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ fenced suggestions preserve exact anchors, refuse parent-side writes and retain structured fixes (1.371404ms)
+✔ relative times use Gerrit UTC timestamps with nanosecond precision (9.201986ms)
+✔ local outline finds declarations and methods without indexing every fixture constant (1.112265ms)
+(node:598829) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/review-diff.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Gerrit anchors keep a rebased function intact when it repeats the old return and brace (9.841024ms)
+✔ server blocks still filter whitespace, retain source columns, and merge adjacent hunks (2.450556ms)
+✔ all four whitespace modes preserve Gerrit comparison semantics (2.588018ms)
+✔ normalized diffs keep line alignment and intraline ranges in the actual source (0.694155ms)
+✔ worker handles additions, deletions and empty files with valid line ranges (0.745709ms)
+(node:598835) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/review-preferences.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ preferences retain whole-file default and reject corrupt persisted values (2.419887ms)
+✔ Gerrit whitespace modes normalize comparison only and map source columns (0.596526ms)
+✔ Gerrit preference synchronization preserves local fit setting and manual-review inversion (0.811306ms)
+(node:598855) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/review-shortcuts.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Gerrit review keys retain case and context (2.801662ms)
+✔ typing, IME, modified keys, and repeats cannot accidentally navigate (0.503093ms)
+(node:598861) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/review.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ whole-file models preserve context, whitespace, blank lines and both sides of edits (1.701066ms)
+✔ large context chunks reconstruct fully without JS argument-count limits (79.402932ms)
+✔ file names pick tokenizers and unknown extensions fall back to plain text (0.225341ms)
+✔ rebase metadata preserves independent side coordinates through additions and deletions (0.334796ms)
+✔ rebase colors only cover classified edits remaining in the local whitespace diff (0.312743ms)
+(node:598882) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/save-diff-preferences.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ a theme-only save uses no Gerrit or local diff preference write (1.275267ms)
+✔ combined save stops at Gerrit failure and retries only pending theme after a confirmed write (0.681575ms)
+✔ local-only diff edits do not mark account preferences synced (0.202893ms)
+(node:598889) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/renderer/src/time.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+▶ ago
+  ✔ shows hours only below 24 (1.169339ms)
+  ✔ rolls over to whole days at 24 hours (0.273761ms)
+✔ ago (3.087021ms)
+(node:598901) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/server/browser-server.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ startup key is required, one-use, and never returned in API responses (77.570307ms)
+✔ foreign, missing, null, alternate-port and spoofed forwarding headers fail before bootstrap or dispatch (42.503026ms)
+✔ JSON content type, encoding, syntax, array envelope and streaming size are checked (52.237018ms)
+✔ duplicate Host, Origin and Content-Type headers cannot bypass validation (14.206351ms)
+✔ the audited two-request attack cannot change settings or send the saved dummy credential (29.35847ms)
+✔ authorized browser requests still enforce merged transport and credential identity policies (20.239027ms)
+✔ concurrent bootstrap requests can consume the startup key only once (9.923216ms)
+✔ HTTPS forwarding uses the explicit external Host and Secure cookie (8.774686ms)
+✔ session from a previous API process is invalid after restart (20.677385ms)
+✔ origin configuration rejects URLs with credentials, paths, queries or fragments (0.64538ms)
+(node:598915) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/server/startup.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ browser plaintext cleanup completes before listening, without a client or save (292.852114ms)
+✔ browser unreadable cleanup completes before listening, without a client or save (232.431249ms)
+✔ browser normal authenticated use works after startup cleanup, then a separate process needs re-entry (290.700491ms)
+✔ browser POSIX directory denial keeps old bytes, exits nonzero, and never listens or prints readiness (105.83569ms)
+✔ startup keeps trusted locked ciphertext and original binding intact (111.324367ms)
+✔ startup cleanup preserves environment identity snapshots and never persists environment passwords (140.159422ms)
+✔ startup cleanup preserves environment identity snapshots and never persists environment passwords (140.499008ms)
+✔ portable denied replacement keeps old bytes and prevents listen/readiness (129.167966ms)
+✔ startup audit uses a file URL that supports a preload path containing spaces (132.452324ms)
+(node:598966) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/shared/credentials.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ credential identity uses the canonical origin and exact trimmed username (0.987126ms)
+✔ identity comparison is independent of HTTP transport permission (0.262625ms)
+(node:598972) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/shared/model.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ My Changes summarizes all displayed public open members regardless of owner (17.131668ms)
+✔ workflow solid badge colors keep white digits readable and review modes agree (0.353376ms)
+✔ My Changes counts three public approved members inside a sequence and family (1.586755ms)
+✔ a private member does not hide a displayed public branch from the count (0.299487ms)
+✔ private changes stop sequence chains and stay out of candidate and picker sets (0.604598ms)
+✔ private cherry-picks stay outside public sequence cards (0.323991ms)
+✔ requested patch sets: a list in the order asked, a bare number from an older version, junk dropped (0.192673ms)
+✔ iterating: a new patch set after a primary reviewer voted on a requested one (0.22451ms)
+✔ a request nobody answered before the next push leaves the change in progress, not iterating (0.269009ms)
+✔ reviewed: only a primary reviewer counts, and not Gerrit's own messages or a removed vote (0.374794ms)
+✔ a re-requested patch set is needs-review; once every reviewer voted the outcome decides, iterating or not (0.205186ms)
+✔ withdraw: the owner's open request on the current patch set, whichever round and whoever has voted (0.184626ms)
+✔ groupsFor: My Changes lists iterating above in progress; reviewer tabs fold both into one section (1.054402ms)
+✔ reviewers with no request are in-progress, nobody is asked, WIP or not (0.305865ms)
+✔ request on the current patch set asks every reviewer, even on a WIP change (0.184369ms)
+✔ a request for an older patch set is not outstanding (0.19864ms)
+✔ a vote removes that reviewer from pending (0.276011ms)
+✔ an early -1 does not decide anything while others are pending (0.123387ms)
+✔ once everyone has voted, any negative vote means needs changes (0.082445ms)
+✔ sticky -2 from the only reviewer is needs-changes even after a new patch set (0.565922ms)
+✔ sticky -2 with another reviewer cleared by a new patch set is in-progress (0.139992ms)
+✔ all positive votes means approved; hashtag promotes to ready-to-merge (0.289007ms)
+✔ ready-to-merge tag for an earlier patch set is stale even when copied votes keep the change approved (0.155753ms)
+✔ ready-to-merge tag without a recorded patch set (older version) is stale (0.120828ms)
+✔ verified: a Verified +1 on the current patch set, unless someone voted it down (0.204387ms)
+✔ verifiedVote: the vote that counts on the current patch set; a veto beats a pass (0.128607ms)
+✔ copied votes after a trivial rebase keep the change approved without a new request (0.098065ms)
+✔ ready-to-merge tag with votes reset is flagged stale (0.194282ms)
+✔ bots and the owner do not count as reviewers (0.176836ms)
+✔ non-zero owner votes are shown as non-primary without deciding the review state (0.684543ms)
+✔ request with no reviewers is needs-review with nobody pending (UI prevents this) (0.097173ms)
+✔ merged and abandoned override everything (0.105618ms)
+✔ garbage in the marker is ignored (0.099777ms)
+✔ primary: only tagged votes decide; an untagged -1 does not block approval (0.23362ms)
+✔ primary: a pending untagged reviewer is not waited for (0.089106ms)
+✔ primary: with nobody tagged there is nobody to decide, so a request waits (0.088153ms)
+✔ primary: a tag matches username or email without regard to case; one person tagged twice is one reviewer (0.220066ms)
+✔ primary: tagged but not on the change in Gerrit is a stand-in, still waited for (0.288633ms)
+✔ primary: the tag alone puts a request on my Needs Review tab; a plain reviewer is not asked (0.38478ms)
+✔ primary: the owner and bots are ignored even when tagged (0.15732ms)
+✔ team: an external owner is flagged; no team means nobody is external (0.22844ms)
+✔ team: the signed-in user is always a member (0.101439ms)
+✔ team: only the owner makes a change external, not its reviewers (0.210095ms)
+✔ team: the owner sorts a change between the team tab and External Reviews; the regular tabs go by my part on it (1.804729ms)
+✔ groupsFor: the tabs are sectioned by state and empty sections are left out (1.306762ms)
+✔ in-person review: its own state while the request on the current patch set is for it; a later pass-around request drops it (0.410686ms)
+✔ in-person review: its own section on each tab, after the pass-around one; plain grey on the Needs Review pill; not in the tray (0.99181ms)
+✔ private: the flag is read from Gerrit; absent means public (0.208099ms)
+✔ private: My Changes lists private changes in one section at the bottom, whatever their state; other tabs do not split (0.318221ms)
+✔ a private change of another author is never visible, reviewer or not (0.111405ms)
+✔ dashboard queries search for my reviewer tags and for the team's changes (0.177069ms)
+✔ normalizeTeam trims, lower-cases and de-duplicates (0.05631ms)
+✔ action counts: one per kind of thing waiting on me (0.343054ms)
+✔ summaries skip empty categories (0.132368ms)
+✔ sortViews: most recent update first, then oldest review first (0.470703ms)
+✔ sortViews: ties fall back to change number (0.173868ms)
+✔ sortViews: oldest current patch set first (0.103521ms)
+✔ sortViews: smallest change first, and fewest unseen lines first (0.328859ms)
+✔ the patch set date falls back to the change date when Gerrit sent no revision (0.075878ms)
+✔ filterViews: the search matches the subject without regard to case, or the change number exactly (0.1761ms)
+✔ filterViews: picked authors and scopes are one condition; the search is another (0.334685ms)
+✔ ownersOf: most changes first, then by name (0.202062ms)
+✔ accountMatches: prefix of any name word, the username or the email (0.159601ms)
+✔ last reviewed patch set is the highest one I voted or replied on (0.409406ms)
+✔ uploading or rebasing a change is not reviewing it (0.105532ms)
+✔ messages without a patch set, or with no messages at all, mean never reviewed (0.09098ms)
+✔ review link spans from my last review to the current patch set (0.115134ms)
+✔ review link is the current patch set against base when never reviewed or already up to date (0.098489ms)
+✔ owned review links start against base even after an earlier author reply (2.504041ms)
+✔ groupByChangeId: cherry-picks share a family, in the order given (0.405286ms)
+✔ tabCounts: My Changes counts each branch while other tabs count cards; stateTally lists its states, most urgent first (3.298446ms)
+✔ sortByBranch: project, then branch, then number; input untouched (0.638902ms)
+✔ shortChangeId trims long ids only (0.144625ms)
+✔ urgency: fix first, then look, then iterate, then mark, then wait on the merger (0.19273ms)
+✔ pastDraft: a change still being worked on is not held to its tags; one up for review or beyond is (0.14617ms)
+✔ merger tag: parsed to the requested merger, lower-case; the tag for a key is built the same way (0.289712ms)
+✔ merger tag: the merge waits on the named person, whether matched by username or by email (0.341546ms)
+✔ merger tag: a tag naming nobody (older version) waits on anyone who can +2 (0.631989ms)
+✔ merger tag: asked but without +2 rights is still asked, so the hint can be shown (0.267298ms)
+✔ Merged tab: only what is asked of me, plus unnamed tags for +2 users, plus my own stale tags, above the merges (3.21908ms)
+✔ mergers settings: patterns match exactly, by prefix, or everything (0.106555ms)
+✔ mergers settings: the list for a project is the union, most specific rule first, each person once (0.238862ms)
+✔ mergersReflect: a saved list that matches the edited rows once normalized keeps rows still being filled in (0.098116ms)
+✔ mergers settings: a one-off pick can be added to the row for that project, or a new exact row (0.105ms)
+✔ preferredKey writes the username, or the email of an account without one (0.05282ms)
+✔ actionMenu: one entry per family, every branch listed, the others with a note (0.531519ms)
+✔ slackUrl accepts a Slack permalink and refuses anything else (0.155261ms)
+✔ slackTag and linkedSlackUrl round-trip through the hashtag (0.155016ms)
+✔ slackDeepLink turns a Copy link URL into a slack:// link for a known workspace (0.524651ms)
+✔ slackDeepLink is null when the app cannot be told where to go, so the browser gets the link (0.178248ms)
+✔ normalizeSlackWorkspaces accepts a domain, a host or a link and keeps one row per workspace (0.173124ms)
+✔ isSlackTeamId (0.046073ms)
+✔ the vote on the last reviewed patch set comes from the messages; a reply alone is null, a retraction is 0 (0.137484ms)
+✔ on the current patch set the label vote wins over the messages (0.077306ms)
+✔ the delta since my last review is kept only for the span the Review button opens (0.131018ms)
+✔ changeNumberOf: a number, a change URL with or without a patch set, or nothing (0.218824ms)
+✔ explainView: a tag from an earlier patch set on an approved change names the stale section (0.374231ms)
+✔ explainView: a tag with no recorded patch set, and no primary reviewers, are each named (0.270095ms)
+✔ explainView: the current patch set tagged after every vote is Ready to Merge (0.160692ms)
+✔ withChange: the fresh copy replaces the old one in place, joins the list it belongs in, or leaves the board (1.598783ms)
+✔ withChange respects team project scope and the merged query age, while direct relationships stay unscoped (0.235564ms)
+✔ teams: the team tab lists watched teams by owner; External Reviews is what I am on from outside my team (1.247721ms)
+✔ teams: normalizing, the members of all of them, and the stored form before teams had names (0.268607ms)
+✔ sequence: parents link a change to the patch set of the change it is built on, on the same branch only (0.241725ms)
+✔ sequence: a related set is every change linked to a base, base first, a fork listed lower number first with its own children after it (0.142012ms)
+✔ sequence: untagged changes are omitted without splitting the chain (1.074326ms)
+✔ sequence: merged changes retain their context and parent links (0.436467ms)
+✔ sequence: merging members keeps the card together until every tagged member closes (0.468828ms)
+✔ sequence: tagged dependencies across owners stay in separate sequences (0.182553ms)
+✔ sequence: an owner boundary leaves single tagged changes as ordinary cards, even when the owner returns later (0.249358ms)
+✔ sequence: the candidates are the owner's open related sets with no member tagged; the picker sees the whole set around a change (0.408242ms)
+✔ sequence: the title is the shared topic, else the first and last numbers; the reviewer's next is the lowest change waiting on them (0.406453ms)
+✔ sequence: a chain counts once and has a dedicated section except on Needs Review (1.105722ms)
+✔ sequence: reviewing one member keeps the remaining requests visible, including cherry-picks (12.555258ms)
+✔ sequence: Needs Review favors pending pass-around requests over in-person requests (1.046813ms)
+✔ sequence: a merged base remains context while the last step is open (0.558228ms)
+✔ sequence: private changes with old tags stay outside sequence cards (0.340416ms)
+✔ sequence: approved cherry-picks keep their complete family inside the sequence (0.821ms)
+✔ sequence: a cherry-pick can lead the complete sequence when it is the only change on a tab (0.376166ms)
+✔ sequence: overlapping branch sequences assign shared families once and retain references (1.058934ms)
+✔ sequence: a pending cherry-pick is next and keeps its family step incomplete (0.412871ms)
+✔ sequence: action counts and menu entries use the same cards as the board (0.410752ms)
+✔ sequence: fully overlapping sequences stay editable without duplicating their family rows (0.676867ms)
+✔ sequence: mixed-state sequences stay in their dedicated section (4.818745ms)
+✔ sequence: identical commit SHAs outside the project or branch cannot split a mixed-state sequence (1.823696ms)
+(node:598992) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/shared/theme.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ explicit themes override the system and system follows either appearance (0.829429ms)
+✔ older settings default to system and every theme survives reopening and unrelated saves (33.562733ms)
+✔ diff themes resolve against the application rather than the device (0.360663ms)
+✔ diff themes survive reopening and unrelated saves in application settings (24.162844ms)
+(node:598999) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/shared/trailers.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ reads the Key: value lines of the last paragraph (1.343615ms)
+✔ body is what sits between the subject and the trailers (0.208981ms)
+✔ a subject alone, or a last paragraph of prose, has no trailers (0.139004ms)
+✔ indented lines continue the trailer above them (0.121501ms)
+✔ Change-Id and Signed-off-by are noise (0.366542ms)
+✔ windows line endings and trailing blank lines are fine (0.122199ms)
+(node:599014) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/shared/update.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ check, available, download, downloaded, install (0.829235ms)
+✔ disabled state has no action (0.159567ms)
+✔ no update after a check (0.176908ms)
+✔ failed check can be retried (0.122764ms)
+✔ failed download keeps the release available for a retry (0.107042ms)
+✔ a downloaded update survives later checks (0.120932ms)
+✔ failed install keeps the downloaded state (0.087595ms)
+✔ release notes from the GitHub feed become plain lines (0.452854ms)
+(node:599021) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/dev/.t3/worktrees/gerrit-gui/security-dependencies/src/shared/url.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ keeps a path prefix the server is mounted under (2.165402ms)
+✔ derives the base from a pasted change or dashboard URL (0.379513ms)
+✔ adds https when the scheme is missing and leaves plain bases alone (0.623798ms)
+✔ rejects remote HTTP, other protocols, malformed URLs, and embedded credentials (0.699812ms)
+✔ HTTP test opt-in only permits loopback IPs, never DNS names or LAN addresses (0.628908ms)
+✔ change path points at the change page, one patch set, or a patch-set range (0.307638ms)
+✔ change path encodes a project with slashes (1.126478ms)
+ℹ tests 340
+ℹ suites 1
+ℹ pass 340
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3575.665695

@@ -1,14 +1,3 @@
-AssertionError [ERR_ASSERTION]: whole-file default
-+ actual - expected
 
-+ 'application'
-- '-1'
-
-    at /home/dev/.t3/worktrees/gerrit-gui/security-dependencies/test/review-ui.cjs:187:10 {
-  generatedMessage: false,
-  code: 'ERR_ASSERTION',
-  actual: 'application',
-  expected: '-1',
-  operator: 'strictEqual',
-  diff: 'simple'
-}
+(electron:599932): dbind-WARNING **: 17:32:30.355: Couldn't connect to accessibility bus: Failed to connect to socket /run/user/1000/at-spi/bus: No such file or directory
+{"wheel":"passed","scrollbarDrag":"passed","synchronized":"passed","keyboard":"passed","find":"passed","searchTooltip":"passed","gerritShortcuts":"passed","backgroundScroll":"passed","sessionCache":"passed","diffPreferences":"passed","patchSetComparison":"passed","reviewedFlags":"passed","compactSidebar":"passed","renderedLines":56,"requests":4}
