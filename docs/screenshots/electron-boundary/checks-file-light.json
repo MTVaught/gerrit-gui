@@ -1,0 +1,193 @@
+{
+  "platform": "linux",
+  "electron": "44.2.0",
+  "theme": "light",
+  "simulatedDomInput": false,
+  "keychain": false,
+  "storage": "session",
+  "childChannels": 42,
+  "unauthorizedBadgeBlocked": true,
+  "productionChildBridgeAbsent": true,
+  "childPopupDenied": true,
+  "sameOriginSiblingRejected": true,
+  "childNavigationBlocked": true,
+  "webviewHookSimulated": true,
+  "renderer": "file",
+  "channels": 42,
+  "rejectedSenders": [
+    {
+      "channel": "settings:get",
+      "rejected": true
+    },
+    {
+      "channel": "settings:save",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:testConnection",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:fetchDashboard",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:fetchChange",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:reviewBlame",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:reviewDiffPreferences",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:saveReviewDiffPreferences",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:previewReviewFix",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:applyProvidedReviewFix",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:reviewFiles",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:reviewDiff",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:reviewCommentPositions",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:reviewDiscussion",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:saveReviewDraft",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:deleteReviewDraft",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:deleteReviewComment",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:applyReviewFix",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:submitReview",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:reviewPatchSets",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:reviewReviewedFiles",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:setReviewFileReviewed",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:act",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:suggestReviewers",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:suggestAccounts",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:lookupAccounts",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:openChange",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:changeUrl",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:inspectChange",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:getPretend",
+      "rejected": true
+    },
+    {
+      "channel": "gerrit:setPretend",
+      "rejected": true
+    },
+    {
+      "channel": "app:openUrl",
+      "rejected": true
+    },
+    {
+      "channel": "connection:open",
+      "rejected": true
+    },
+    {
+      "channel": "connection:changed",
+      "rejected": true
+    },
+    {
+      "channel": "connection:close",
+      "rejected": true
+    },
+    {
+      "channel": "ui:get",
+      "rejected": true
+    },
+    {
+      "channel": "ui:setCompact",
+      "rejected": true
+    },
+    {
+      "channel": "update:get",
+      "rejected": true
+    },
+    {
+      "channel": "update:check",
+      "rejected": true
+    },
+    {
+      "channel": "update:download",
+      "rejected": true
+    },
+    {
+      "channel": "update:install",
+      "rejected": true
+    },
+    {
+      "channel": "update:openReleaseNotes",
+      "rejected": true
+    }
+  ],
+  "childFrameRejected": true,
+  "navigatedAppRejected": true,
+  "redirectBlocked": true,
+  "connectionSaved": true,
+  "sandbox": true,
+  "externalDispatchIntercepted": true
+}
