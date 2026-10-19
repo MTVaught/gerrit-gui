@@ -60,4 +60,5 @@ const api: Api = {
   onUpdateState: (cb) => subscribe<[UpdateState]>('app:update', cb),
 }
 
-contextBridge.exposeInMainWorld('api', api)
+// Child frames never receive the privileged app bridge. Main also validates every IPC sender.
+if (process.isMainFrame) contextBridge.exposeInMainWorld('api', api)

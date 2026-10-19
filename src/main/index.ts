@@ -10,6 +10,8 @@ import { slackDeepLink } from '../shared/model.ts'
 import type { BadgePayload, ChangeAction, ChangeLink, SettingsInput, TabId, UiState, WindowBounds } from '../shared/types.ts'
 import appIconPath from '../../resources/icon.png?asset'
 import { editorContextMenu } from './editor-context-menu.ts'
+import { externalWebUrl, RendererBoundary, trustedIpc } from './renderer-boundary.ts'
+import { pathToFileURL } from 'node:url'
 
 app.on('web-contents-created', (_event, contents) => {
   contents.on('context-menu', (_event, params) => {
@@ -36,6 +38,15 @@ let updater: Updater | null = null
 
 // net.fetch: Chromium's network stack, so the OS certificate store and system proxy apply.
 const service = createService(settings, (url, init) => net.fetch(url, init))
+const rendererBoundary = new RendererBoundary()
+// Packaged builds always load the bundled document. Development pins the exact Vite entry URL.
+const rendererEntry = !app.isPackaged && process.env['ELECTRON_RENDERER_URL']
+  ? externalWebUrl(process.env['ELECTRON_RENDERER_URL'])
+  : pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
+
+async function openWebUrl(url: unknown): Promise<void> {
+  await shell.openExternal(externalWebUrl(url))
+}
 
 function showWindow(): void {
   if (!mainWindow) {
@@ -122,51 +133,52 @@ function scheduleSaveBounds(): void {
 }
 
 function registerIpc(): void {
-  ipcMain.handle('settings:get', () => service.getSettings())
-  ipcMain.handle('settings:save', async (_e, input: SettingsInput) => {
+  const ipc = trustedIpc(ipcMain, rendererBoundary)
+  ipc.handle('settings:get', () => service.getSettings())
+  ipc.handle('settings:save', async (_e, input: SettingsInput) => {
     await service.saveSettings(input)
     await refreshWindowPrefs()
     mainWindow?.webContents.send('app:settings')
     connectionWindow?.webContents.send('app:settings')
   })
-  ipcMain.handle('gerrit:testConnection', () => service.testConnection())
-  ipcMain.handle('gerrit:fetchDashboard', () => service.fetchDashboard())
-  ipcMain.handle('gerrit:fetchChange', (_e, id: number) => service.fetchChange(id))
-  ipcMain.handle('gerrit:reviewBlame', (_e, link: ChangeLink, path: string) => service.reviewBlame(link, path))
-  ipcMain.handle('gerrit:reviewDiffPreferences', () => service.reviewDiffPreferences())
-  ipcMain.handle('gerrit:saveReviewDiffPreferences', (_e, input: import('../shared/types.ts').GerritDiffPreferences) => service.saveReviewDiffPreferences(input))
-  ipcMain.handle('gerrit:previewReviewFix', (_e, id: number, patchSet: number, fix: import('../shared/types.ts').FixSuggestion) => service.previewReviewFix(id, patchSet, fix))
-  ipcMain.handle('gerrit:applyProvidedReviewFix', (_e, id: number, patchSet: number, fix: import('../shared/types.ts').FixSuggestion) => service.applyProvidedReviewFix(id, patchSet, fix))
-  ipcMain.handle('gerrit:reviewFiles', (_e, link: ChangeLink) => service.reviewFiles(link))
-  ipcMain.handle('gerrit:reviewDiff', (_e, link: ChangeLink, path: string) => service.reviewDiff(link, path))
-  ipcMain.handle('gerrit:reviewCommentPositions', (_e, link: ChangeLink) => service.reviewCommentPositions(link))
-  ipcMain.handle('gerrit:reviewDiscussion', (_e, id: number) => service.reviewDiscussion(id))
-  ipcMain.handle('gerrit:saveReviewDraft', (_e, id: number, patchSet: number, input: import('../shared/types.ts').DraftCommentInput) => service.saveReviewDraft(id, patchSet, input))
-  ipcMain.handle('gerrit:deleteReviewDraft', (_e, id: number, patchSet: number, draftId: string) => service.deleteReviewDraft(id, patchSet, draftId))
-  ipcMain.handle('gerrit:deleteReviewComment', (_e, id: number, patchSet: number, commentId: string, reason: string) => service.deleteReviewComment(id, patchSet, commentId, reason))
-  ipcMain.handle('gerrit:applyReviewFix', (_e, id: number, patchSet: number, fixId: string) => service.applyReviewFix(id, patchSet, fixId))
-  ipcMain.handle('gerrit:submitReview', (_e, link: ChangeLink, input: import('../shared/types.ts').SubmitReviewInput) => service.submitReview(link, input))
-  ipcMain.handle('gerrit:reviewPatchSets', (_e, id: number) => service.reviewPatchSets(id))
-  ipcMain.handle('gerrit:reviewReviewedFiles', (_e, link: ChangeLink) => service.reviewReviewedFiles(link))
-  ipcMain.handle('gerrit:setReviewFileReviewed', (_e, link: ChangeLink, path: string, reviewed: boolean) => service.setReviewFileReviewed(link, path, reviewed))
-  ipcMain.handle('gerrit:act', (_e, action: ChangeAction) => service.act(action))
-  ipcMain.handle('gerrit:suggestReviewers', (_e, id: number, q: string) => service.suggestReviewers(id, q))
-  ipcMain.handle('gerrit:suggestAccounts', (_e, q: string) => service.suggestAccounts(q))
-  ipcMain.handle('gerrit:lookupAccounts', (_e, keys: string[]) => service.lookupAccounts(keys))
-  ipcMain.handle('gerrit:openChange', async (_e, link: ChangeLink) => {
-    await shell.openExternal(await service.changeUrl(link))
+  ipc.handle('gerrit:testConnection', () => service.testConnection())
+  ipc.handle('gerrit:fetchDashboard', () => service.fetchDashboard())
+  ipc.handle('gerrit:fetchChange', (_e, id: number) => service.fetchChange(id))
+  ipc.handle('gerrit:reviewBlame', (_e, link: ChangeLink, path: string) => service.reviewBlame(link, path))
+  ipc.handle('gerrit:reviewDiffPreferences', () => service.reviewDiffPreferences())
+  ipc.handle('gerrit:saveReviewDiffPreferences', (_e, input: import('../shared/types.ts').GerritDiffPreferences) => service.saveReviewDiffPreferences(input))
+  ipc.handle('gerrit:previewReviewFix', (_e, id: number, patchSet: number, fix: import('../shared/types.ts').FixSuggestion) => service.previewReviewFix(id, patchSet, fix))
+  ipc.handle('gerrit:applyProvidedReviewFix', (_e, id: number, patchSet: number, fix: import('../shared/types.ts').FixSuggestion) => service.applyProvidedReviewFix(id, patchSet, fix))
+  ipc.handle('gerrit:reviewFiles', (_e, link: ChangeLink) => service.reviewFiles(link))
+  ipc.handle('gerrit:reviewDiff', (_e, link: ChangeLink, path: string) => service.reviewDiff(link, path))
+  ipc.handle('gerrit:reviewCommentPositions', (_e, link: ChangeLink) => service.reviewCommentPositions(link))
+  ipc.handle('gerrit:reviewDiscussion', (_e, id: number) => service.reviewDiscussion(id))
+  ipc.handle('gerrit:saveReviewDraft', (_e, id: number, patchSet: number, input: import('../shared/types.ts').DraftCommentInput) => service.saveReviewDraft(id, patchSet, input))
+  ipc.handle('gerrit:deleteReviewDraft', (_e, id: number, patchSet: number, draftId: string) => service.deleteReviewDraft(id, patchSet, draftId))
+  ipc.handle('gerrit:deleteReviewComment', (_e, id: number, patchSet: number, commentId: string, reason: string) => service.deleteReviewComment(id, patchSet, commentId, reason))
+  ipc.handle('gerrit:applyReviewFix', (_e, id: number, patchSet: number, fixId: string) => service.applyReviewFix(id, patchSet, fixId))
+  ipc.handle('gerrit:submitReview', (_e, link: ChangeLink, input: import('../shared/types.ts').SubmitReviewInput) => service.submitReview(link, input))
+  ipc.handle('gerrit:reviewPatchSets', (_e, id: number) => service.reviewPatchSets(id))
+  ipc.handle('gerrit:reviewReviewedFiles', (_e, link: ChangeLink) => service.reviewReviewedFiles(link))
+  ipc.handle('gerrit:setReviewFileReviewed', (_e, link: ChangeLink, path: string, reviewed: boolean) => service.setReviewFileReviewed(link, path, reviewed))
+  ipc.handle('gerrit:act', (_e, action: ChangeAction) => service.act(action))
+  ipc.handle('gerrit:suggestReviewers', (_e, id: number, q: string) => service.suggestReviewers(id, q))
+  ipc.handle('gerrit:suggestAccounts', (_e, q: string) => service.suggestAccounts(q))
+  ipc.handle('gerrit:lookupAccounts', (_e, keys: string[]) => service.lookupAccounts(keys))
+  ipc.handle('gerrit:openChange', async (_e, link: ChangeLink) => {
+    await openWebUrl(await service.changeUrl(link))
   })
-  ipcMain.handle('gerrit:changeUrl', (_e, link: ChangeLink) => service.changeUrl(link))
-  ipcMain.handle('gerrit:inspectChange', (_e, id: number) => service.inspectChange(id))
-  ipcMain.handle('gerrit:getPretend', () => service.getPretend())
-  ipcMain.handle('gerrit:setPretend', (_e, key: string | null) => service.setPretend(key))
-  ipcMain.handle('app:openUrl', async (_e, url: string) => {
+  ipc.handle('gerrit:changeUrl', (_e, link: ChangeLink) => service.changeUrl(link))
+  ipc.handle('gerrit:inspectChange', (_e, id: number) => service.inspectChange(id))
+  ipc.handle('gerrit:getPretend', () => service.getPretend())
+  ipc.handle('gerrit:setPretend', (_e, key: string | null) => service.setPretend(key))
+  ipc.handle('app:openUrl', async (_e, url: string) => {
     // Comment and Slack links may open a browser. Keep other URI schemes out of the shell.
-    if (!/^https?:\/\//i.test(url)) throw new Error('Only http and https links can be opened')
+    const webUrl = externalWebUrl(url)
     // A Slack link opens in the Slack app when Settings knows the workspace's team ID; the slack:// link is
     // built here from the stored ID, never taken from the renderer. Without Slack installed the open fails
     // (or on macOS does nothing), so the browser gets the https link then.
-    const deep = slackDeepLink(url, (await service.getSettings()).slackWorkspaces)
+    const deep = slackDeepLink(webUrl, (await service.getSettings()).slackWorkspaces)
     if (deep) {
       try {
         await shell.openExternal(deep)
@@ -175,27 +187,27 @@ function registerIpc(): void {
         console.warn('Open in Slack:', (e as Error).message)
       }
     }
-    await shell.openExternal(url)
+    await openWebUrl(webUrl)
   })
 
-  ipcMain.handle('connection:open', () => showConnectionWindow())
-  ipcMain.handle('connection:changed', () => {
+  ipc.handle('connection:open', () => showConnectionWindow())
+  ipc.handle('connection:changed', () => {
     mainWindow?.webContents.send('app:connection')
   })
-  ipcMain.handle('connection:close', () => connectionWindow?.close())
+  ipc.handle('connection:close', () => connectionWindow?.close())
 
-  ipcMain.handle('ui:get', (): UiState => ui)
-  ipcMain.handle('ui:setCompact', (_e, on: boolean) => setCompact(on))
-  ipcMain.on('ui:badge', (_e, payload: BadgePayload) => {
+  ipc.handle('ui:get', (): UiState => ui)
+  ipc.handle('ui:setCompact', (_e, on: boolean) => setCompact(on))
+  ipc.on('ui:badge', (_e, payload: BadgePayload) => {
     tray?.setBadge(payload, mainWindow)
   })
 
-  ipcMain.handle('update:get', () => updater?.getState())
-  ipcMain.handle('update:check', () => updater?.check())
-  ipcMain.handle('update:download', () => updater?.download())
-  ipcMain.handle('update:install', (_e, confirm: boolean) => updater?.install(confirm))
-  ipcMain.handle('update:openReleaseNotes', async () => {
-    await shell.openExternal(updater?.getState().releaseUrl ?? RELEASES_URL)
+  ipc.handle('update:get', () => updater?.getState())
+  ipc.handle('update:check', () => updater?.check())
+  ipc.handle('update:download', () => updater?.download())
+  ipc.handle('update:install', (_e, confirm: boolean) => updater?.install(confirm))
+  ipc.handle('update:openReleaseNotes', async () => {
+    await openWebUrl(updater?.getState().releaseUrl ?? RELEASES_URL)
   })
 }
 
@@ -211,6 +223,8 @@ function createWindow(): BrowserWindow {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      nodeIntegrationInSubFrames: false,
+      webviewTag: false,
       sandbox: true,
     },
   })
@@ -229,21 +243,16 @@ function createWindow(): BrowserWindow {
   win.on('closed', () => {
     mainWindow = null
   })
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url)
-    return { action: 'deny' }
-  })
   // Optional initial tab, e.g. GERRIT_GUI_TAB=mine (also used by the screenshot test hook).
   loadRenderer(win, process.env['GERRIT_GUI_TAB'] ? `tab=${process.env['GERRIT_GUI_TAB']}` : '')
   return win
 }
 
 function loadRenderer(win: BrowserWindow, hash: string): void {
-  if (process.env['ELECTRON_RENDERER_URL']) {
-    void win.loadURL(process.env['ELECTRON_RENDERER_URL'] + (hash ? `#${hash}` : ''))
-  } else {
-    void win.loadFile(path.join(__dirname, '../renderer/index.html'), hash ? { hash } : undefined)
-  }
+  rendererBoundary.register(win.webContents, rendererEntry)
+  const url = new URL(rendererEntry)
+  url.hash = hash
+  void win.loadURL(url.href)
 }
 
 /**
@@ -272,6 +281,8 @@ function showConnectionWindow(): void {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      nodeIntegrationInSubFrames: false,
+      webviewTag: false,
       sandbox: true,
     },
   })
@@ -279,10 +290,6 @@ function showConnectionWindow(): void {
   win.once('ready-to-show', () => win.show())
   win.on('closed', () => {
     connectionWindow = null
-  })
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url)
-    return { action: 'deny' }
   })
   loadRenderer(win, 'connection')
 }
@@ -317,7 +324,7 @@ if (!app.requestSingleInstanceLock()) {
         showTab,
         refresh: () => mainWindow?.webContents.send('app:refresh'),
         openChange: (link) => {
-          service.changeUrl(link).then((url) => shell.openExternal(url), (e: Error) => console.warn('Open change:', e.message))
+          void service.changeUrl(link).then(openWebUrl).catch((e: Error) => console.warn('Open change:', e.message))
         },
         setCompact: (on) => void setCompact(on),
         setCompactOnTop: (on) => void setCompactOnTop(on),
