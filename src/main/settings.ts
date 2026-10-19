@@ -5,6 +5,7 @@ import type { BadgeStyle, DiffThemePreference, MergerRule, SettingsInput, Settin
 import { normalizeDiffTheme, normalizeTheme } from '../shared/theme.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
 import { requireReplacementPassword } from '../shared/credentials.ts'
+import { allowLocalTestHttp } from './transport-policy.ts'
 import { normalizeMergers, normalizePrimaryTeam, normalizeSlackWorkspaces, normalizeTeams, storedTeams } from '../shared/model.ts'
 
 interface StoredSettings {
@@ -70,10 +71,11 @@ export async function getStatus(): Promise<SettingsStatus> {
 export async function getCredentials(): Promise<{ serverUrl: string; username: string; password: string } | null> {
   const s = await read()
   if (!s.serverUrl || !s.username || !s.password) return null
+  const serverUrl = normalizeServerUrl(s.serverUrl, allowLocalTestHttp())
   const password = s.passwordEncrypted
     ? safeStorage.decryptString(Buffer.from(s.password, 'base64'))
     : s.password
-  return { serverUrl: s.serverUrl, username: s.username, password }
+  return { serverUrl, username: s.username, password }
 }
 
 export async function save(input: SettingsInput): Promise<void> {
@@ -82,7 +84,7 @@ export async function save(input: SettingsInput): Promise<void> {
   const next: StoredSettings = {
     theme: normalizeTheme(input.theme),
     diffTheme: normalizeDiffTheme(input.diffTheme),
-    serverUrl: normalizeServerUrl(input.serverUrl),
+    serverUrl: normalizeServerUrl(input.serverUrl, allowLocalTestHttp()),
     username: input.username.trim(),
     projects: input.projects.map((p) => p.trim()).filter(Boolean),
     teams: normalizeTeams(input.teams),

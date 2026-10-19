@@ -87,7 +87,8 @@ jobs:
             exit 1
           fi
         env:
-          GERRIT_TEST_URL: http://localhost:8080
+          GERRIT_TEST_URL: http://127.0.0.1:8080
+          GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP: '1'
 
   version:
     runs-on: ubuntu-latest

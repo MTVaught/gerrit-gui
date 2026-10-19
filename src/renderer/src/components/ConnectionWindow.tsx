@@ -83,6 +83,7 @@ export function ConnectionWindow() {
             setDone(false)
           }} placeholder="https://host/gerrit1  (paste any change URL; the app keeps the base)" autoFocus={!initial.serverUrl} />
         </label>
+        <p className="muted small">Use HTTPS to protect your Gerrit credentials.</p>
         <label>
           Username
           <input value={username} disabled={busy} onChange={(e) => {

@@ -8,6 +8,7 @@ import type { BadgeStyle, DiffThemePreference, MergerRule, SettingsInput, Settin
 import { normalizeDiffTheme, normalizeTheme } from '../shared/theme.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
 import { requireReplacementPassword, sameCredentialIdentity } from '../shared/credentials.ts'
+import { allowLocalTestHttp } from '../main/transport-policy.ts'
 import { normalizeMergers, normalizePrimaryTeam, normalizeSlackWorkspaces, normalizeTeams, storedTeams } from '../shared/model.ts'
 import type { Credentials, SettingsStore } from '../main/service.ts'
 
@@ -73,7 +74,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
-      return s.serverUrl && s.username && s.password ? { serverUrl: s.serverUrl, username: s.username, password: s.password } : null
+      return s.serverUrl && s.username && s.password ? { serverUrl: normalizeServerUrl(s.serverUrl, allowLocalTestHttp()), username: s.username, password: s.password } : null
     },
     async save(input: SettingsInput): Promise<void> {
       const prev = await read()
@@ -84,7 +85,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
       const next: Stored = {
         theme: normalizeTheme(input.theme),
         diffTheme: normalizeDiffTheme(input.diffTheme),
-        serverUrl: normalizeServerUrl(input.serverUrl),
+        serverUrl: normalizeServerUrl(input.serverUrl, allowLocalTestHttp()),
         username: input.username.trim(),
         password: input.password || prev.password,
         projects: input.projects.map((p) => p.trim()).filter(Boolean),

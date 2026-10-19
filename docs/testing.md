@@ -16,6 +16,39 @@ Seed a test server first with `./test/seed-gerrit.sh` (refer to the "Tests" sect
 
 `docs/walkthrough/shoot.sh` uses the same hooks to make the screenshots in `docs/walkthrough.md`. It needs an empty Gerrit on its own port, seeds four users and one project, then takes one change through the workflow and captures the window of each person at each step. `settings.json` in a profile directory can hold `mergers`, a list of `{ "project": "platform/*", "people": ["dave"] }` rows, to fill the Ready to Merge picker, and `teams`, a list of `{ "name": "Platform", "members": ["alice", "bob"], "watched": true }` rows, with `primaryTeam` naming one of them.
 
+## Gerrit transport security
+
+`pnpm test` includes URL, settings, and transport checks with dummy credentials.
+The transport test uses OpenSSL to create a temporary certificate. It checks
+that an untrusted certificate fails, a trusted HTTPS request works, and HTTP
+downgrade redirects never reach the HTTP listener. It needs `openssl` on PATH.
+
+For a local Gerrit HTTP fixture, use `http://127.0.0.1:8080` and start the
+application or integration test with `GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP=1`.
+This exception is for dummy accounts only. It does not permit remote HTTP.
+
+To check the real desktop connection form and capture the results, run:
+
+```sh
+pnpm build
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/transport-ui.cjs
+```
+
+This test needs `openssl`, `xdotool`, and Xvfb. It uses an isolated profile,
+dummy credentials, and a local HTTPS server with a simulated Gerrit account
+response. It trusts only the temporary fixture certificate within the test
+session. It uses real mouse and keyboard input to submit the connection form.
+It checks that remote HTTP cannot save settings or call fetch, that HTTPS
+connects, and that Chromium rejects five HTTP downgrade redirects. Old desktop
+HTTP settings must also fail before fetch. The HTTP listener must receive zero
+requests. `--no-sandbox` is for this Xvfb test only.
+
+The Linux/Electron captures are in `docs/screenshots/transport-security/`.
+`remote-http-blocked-light.png` and `remote-http-blocked-dark.png` show the
+rejection. `https-connected-light.png` and `https-connected-dark.png` show
+the successful HTTPS result. Each pair uses the same view, data, and scroll
+position. These captures do not use a live Gerrit installation.
+
 ## Mockups and web pages
 
 `docs/mockups/shot.cjs` renders an HTML mockup to PNG under Xvfb. It also

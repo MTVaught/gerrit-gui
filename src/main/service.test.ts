@@ -10,7 +10,7 @@ function deferred() {
 }
 
 const bob = { _account_id: 2, username: 'bob' }
-const credentials = { serverUrl: 'http://gerrit.test', username: 'alice', password: 'test' }
+const credentials = { serverUrl: 'https://gerrit.test', username: 'alice', password: 'test' }
 function service(fetchImpl: FetchLike, getCredentials: SettingsStore['getCredentials'] = async () => credentials) {
   return createService({
     getCredentials,
