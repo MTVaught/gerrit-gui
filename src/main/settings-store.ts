@@ -50,9 +50,10 @@ export function settingsStore(file: string, backend?: SecretBackend, env: NodeJS
     return result
   }
   async function migrate(s: StoredSettings): Promise<StoredSettings> {
-    const migrated = secrets.migrate(s)
-    if (migrated) await writeSettingsFile(file, migrated)
-    return migrated ?? s
+    const migration = secrets.migrate(s)
+    if (migration.changed) await writeSettingsFile(file, migration.stored)
+    migration.commit()
+    return migration.stored
   }
   async function read(): Promise<StoredSettings> { return migrate(await raw()) }
   function effective(s: StoredSettings): CredentialIdentity {
@@ -133,7 +134,7 @@ export function settingsStore(file: string, backend?: SecretBackend, env: NodeJS
       passwordStorageVersion: prev.passwordStorageVersion,
       ui: prev.ui,
     }
-    const update = secrets.prepare(prev, next, input.password, input.removeLegacyPassword === true, Boolean(await environmentPassword(identity)))
+    const update = secrets.prepare(prev, next, input.password)
     await writeSettingsFile(file, update.stored)
     update.commit()
   }
@@ -143,9 +144,11 @@ export function settingsStore(file: string, backend?: SecretBackend, env: NodeJS
   }
 
   async function saveUi(patch: Partial<UiState>): Promise<UiState> {
-    const prev = await read()
+    const prev = await raw()
+    const cleanup = secrets.migrate(prev)
     const ui: UiState = { ...(prev.ui ?? { compact: false }), ...patch }
-    await writeSettingsFile(file, { ...prev, ui })
+    await writeSettingsFile(file, { ...cleanup.stored, ui })
+    cleanup.commit()
     return ui
   }
 

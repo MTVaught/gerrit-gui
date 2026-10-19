@@ -170,8 +170,8 @@ test('browser environment overrides never attach a file password to a different 
       await assert.rejects(svc.testConnection(), /not configured/)
       assert.equal(sent, 0)
       const retained = JSON.parse(await readFile(file, 'utf8'))
-      assert.equal(retained.password, old.password, 'old copy is kept with its original binding')
-      assert.deepEqual(retained.passwordIdentity, { serverUrl: old.serverUrl, username: old.username })
+      assert.equal(retained.password, undefined, 'legacy copy is automatically removed')
+      assert.equal(retained.passwordIdentity, undefined)
       assert.equal(await browser(file).getCredentials(), null, 'restart cannot return the retained A password for B')
     }
     await writeFile(file, JSON.stringify(old))

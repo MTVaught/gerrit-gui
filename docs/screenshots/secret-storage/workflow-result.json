@@ -13,6 +13,11 @@
           "theme": "system"
         }
       },
+      "afterLoad": {
+        "serverUrl": "http://127.0.0.1:19776",
+        "username": "dummy",
+        "theme": "system"
+      },
       "afterReadMode": "600",
       "afterSave": {
         "theme": "system",
@@ -51,6 +56,11 @@
           "password": "dummy-old-password",
           "theme": "system"
         }
+      },
+      "afterLoad": {
+        "serverUrl": "http://127.0.0.1:19776",
+        "username": "dummy",
+        "theme": "system"
       },
       "afterReadMode": "600",
       "afterSave": {

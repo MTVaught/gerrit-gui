@@ -8,8 +8,9 @@ combined code also has the merged origin/account binding and HTTPS protections.
 
 ## Combined implementation
 
-This branch is based on `f6401536cdf42225746b29f397bf024f828b8b3d`, which includes
-credential-binding PR #107 and HTTPS PR #108. Their implementation files,
+The original API change was based on `f6401536cdf42225746b29f397bf024f828b8b3d`,
+which includes credential-binding PR #107 and HTTPS PR #108. The current storage
+revision includes merged API main `fc22f5ddad5f0d14dc9d75129cf570b8af2707ab`. Their implementation files,
 including the browser environment identity snapshot, were unchanged in #109.
 The later password-storage integration moves persistence into a shared store
 and preserves those policies. Its current rerun uses memory-only browser
@@ -87,7 +88,7 @@ Both videos and all six screenshots were inspected for readability, framing,
 layout, captions, pointer movement, hover pauses, and result visibility. Full
 video decoding and normal-rate decoding passed without errors. The exports
 are H.264, yuv420p, 1280 by 900 pixels, 20 fps, with fast-start metadata. Light
-lasts 57.95 seconds and dark lasts 57.90 seconds.
+lasts 57.90 seconds and dark lasts 57.90 seconds.
 
 [verification.json](verification.json) records the observed API statuses and
 assertion outcomes for both modes without storing session values.
@@ -128,11 +129,11 @@ There are no remaining capture blockers for this Linux workflow.
 
 Checks ran in sequence with one heavy command at a time:
 
-- Relevant security tests, 25 passed.
-- Full unit suite with `--test-concurrency=1`, 275 passed.
-- `pnpm typecheck`, passed.
-- `pnpm build`, passed.
-- `pnpm exec vite build --config vite.web.config.ts --outDir ../../out/browser-security-check`, passed. The existing large-chunk warning remains.
+- Relevant storage/binding/transport tests, 60 passed.
+- Full unit suite with `--test-concurrency=4`, 322 passed.
+- `npm run typecheck`, passed.
+- `npm run build`, passed.
+- `node_modules/.bin/vite build --config vite.web.config.ts --outDir ../../out/browser-secret-security`, passed. The existing large-chunk warning remains.
 - The real native-input capture below, both modes passed.
 - Both complete MP4 files decoded without errors. Encoding and matched duration
   were checked with ffprobe. The screenshots and video frames were inspected.
@@ -145,3 +146,10 @@ xvfb-run -a -s '-screen 0 1280x900x24' node_modules/.bin/electron --no-sandbox t
 
 The harness publishes artifacts only after both modes pass. On failure, it
 stops its own processes and removes its temporary settings and partial captures.
+
+The automatic legacy-cleanup revision of PR #110 refreshed these captures.
+The shared store removes old insecure saved fields on load and retains readable
+passwords only in bound process memory. No removal checkbox is needed. The API
+workflow still requires startup authorization, CSRF checks and origin controls.
+See [storage evidence](../secret-storage/README.md) for process-restart and file
+permission results, policy decisions and platform limits.

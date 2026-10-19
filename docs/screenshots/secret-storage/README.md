@@ -1,156 +1,149 @@
 # Secret storage verification
 
-This change is rebased on `fc22f5ddad5f0d14dc9d75129cf570b8af2707ab`.
-It includes merged credential binding #107, HTTPS #108, and browser sessions #109.
-All credentials are dummy data. Settings, profiles, fixture certificates and
-processes are isolated. No user settings were read or changed.
+PR #110 includes merged credential binding #107, HTTPS #108 and browser API #109
+at main `fc22f5ddad5f0d14dc9d75129cf570b8af2707ab`. This revision replaces the
+explicit-removal policy with user-authorized automatic legacy cleanup.
+All credentials are dummy data. Settings, profiles and servers are isolated.
+No live user settings were read or changed.
 
-## Persistence and identity rules
+## Persistence rules
 
-Both modes use `src/main/settings-store.ts`. The desktop adapter supplies
-Electron safeStorage. Browser mode supplies no encryption provider.
+Both modes use `src/main/settings-store.ts`. Electron supplies safeStorage;
+browser mode has no secure persistence backend. New passwords use a trusted
+OS keychain or bound process memory. Linux `basic_text`, unknown or missing
+backends and encryption errors cannot persist new passwords.
 
-New passwords use a trusted OS keychain or process memory. Linux `basic_text`,
-unknown backends, unavailable keychains and encryption errors cannot write a new
-password. Environment passwords never enter JSON.
+On load, readable legacy plaintext or unversioned ciphertext migrates to trusted
+keychain encryption if it succeeds. Otherwise, one atomic file replacement
+removes password, passwordEncrypted, passwordStorageVersion and passwordIdentity.
+Readable secrets can stay in memory for their ORIGINAL origin/account until
+process restart. Unreadable legacy data is removed and requires re-entry.
+The form has no removal checkbox or confirmation. It explains memory storage and
+re-entry after app or browser-server restart.
 
-Every retained copy has a separate `passwordIdentity` with its original server
-URL and exact trimmed account name. Old files get this metadata before an edit.
-Retaining A's password while saving B's settings never changes that binding.
-After restart, B cannot return or send A's secret. The old copy can still be
-recovered for A when readable. A session password has its own identity too.
-A blank-password origin/account change requires a replacement. Same-origin
-path changes and account whitespace can still reuse the current password.
+Cleanup is idempotent. A failed replacement reports an error, keeps the old file
+bytes and commits no new memory binding. A later successful retry can clean it.
+An existing newer session password takes priority over a newly found legacy copy.
+Already trusted version-1 keychain ciphertext stays on disk, including locked
+copies. A retained secure A copy never becomes B's password when B receives a
+new memory password. Legacy A data beside B settings is either re-encrypted with
+A's binding or removed; its readable memory copy stays bound to A.
 
-Readable old plaintext or ciphertext can migrate to trusted keychain encryption
-without changing its binding. Otherwise, old data remains with a notice until
-explicit removal. Removal keeps a usable current password in memory. Locked
-copies stay intact. Writes commit session changes only after atomic replacement
-succeeds. Reads and writes repair existing file permissions to `0600`.
+Settings reads repair existing permissions to 0600. Writes use a private temporary
+file, fsync and atomic replacement. Invalid JSON reports a secret-free error and
+stays intact. Removing fields does not erase filesystem blocks or backups.
 
-Browser environment values are copied at store creation. An environment password
-is bound to the startup effective identity, including a password-only override.
-Changing that identity requires environment configuration and a browser-server
-restart. URL/account overrides cannot adopt old stored or session secrets.
-Invalid legacy and override URLs stay visible in status, but cannot return
-credentials. Save validates HTTPS before a write. Loopback HTTP requires the
-existing explicit process-only opt-in. Identity comparison is independent of
-transport permission. The merged Gerrit client and redirect policy are unchanged.
-
-The merged connection form still disables reuse on identity changes, requires a
-replacement and clears typed passwords on origin/account edits. The removal
-checkbox is disabled during save and its selection clears on identity changes.
-The form reports memory, keychain, environment, locked and retained-copy states.
+Environment values are snapshots. Environment passwords never enter JSON and
+remain bound to their startup effective identity. Changing that identity under
+GERRIT_PASSWORD requires environment changes and browser-server restart.
+Partial overrides cannot adopt another identity's stored or memory password.
+Invalid legacy/override URLs stay visible in status, while credential use requires
+HTTPS. Save validates transport before writes; the explicit process-only loopback
+HTTP test opt-in is unchanged. Identity comparison does not depend on transport
+permission. The Gerrit client and redirect controls are unchanged.
+The form preserves disabled identity controls, replacement requirements, and
+password clearing on origin/account edits.
 
 ## Checks
 
-All heavy commands ran sequentially. The final unit command uses one worker:
-
 ```sh
 npm run typecheck
-node --test --test-concurrency=1 src/server/*.test.ts src/main/*.test.ts src/shared/*.test.ts src/renderer/src/*.test.ts src/renderer/src/components/*.test.ts
+node --test --test-concurrency=4 src/server/*.test.ts src/main/*.test.ts src/shared/*.test.ts src/renderer/src/*.test.ts src/renderer/src/components/*.test.ts
 npm run build
 node_modules/.bin/vite build --config vite.web.config.ts --outDir ../../out/browser-secret-security
 ```
 
-The fresh full desktop and browser builds passed. Final type checks passed and
-all 323 tests passed with one worker. Unit coverage includes all storage sources,
-origin/account changes, same-origin reuse, unavailable/failed encryption,
-locked copies, failed writes, external identity edits, environment snapshots,
-invalid URLs, permissions, and independent Node process restarts. A service spy
-checks that restarted B sends zero requests with A's retained password.
+Fresh type checks, 322 tests and both builds pass. Builds ran separately from
+captures. Targeted tests cover missing/throwing/failed encryption, plaintext and
+old ciphertext, unreadable legacy data, locked trusted copies, failed replacements
+through all store operations, idempotence, environment snapshots, origin/account
+changes, permission repair and separate Node process restarts. The service spy
+asserts zero requests for B after restart with cleaned or retained A credentials.
+Secure-keychain tests use a simulated AES-GCM provider, including Linux/macOS/
+Windows adapter choices. They do not prove live platform keychains.
 
-Real Electron 44.2.0 ran in three separate Linux processes with `basic_text`.
-The test deliberately enables Electron's plaintext option to reproduce a
-positive `isEncryptionAvailable` result. Production never enables that option.
-The app still refuses new persistence. It reads old plaintext and old basic
-ciphertext, retains A's binding while B uses a session password, then restarts.
-B has no usable password and sends zero requests. Explicit fixture recovery to A
-proves A's copy survived. Explicit removal retains the session password; the
-third process has none. Settings and window-state writes repair `0644` to `0600`.
+Real Electron runs in FOUR separate Linux processes with basic_text. The fixture
+deliberately enables Electron's plaintext option to reproduce positive availability.
+Production never does this. Plaintext cleanup retains a bound session; a new B
+session saves no password and has none after restart. A separate old basic_text
+ciphertext fixture bound to A beside B settings cleans on load. B has no usable
+password. Changing ONLY the isolated fixture identity back to A proves the memory
+copy still belongs to A. Save and window-state writes repair 0644 to 0600. The
+last process has no password. See electron-result.json for actual snapshots.
 
-The current browser workflow uses the production `scripts/web.mjs`, renderer,
-protected API, bootstrap cookie, service and file store. Only Gerrit account and
-search responses and the trusted launch-link page are simulated. Native X11
-pointer movement, two-second hover pauses, clicks and explained shortcuts drive
-the UI. Each mode starts with the same fixed ports/data, a new API process and
-an isolated profile. The paired continuous videos show:
+The paired continuous native videos use production browser servers, protected
+API, renderer and file store. Only Gerrit responses and the trusted launch page
+are simulated. Native pointer movement, two-second hovers, clicks and explained
+shortcuts show loading a legacy fixture, automatic cleanup, a successful bound
+memory connection, tab reload, actual server process restart, old-cookie rejection
+and a new startup link with no saved password. File snapshots confirm all four
+legacy fields are absent immediately on load, before Test and save.
 
-1. Explicit removal followed by Test and save. The JSON has no password.
-2. Ctrl+R and another connection test. The running server retains its secret.
-3. Actual process stop/start. The old API cookie is rejected.
-4. A native click on the new one-use startup link. The restarted server has no
-   password; Test and save is disabled until a password is entered again.
+A paired native desktop screenshot captures an actual EACCES replacement failure.
+The isolated directory is temporarily unwritable. The UI reports failure, file
+bytes remain unchanged, then a retry after permission repair cleans successfully.
 
-The merged browser API workflow was rerun in both modes. Bootstrap, save/test,
-foreign-origin 403 responses with cookies, unchanged settings, zero attacker
-requests, reload, real second tab, and a new profile's 401 remain asserted.
-Its saved-password assertion now requires the password field to be absent.
-The merged credential and transport UI regressions were also rerun. Selectors
-now target direct form labels, so the new checkbox cannot capture field input.
-The credential fixture creates a new store on reset and uses that store for all
-service calls. Its capture height includes the new notices and success result.
-Security assertions were not weakened.
+The merged browser API workflow also runs in both themes. Its bootstrap, CSRF,
+foreign-origin 403 with cookies, unchanged settings, zero attacker requests, tab
+reload, second tab and fresh-profile 401 assertions remain intact. Saved JSON
+must have no password. Credential replacement and real HTTPS/downgrade regressions
+also run unchanged against the common store. No security assertion was weakened.
 
 ## Inspected evidence
 
-The light/dark versions use the same view, data and scroll position. Static
-images show static results. Continuous videos show the sequence. Video formats and durations are checked with ffprobe. Each full clip is decoded
-at normal playback rate. Timestamped samples, captions, pointer positions, hover
-pauses and result frames are inspected before handoff. Full-page images were inspected for legibility.
+The same data, framing and scroll position are used in both themes. Static images
+show static results. Videos show continuous real input. ffprobe checks video
+format/duration. Full clips are decoded at normal playback rate; timestamped
+frames, pointer, captions and result states are inspected before handoff.
 
 | Outcome | Light | Dark |
 | --- | --- | --- |
-| Removal, reload and real restart | [Video](storage-session-light.mp4) | [Video](storage-session-dark.mp4) |
-| Legacy warning and removal control | [Image](legacy-light.png) | [Image](legacy-dark.png) |
-| Active memory password after removal | [Image](session-light.png) | [Image](session-dark.png) |
-| Password absent after API restart and bootstrap | [Image](restart-light.png) | [Image](restart-dark.png) |
-| Observed JSON and file modes | [Image](verification-light.png) | [Image](verification-dark.png) |
-| Retained A copy with B active, separate-process outcome | [Image](retained-light.png) | [Image](retained-dark.png) |
-| Merged credential replacement UI | [Image](../credential-binding/replacement-connected-light.png) | [Image](../credential-binding/replacement-connected-dark.png) |
-| Merged transport UI | [Image](../transport-security/https-connected-light.png) | [Image](../transport-security/https-connected-dark.png) |
-| Merged browser API workflow | [Video](../browser-api/browser-session-light.mp4) | [Video](../browser-api/browser-session-dark.mp4) |
+| Automatic cleanup, reload and process restart | [Video](storage-session-light.mp4) | [Video](storage-session-dark.mp4) |
+| Memory-only state after cleanup on load | [Image](cleanup-light.png) | [Image](cleanup-dark.png) |
+| Bound session connection | [Image](session-light.png) | [Image](session-dark.png) |
+| No password after process restart | [Image](restart-light.png) | [Image](restart-dark.png) |
+| Failed cleanup keeps old bytes | [Image](cleanup-error-light.png) | [Image](cleanup-error-dark.png) |
+| Actual JSON and file modes | [Image](verification-light.png) | [Image](verification-dark.png) |
+| A cleanup and separate-process B result | [Image](binding-light.png) | [Image](binding-dark.png) |
+| Credential replacement | [Image](../credential-binding/replacement-connected-light.png) | [Image](../credential-binding/replacement-connected-dark.png) |
+| HTTPS connection | [Image](../transport-security/https-connected-light.png) | [Image](../transport-security/https-connected-dark.png) |
+| Browser API workflow | [Video](../browser-api/browser-session-light.mp4) | [Video](../browser-api/browser-session-dark.mp4) |
 
 [browser-result.json](browser-result.json), [workflow-result.json](workflow-result.json)
-and [electron-result.json](electron-result.json) contain observed file and process
-results. [verification.html](verification.html) displays those actual snapshots.
-[media-inspection.json](media-inspection.json) records video hashes, formats,
-durations and inspection method. The JSON images render observed data with ImageMagick. They are separate from
-unit-test console output and do not simulate a storage outcome.
+and [electron-result.json](electron-result.json) contain observed results.
+[verification.html](verification.html) and its PNG pairs render those actual files,
+not test console output. [media-inspection.json](media-inspection.json) records
+video hashes, formats, durations and inspection method.
 
-The T3 preview reported that AppArmor blocks its browser sandbox. Capture used
-isolated Xvfb and Electron Chromium after that explicit failure. Only disposable
-test launches use `--no-sandbox`; no production flags or host protections changed.
-All temporary fixture servers, recorders, displays and app instances are stopped.
+The T3 browser explicitly failed because AppArmor blocks its sandbox. Evidence
+uses isolated Xvfb/Electron Chromium. Only disposable test launches use
+--no-sandbox. No production flags or host protections changed. Temporary processes
+are stopped after capture. Live secure Linux keychains, macOS, Windows and Windows
+ACLs were not tested.
 
 ## Reproduce
 
-Build first. Run each UI command separately:
+Build first, then run each capture separately:
 
 ```sh
 xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/secret-storage-ui.cjs
+xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/secret-storage-error-ui.cjs
 xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/credential-binding-ui.cjs
 xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/transport-ui.cjs
 xvfb-run -a -s '-screen 0 1280x900x24' node_modules/electron/dist/electron --no-sandbox test/browser-api-ui.cjs
 ```
 
-Bundle `test/secret-storage-electron.ts` with Vite's esbuild dependency, with
-`electron` external. Run it three times in separate Electron processes with
-`--password-store=basic`. Set `GERRIT_SECRET_TEST_DIR` to one temporary directory
-and `GERRIT_SECRET_TEST_PHASE` to `seed`, `retained-restart`, then
-`removed-restart`. Copy its `electron-result.json` here. Run
-`node test/secret-storage-report.mjs` to regenerate the observed-data images.
+Bundle test/secret-storage-electron.ts with Vite's esbuild, electron external.
+Use one temporary GERRIT_SECRET_TEST_DIR and four separate Electron processes
+with --password-store=basic. Set GERRIT_SECRET_TEST_PHASE in order to seed,
+identity-restart, cipher-seed, cipher-restart. Copy electron-result.json here.
+Run `node test/secret-storage-report.mjs` for file-outcome images.
 
-## Limits and integration
+## Integration
 
-Secure keychain success/failure unit tests use a test encryption provider.
-Live secure Linux keychains, macOS, Windows and Windows ACLs were not tested.
-Removing a JSON field does not erase old filesystem blocks or backups. Insecure
-copies remain a risk until encrypted or explicitly removed.
-
-The main overlaps are `settings.ts`, `file-settings.ts`, `settings-store.ts`,
-`secret-storage.ts`, `types.ts`, `ConnectionWindow.tsx`, and `README.md`, plus
-merged UI fixtures and refreshed evidence. Gerrit client validation, redirect
-handling, the shared identity helper, transport policy, and protected API code
-have no implementation changes. No push, PR, merge or deployment is part of this
-worktree handoff.
+This revision overlaps secret-storage.ts, settings-store.ts, shared types,
+ConnectionWindow.tsx, settings tests, README.md, fixtures and evidence. The earlier
+PR also changes settings.ts, file-settings.ts and settings-file.ts. Shared identity
+helpers, transport validation, Gerrit redirects and protected API implementation
+have no changes in this revision. PR-description source is
+[pr-description.md](pr-description.md). This handoff is a local commit only.

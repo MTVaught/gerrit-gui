@@ -17,7 +17,7 @@ export function ConnectionWindow() {
   const [serverUrl, setServerUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [removeLegacyPassword, setRemoveLegacyPassword] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
@@ -27,8 +27,8 @@ export function ConnectionWindow() {
       setInitial(s)
       setServerUrl(s.serverUrl)
       setUsername(s.username)
-    })
-    const reload = () => { void api.getSettings().then(setInitial) }
+    }).catch(e => setLoadError(String(e.message ?? e)))
+    const reload = () => { void api.getSettings().then(s => { setInitial(s); setLoadError(null) }).catch(e => setLoadError(String(e.message ?? e))) }
     const offSettings = api.onSettingsChanged(reload)
     window.addEventListener('focus', reload)
     return () => {
@@ -40,11 +40,11 @@ export function ConnectionWindow() {
   async function save() {
     setBusy(true)
     setStatus(null)
+    setLoadError(null)
     setDone(false)
     try {
       const current = await api.getSettings()
-      await api.saveSettings({ ...current, serverUrl, username, password: password || undefined, removeLegacyPassword })
-      setRemoveLegacyPassword(false)
+      await api.saveSettings({ ...current, serverUrl, username, password: password || undefined })
       setInitial(await api.getSettings())
       const me = await api.testConnection()
       setStatus(`Connected as ${me.name ?? me.username} (${me.email ?? 'no email'})`)
@@ -59,7 +59,9 @@ export function ConnectionWindow() {
     }
   }
 
-  if (!initial) return null
+  if (!initial) return loadError ? <main className="app connection"><section className="panel settings" role="alert">
+    <h2>Gerrit connection</h2><p className="status error">Settings could not be loaded. A failed password cleanup keeps the saved file unchanged.</p><p>{loadError}</p>
+  </section></main> : null
   const canReusePassword = initial.hasPassword && sameCredentialIdentity(initial, { serverUrl, username })
   const identityChanged = !sameCredentialIdentity(initial, { serverUrl, username }) && Boolean(initial.serverUrl && initial.username)
   const ok = status?.startsWith('Connected')
@@ -84,20 +86,11 @@ export function ConnectionWindow() {
                 : ' Secure storage is unavailable. New passwords are kept in memory only. Enter them again after the app or browser server restarts.'}
         </p>
         {initial.passwordStorage === 'locked' && <p className="status error" role="status">The saved password cannot be read. Its saved copy was kept. Unlock the OS keychain or enter a password for this session.</p>}
-        {initial.legacyPasswordStored && (
-          <div role="status">
-            <p className="status error">An old password is still saved without secure encryption. The app has kept this copy so that you do not lose it.</p>
-            <label className="check">
-              <input type="checkbox" disabled={busy} checked={removeLegacyPassword} onChange={(e) => setRemoveLegacyPassword(e.target.checked)} />
-              Remove the old saved copy when I save. Keep the password in memory until restart.
-            </label>
-          </div>
-        )}
-        {initial.retainedPasswordStored && <p className="status" role="status">A saved password for another connection is kept on disk. It will not be used for this connection.</p>}
+        {initial.retainedPasswordStored && <p className="status" role="status">A secure saved password for another connection is kept on disk. It will not be used for this connection.</p>}
         <label>
           Server URL
           <input value={serverUrl} disabled={busy} onChange={(e) => {
-            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl: e.target.value, username })) { setPassword(''); setRemoveLegacyPassword(false) }
+            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl: e.target.value, username })) setPassword('')
             setServerUrl(e.target.value)
             setStatus(null)
             setDone(false)
@@ -107,7 +100,7 @@ export function ConnectionWindow() {
         <label>
           Username
           <input value={username} disabled={busy} onChange={(e) => {
-            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl, username: e.target.value })) { setPassword(''); setRemoveLegacyPassword(false) }
+            if (!sameCredentialIdentity({ serverUrl, username }, { serverUrl, username: e.target.value })) setPassword('')
             setUsername(e.target.value)
             setStatus(null)
             setDone(false)
@@ -128,6 +121,7 @@ export function ConnectionWindow() {
             </button>
           )}
         </div>
+        {loadError && <p className="status error" role="alert">Settings could not be loaded: {loadError}</p>}
         {status && <p className={'status ' + (ok ? 'ok' : 'error')}>{status}</p>}
         {done && isBrowserMode && <p className="muted small">The board reloads when you go back to its tab. You can close this one.</p>}
       </form>

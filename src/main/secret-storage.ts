@@ -47,8 +47,17 @@ export class SecretStorage {
     } catch { return undefined }
   }
 
-  private legacy(s: StoredSettings): boolean {
-    return Boolean(s.password && (!s.passwordEncrypted || s.passwordStorageVersion !== 1 && this.decode(s)))
+  private trusted(s: StoredSettings): boolean {
+    return s.passwordEncrypted === true && s.passwordStorageVersion === 1
+  }
+
+  private withoutPassword(s: StoredSettings): StoredSettings {
+    const stored = { ...s }
+    delete stored.password
+    delete stored.passwordEncrypted
+    delete stored.passwordStorageVersion
+    delete stored.passwordIdentity
+    return stored
   }
 
   password(s: StoredSettings, identity: CredentialIdentity): string | undefined {
@@ -58,56 +67,65 @@ export class SecretStorage {
 
   status(s: StoredSettings, identity: CredentialIdentity, environmentPassword?: string) {
     const password = environmentPassword || this.password(s, identity)
-    const legacyPasswordStored = this.legacy(s)
     const retainedPasswordStored = Boolean(s.password) && !this.matches(s, identity)
-    let passwordStorage: 'environment' | 'session' | 'locked' | 'none' | 'legacy' | 'secure'
+    let passwordStorage: 'environment' | 'session' | 'locked' | 'none' | 'secure'
     if (environmentPassword) passwordStorage = 'environment'
     else if (this.session && sameCredentialIdentity(this.session.identity, identity)) passwordStorage = 'session'
     else if (!password) passwordStorage = s.password && !retainedPasswordStored ? 'locked' : 'none'
-    else passwordStorage = legacyPasswordStored ? 'legacy' : 'secure'
-    return { encrypted: this.secure(), hasPassword: Boolean(password), passwordStorage, legacyPasswordStored, retainedPasswordStored }
+    else passwordStorage = 'secure'
+    return { encrypted: this.secure(), hasPassword: Boolean(password), passwordStorage, retainedPasswordStored }
   }
 
-  /** Upgrade readable legacy data without changing its original binding. */
-  migrate(s: StoredSettings): StoredSettings | undefined {
+  /** Plan cleanup without changing memory. The caller must persist before commit. */
+  migrate(s: StoredSettings) {
     const bound = this.bind(s)
-    if (!s.password || s.passwordStorageVersion === 1 || !this.secure()) return bound !== s ? bound : undefined
-    const password = this.decode(s)
-    if (password) {
-      try { return { ...bound, ...this.encrypt(password) } } catch { /* Keep the old copy. */ }
+    let stored = bound
+    let session = this.session
+    if (this.trusted(s)) {
+      // Locked trusted ciphertext is retained with its original identity.
+      return { stored, changed: stored !== s, commit: () => {} }
     }
-    return bound !== s ? bound : undefined
+    const hasFields = ['password', 'passwordEncrypted', 'passwordStorageVersion', 'passwordIdentity'].some(key => key in s)
+    if (!hasFields) return { stored: s, changed: false, commit: () => {} }
+    const password = this.decode(s)
+    if (password && this.secure()) {
+      try {
+        stored = { ...bound, ...this.encrypt(password) }
+        return { stored, changed: true, commit: () => {} }
+      } catch { /* Fall through to automatic removal. */ }
+    }
+    stored = this.withoutPassword(bound)
+    const identity = bound.passwordIdentity
+    // Never move a legacy A secret to current B settings or replace a newer session.
+    if (!session && password && identity && this.matches(bound, identity)) session = { identity: { ...identity }, password }
+    return { stored, changed: true, commit: () => { this.session = session } }
   }
 
   private encrypt(password: string) {
     return { password: this.backend!.storage.encryptString(password).toString('base64'), passwordEncrypted: true, passwordStorageVersion: 1 }
   }
 
-  /** Commit memory after the file write. Retained data keeps the previous binding. */
-  prepare(previous: StoredSettings, next: StoredSettings, inputPassword?: string, removeLegacy = false, environmentInUse = false) {
-    const bound = this.bind(previous)
-    let stored = { ...next, password: bound.password, passwordEncrypted: bound.passwordEncrypted, passwordStorageVersion: bound.passwordStorageVersion, passwordIdentity: bound.passwordIdentity }
-    let session = this.session
+  /** One atomic write for cleanup and an optional replacement password. */
+  prepare(previous: StoredSettings, next: StoredSettings, inputPassword?: string) {
+    const cleanup = this.migrate(previous)
+    const cleaned = cleanup.stored
+    let stored = { ...next, password: cleaned.password, passwordEncrypted: cleaned.passwordEncrypted, passwordStorageVersion: cleaned.passwordStorageVersion, passwordIdentity: cleaned.passwordIdentity }
+    let replacement: { identity: CredentialIdentity; password: string } | undefined
+    let persistedReplacement = false
     const identity = { serverUrl: next.serverUrl, username: next.username }
-    const password = inputPassword || (session && sameCredentialIdentity(session.identity, identity) ? session.password : undefined)
+    const password = inputPassword || (this.session && sameCredentialIdentity(this.session.identity, identity) ? this.session.password : undefined)
     if (password) {
-      session = { identity, password }
+      replacement = { identity, password }
       if (this.secure()) {
         try {
           stored = { ...stored, ...this.encrypt(password), passwordIdentity: identity }
-          session = undefined
-        } catch { /* The replacement stays in memory. The old saved copy keeps its identity. */ }
+          persistedReplacement = true
+        } catch { /* The replacement stays in memory. Trusted saved data stays bound. */ }
       }
     }
-    if (removeLegacy && this.legacy(stored)) {
-      const current = session && sameCredentialIdentity(session.identity, identity) ? session.password : this.password(stored, identity)
-      if (!current && !environmentInUse) throw new Error('The old saved password cannot be used for this connection. Enter a password before removing its saved copy.')
-      if (current) session = { identity, password: current }
-      delete stored.password
-      delete stored.passwordEncrypted
-      delete stored.passwordStorageVersion
-      delete stored.passwordIdentity
-    }
-    return { stored, commit: () => { this.session = session } }
+    return { stored, commit: () => {
+      cleanup.commit()
+      if (replacement) this.session = persistedReplacement ? undefined : replacement
+    } }
   }
 }

@@ -2,7 +2,7 @@
   "clips": [
     {
       "file": "secret-storage/storage-session-light.mp4",
-      "sha256": "4f239b181d717022a1c9591837ad7e286e38cb18d9d4fb7c6d5990671e7dc312",
+      "sha256": "11f4e03a16683b4429be95239ee0097b944f44979d8b60e8effed903a5a637d6",
       "video": {
         "codec_name": "h264",
         "width": 1280,
@@ -10,13 +10,13 @@
         "pix_fmt": "yuv420p",
         "r_frame_rate": "20/1"
       },
-      "durationSeconds": 30.9,
+      "durationSeconds": 33.45,
       "decodedAtPlaybackRate": 1,
       "inspectionSampleSeconds": 5
     },
     {
       "file": "secret-storage/storage-session-dark.mp4",
-      "sha256": "efa2419d7d4a5b623c229ca29ce5dc5962eef075a4ba7367337ed87e69bb65a7",
+      "sha256": "d22222e2b071fb51f64eb853f482edcbd151d83b4310f5c18ea74de926610f91",
       "video": {
         "codec_name": "h264",
         "width": 1280,
@@ -24,13 +24,13 @@
         "pix_fmt": "yuv420p",
         "r_frame_rate": "20/1"
       },
-      "durationSeconds": 30.85,
+      "durationSeconds": 33.45,
       "decodedAtPlaybackRate": 1,
       "inspectionSampleSeconds": 5
     },
     {
       "file": "browser-api/browser-session-light.mp4",
-      "sha256": "d1e7d720244d22ec49281ffea3b3fc15a5bbc20997525d6c4a221c1474439835",
+      "sha256": "5f79a65be66409b68ae708dacaae5f9251ddea2574d4846272c651e9838f2d90",
       "video": {
         "codec_name": "h264",
         "width": 1280,
@@ -38,13 +38,13 @@
         "pix_fmt": "yuv420p",
         "r_frame_rate": "20/1"
       },
-      "durationSeconds": 57.95,
+      "durationSeconds": 57.9,
       "decodedAtPlaybackRate": 1,
       "inspectionSampleSeconds": 5
     },
     {
       "file": "browser-api/browser-session-dark.mp4",
-      "sha256": "cdb00ef474cecf5925fa667970c4e74f0b04188c58aa62f0d03b5f0dc8338531",
+      "sha256": "1139640883bdde9b8464602e5bb8f53429a848718465500d19cfa36a58c9ea45",
       "video": {
         "codec_name": "h264",
         "width": 1280,
@@ -57,5 +57,5 @@
       "inspectionSampleSeconds": 5
     }
   ],
-  "visualInspection": "Both themes inspected through timestamped samples of each full clip decoded at normal playback rate. Captions, pointer actions, pacing and result states match. All paired static images inspected."
+  "visualInspection": "Both themes inspected through timestamped frames from each full clip decoded at normal playback rate. Pointer positions, captions, hover pacing and result states match. All paired static images inspected for readability and layout. No capture speed changes."
 }

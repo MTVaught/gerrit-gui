@@ -1,6 +1,6 @@
 // Actual browser mode, process sessions, file settings and OS input under Xvfb.
 // Only Gerrit's account/search responses and the launch/attack pages are fixtures.
-// xvfb-run -a -s '-screen 0 1280x900x24' node_modules/.bin/electron --no-sandbox test/browser-api-ui.cjs
+// xvfb-run -a -s '-screen 0 1280x900x24' node_modules/.bin/electron --no-sandbox test/secret-storage-ui.cjs
 const { app, BrowserWindow, session, nativeTheme } = require('electron')
 const assert = require('node:assert/strict')
 const fs = require('node:fs/promises')
@@ -94,6 +94,8 @@ async function click(win, selector) {
   await delay(300)
 }
 async function screenshot(win, name) {
+  // Wait for the compositor to display caption removal before capturePage.
+  await delay(200)
   await fs.writeFile(path.join(staged, name + '.png'), (await win.webContents.capturePage()).toPNG())
 }
 async function listen(server, port) {
@@ -163,8 +165,8 @@ app.whenReady().then(async () => {
   await listen(http.createServer((_req, res) => {
     res.setHeader('Content-Type', 'text/html')
     res.end(`<!doctype html><html><head><style>:root{color-scheme:light dark}body{font:20px system-ui;padding:48px}</style></head><body>
-      <h1>Restarted isolated API</h1><p>The real server generated a new one-use startup link.</p>
-      <a id="launch" href="${launchUrl}&connection=1">Open the new authorized connection session</a></body></html>`)
+      <h1>Open the isolated test connection</h1><p>The real server generated this one-use startup link. Only dummy credentials are used.</p>
+      <a id="launch" href="${launchUrl}&connection=1">Open the authorized connection session</a></body></html>`)
   }), 19775)
   for (const theme of ['light', 'dark']) {
     nativeTheme.themeSource = theme
@@ -173,24 +175,31 @@ app.whenReady().then(async () => {
     const before = { mode: '644', data: JSON.parse(await fs.readFile(settings, 'utf8')) }
     let web = await startWeb()
     const win = window('storage-' + theme + '-' + Date.now())
-    await win.loadURL(launchUrl + '&connection=1')
-    await until(win, `document.body.textContent.includes('An old password is still saved')`)
-    const afterReadMode = ((await fs.stat(settings)).mode & 0o777).toString(8)
-    assert.equal(afterReadMode, '600')
+    await win.loadURL(fixtureOrigin + '/launch')
+    assert.equal(JSON.parse(await fs.readFile(settings, 'utf8')).password, 'dummy-old-password')
     const removeCaption = () => run(win, `document.getElementById('evidence-caption')?.remove()`)
-    await screenshot(win, `legacy-${theme}`)
     pointer = [30, 30]
     await command('xdotool', ['mousemove', '30', '30'])
     const finishRecording = await record(theme)
-    await caption(win, 'Dummy legacy copy: select explicit removal, then Test and save. The password will remain in server memory until restart.')
+    await caption(win, 'The isolated file contains an old dummy password. Open the startup link. Loading the connection automatically removes its legacy saved fields.')
     await delay(2000)
-    await click(win, 'input[type=checkbox]')
+    await click(win, '#launch')
+    await until(win, `document.body.textContent.includes('The current password is kept in memory only')`)
+    assert.equal(await run(win, `document.querySelector('input[type=checkbox]') === null`), true)
+    const afterLoad = JSON.parse(await fs.readFile(settings, 'utf8'))
+    for (const key of ['password', 'passwordEncrypted', 'passwordStorageVersion', 'passwordIdentity']) assert.equal(key in afterLoad, false)
+    const afterReadMode = ((await fs.stat(settings)).mode & 0o777).toString(8)
+    assert.equal(afterReadMode, '600')
+    await removeCaption()
+    await screenshot(win, `cleanup-${theme}`)
+    await caption(win, 'Cleanup passed on load. No checkbox or confirmation is needed. Test the original dummy account with its bound memory password.')
+    await delay(2000)
     await click(win, 'button[type=submit]')
     await until(win, `document.body.textContent.includes('Connected as Dummy user')`)
     assert.equal(JSON.parse(await fs.readFile(settings, 'utf8')).password, undefined)
     await removeCaption()
     await screenshot(win, `session-${theme}`)
-    await caption(win, 'The saved JSON has no password. The current session still connects. Press Ctrl+R to reload the tab without restarting the server.')
+    await caption(win, 'The legacy saved fields are already absent. The current session still connects. Press Ctrl+R to reload the tab without restarting the server.')
     await delay(3000)
     let loaded = new Promise(resolve => win.webContents.once('did-finish-load', resolve))
     await command('xdotool', ['key', '--clearmodifiers', 'ctrl+r'])
@@ -226,13 +235,13 @@ app.whenReady().then(async () => {
     await finishRecording()
     const result = { theme, platform: 'Linux Electron Chromium, browser mode, no application preload',
       data: 'Dummy credentials. Simulated Gerrit account/search responses. Production API/session/store and native X11 input.',
-      before, afterReadMode, afterSave, afterSaveMode: ((await fs.stat(settings)).mode & 0o777).toString(8),
+      before, afterLoad, afterReadMode, afterSave, afterSaveMode: ((await fs.stat(settings)).mode & 0o777).toString(8),
       sessionHasPassword: true, tabReloadHasPassword: true, restartHasPassword: false, restartedOldCookieRejected: true, newStartupKeyRequired: true }
     results.push(result)
     if (theme === 'light') await fs.writeFile(path.join(staged, 'browser-result.json'), JSON.stringify(result, null, 2))
     win.destroy()
     await stop(web)
-    console.log(theme + ': protected API, explicit removal, real reload, process restart, cookie rejection, fresh bootstrap, no persisted password passed')
+    console.log(theme + ': protected API, automatic cleanup on load, real reload, process restart, cookie rejection, fresh bootstrap, no persisted password passed')
   }
   await fs.writeFile(path.join(staged, 'workflow-result.json'), JSON.stringify({ results }, null, 2))
   await fs.mkdir(output, { recursive: true })

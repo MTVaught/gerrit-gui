@@ -6,62 +6,15 @@
   "appEncryptionTrusted": false,
   "beforeMode": "644",
   "legacyPlaintextReadable": true,
-  "legacyBasicCiphertextReadable": true,
-  "afterRetainedReplacement": {
-    "theme": "system",
-    "diffTheme": "application",
-    "serverUrl": "https://other.invalid",
-    "username": "other-dummy",
-    "projects": [],
-    "teams": [],
-    "primaryTeam": "",
-    "mergers": [],
-    "badgeStyle": "color",
-    "showZeroCounts": false,
-    "compactOnTop": true,
-    "slackWorkspaces": [],
-    "showAppBadge": true,
-    "showTrayCounts": true,
-    "trayClickAction": "menu",
-    "localReview": false,
-    "password": "djEwtht9QnziPHmY1XC2AFzV1MMve/CQOCnOPGytD5ZSE4I=",
-    "passwordEncrypted": true,
-    "passwordIdentity": {
-      "serverUrl": "https://gerrit.invalid",
-      "username": "dummy"
-    }
-  },
-  "retainedRestartHasPassword": false,
-  "retainedRestartSentRequests": 0,
-  "afterRetainedRestart": {
-    "theme": "system",
-    "diffTheme": "application",
-    "serverUrl": "https://other.invalid",
-    "username": "other-dummy",
-    "projects": [],
-    "teams": [],
-    "primaryTeam": "",
-    "mergers": [],
-    "badgeStyle": "color",
-    "showZeroCounts": false,
-    "compactOnTop": true,
-    "slackWorkspaces": [],
-    "showAppBadge": true,
-    "showTrayCounts": true,
-    "trayClickAction": "menu",
-    "localReview": false,
-    "password": "djEwtht9QnziPHmY1XC2AFzV1MMve/CQOCnOPGytD5ZSE4I=",
-    "passwordEncrypted": true,
-    "passwordIdentity": {
-      "serverUrl": "https://gerrit.invalid",
-      "username": "dummy"
-    }
-  },
-  "afterMigration": {
-    "theme": "system",
-    "diffTheme": "application",
+  "afterLoad": {
     "serverUrl": "https://gerrit.invalid",
-    "username": "dummy",
+    "username": "dummy"
+  },
+  "afterReplacement": {
+    "theme": "system",
+    "diffTheme": "application",
+    "serverUrl": "https://other.invalid",
+    "username": "other-dummy",
     "projects": [],
     "teams": [],
     "primaryTeam": "",
@@ -75,8 +28,36 @@
     "trayClickAction": "menu",
     "localReview": false
   },
+  "identityRestartHasPassword": false,
+  "identityRestartSentRequests": 0,
+  "afterIdentityRestart": {
+    "theme": "system",
+    "diffTheme": "application",
+    "serverUrl": "https://other.invalid",
+    "username": "other-dummy",
+    "projects": [],
+    "teams": [],
+    "primaryTeam": "",
+    "mergers": [],
+    "badgeStyle": "color",
+    "showZeroCounts": false,
+    "compactOnTop": true,
+    "slackWorkspaces": [],
+    "showAppBadge": true,
+    "showTrayCounts": true,
+    "trayClickAction": "menu",
+    "localReview": false
+  },
+  "afterCrossIdentityCleanup": {
+    "serverUrl": "https://other.invalid",
+    "username": "other-dummy"
+  },
+  "legacyBasicCiphertextReadable": true,
+  "afterMigration": {
+    "serverUrl": "https://gerrit.invalid",
+    "username": "dummy"
+  },
   "afterMode": "600",
-  "explicitRemovalKeptSessionPassword": true,
   "sessionHasPassword": true,
   "afterSave": {
     "theme": "system",

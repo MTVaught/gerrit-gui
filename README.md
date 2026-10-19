@@ -610,12 +610,13 @@ OS keychain is available. Linux `basic_text` and unknown backends do not qualify
 Otherwise, new passwords stay in memory until the app restarts. A keychain error
 also keeps a new password in memory. The connection window shows its storage state.
 
-Readable old passwords migrate to keychain encryption when it is available.
-Without a keychain, the app keeps old saved copies and shows a warning. Use the
-checkbox in the connection window to remove an old insecure copy. The password
-then stays in memory until restart. Unreadable encrypted copies stay on disk.
-Each stored copy has a separate `passwordIdentity`. If a new connection uses a
-memory password, the old saved copy keeps its original origin and account. It
+Readable legacy passwords migrate to trusted keychain encryption when it succeeds.
+Otherwise, the app automatically removes their saved fields by atomic replacement.
+A readable password can stay in memory for its original origin and account until
+restart. An unreadable legacy copy is removed and requires password re-entry.
+Already trusted, versioned keychain copies stay on disk even when locked. Each
+stored copy has a separate `passwordIdentity`. A retained secure copy keeps its
+original origin and account when a new connection uses a memory password. It
 cannot be returned for the new connection, including after restart. Memory
 passwords also stay bound to their origin and account. A blank-password edit
 cannot move them to another identity.
@@ -742,8 +743,10 @@ origin remain trusted.
 The application writes the settings that you enter in the
 browser to `~/.config/gerrit-gui/web-settings.json`. New passwords stay in the
 server process memory until restart. Reloading a tab keeps that process alive.
-Old insecure copies remain until encrypted or explicitly removed in the connection
-window. Environment passwords never enter JSON. As an alternative, set
+Legacy saved copies are automatically removed on load. Readable passwords stay
+bound to their original identity in server memory; re-enter them after restart.
+A failed replacement reports an error and keeps the old data intact. Environment
+passwords never enter JSON. As an alternative, set
 `GERRIT_URL`, `GERRIT_USER` and `GERRIT_PASSWORD` in the environment. A URL or username override cannot reuse
 a file password for a different origin or account. If `GERRIT_PASSWORD` is
 set, change the connection identity through the environment and restart
