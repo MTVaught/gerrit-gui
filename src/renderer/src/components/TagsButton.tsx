@@ -1,3 +1,4 @@
+import { TooltipButton } from './Tooltip.tsx'
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { pastDraft } from '../../../shared/model.ts'
 import { NOISE_TRAILERS, messageBody, parseTrailers, shownTrailers } from '../../../shared/trailers.ts'
@@ -62,7 +63,7 @@ export function TagsButton(props: { message: string | undefined; state: ReviewSt
 
   return (
     <span className="tags" ref={wrap}>
-      <button
+      <TooltipButton
         className={'tagbtn' + (missing ? ' missing' : '') + (props.small ? ' sm' : '') + (open ? ' open' : '')}
         title={none ? 'No tags in the commit message' : shown.map((t) => `${t.key}: ${t.value}`).join('\n')}
         aria-expanded={open}
@@ -70,7 +71,7 @@ export function TagsButton(props: { message: string | undefined; state: ReviewSt
       >
         <TagIcon />
         <span>{none ? 'no tags' : shown.length}</span>
-      </button>
+      </TooltipButton>
       {open && pos && (
         <div ref={popover} className={'menu tags-pop' + (props.small ? ' sm' : '')} style={{ top: pos.top, left: pos.left }} onClick={(e) => e.stopPropagation()}>
           <div className="footer-block">

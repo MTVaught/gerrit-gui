@@ -1,3 +1,4 @@
+import { TooltipButton } from './Tooltip.tsx'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, SuggestedReviewerInfo } from '../../../shared/types.ts'
 import { accountKey, accountKeys, displayName, normalizeTeam, allMembers } from '../../../shared/model.ts'
@@ -186,9 +187,9 @@ export function AddReviewer(props: { view: ChangeView; self: AccountInfo; allowO
     : 'Add a primary reviewer: added to the change in Gerrit and tagged; their vote decides'
   return (
     <span className="picker-wrap" ref={wrap}>
-      <button className="chip add" onClick={toggle} title={title} aria-haspopup="dialog" aria-expanded={open}>
+      <TooltipButton className="chip add" onClick={toggle} title={title} aria-haspopup="dialog" aria-expanded={open}>
         +
-      </button>
+      </TooltipButton>
       {open && pos && (
         <div className="menu picker" role="dialog" aria-label="Add reviewers" ref={panel} style={{ top: pos.top, left: pos.left }}>
           <h4>Add reviewers</h4>

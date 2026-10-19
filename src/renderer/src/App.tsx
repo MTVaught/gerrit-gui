@@ -1,3 +1,4 @@
+import { TooltipButton } from './components/Tooltip.tsx'
 import { useTheme } from './theme.ts'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, DashboardData, SettingsInput, SettingsStatus } from '../../shared/types.ts'
@@ -363,7 +364,7 @@ export function App() {
             tabViews={tabViews}
             compact={compact}
           />
-          <button
+          <TooltipButton
             className={'btn icon' + (busy ? ' spinning' : '')}
             onClick={() => void refresh()}
             disabled={busy || !configured}
@@ -371,16 +372,16 @@ export function App() {
             aria-label="Refresh"
           >
             <RefreshIcon />
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             className={'btn icon' + (compact ? ' active' : '')}
             aria-label={compact ? 'Expand' : 'Compact window'}
             onClick={() => void api.setCompact(!compact)}
             title={compact ? 'Back to the full window' : 'Switch to the narrow compact window'}
           >
             {compact ? <ExpandIcon /> : <ShrinkIcon />}
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             className={'btn icon' + (showSettings ? ' on' : '')}
             aria-pressed={showSettings}
             onClick={() => setShowSettings((v) => !v)}
@@ -388,7 +389,7 @@ export function App() {
             aria-label="Settings"
           >
             <GearIcon />
-          </button>
+          </TooltipButton>
         </div>
       </header>
 

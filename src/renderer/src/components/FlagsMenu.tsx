@@ -1,3 +1,4 @@
+import { TooltipButton } from './Tooltip.tsx'
 import { useEffect, useRef, useState } from 'react'
 import { actionClass, type ActionSpec } from './actions.ts'
 import { OwnerReviewOptions } from './OwnerReviewOptions.tsx'
@@ -48,9 +49,9 @@ export function FlagsMenu(props: { spec: ActionSpec; small?: boolean }) {
       <button className={actionClass(spec, `split-main ${size}`)} title={spec.title} aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
         {spec.label}
       </button>
-      <button className={actionClass(spec, `split-caret ${size}`)} title={spec.title} aria-label={spec.title} aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
+      <TooltipButton className={actionClass(spec, `split-caret ${size}`)} title={spec.title} aria-label={spec.title} aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
         ▾
-      </button>
+      </TooltipButton>
       {open && pos && (
         <div className={`menu flags${spec.reviewOptions?.length ? ' owner-review-menu' : ''}`} role="menu" style={{ top: pos.top, right: pos.right }}>
           {items.map((m) => (

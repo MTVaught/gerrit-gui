@@ -1,3 +1,4 @@
+import { TooltipButton } from './Tooltip.tsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AccountInfo, ChangeView } from '../../../shared/types.ts'
 import {
@@ -126,7 +127,7 @@ export function ViewMenu(props: {
   }
   return (
     <div className="view split" ref={root}>
-      <button
+      <TooltipButton
         className={'btn view-btn split-main' + (count > 0 ? ' active' : '')}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -140,8 +141,8 @@ export function ViewMenu(props: {
             {count}
           </span>
         )}
-      </button>
-      <button
+      </TooltipButton>
+      <TooltipButton
         className={'btn view-btn split-caret' + (count > 0 ? ' active' : '')}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -150,7 +151,7 @@ export function ViewMenu(props: {
         onClick={() => setOpen((o) => !o)}
       >
         ▾
-      </button>
+      </TooltipButton>
       {open && (
         <div className="view-panel" role="dialog" aria-label="Search, filter and sort">
           <input

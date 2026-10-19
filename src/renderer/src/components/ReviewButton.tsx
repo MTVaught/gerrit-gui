@@ -1,3 +1,4 @@
+import { TooltipButton } from './Tooltip.tsx'
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeLink, ChangeView } from '../../../shared/types.ts'
 import { reviewLink } from '../../../shared/model.ts'
@@ -110,7 +111,7 @@ export function ReviewButton(props: { view: ChangeView }) {
           ↗
         </span>
       </button>
-      <button
+      <TooltipButton
         className={'btn split-caret' + primary}
         title="Other views of this change"
         aria-label="Other views of this change"
@@ -119,7 +120,7 @@ export function ReviewButton(props: { view: ChangeView }) {
         onClick={toggle}
       >
         ▾
-      </button>
+      </TooltipButton>
       {open && pos && (
         <div className="menu" role="menu" style={{ top: pos.top, right: pos.right }}>
           {options.map((o) => (

@@ -1,3 +1,4 @@
+import { TooltipButton } from './Tooltip.tsx'
 import { useEffect, useRef, useState } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView } from '../../../shared/types.ts'
 import { READY_TO_MERGE_TAG } from '../../../shared/constants.ts'
@@ -132,9 +133,9 @@ export function MergerPicker(props: { view: ChangeView; spec: ActionSpec; onAct:
       <button className={actionClass(spec, `split-main ${size}`)} title={spec.title} disabled={spec.disabled} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
         {props.small ? spec.short : spec.label}
       </button>
-      <button className={actionClass(spec, `split-caret ${size}`)} title={spec.title} aria-label={spec.title} disabled={spec.disabled && !spec.reviewOptions?.length} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
+      <TooltipButton className={actionClass(spec, `split-caret ${size}`)} title={spec.title} aria-label={spec.title} disabled={spec.disabled && !spec.reviewOptions?.length} aria-haspopup="dialog" aria-expanded={open} onClick={toggle}>
         ▾
-      </button>
+      </TooltipButton>
       {open && pos && (
         <div className="menu picker" role="dialog" aria-label="Ask to merge" style={{ top: pos.top, right: pos.right }}>
           <h4>{changing ? 'Ask someone else to merge' : 'Ask to merge'}</h4>
