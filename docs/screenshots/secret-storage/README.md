@@ -33,7 +33,7 @@ copies. A retained secure A copy never becomes B's password when B receives a
 new memory password. Legacy A data beside B settings is either re-encrypted with
 A's binding or removed; its readable memory copy stays bound to A.
 
-Settings reads repair existing permissions to 0600. Writes use a private temporary
+On POSIX systems, settings reads repair existing permissions to 0600. Writes use a private temporary
 file, fsync and atomic replacement. Invalid JSON reports a secret-free error and
 stays intact. Removing fields does not erase filesystem blocks or backups.
 
@@ -196,3 +196,31 @@ PR also changes settings.ts, file-settings.ts and settings-file.ts. Shared ident
 helpers, transport validation, Gerrit redirects and protected API implementation
 have no changes in this revision. PR-description source is
 [pr-description.md](pr-description.md). This handoff is a local commit only.
+
+## Windows CI portability follow-up
+
+The reviewed application and startup/recovery videos remain at revision
+19ddb8be19cdf7f5e8a8dea92923d539088bceda. The CI follow-up changes only tests,
+fixtures and these notes. Windows CI identified POSIX mode assertions and a raw
+drive path in Node --import. The helper now uses a file URL, including percent
+encoding for spaces, and normalizes Windows argv separators for its audit guard.
+
+Only POSIX mode assertions are conditional. All cleanup, identity, file-content,
+restart and failure assertions still run on Windows. The real POSIX directory
+denial case stays on POSIX; an additional portable simulated rename denial tests
+actual process failure, no readiness/listen and unchanged old bytes on every OS.
+Another real-process case imports an audit fixture from a path containing spaces.
+No Windows ACL behavior is inferred from stat mode bits. Live ACL verification
+remains outside this evidence.
+
+The follow-up passed 56 targeted tests with --test-concurrency=4 and type checks
+on Linux. Production files did not change, so existing application builds and
+UI captures were not repeated. Native Windows results come from the new CI run.
+
+[Light observed-file report](ci-portability-light.png) and
+[dark observed-file report](ci-portability-dark.png) show the actual dummy JSON
+before startup, unchanged after a simulated replacement denial, and cleaned
+before listening on successful retry. Both images were inspected.
+[Observed data](ci-portability-result.json) records the real Linux process/file
+outcomes and labels the simulated failure. Run
+`node test/secret-storage-ci-report.mjs` to regenerate this static evidence.

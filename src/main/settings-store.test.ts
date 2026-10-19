@@ -83,7 +83,8 @@ for (const mode of ['missing', 'throwing', 'encrypt-error']) {
     assert.deepEqual(await store.getCredentials(), { ...A, password: 'dummy-A' })
     assert.equal((await store.getStatus()).teams[0].members[0], 'alice')
     assert.equal((await store.getUi()).compact, true)
-    assert.equal((await fs.stat(file)).mode & 0o777, 0o600)
+    // POSIX mode bits are not Windows ACLs; keep all content/binding checks on Windows.
+    if (process.platform !== 'win32') assert.equal((await fs.stat(file)).mode & 0o777, 0o600)
     const rename = t.mock.method(fs, 'rename')
     await store.getStatus(); await store.getCredentials(); await store.getUi()
     assert.equal(rename.mock.callCount(), 0, 'cleanup is idempotent')

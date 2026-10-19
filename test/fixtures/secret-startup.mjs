@@ -24,7 +24,7 @@ export async function startBrowser(file, extra = {}, web = false) {
   await fs.writeFile(auditFile, '')
   const env = { ...process.env, ELECTRON_RUN_AS_NODE: '1', PORT: String(port), API_PORT: String(port), WEB_PORT: String(webPort), WEB_ORIGIN: origin,
     GERRIT_GUI_WEB_SETTINGS: file, GERRIT_SECRET_STARTUP_AUDIT: auditFile, GERRIT_URL: '', GERRIT_USER: '', GERRIT_PASSWORD: '', GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP: '1',
-    NODE_OPTIONS: `--import=${path.join(root, 'test/fixtures/secret-startup-audit.mjs')}`, ...extra }
+    NODE_OPTIONS: `--import=${new URL('./secret-startup-audit.mjs', import.meta.url).href}`, ...extra }
   const child = spawn(process.execPath, [web ? 'scripts/web.mjs' : '--no-warnings', ...(web ? [] : ['src/server/index.ts'])], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] })
   const startedAt = Date.now()
   let output = '', launchUrl

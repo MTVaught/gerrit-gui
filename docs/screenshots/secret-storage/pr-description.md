@@ -13,7 +13,7 @@ and input flag are removed. The connection form explains memory-only storage.
 
 Trusted versioned keychain ciphertext stays intact when locked. Retained secure
 copies and memory passwords keep their own identity. A failed replacement leaves
-old file data and committed memory unchanged. Settings reads/writes repair 0644
+old file data and committed memory unchanged. On POSIX systems, settings reads/writes repair 0644
 permissions to 0600. Browser environment values remain startup snapshots and never
 persist their passwords. Merged binding, HTTPS/redirect and browser API policies
 remain intact.
@@ -40,3 +40,10 @@ before/after PNG pairs and startup-result.json show all four legacy fields
 removed at startup with zero saves. cleanup-recovery-light/dark.mp4 demonstrates
 the separate form recovery fix and includes a later connection test. It is not
 the startup cleanup proof.
+
+CI portability follow-up changes tests/fixtures only. The startup audit preload
+uses file URLs and Windows path separators correctly. POSIX mode checks remain
+on POSIX; Windows still runs cleanup/content/binding/restart checks and a portable
+failed-replacement startup regression. The reviewed PRIMARY application evidence
+at 19ddb8b remains valid and unchanged. See the evidence index for the paired
+observed-file report and exact local validation.

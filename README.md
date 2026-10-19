@@ -622,7 +622,7 @@ original origin and account when a new connection uses a memory password. It
 cannot be returned for the new connection, including after restart. Memory
 passwords also stay bound to their origin and account. A blank-password edit
 cannot move them to another identity.
-Settings reads repair file permissions to `0600`. Saves use a private temporary
+On POSIX systems, settings reads repair file permissions to `0600`. Saves use a private temporary
 file and atomic replacement. Invalid settings files cause an error and stay intact.
 
 Gerrit connections require HTTPS. The application rejects remote HTTP before

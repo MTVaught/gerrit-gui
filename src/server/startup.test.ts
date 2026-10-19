@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import http from 'node:http'
 import { startBrowser, audit } from '../../test/fixtures/secret-startup.mjs'
 
@@ -25,7 +26,7 @@ for (const kind of ['plaintext', 'unreadable']) test(`browser ${kind} cleanup co
   assert.equal(ready.events[0].event, 'before-listen')
   absent(ready.events[0].snapshot!)
   absent(JSON.parse(await fs.readFile(f.file, 'utf8')))
-  assert.equal(ready.events[0].mode, '600')
+  if (process.platform !== 'win32') assert.equal(ready.events[0].mode, '600')
   await child.call('session')
   const status = await child.call('getSettings')
   assert.equal(status.body.hasPassword, kind === 'plaintext')
@@ -51,7 +52,7 @@ test('browser normal authenticated use works after startup cleanup, then a separ
   assert.equal((await second.call('testConnection')).status, 500)
   assert.equal(requests, 1)
 })
-test('browser startup failure keeps old bytes, exits nonzero, and never listens or prints readiness', async t => {
+test('browser POSIX directory denial keeps old bytes, exits nonzero, and never listens or prints readiness', { skip: process.platform === 'win32' && 'POSIX directory mode bits do not deny Windows writes' }, async t => {
   const f = await fixture(t)
   const before = JSON.stringify({ ...A, password: 'dummy-old' })
   await fs.writeFile(f.file, before)
@@ -87,4 +88,31 @@ for (const override of [{ GERRIT_PASSWORD: 'dummy-env' }, { GERRIT_URL: 'https:/
     assert.equal(result.status, 500)
     assert.match(String(result.body.error), /restart browser mode/)
   }
+})
+
+test('portable denied replacement keeps old bytes and prevents listen/readiness', async t => {
+  const f = await fixture(t)
+  const before = JSON.stringify({ ...A, password: 'dummy-old', passwordIdentity: A })
+  await fs.writeFile(f.file, before)
+  const child = await f.start({ GERRIT_SECRET_TEST_RENAME_DENIED: '1' })
+  await assert.rejects(child.ready(), /Browser startup failed/)
+  assert.equal((await child.exited).code, 1)
+  assert.match(child.output, /Dummy settings replacement denied/)
+  assert.equal(child.output.includes('one-use browser link'), false)
+  assert.deepEqual(await audit(child.auditFile), [])
+  assert.equal(await fs.readFile(f.file, 'utf8'), before)
+  assert.deepEqual((await fs.readdir(f.dir)).sort(), ['settings.json', 'settings.json.audit'])
+})
+
+test('startup audit uses a file URL that supports a preload path containing spaces', async t => {
+  const f = await fixture(t)
+  const preload = path.join(f.dir, 'audit fixture with spaces.mjs')
+  await fs.copyFile(new URL('../../test/fixtures/secret-startup-audit.mjs', import.meta.url), preload)
+  await fs.writeFile(f.file, JSON.stringify({ ...A, password: 'dummy-old' }))
+  const child = await f.start({ NODE_OPTIONS: `--import=${pathToFileURL(preload).href}` })
+  const ready = await child.ready()
+  assert.equal(ready.events.length, 1)
+  assert.equal(ready.events[0].event, 'before-listen')
+  absent(ready.events[0].snapshot!)
+  absent(JSON.parse(await fs.readFile(f.file, 'utf8')))
 })

@@ -1,7 +1,17 @@
-// Observation only: loaded into the real API process, never into production releases.
+// Test-only observation and optional failure injection; never part of production releases.
 import http from 'node:http'
 import fs from 'node:fs'
-if (process.argv[1]?.endsWith('src/server/index.ts') && process.env.GERRIT_SECRET_STARTUP_AUDIT) {
+if (process.argv[1]?.replaceAll('\\', '/')?.endsWith('src/server/index.ts') && process.env.GERRIT_SECRET_STARTUP_AUDIT) {
+  if (process.env.GERRIT_SECRET_TEST_RENAME_DENIED === '1') {
+    // Portable failure injection for a disposable child process, including Windows.
+    const rename = fs.promises.rename
+    fs.promises.rename = async function (from, to) {
+      if (to === process.env.GERRIT_GUI_WEB_SETTINGS) {
+        throw Object.assign(new Error('Dummy settings replacement denied'), { code: 'EACCES' })
+      }
+      return rename.call(this, from, to)
+    }
+  }
   const record = value => fs.appendFileSync(process.env.GERRIT_SECRET_STARTUP_AUDIT, JSON.stringify({ at: Date.now(), ...value }) + '\n')
   const listen = http.Server.prototype.listen
   http.Server.prototype.listen = function (...args) {

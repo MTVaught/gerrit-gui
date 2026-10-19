@@ -14,7 +14,8 @@ test('failed serialization preserves the original credentials and removes privat
   await assert.rejects(writeSettingsFile(file, { password: 'dummy-new', invalid: 1n }), TypeError)
   assert.deepEqual(await readSettingsFile(file), original)
   assert.deepEqual(await fs.readdir(dir), ['settings.json'])
-  assert.equal((await fs.stat(file)).mode & 0o777, 0o600)
+  // POSIX mode bits are not Windows ACLs; keep all content/binding checks on Windows.
+  if (process.platform !== 'win32') assert.equal((await fs.stat(file)).mode & 0o777, 0o600)
 })
 
 test('reads reject a symlink instead of reading or changing its target', { skip: process.platform === 'win32' }, async t => {

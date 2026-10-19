@@ -1,0 +1,47 @@
+{
+  "platform": "linux",
+  "node": "v24.22.0",
+  "data": "Dummy only. Simulated rename denial, real production API process and files. No browser or user save.",
+  "before": {
+    "serverUrl": "https://gerrit.invalid",
+    "username": "dummy",
+    "password": "dummy-ci-old",
+    "passwordEncrypted": false,
+    "passwordStorageVersion": 0,
+    "passwordIdentity": {
+      "serverUrl": "https://gerrit.invalid",
+      "username": "dummy"
+    }
+  },
+  "afterFailure": {
+    "serverUrl": "https://gerrit.invalid",
+    "username": "dummy",
+    "password": "dummy-ci-old",
+    "passwordEncrypted": false,
+    "passwordStorageVersion": 0,
+    "passwordIdentity": {
+      "serverUrl": "https://gerrit.invalid",
+      "username": "dummy"
+    }
+  },
+  "afterStartup": {
+    "serverUrl": "https://gerrit.invalid",
+    "username": "dummy"
+  },
+  "deniedExitCode": 1,
+  "deniedListened": false,
+  "deniedFileBytesIntact": true,
+  "successfulAudit": [
+    {
+      "at": 1792446256013,
+      "event": "before-listen",
+      "snapshot": {
+        "serverUrl": "https://gerrit.invalid",
+        "username": "dummy"
+      },
+      "mode": "600"
+    }
+  ],
+  "saveSettingsCalls": 0,
+  "windowsValidation": "Native Windows CI is authoritative; these observed snapshots are from Linux."
+}
