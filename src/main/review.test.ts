@@ -8,7 +8,7 @@ import path from 'node:path'
 
 test('review requests full context, preserves whitespace and pins both patch sets', async () => {
   const urls: URL[] = []
-  const g = new GerritClient('http://gerrit.test', 'alice', 'test', async (url) => {
+  const g = new GerritClient('https://gerrit.test', 'alice', 'test', async (url) => {
     urls.push(new URL(url))
     return new Response(")]}'\n" + JSON.stringify({ content: [{ ab: ['whole', 'file'] }] }))
   })
@@ -26,7 +26,7 @@ test('review requests full context, preserves whitespace and pins both patch set
 
 test('incomplete and binary diffs fail instead of pretending to show the whole file', async () => {
   for (const result of [{ content: [{ skip: 5 }] }, { binary: true, content: [] }]) {
-    const g = new GerritClient('http://gerrit.test', 'alice', 'test', async () => new Response(JSON.stringify(result)))
+    const g = new GerritClient('https://gerrit.test', 'alice', 'test', async () => new Response(JSON.stringify(result)))
     await assert.rejects(g.diff({ id: 1, project: 'test', patchSet: 1 }, 'file'))
   }
 })
@@ -47,7 +47,7 @@ test('beta defaults off and persists opt-in across reopening settings', async ()
 
 test('reviewed flags are Gerrit state, scoped to revision and encoded file path', async () => {
   const calls: { url: URL; method: string }[] = []
-  const g = new GerritClient('http://gerrit.test', 'alice', 'test', async (url, init) => {
+  const g = new GerritClient('https://gerrit.test', 'alice', 'test', async (url, init) => {
     calls.push({ url: new URL(url), method: init.method! })
     return init.method === 'GET' ? new Response(JSON.stringify(['dir/a #%.ts'])) : new Response(null, { status: 204 })
   })
@@ -66,7 +66,7 @@ test('reviewed flags are Gerrit state, scoped to revision and encoded file path'
 
 test('comment CRUD preserves encoded IDs, range coordinates, draft privacy and publish scope', async () => {
   const calls: { url: URL; method: string; body: any }[] = []
-  const g = new GerritClient('http://gerrit.test', 'alice', 'test', async (url, init) => {
+  const g = new GerritClient('https://gerrit.test', 'alice', 'test', async (url, init) => {
     calls.push({ url: new URL(url), method: init.method!, body: init.body ? JSON.parse(init.body as string) : undefined })
     if (init.method === 'DELETE') return new Response(null, { status: 204 })
     return new Response(JSON.stringify({ id: 'draft%2Fid', message: 'Draft', updated: 'now' }))
@@ -89,7 +89,7 @@ test('comment CRUD preserves encoded IDs, range coordinates, draft privacy and p
 
 test('published comment redaction and suggested fixes use revision-pinned Gerrit endpoints', async () => {
   const calls: { method: string; path: string; body: unknown }[] = []
-  const g = new GerritClient('http://gerrit.test', 'alice', 'test', async (url, init) => {
+  const g = new GerritClient('https://gerrit.test', 'alice', 'test', async (url, init) => {
     calls.push({ method: init.method!, path: new URL(url).pathname, body: init.body ? JSON.parse(init.body as string) : undefined })
     return new Response(JSON.stringify({ id: 'published', updated: 'now' }))
   })

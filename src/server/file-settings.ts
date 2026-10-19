@@ -8,6 +8,7 @@ import type { BadgeStyle, DiffThemePreference, MergerRule, SettingsInput, Settin
 import { normalizeDiffTheme, normalizeTheme } from '../shared/theme.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
 import { requireReplacementPassword, sameCredentialIdentity } from '../shared/credentials.ts'
+import { allowLocalTestHttp } from '../main/transport-policy.ts'
 import { normalizeMergers, normalizePrimaryTeam, normalizeSlackWorkspaces, normalizeTeams, storedTeams } from '../shared/model.ts'
 import type { Credentials, SettingsStore } from '../main/service.ts'
 
@@ -51,8 +52,15 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
     return s
   }
   function effectiveIdentity(s: Stored) {
+    let serverUrl = env.serverUrl || s.serverUrl
+    try {
+      serverUrl = normalizeServerUrl(serverUrl, allowLocalTestHttp())
+    } catch {
+      // Keep invalid legacy and startup environment URLs visible for correction.
+      // Saving or retrieving credentials must still pass transport validation.
+    }
     return {
-      serverUrl: normalizeServerUrl(env.serverUrl || s.serverUrl),
+      serverUrl,
       username: (env.username || s.username).trim(),
     }
   }
@@ -73,10 +81,13 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
     },
     async getCredentials(): Promise<Credentials | null> {
       const s = await read()
-      return s.serverUrl && s.username && s.password ? { serverUrl: s.serverUrl, username: s.username, password: s.password } : null
+      if (!s.serverUrl) return null
+      const serverUrl = normalizeServerUrl(s.serverUrl, allowLocalTestHttp())
+      return s.username && s.password ? { serverUrl, username: s.username, password: s.password } : null
     },
     async save(input: SettingsInput): Promise<void> {
       const prev = await read()
+      const serverUrl = normalizeServerUrl(input.serverUrl, allowLocalTestHttp())
       if (environmentIdentity && !sameCredentialIdentity(await environmentIdentity, input)) {
         throw new Error('Connection credentials are set by GERRIT_PASSWORD. To change the server origin or username, update GERRIT_URL, GERRIT_USER and GERRIT_PASSWORD in the environment and restart browser mode.')
       }
@@ -84,7 +95,7 @@ export function fileSettings(file = path.join(os.homedir(), '.config', 'gerrit-g
       const next: Stored = {
         theme: normalizeTheme(input.theme),
         diffTheme: normalizeDiffTheme(input.diffTheme),
-        serverUrl: normalizeServerUrl(input.serverUrl),
+        serverUrl,
         username: input.username.trim(),
         password: input.password || prev.password,
         projects: input.projects.map((p) => p.trim()).filter(Boolean),

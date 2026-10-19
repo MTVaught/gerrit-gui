@@ -1,5 +1,6 @@
 import type { ReviewBlame, GerritDiffPreferences, FixSuggestion, AccountInfo, ChangeInfo, ChangeLink, ReviewDiff, FileInfo, SuggestedReviewerInfo, ReviewComment, DraftCommentInput, SubmitReviewInput } from '../shared/types.ts'
-import { changePath } from '../shared/url.ts'
+import { changePath, validateServerUrl } from '../shared/url.ts'
+import { allowLocalTestHttp } from './transport-policy.ts'
 
 const XSSI_PREFIX = ")]}'"
 
@@ -46,7 +47,9 @@ export class GerritClient {
   pretendAs: AccountInfo | null = null
 
   constructor(serverUrl: string, username: string, password: string, fetchImpl: FetchLike = (u, i) => fetch(u, i)) {
-    this.base = serverUrl.replace(/\/+$/, '')
+    // Validate before creating the Authorization header, including credentials
+    // from old settings, environment overrides, and direct client callers.
+    this.base = validateServerUrl(serverUrl, allowLocalTestHttp()).href.replace(/\/+$/, '')
     this.auth = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64')
     this.fetchImpl = fetchImpl
   }
@@ -60,6 +63,8 @@ export class GerritClient {
     try {
       res = await this.fetchImpl(url, {
         method,
+        // Do not send credentials through redirects, including TLS downgrades.
+        redirect: 'error',
         headers: {
           Authorization: this.auth,
           Accept: 'application/json',

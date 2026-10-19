@@ -608,6 +608,13 @@ a change or a dashboard. The application cuts that URL to the base URL. The
 application stores the password with Electron `safeStorage`, which uses the
 keychain of the operating system.
 
+Gerrit connections require HTTPS. The application rejects remote HTTP before
+it saves settings or creates an authenticated request. This also applies to old
+settings and environment overrides. Change an old HTTP URL to the server's
+HTTPS URL in Connection, or update `GERRIT_URL` if it overrides the settings.
+Authenticated requests reject redirects. Enter the final HTTPS base URL,
+including the Gerrit path prefix.
+
 REST calls go through the Chromium network stack. Thus, the application trusts
 the certificates that the operating system trusts, and it uses the proxy
 settings of the system. You must install a private CA in the store that
@@ -711,8 +718,16 @@ pnpm test                                # unit tests of the classifier
 docker run -d --name gerrit-test -p 8080:8080 gerritcodereview/gerrit:3.11.2
 ./test/seed-gerrit.sh                    # users alice/bob/carol/dave, erin from another team, primary reviewers tagged, changes in each state
 ./test/seed-more-states.sh               # the rest: in-person and second-round requests, stale tags, Verified, a named merger, tagged commit messages
-node --test test/integration.test.ts     # runs the real REST client through the full workflow
+GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP=1 node --test test/integration.test.ts
 ```
+
+For local fixtures with dummy accounts only, start the application or tests
+with `GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP=1`. This process setting permits HTTP
+only at the loopback IP addresses `127.0.0.1` and `[::1]`. Use, for example,
+`http://127.0.0.1:8080`. DNS names, including `localhost`, and LAN or remote
+addresses cannot use this exception. The flag is off by default and cannot be
+enabled in saved settings or through the UI or browser API. Never use real
+credentials with a local HTTP fixture. TLS certificate checks remain enabled.
 
 Refer to `docs/testing.md` for UI checks without a display, and to
 `docs/walkthrough/shoot.sh` for the script that makes the screenshots in

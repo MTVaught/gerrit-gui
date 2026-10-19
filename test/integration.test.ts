@@ -1,7 +1,9 @@
 // Drives the real Gerrit client against a seeded local Gerrit (test/seed-gerrit.sh).
-// Skipped automatically when GERRIT_TEST_URL (default http://localhost:8080) is unreachable.
+// Skipped automatically when GERRIT_TEST_URL (default http://127.0.0.1:8080) is unreachable.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { validateServerUrl } from '../src/shared/url.ts'
+import { allowLocalTestHttp } from '../src/main/transport-policy.ts'
 import { GerritClient } from '../src/main/gerrit.ts'
 import { createService } from '../src/main/service.ts'
 import { fetchDashboard } from '../src/main/dashboard.ts'
@@ -9,7 +11,9 @@ import type { ChangeInfo } from '../src/shared/types.ts'
 import { NO_TEAMS, accountKeys, classify, classifyAll, mergerTags, parentLinks, relatedSetOf, relatedSets, reviewLink, reviewerTagsFor, sequenceCandidates, sequenceChains } from '../src/shared/model.ts'
 import { IN_PERSON_REVIEW_KEY, READY_TO_MERGE_TAG, REVIEW_REQUESTED_KEY, SEQUENCE_TAG } from '../src/shared/constants.ts'
 
-const URL = process.env['GERRIT_TEST_URL'] ?? 'http://localhost:8080'
+const URL = process.env['GERRIT_TEST_URL'] ?? 'http://127.0.0.1:8080'
+// Apply the application policy before any raw helper can send credentials.
+validateServerUrl(URL, allowLocalTestHttp())
 const user = (u: string) => new GerritClient(URL, u, `${u}pw`)
 
 // Reachability is decided at load time (top-level await) so `skip` is accurate.
@@ -21,6 +25,7 @@ const reachable = await user('bob')
 async function raw(u: string, method: string, path: string, body?: unknown, contentType = 'application/json') {
   const res = await fetch(`${URL}/a${path}`, {
     method,
+    redirect: 'error',
     headers: { Authorization: 'Basic ' + Buffer.from(`${u}:${u}pw`).toString('base64'), 'Content-Type': contentType },
     body: body === undefined ? undefined : contentType === 'application/json' ? JSON.stringify(body) : String(body),
   })
