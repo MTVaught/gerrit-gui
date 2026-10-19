@@ -1,12 +1,13 @@
 import { app, safeStorage } from 'electron'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import type { BadgeStyle, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, Team, ThemePreference, TrayClickAction, UiState } from '../shared/types.ts'
-import { normalizeTheme } from '../shared/theme.ts'
+import type { BadgeStyle, DiffThemePreference, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, Team, ThemePreference, TrayClickAction, UiState } from '../shared/types.ts'
+import { normalizeDiffTheme, normalizeTheme } from '../shared/theme.ts'
 import { normalizeServerUrl } from '../shared/url.ts'
 import { normalizeMergers, normalizePrimaryTeam, normalizeSlackWorkspaces, normalizeTeams, storedTeams } from '../shared/model.ts'
 
 interface StoredSettings {
+  diffTheme?: DiffThemePreference
   theme?: ThemePreference
   serverUrl: string
   username: string
@@ -46,6 +47,7 @@ export async function getStatus(): Promise<SettingsStatus> {
   const s = await read()
   return {
     theme: normalizeTheme(s.theme),
+    diffTheme: normalizeDiffTheme(s.diffTheme),
     serverUrl: s.serverUrl,
     username: s.username,
     projects: s.projects ?? [],
@@ -77,6 +79,7 @@ export async function save(input: SettingsInput): Promise<void> {
   const prev = await read()
   const next: StoredSettings = {
     theme: normalizeTheme(input.theme),
+    diffTheme: normalizeDiffTheme(input.diffTheme),
     serverUrl: normalizeServerUrl(input.serverUrl),
     username: input.username.trim(),
     projects: input.projects.map((p) => p.trim()).filter(Boolean),

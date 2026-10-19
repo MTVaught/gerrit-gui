@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { AccountInfo, ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, ThemePreference, TrayClickAction } from '../../../shared/types.ts'
+import type { AccountInfo, ChangeInspection, ChangeView, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, DiffThemePreference, ThemePreference, TrayClickAction } from '../../../shared/types.ts'
+import { diffThemeOptions } from '../../../shared/theme.ts'
 import { STATE_LABEL, accountKeys, changeNumberOf, classify, displayName, explainView, groupsFor, isSlackTeamId, mergersReflect, preferredKey, slackWorkspacesReflect, teamPicks, teamTabLabel, type TeamSetup } from '../../../shared/model.ts'
 import { updateAction, updateButtonLabel, updateSummary } from '../../../shared/update.ts'
 import { api, isBrowserMode } from '../api.ts'
@@ -105,18 +106,23 @@ export function SettingsPanel(props: {
           </div>
         )}
         {section === 'appearance' && (
-          <SettingsChoices
-            name="theme"
-            label="Theme"
-            hint="System follows your device's appearance."
-            value={s.theme ?? 'system'}
-            options={[
-              { value: 'light', label: 'Light' },
-              { value: 'dark', label: 'Dark' },
-              { value: 'system', label: 'System' },
-            ]}
-            onChange={(value) => void apply({ theme: value as ThemePreference })}
-          />
+          <>
+            <SettingsChoices
+              name="theme"
+              label="Theme"
+              hint="System follows your device's appearance."
+              value={s.theme ?? 'system'}
+              options={[
+                { value: 'light', label: 'Light' },
+                { value: 'dark', label: 'Dark' },
+                { value: 'system', label: 'System' },
+              ]}
+              onChange={(value) => void apply({ theme: value as ThemePreference })}
+            />
+            <SettingsChoices name="diff-theme" label="Diff theme" value={s.diffTheme ?? 'application'}
+              options={diffThemeOptions} disabled={sync.kind === 'saving'}
+              onChange={(value) => void apply({ diffTheme: value as DiffThemePreference })} />
+          </>
         )}
         {section === 'beta' && (
           <>
