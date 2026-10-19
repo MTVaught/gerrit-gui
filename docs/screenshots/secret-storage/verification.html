@@ -1,0 +1,41 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{color-scheme:light dark;--foreground:light-dark(#18202b,#e6eaf0);--muted-foreground:light-dark(#525e6d,#a6b2c2);--card:light-dark(#f3f5f8,#1a2029);--border:light-dark(#d3d9e2,#364152);--radius:8px;--font-sans:system-ui;--font-mono:monospace}
+body{margin:0;color:var(--foreground);font:14px/1.5 var(--font-sans);background:transparent}p{margin:0 0 12px}table{width:100%;border-collapse:collapse;margin:12px 0 18px}th,td{text-align:left;padding:10px 6px;border-bottom:1px solid var(--border)}small{color:var(--muted-foreground)}.files{display:grid;grid-template-columns:1fr 1fr;gap:16px}article{padding:16px;background:var(--card);border-radius:var(--radius)}h3{font-size:15px;margin:0 0 12px}pre{font:12px/1.55 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;margin:0}@media(max-width:540px){.files{grid-template-columns:1fr}th,td{font-size:12px}}
+</style></head><body>
+<p>Actual settings files immediately after automatic cleanup on load, before Test and save.</p>
+<small>Linux. Dummy credentials only. Browser account response simulated. Electron 44.2.0 used the real basic_text backend.</small>
+<table><thead><tr><th>Observed value</th><th>Browser server</th><th>Electron</th></tr></thead><tbody>
+<tr><td>Existing file mode</td><td>644 → 600</td><td>644 → 600</td></tr>
+<tr><td>Password in saved JSON</td><td>Absent</td><td>Absent</td></tr>
+<tr><td>Password usable in session</td><td>true</td><td>true</td></tr>
+<tr><td>Password available after process restart</td><td>false</td><td>false</td></tr>
+<tr><td>Cleaned A password returned for B after restart</td><td>Blocked by process regressions</td><td>false</td></tr>
+<tr><td>Requests sent for B after restart</td><td>Zero in process regressions</td><td>0</td></tr>
+</tbody></table>
+<div class="files"><article><h3>Browser settings file</h3><pre>{
+  &quot;serverUrl&quot;: &quot;http://127.0.0.1:19776&quot;,
+  &quot;username&quot;: &quot;dummy&quot;,
+  &quot;theme&quot;: &quot;system&quot;
+}</pre></article><article><h3>Electron settings file</h3><pre>{
+  &quot;serverUrl&quot;: &quot;https://gerrit.invalid&quot;,
+  &quot;username&quot;: &quot;dummy&quot;
+}</pre></article></div>
+<article style="margin-top:16px"><h3>Settings after legacy A was removed and B received a session password</h3><small>All legacy fields are absent. The new process returned no password for B and sent zero requests.</small><pre>{
+  &quot;theme&quot;: &quot;system&quot;,
+  &quot;diffTheme&quot;: &quot;application&quot;,
+  &quot;serverUrl&quot;: &quot;https://other.invalid&quot;,
+  &quot;username&quot;: &quot;other-dummy&quot;,
+  &quot;projects&quot;: [],
+  &quot;teams&quot;: [],
+  &quot;primaryTeam&quot;: &quot;&quot;,
+  &quot;mergers&quot;: [],
+  &quot;badgeStyle&quot;: &quot;color&quot;,
+  &quot;showZeroCounts&quot;: false,
+  &quot;compactOnTop&quot;: true,
+  &quot;slackWorkspaces&quot;: [],
+  &quot;showAppBadge&quot;: true,
+  &quot;showTrayCounts&quot;: true,
+  &quot;trayClickAction&quot;: &quot;menu&quot;,
+  &quot;localReview&quot;: false
+}</pre></article>
+</body></html>

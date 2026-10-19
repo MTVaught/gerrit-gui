@@ -60,6 +60,10 @@
           "status": 200
         },
         {
+          "path": "/api/getSettings",
+          "status": 200
+        },
+        {
           "path": "/api/testConnection",
           "status": 200
         },
@@ -190,6 +194,10 @@
         },
         {
           "path": "/api/saveSettings",
+          "status": 200
+        },
+        {
+          "path": "/api/getSettings",
           "status": 200
         },
         {

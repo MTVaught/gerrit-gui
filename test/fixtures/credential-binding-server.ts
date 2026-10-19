@@ -14,9 +14,10 @@ const file = path.join(directory, 'settings.json')
 const root = fileURLToPath(new URL('../../out/renderer/', import.meta.url))
 const sent: { origin: string; authorization: string }[] = []
 let saves = 0
-const store = fileSettings(file)
+let store = fileSettings(file)
 const service = createService({
-  ...store,
+  getStatus: () => store.getStatus(),
+  getCredentials: () => store.getCredentials(),
   async save(input) { await store.save(input); saves++ },
 }, async (url, init) => {
   sent.push({ origin: new URL(url).origin, authorization: new Headers(init.headers).get('Authorization')! })
@@ -26,6 +27,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.url === '/fixture/reset') {
       await writeFile(file, JSON.stringify({ theme: 'system', serverUrl: 'https://old.example/gerrit', username: 'alice', password: 'dummy-old-secret' }))
+      store = fileSettings(file)
       sent.length = 0
       saves = 0
       res.end('{}')

@@ -359,6 +359,9 @@ if (!app.requestSingleInstanceLock()) {
     }
     updater.start()
     app.on('activate', showWindow)
+  }).catch(error => {
+    console.error('Desktop startup failed while initializing application:', error)
+    app.exit(1)
   })
 }
 

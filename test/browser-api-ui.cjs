@@ -223,7 +223,7 @@ app.whenReady().then(async () => {
     await until(connection, `Boolean(document.querySelector('input[type=password]'))`)
     board.hide()
     await caption(connection, 'Use Ctrl+A to replace each field with dummy data. Local HTTP is enabled only for this loopback test process.')
-    for (const [selector, value] of [['label:nth-of-type(1) input', gerritOrigin], ['label:nth-of-type(2) input', 'audit-dummy'], ['input[type=password]', 'audit-dummy-password']]) {
+    for (const [selector, value] of [['form > label:nth-of-type(1) input', gerritOrigin], ['form > label:nth-of-type(2) input', 'audit-dummy'], ['input[type=password]', 'audit-dummy-password']]) {
       await click(connection, selector)
       await command('xdotool', ['key', '--clearmodifiers', 'ctrl+a'])
       await command('xdotool', ['type', '--clearmodifiers', '--delay', '40', value])
@@ -233,7 +233,7 @@ app.whenReady().then(async () => {
     const saved = JSON.parse(await fs.readFile(settings, 'utf8'))
     assert.equal(saved.serverUrl, gerritOrigin)
     assert.equal(saved.username, 'audit-dummy')
-    assert.equal(saved.password, 'audit-dummy-password')
+    assert.equal(saved.password, undefined, 'browser passwords must not enter JSON')
     await caption(connection, 'Authorized session: saved settings and tested the dummy account through the protected API.', fixtureOrigin + '/attack', 'Open the separate foreign-origin website')
     await delay(2000)
     await screenshot(connection, `connected-${theme}`)

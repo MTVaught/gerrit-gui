@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "mode": "light",
+      "platform": "Linux Electron, native X11 input",
+      "data": "Dummy credentials. Simulated Gerrit response and repair window. Real directory permissions, production renderer/store/service.",
+      "failedInitialLoad": true,
+      "failedFileIntact": true,
+      "recoveredOnNativeFocus": true,
+      "recoveredFields": [
+        "https://gerrit.invalid",
+        "dummy"
+      ],
+      "memoryPasswordUsedForOriginalIdentity": true,
+      "obsoleteCheckboxAbsent": true,
+      "afterRecovery": {
+        "serverUrl": "https://gerrit.invalid",
+        "username": "dummy"
+      },
+      "fileMode": "600",
+      "laterNativeFocusPreservedDraft": true,
+      "draft": "https://gerrit.invalid/draft",
+      "unsavedDraftNotPersisted": true,
+      "requests": 1
+    },
+    {
+      "mode": "dark",
+      "platform": "Linux Electron, native X11 input",
+      "data": "Dummy credentials. Simulated Gerrit response and repair window. Real directory permissions, production renderer/store/service.",
+      "failedInitialLoad": true,
+      "failedFileIntact": true,
+      "recoveredOnNativeFocus": true,
+      "recoveredFields": [
+        "https://gerrit.invalid",
+        "dummy"
+      ],
+      "memoryPasswordUsedForOriginalIdentity": true,
+      "obsoleteCheckboxAbsent": true,
+      "afterRecovery": {
+        "serverUrl": "https://gerrit.invalid",
+        "username": "dummy"
+      },
+      "fileMode": "600",
+      "laterNativeFocusPreservedDraft": true,
+      "draft": "https://gerrit.invalid/draft",
+      "unsavedDraftNotPersisted": true,
+      "requests": 1
+    }
+  ]
+}

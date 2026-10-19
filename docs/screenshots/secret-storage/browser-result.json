@@ -1,0 +1,44 @@
+{
+  "theme": "light",
+  "platform": "Linux Electron Chromium, browser mode, no application preload",
+  "data": "Dummy credentials. Simulated Gerrit account/search responses. Production API/session/store and native X11 input.",
+  "before": {
+    "mode": "644",
+    "data": {
+      "serverUrl": "http://127.0.0.1:19776",
+      "username": "dummy",
+      "password": "dummy-old-password",
+      "theme": "system"
+    }
+  },
+  "afterLoad": {
+    "serverUrl": "http://127.0.0.1:19776",
+    "username": "dummy",
+    "theme": "system"
+  },
+  "afterReadMode": "600",
+  "afterSave": {
+    "theme": "system",
+    "diffTheme": "application",
+    "serverUrl": "http://127.0.0.1:19776",
+    "username": "dummy",
+    "projects": [],
+    "teams": [],
+    "primaryTeam": "",
+    "mergers": [],
+    "badgeStyle": "color",
+    "showZeroCounts": false,
+    "compactOnTop": true,
+    "slackWorkspaces": [],
+    "showAppBadge": true,
+    "showTrayCounts": true,
+    "trayClickAction": "menu",
+    "localReview": false
+  },
+  "afterSaveMode": "600",
+  "sessionHasPassword": true,
+  "tabReloadHasPassword": true,
+  "restartHasPassword": false,
+  "restartedOldCookieRejected": true,
+  "newStartupKeyRequired": true
+}

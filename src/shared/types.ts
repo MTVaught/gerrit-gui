@@ -381,6 +381,8 @@ export interface SettingsStatus extends Settings {
   hasPassword: boolean
   /** OS keychain encryption available for the stored password. */
   encrypted: boolean
+  passwordStorage?: 'secure' | 'session' | 'environment' | 'locked' | 'none'
+  retainedPasswordStored?: boolean
 }
 
 export interface WindowBounds {

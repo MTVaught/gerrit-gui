@@ -1,0 +1,495 @@
+{
+  "desktopFailure": {
+    "exitCode": 1,
+    "oldBytesIntact": true,
+    "windowsCreated": 0,
+    "readinessClaimed": false,
+    "permissions": "Actual isolated directory denied writes after normal instance lock"
+  },
+  "results": [
+    {
+      "kind": "browser",
+      "mode": "light",
+      "before": {
+        "at": 1792445292448,
+        "mode": "644",
+        "snapshot": {
+          "serverUrl": "http://127.0.0.1:19786",
+          "username": "dummy",
+          "password": "dummy-startup-password",
+          "passwordEncrypted": false,
+          "passwordStorageVersion": 0,
+          "passwordIdentity": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy"
+          },
+          "theme": "system"
+        }
+      },
+      "startupReadyAt": 1792445299265,
+      "after": {
+        "serverUrl": "http://127.0.0.1:19786",
+        "username": "dummy",
+        "theme": "system"
+      },
+      "firstEvents": [
+        {
+          "at": 1792445299249,
+          "event": "before-listen",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system"
+          },
+          "mode": "600"
+        },
+        {
+          "at": 1792445307186,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/session"
+        },
+        {
+          "at": 1792445307213,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getSettings"
+        },
+        {
+          "at": 1792445307214,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getPretend"
+        },
+        {
+          "at": 1792445307214,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getSettings"
+        },
+        {
+          "at": 1792445307215,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getPretend"
+        },
+        {
+          "at": 1792445307223,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/fetchDashboard"
+        }
+      ],
+      "restartEvents": [
+        {
+          "at": 1792445314112,
+          "event": "before-listen",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system"
+          },
+          "mode": "600"
+        },
+        {
+          "at": 1792445315640,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/session"
+        },
+        {
+          "at": 1792445315666,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getSettings"
+        },
+        {
+          "at": 1792445315673,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getPretend"
+        },
+        {
+          "at": 1792445315673,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getSettings"
+        },
+        {
+          "at": 1792445315674,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getPretend"
+        }
+      ],
+      "saveSettingsCalls": 0,
+      "userConnectionSaveTestActions": 0,
+      "normalAuthenticatedUse": true,
+      "restartNeedsReentry": true,
+      "restartNewGerritRequests": 0
+    },
+    {
+      "kind": "desktop",
+      "mode": "light",
+      "before": {
+        "at": 1792445320331,
+        "mode": "644",
+        "snapshot": {
+          "serverUrl": "http://127.0.0.1:19786",
+          "username": "dummy",
+          "password": "dummy-startup-password",
+          "passwordEncrypted": false,
+          "passwordStorageVersion": 0,
+          "passwordIdentity": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy"
+          },
+          "theme": "system"
+        }
+      },
+      "startupReadyAt": 1792445327111,
+      "after": {
+        "serverUrl": "http://127.0.0.1:19786",
+        "username": "dummy",
+        "theme": "system"
+      },
+      "firstEvents": [
+        {
+          "at": 1792445327099,
+          "event": "window-created",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system"
+          },
+          "mode": "600",
+          "backend": "basic_text"
+        },
+        {
+          "at": 1792445327178,
+          "event": "renderer-loaded",
+          "connection": false
+        },
+        {
+          "at": 1792445327209,
+          "event": "authenticated-request",
+          "url": "http://127.0.0.1:19786/a/accounts/self"
+        },
+        {
+          "at": 1792445327257,
+          "event": "authenticated-request",
+          "url": "http://127.0.0.1:19786/a/changes/?q=is%3Aopen+%28owner%3Aself+OR+reviewer%3Aself+OR+hashtag%3Aready-to-merge+OR+hashtag%3Areviewer%3Adummy+OR+hashtag%3Areviewer%3Adummy%40example.invalid%29+%28owner%3Aself+OR+-is%3Aprivate%29&q=is%3Aopen+is%3Awip+-owner%3Aself+-is%3Aprivate&q=is%3Amerged+%28owner%3Aself+OR+reviewer%3Aself%29+-age%3A14d+%28owner%3Aself+OR+-is%3Aprivate%29&n=500&o=DETAILED_LABELS&o=DETAILED_ACCOUNTS&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=ALL_REVISIONS&o=SUBMITTABLE&o=SUBMIT_REQUIREMENTS&o=CURRENT_ACTIONS&o=CUSTOM_KEYED_VALUES&o=MESSAGES"
+        },
+        {
+          "at": 1792445327279,
+          "event": "board-ready",
+          "connection": false
+        }
+      ],
+      "restartEvents": [
+        {
+          "at": 1792445341316,
+          "event": "window-created",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system",
+            "ui": {
+              "compact": false,
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 900,
+                "height": 1000
+              }
+            }
+          },
+          "mode": "600",
+          "backend": "basic_text"
+        },
+        {
+          "at": 1792445341351,
+          "event": "window-created",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system",
+            "ui": {
+              "compact": false,
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 900,
+                "height": 1000
+              }
+            }
+          },
+          "mode": "600",
+          "backend": "basic_text"
+        },
+        {
+          "at": 1792445341376,
+          "event": "renderer-loaded",
+          "connection": false
+        },
+        {
+          "at": 1792445341407,
+          "event": "renderer-loaded",
+          "connection": true
+        },
+        {
+          "at": 1792445341508,
+          "event": "requires-reentry",
+          "connection": true
+        }
+      ],
+      "saveSettingsCalls": 0,
+      "userConnectionSaveTestActions": 0,
+      "normalAuthenticatedUse": true,
+      "restartNeedsReentry": true,
+      "restartNewGerritRequests": 0
+    },
+    {
+      "kind": "browser",
+      "mode": "dark",
+      "before": {
+        "at": 1792445346273,
+        "mode": "644",
+        "snapshot": {
+          "serverUrl": "http://127.0.0.1:19786",
+          "username": "dummy",
+          "password": "dummy-startup-password",
+          "passwordEncrypted": false,
+          "passwordStorageVersion": 0,
+          "passwordIdentity": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy"
+          },
+          "theme": "system"
+        }
+      },
+      "startupReadyAt": 1792445353043,
+      "after": {
+        "serverUrl": "http://127.0.0.1:19786",
+        "username": "dummy",
+        "theme": "system"
+      },
+      "firstEvents": [
+        {
+          "at": 1792445353026,
+          "event": "before-listen",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system"
+          },
+          "mode": "600"
+        },
+        {
+          "at": 1792445360980,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/session"
+        },
+        {
+          "at": 1792445361008,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getSettings"
+        },
+        {
+          "at": 1792445361008,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getPretend"
+        },
+        {
+          "at": 1792445361009,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getSettings"
+        },
+        {
+          "at": 1792445361009,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getPretend"
+        },
+        {
+          "at": 1792445361019,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/fetchDashboard"
+        }
+      ],
+      "restartEvents": [
+        {
+          "at": 1792445367922,
+          "event": "before-listen",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system"
+          },
+          "mode": "600"
+        },
+        {
+          "at": 1792445369422,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/session"
+        },
+        {
+          "at": 1792445369438,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getSettings"
+        },
+        {
+          "at": 1792445369439,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getPretend"
+        },
+        {
+          "at": 1792445369440,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getSettings"
+        },
+        {
+          "at": 1792445369440,
+          "event": "request",
+          "method": "POST",
+          "path": "/api/getPretend"
+        }
+      ],
+      "saveSettingsCalls": 0,
+      "userConnectionSaveTestActions": 0,
+      "normalAuthenticatedUse": true,
+      "restartNeedsReentry": true,
+      "restartNewGerritRequests": 0
+    },
+    {
+      "kind": "desktop",
+      "mode": "dark",
+      "before": {
+        "at": 1792445374118,
+        "mode": "644",
+        "snapshot": {
+          "serverUrl": "http://127.0.0.1:19786",
+          "username": "dummy",
+          "password": "dummy-startup-password",
+          "passwordEncrypted": false,
+          "passwordStorageVersion": 0,
+          "passwordIdentity": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy"
+          },
+          "theme": "system"
+        }
+      },
+      "startupReadyAt": 1792445380909,
+      "after": {
+        "serverUrl": "http://127.0.0.1:19786",
+        "username": "dummy",
+        "theme": "system"
+      },
+      "firstEvents": [
+        {
+          "at": 1792445380888,
+          "event": "window-created",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system"
+          },
+          "mode": "600",
+          "backend": "basic_text"
+        },
+        {
+          "at": 1792445380948,
+          "event": "renderer-loaded",
+          "connection": false
+        },
+        {
+          "at": 1792445380974,
+          "event": "authenticated-request",
+          "url": "http://127.0.0.1:19786/a/accounts/self"
+        },
+        {
+          "at": 1792445381007,
+          "event": "authenticated-request",
+          "url": "http://127.0.0.1:19786/a/changes/?q=is%3Aopen+%28owner%3Aself+OR+reviewer%3Aself+OR+hashtag%3Aready-to-merge+OR+hashtag%3Areviewer%3Adummy+OR+hashtag%3Areviewer%3Adummy%40example.invalid%29+%28owner%3Aself+OR+-is%3Aprivate%29&q=is%3Aopen+is%3Awip+-owner%3Aself+-is%3Aprivate&q=is%3Amerged+%28owner%3Aself+OR+reviewer%3Aself%29+-age%3A14d+%28owner%3Aself+OR+-is%3Aprivate%29&n=500&o=DETAILED_LABELS&o=DETAILED_ACCOUNTS&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=ALL_REVISIONS&o=SUBMITTABLE&o=SUBMIT_REQUIREMENTS&o=CURRENT_ACTIONS&o=CUSTOM_KEYED_VALUES&o=MESSAGES"
+        },
+        {
+          "at": 1792445381049,
+          "event": "board-ready",
+          "connection": false
+        }
+      ],
+      "restartEvents": [
+        {
+          "at": 1792445395122,
+          "event": "window-created",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system",
+            "ui": {
+              "compact": false,
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 900,
+                "height": 1000
+              }
+            }
+          },
+          "mode": "600",
+          "backend": "basic_text"
+        },
+        {
+          "at": 1792445395155,
+          "event": "window-created",
+          "snapshot": {
+            "serverUrl": "http://127.0.0.1:19786",
+            "username": "dummy",
+            "theme": "system",
+            "ui": {
+              "compact": false,
+              "bounds": {
+                "x": 0,
+                "y": 0,
+                "width": 900,
+                "height": 1000
+              }
+            }
+          },
+          "mode": "600",
+          "backend": "basic_text"
+        },
+        {
+          "at": 1792445395185,
+          "event": "renderer-loaded",
+          "connection": false
+        },
+        {
+          "at": 1792445395215,
+          "event": "renderer-loaded",
+          "connection": true
+        },
+        {
+          "at": 1792445395317,
+          "event": "requires-reentry",
+          "connection": true
+        }
+      ],
+      "saveSettingsCalls": 0,
+      "userConnectionSaveTestActions": 0,
+      "normalAuthenticatedUse": true,
+      "restartNeedsReentry": true,
+      "restartNewGerritRequests": 0
+    }
+  ]
+}

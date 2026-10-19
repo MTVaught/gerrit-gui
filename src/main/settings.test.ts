@@ -15,6 +15,7 @@ const electronUrl = 'data:text/javascript,' + encodeURIComponent(`
   export const app = { getPath: () => state.directory };
   export const safeStorage = {
     isEncryptionAvailable: () => state.encrypted,
+    getSelectedStorageBackend: () => 'gnome_libsecret',
     encryptString: value => Buffer.from('dummy-cipher:' + value),
     decryptString: value => {
       const text = value.toString();
@@ -56,7 +57,8 @@ for (const mode of ['browser', 'desktop plaintext', 'desktop encrypted']) {
     const file = path.join(directory, 'settings.json')
     electron.state.directory = directory
     electron.state.encrypted = mode === 'desktop encrypted'
-    const reopen = (): SettingsStore => mode === 'browser' ? browser(file) : {
+    let browserProcess: SettingsStore | undefined
+    const reopen = (): SettingsStore => mode === 'browser' ? browserProcess ??= browser(file) : {
       getStatus: desktop.getStatus, getCredentials: desktop.getCredentials, save: desktop.save,
     }
     try {
@@ -98,6 +100,7 @@ for (const mode of ['browser', 'desktop plaintext', 'desktop encrypted']) {
         assert.deepEqual(await reopen().getCredentials(), {
           serverUrl: replacement.serverUrl, username: replacement.username, password: replacement.password,
         })
+        if (mode === 'browser') assert.equal(await browser(file).getCredentials(), null, 'memory-only replacement does not survive restart')
         sent.length = 0
         await svc.testConnection()
         assert.deepEqual(sent, [{ origin: new URL(replacement.serverUrl).origin, authorization: 'Basic ' + Buffer.from(`${replacement.username}:dummy-replacement-secret`).toString('base64') }], 'new identities only receive explicitly supplied replacement credentials')
@@ -118,7 +121,8 @@ for (const mode of ['browser', 'desktop plaintext', 'desktop encrypted']) {
     const previousPolicy = process.env['GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP']
     electron.state.directory = directory
     electron.state.encrypted = mode === 'desktop encrypted'
-    const reopen = (): SettingsStore => mode === 'browser' ? browser(file) : {
+    let browserProcess: SettingsStore | undefined
+    const reopen = (): SettingsStore => mode === 'browser' ? browserProcess ??= browser(file) : {
       getStatus: desktop.getStatus, getCredentials: desktop.getCredentials, save: desktop.save,
     }
     try {
@@ -165,7 +169,10 @@ test('browser environment overrides never attach a file password to a different 
       await svc.saveSettings({ ...await store.getStatus(), password: '' })
       await assert.rejects(svc.testConnection(), /not configured/)
       assert.equal(sent, 0)
-      assert.ok(!(await readFile(file, 'utf8')).includes(old.password))
+      const retained = JSON.parse(await readFile(file, 'utf8'))
+      assert.equal(retained.password, undefined, 'legacy copy is automatically removed')
+      assert.equal(retained.passwordIdentity, undefined)
+      assert.equal(await browser(file).getCredentials(), null, 'restart cannot return the retained A password for B')
     }
     await writeFile(file, JSON.stringify(old))
     assert.deepEqual(await browser(file, { GERRIT_URL: 'https://OLD.example:443/other', GERRIT_USER: ' alice ' }).getCredentials(), { ...old, serverUrl: 'https://old.example/other' })

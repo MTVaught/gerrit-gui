@@ -1,5 +1,5 @@
 import { useTheme } from '../theme.ts'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SettingsStatus } from '../../../shared/types.ts'
 import { api, isBrowserMode } from '../api.ts'
 import { replacementPasswordMessage, sameCredentialIdentity } from '../../../shared/credentials.ts'
@@ -17,20 +17,33 @@ export function ConnectionWindow() {
   const [serverUrl, setServerUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  const fieldsLoaded = useRef(false)
 
   useEffect(() => {
-    void api.getSettings().then((s) => {
-      setInitial(s)
-      setServerUrl(s.serverUrl)
-      setUsername(s.username)
-    })
-    const reload = () => { void api.getSettings().then(setInitial) }
+    let active = true
+    const reload = () => {
+      void api.getSettings().then(s => {
+        if (!active) return
+        // The first success can follow a failed load and a focus/settings refresh.
+        // Later refreshes update status without replacing unsaved form fields.
+        if (!fieldsLoaded.current) {
+          fieldsLoaded.current = true
+          setServerUrl(s.serverUrl)
+          setUsername(s.username)
+        }
+        setInitial(s)
+        setLoadError(null)
+      }).catch(e => { if (active) setLoadError(String(e.message ?? e)) })
+    }
+    reload()
     const offSettings = api.onSettingsChanged(reload)
     window.addEventListener('focus', reload)
     return () => {
+      active = false
       offSettings()
       window.removeEventListener('focus', reload)
     }
@@ -39,10 +52,12 @@ export function ConnectionWindow() {
   async function save() {
     setBusy(true)
     setStatus(null)
+    setLoadError(null)
     setDone(false)
     try {
       const current = await api.getSettings()
       await api.saveSettings({ ...current, serverUrl, username, password: password || undefined })
+      setInitial(await api.getSettings())
       const me = await api.testConnection()
       setStatus(`Connected as ${me.name ?? me.username} (${me.email ?? 'no email'})`)
       setDone(true)
@@ -56,7 +71,9 @@ export function ConnectionWindow() {
     }
   }
 
-  if (!initial) return null
+  if (!initial) return loadError ? <main className="app connection"><section className="panel settings" role="alert">
+    <h2>Gerrit connection</h2><p className="status error">Settings could not be loaded. A failed password cleanup keeps the saved file unchanged.</p><p>{loadError}</p>
+  </section></main> : null
   const canReusePassword = initial.hasPassword && sameCredentialIdentity(initial, { serverUrl, username })
   const identityChanged = !sameCredentialIdentity(initial, { serverUrl, username }) && Boolean(initial.serverUrl && initial.username)
   const ok = status?.startsWith('Connected')
@@ -71,9 +88,17 @@ export function ConnectionWindow() {
       >
         <h2>Gerrit connection</h2>
         <p className="muted">
-          Generate an HTTP password in Gerrit under Settings, HTTP Credentials. It is stored
-          {initial.encrypted ? ' encrypted with the OS keychain.' : ' in plain text (no OS keychain available).'}
+          Generate an HTTP password in Gerrit under Settings, HTTP Credentials.
+          {initial.passwordStorage === 'session'
+            ? ' The current password is kept in memory only. Enter it again after the app or browser server restarts.'
+            : initial.passwordStorage === 'environment'
+              ? ' The password comes from the server environment and is never saved by this app.'
+              : initial.encrypted
+                ? ' New passwords are encrypted with the OS keychain.'
+                : ' Secure storage is unavailable. New passwords are kept in memory only. Enter them again after the app or browser server restarts.'}
         </p>
+        {initial.passwordStorage === 'locked' && <p className="status error" role="status">The saved password cannot be read. Its saved copy was kept. Unlock the OS keychain or enter a password for this session.</p>}
+        {initial.retainedPasswordStored && <p className="status" role="status">A secure saved password for another connection is kept on disk. It will not be used for this connection.</p>}
         <label>
           Server URL
           <input value={serverUrl} disabled={busy} onChange={(e) => {
@@ -108,6 +133,7 @@ export function ConnectionWindow() {
             </button>
           )}
         </div>
+        {loadError && <p className="status error" role="alert">Settings could not be loaded: {loadError}</p>}
         {status && <p className={'status ' + (ok ? 'ok' : 'error')}>{status}</p>}
         {done && isBrowserMode && <p className="muted small">The board reloads when you go back to its tab. You can close this one.</p>}
       </form>

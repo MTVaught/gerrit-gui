@@ -605,8 +605,25 @@ Make the HTTP password in Gerrit under "Settings", "HTTP Credentials". The
 server URL is the base URL of Gerrit. Include the path prefix. For example,
 enter `https://host/gerrit1`, not only the host. You can also paste the URL of
 a change or a dashboard. The application cuts that URL to the base URL. The
-application stores the password with Electron `safeStorage`, which uses the
-keychain of the operating system.
+application stores the password with Electron `safeStorage` only when a secure
+OS keychain is available. Linux `basic_text` and unknown backends do not qualify.
+Otherwise, new passwords stay in memory until the app restarts. A keychain error
+also keeps a new password in memory. The connection window shows its storage state.
+
+Readable legacy passwords migrate to trusted keychain encryption when it succeeds.
+Otherwise, normal application startup automatically removes their saved fields by
+atomic replacement, before desktop UI setup or browser API readiness. Opening
+Connection and saving are not required.
+A readable password can stay in memory for its original origin and account until
+restart. An unreadable legacy copy is removed and requires password re-entry.
+Already trusted, versioned keychain copies stay on disk even when locked. Each
+stored copy has a separate `passwordIdentity`. A retained secure copy keeps its
+original origin and account when a new connection uses a memory password. It
+cannot be returned for the new connection, including after restart. Memory
+passwords also stay bound to their origin and account. A blank-password edit
+cannot move them to another identity.
+On POSIX systems, settings reads repair file permissions to `0600`. Saves use a private temporary
+file and atomic replacement. Invalid settings files cause an error and stay intact.
 
 Gerrit connections require HTTPS. The application rejects remote HTTP before
 it saves settings or creates an authenticated request. This also applies to old
@@ -726,15 +743,21 @@ processes that can read the startup link and scripts running at the approved
 origin remain trusted.
 
 The application writes the settings that you enter in the
-browser to `~/.config/gerrit-gui/web-settings.json`. The password in this file
-is not encrypted. As an alternative, set `GERRIT_URL`, `GERRIT_USER` and
-`GERRIT_PASSWORD` in the environment. A URL or username override cannot reuse
+browser to `~/.config/gerrit-gui/web-settings.json`. New passwords stay in the
+server process memory until restart. Reloading a tab keeps that process alive.
+Legacy saved copies are automatically removed when the browser server starts,
+before it accepts requests or prints its startup link. No browser needs to connect. Readable passwords stay
+bound to their original identity in server memory; re-enter them after restart.
+A failed replacement reports an error and keeps the old data intact. Environment
+passwords never enter JSON. As an alternative, set
+`GERRIT_URL`, `GERRIT_USER` and `GERRIT_PASSWORD` in the environment. A URL or username override cannot reuse
 a file password for a different origin or account. If `GERRIT_PASSWORD` is
 set, change the connection identity through the environment and restart
 browser mode. The form rejects identity changes while that override is active.
 The tray icon, the badge and compact
 mode do not operate in a browser. All other functions operate.
 For isolated tests, `GERRIT_GUI_WEB_SETTINGS` selects a separate settings file.
+
 
 ## Tests
 
