@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Dependency security verification</title>
+<style>
+  :root { color-scheme: light dark; font: 16px/1.5 system-ui; color: #172334; background: #f7f9fc; }
+  body { margin: 32px; }
+  h1 { margin: 0 0 8px; font-size: 26px; }
+  p { margin: 8px 0 16px; }
+  button { font: inherit; padding: 8px 16px; cursor: pointer; }
+  section { background: #fff; border: 1px solid #b9c5d5; border-radius: 8px; padding: 16px; margin-top: 16px; }
+  h2 { margin: 0 0 8px; font-size: 18px; }
+  code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .result { color: #14623b; font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    :root { color: #e4eaf2; background: #141b26; }
+    section { background: #1e2938; border-color: #61728b; }
+    .result { color: #89dfae; }
+  }
+</style>
+<h1>Dependency security verification</h1>
+<p id="version"></p>
+<p>Linux Electron. Isolated settings. Local test markup only. No Gerrit connection or credentials.</p>
+<button id="run">Run sanitizer probes</button>
+<p id="status" role="status">Ready</p>
+<section>
+  <h2>Monaco HTML rendering</h2>
+  <p>Input has a safe heading, an event handler, and a JavaScript link.</p>
+  <div id="rendered"></div>
+  <p>Sanitized HTML: <code id="serialized"></code></p>
+</section>
+<section>
+  <h2>Removed subtree hooks</h2>
+  <p id="hooks">Not run</p>
+  <div id="hook-probe"></div>
+</section>
+<section>
+  <h2>Raw text root</h2>
+  <p id="rawtext">Not run</p>
+  <p id="executions"></p>
+</section>
+<script type="module" src="./security-dependencies.js"></script>
+</html>

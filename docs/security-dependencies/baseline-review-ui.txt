@@ -1,0 +1,14 @@
+AssertionError [ERR_ASSERTION]: whole-file default
++ actual - expected
+
++ 'application'
+- '-1'
+
+    at /tmp/gerrit-dependency-audit/baseline/test/review-ui.cjs:187:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 'application',
+  expected: '-1',
+  operator: 'strictEqual',
+  diff: 'simple'
+}

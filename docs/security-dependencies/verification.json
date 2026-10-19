@@ -1,0 +1,39 @@
+{
+  "checkedOn": "2026-10-19",
+  "platform": "Linux x64",
+  "node": "24.22.0",
+  "pnpm": "12.3.4",
+  "baselineCommit": "9d1925628ea0a02939d00ae41ee251123bf117bc",
+  "unitTests": {
+    "passed": 248,
+    "failed": 0
+  },
+  "typecheck": "passed",
+  "electronBuild": "passed",
+  "webBuild": "passed",
+  "sanitizerBrowserProbes": "passed in light and dark; original vendored copy fails",
+  "buildProxyLoggingProbe": "passed",
+  "monacoRebaseUI": "passed",
+  "broadReviewUI": "pre-existing first-select assertion failure at test/review-ui.cjs:187, reproduced on baseline",
+  "archiveInspection": "pending",
+  "fullAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 1,
+    "high": 0,
+    "critical": 0
+  },
+  "productionAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "captures": {
+    "sanitizer-dark.png": "41f5a8d07063c58560aa6ea6ef00eeb04c925321619cfaa7a12ab2bc30755650",
+    "sanitizer-light.png": "f827292ef78584ae806eedb33228a92491f60c10e49a6995f90b192e53b60d03",
+    "review-dark.png": "8d542c68ca86988c73b40e161dcad8460cc40e1b5ceea4d2724660f17ea085ad",
+    "review-light.png": "92767a96b619d27e4a54790b269c32131d686eeae27fb338ffc29edf19141865"
+  }
+}

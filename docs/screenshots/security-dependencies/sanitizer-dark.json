@@ -1,0 +1,27 @@
+{
+  "version": "3.4.17",
+  "html": "<h3>Safe review text</h3><a>Review link</a>",
+  "checks": [
+    {
+      "name": "Monaco HTML",
+      "passed": true
+    },
+    {
+      "name": "afterSanitizeElements",
+      "passed": true
+    },
+    {
+      "name": "afterSanitizeAttributes",
+      "passed": true
+    },
+    {
+      "name": "rawtext root rejected",
+      "passed": true
+    },
+    {
+      "name": "no payload execution",
+      "passed": true
+    }
+  ],
+  "payloadExecutions": 0
+}
