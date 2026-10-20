@@ -12,6 +12,7 @@ import appIconPath from '../../resources/icon.png?asset'
 import { editorContextMenu } from './editor-context-menu.ts'
 import { externalWebUrl, RendererBoundary, trustedIpc } from './renderer-boundary.ts'
 import { pathToFileURL } from 'node:url'
+import { NativeReviewNavigation } from './native-review.ts'
 
 app.on('web-contents-created', (_event, contents) => {
   contents.on('context-menu', (_event, params) => {
@@ -47,6 +48,14 @@ const rendererEntry = !app.isPackaged && process.env['ELECTRON_RENDERER_URL']
 async function openWebUrl(url: unknown): Promise<void> {
   await shell.openExternal(externalWebUrl(url))
 }
+
+const nativeReview = new NativeReviewNavigation({
+  getSettings: () => service.getSettings(),
+  fetchChange: (id) => service.fetchChange(id),
+  openWeb: async (link) => openWebUrl(await service.changeUrl(link)),
+  show: showWindow,
+  send: (request) => mainWindow?.webContents.send('app:review', request),
+})
 
 function showWindow(): void {
   if (!mainWindow) {
@@ -201,6 +210,13 @@ function registerIpc(): void {
   ipc.on('ui:badge', (_e, payload: BadgePayload) => {
     tray?.setBadge(payload, mainWindow)
   })
+  // Connection windows are trusted app documents too, but cannot consume board navigation.
+  ipc.on('app:reviewReady', (event, ready: unknown) => {
+    if (event.sender === mainWindow?.webContents && typeof ready === 'boolean') nativeReview.setReady(ready)
+  })
+  ipc.on('app:reviewHandled', (event, requestId: unknown) => {
+    if (event.sender === mainWindow?.webContents && typeof requestId === 'number') nativeReview.acknowledge(requestId)
+  })
 
   ipc.handle('update:get', () => updater?.getState())
   ipc.handle('update:check', () => updater?.check())
@@ -230,7 +246,9 @@ function createWindow(): BrowserWindow {
   })
   mainWindow = win
   applyWindowMode()
-  win.once('ready-to-show', () => win.show())
+  win.once('ready-to-show', () => { win.show(); win.focus() })
+  win.webContents.on('did-start-loading', () => nativeReview.setReady(false))
+  win.webContents.on('render-process-gone', () => nativeReview.setReady(false))
   win.on('resize', scheduleSaveBounds)
   win.on('move', scheduleSaveBounds)
   // Close hides to the tray so the board stays resident; Quit is in the tray menu.
@@ -241,6 +259,7 @@ function createWindow(): BrowserWindow {
     }
   })
   win.on('closed', () => {
+    nativeReview.setReady(false)
     mainWindow = null
   })
   // Optional initial tab, e.g. GERRIT_GUI_TAB=mine (also used by the screenshot test hook).
@@ -324,7 +343,7 @@ if (!app.requestSingleInstanceLock()) {
         showTab,
         refresh: () => mainWindow?.webContents.send('app:refresh'),
         openChange: (link) => {
-          void service.changeUrl(link).then(openWebUrl).catch((e: Error) => console.warn('Open change:', e.message))
+          void nativeReview.select(link)
         },
         setCompact: (on) => void setCompact(on),
         setCompactOnTop: (on) => void setCompactOnTop(on),

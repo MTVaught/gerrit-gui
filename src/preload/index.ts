@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { Api } from '../shared/api.ts'
-import type { TabId, UpdateState } from '../shared/types.ts'
+import type { NativeReviewRequest, TabId, UpdateState } from '../shared/types.ts'
 
 function subscribe<T extends unknown[]>(channel: string, cb: (...args: T) => void): () => void {
   const listener = (_e: Electron.IpcRendererEvent, ...args: unknown[]) => cb(...(args as T))
@@ -48,6 +48,9 @@ const api: Api = {
   onSettingsChanged: (cb) => subscribe<[]>('app:settings', cb),
   onRefreshRequested: (cb) => subscribe<[]>('app:refresh', cb),
   onTabRequested: (cb) => subscribe<[TabId]>('app:tab', cb),
+  onNativeReviewRequested: (cb) => subscribe<[NativeReviewRequest]>('app:review', cb),
+  setNativeReviewReady: (ready) => ipcRenderer.send('app:reviewReady', ready),
+  acknowledgeNativeReview: (requestId) => ipcRenderer.send('app:reviewHandled', requestId),
   openConnection: () => ipcRenderer.invoke('connection:open'),
   connectionChanged: () => ipcRenderer.invoke('connection:changed'),
   closeConnection: () => ipcRenderer.invoke('connection:close'),

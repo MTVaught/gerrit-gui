@@ -290,7 +290,7 @@ export function App() {
 
   return (
     <SettingsContext.Provider value={settingsHandle}>
-    <LocalReviewProvider onMutate={async (id, write) => {
+    <LocalReviewProvider onNativeNavigate={() => setShowSettings(false)} onError={setError} onMutate={async (id, write) => {
       const context = dashboardCache.current!.context
       let written = false
       try {

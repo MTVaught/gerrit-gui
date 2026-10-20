@@ -81,9 +81,17 @@ contextBridge.exposeInMainWorld('api', {
   saveSettings: async (s) => { if (process.env.REVIEW_THEME_FIXTURE) await ipcRenderer.invoke('fixture:saveSettings', s); else settings = { ...s } },
   fetchChange: async () => change,
   fetchDashboard: async () => ({ self, open: [change], merged: [], fetchedAt: new Date().toISOString(), truncated: false }),
-  getUi: async () => ({ compact: false }), getPretend: async () => null,
+  getUi: async () => ({ compact: process.env.REVIEW_NATIVE_COMPACT === '1' }), getPretend: async () => null,
   getUpdateState: async () => ({ status: 'idle', currentVersion: '0.1.0', availableVersion: null, downloadedVersion: null, releaseNotes: null, releaseUrl: null, downloadPercent: null, checkedAt: null, message: null, errorContext: null }),
   onUpdateState: subscribe, onCompactChanged: subscribe, onSettingsChanged: subscribe, onRefreshRequested: subscribe, onTabRequested: subscribe, onConnectionChanged: subscribe,
+  onNativeReviewRequested: cb => {
+    if (!process.env.REVIEW_NATIVE_FIXTURE) return subscribe()
+    const listener = (_event, request) => cb(request)
+    ipcRenderer.on('app:review', listener)
+    return () => ipcRenderer.removeListener('app:review', listener)
+  },
+  setNativeReviewReady: ready => { if (process.env.REVIEW_NATIVE_FIXTURE) ipcRenderer.send('fixture:reviewReady', ready) },
+  acknowledgeNativeReview: id => { if (process.env.REVIEW_NATIVE_FIXTURE) ipcRenderer.send('fixture:reviewHandled', id) },
   setBadge: () => undefined, lookupAccounts: async () => [],
   reviewCommentPositions: async () => historicalPositions,
   reviewBlame: async () => [{ author: 'Sam Chen', id: 'abc12345', time: Date.now() / 1000, commit_msg: 'Bound telemetry batches', ranges: [{ start: 1, end: 40 }] }],
@@ -96,6 +104,7 @@ contextBridge.exposeInMainWorld('api', {
   act: async action => { ownerActions.push(action) },
   reviewDiscussion: async () => ({ comments: [...comments], drafts: [...drafts.values()], self, permittedLabels: { 'Code-Review': ['-2', '-1', '0', '+1', '+2'] }, labels: { 'Code-Review': { ...change.labels['Code-Review'], values: { '+1': 'Looks good' } } }, latestPatchSet: Math.max(...patchSets), owner, reviewers: { REVIEWER: [self], CC: [owner] }, attention: { 1: { account: self } }, readOnly: false, canDeletePublished }),
   saveReviewDraft: async (id, patchSet, input) => {
+    if (process.env.REVIEW_NATIVE_FIXTURE) await ipcRenderer.invoke('fixture:saveDraft')
     await new Promise(r => setTimeout(r, 120))
     if (failNextDraft) { failNextDraft = false; throw new Error('Fixture draft save failed') }
     const draft = { ...input, id: input.id ?? 'draft-' + (++draftCounter), patch_set: patchSet, updated: new Date().toISOString() }

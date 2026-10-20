@@ -74,6 +74,7 @@ window.api = {
   getUi: async () => ({ compact: /compact/.test(location.hash) }), getPretend: async () => null,
   getUpdateState: async () => ({ status: 'idle', currentVersion: '0.1.0' }),
   onUpdateState: subscribe, onSettingsChanged: subscribe, onRefreshRequested: subscribe, onTabRequested: subscribe, onConnectionChanged: subscribe,
+  onNativeReviewRequested: subscribe, setNativeReviewReady: () => {}, acknowledgeNativeReview: () => {},
   onCompactChanged: cb => { onCompact = cb; return () => {} }, setCompact: async on => onCompact(on),
   setBadge: payload => { badge = payload }, lookupAccounts: async () => [self, bob, carol],
   suggestAccounts: async () => [self, bob, carol],
