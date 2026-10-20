@@ -635,14 +635,14 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .local-review-header .local-review-heading { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; }
 .local-review h2 { margin: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .local-review-body { display: flex; flex: 1; min-height: 0; }
-.review-files { flex-shrink: 0; min-width: 0; display: flex; flex-direction: column; background: var(--panel); font-size: 12px; }
+.review-files { flex-shrink: 0; min-width: min(140px, 50%); max-width: 50%; display: flex; flex-direction: column; background: var(--panel); font-size: 12px; }
 .review-files-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 8px 6px; }
 .review-files-heading strong { font-size: 13px; }
 .review-files-heading span { color: var(--muted); font-size: 11px; white-space: nowrap; }
 .review-files-filter { display: flex; align-items: center; gap: 5px; padding: 4px 8px 9px; border-bottom: 1px solid var(--border); cursor: pointer; }
 .review-files-filter input { margin: 0; }
 .review-files-list { flex: 1; min-height: 0; overflow: auto; padding: 4px 0; }
-.review-directory { padding: 8px 10px 4px; color: var(--muted); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.review-directory { padding: 8px 10px 4px; color: var(--muted); overflow-wrap: anywhere; }
 .review-file-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; min-height: 24px; padding: 0 8px; }
 .review-file-row.selected { background: var(--pending-bg); }
 .review-file-row button { background: none; border: 0; font: inherit; color: var(--fg); cursor: pointer; height: 24px; padding: 0; }
@@ -650,7 +650,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-status svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; }
 .review-file-row .review-status[aria-pressed=true] { color: var(--accent); }
 .review-file-row .review-status:disabled { opacity: .5; cursor: default; }
-.review-file-row .review-file-name { flex: 1; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
+.review-file-row .review-file-name { min-width: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; height: auto; min-height: 24px; line-height: 18px; padding: 3px 4px; }
 .review-file-row.is-reviewed .review-file-name { color: var(--muted); }
 .review-file-row.selected .review-file-name { color: var(--accent); }
 .review-file-row button:hover { background: var(--border); }

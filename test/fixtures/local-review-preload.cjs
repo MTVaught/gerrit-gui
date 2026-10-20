@@ -61,6 +61,12 @@ if (process.env.REVIEW_FILE_ACTIVITY_FIXTURE) {
   )
   drafts.set('activity-draft', { id: 'activity-draft', patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', line: 2, side: 'REVISION', in_reply_to: 'activity-open', message: 'I will add that explanation.', updated: now, unresolved: true })
 }
+const longDirectory = 'src/telemetry/delivery-pipeline/retry-policies/region-failover'
+const longName = 'batch-scheduler-with-region-aware-delivery-and-retry-policy.ts'
+const longPath = `${longDirectory}/${longName}`
+const unbrokenPath = `src/${'delivery'.repeat(22)}.ts`
+let wideFixture = false
+if (process.env.REVIEW_FILE_WIDTH_FIXTURE) settings.localReview = true
 const commentWrites = []
 const reviews = []
 let failNextDraft = false
@@ -129,7 +135,11 @@ contextBridge.exposeInMainWorld('api', {
     reviewedFlags.set(link.patchSet, flags)
     reviewedWrites.push({ link, path, reviewed })
   },
-  reviewFiles: async () => process.env.REVIEW_FILE_ACTIVITY_FIXTURE ? {
+  reviewFiles: async () => process.env.REVIEW_FILE_WIDTH_FIXTURE ? {
+    'src/telemetry/batch-scheduler.ts': { lines_inserted: 8, lines_deleted: 4 },
+    [longPath]: { status: 'A', lines_inserted: 1234, lines_deleted: 12 },
+    ...(wideFixture ? { [unbrokenPath]: { lines_inserted: 12 } } : {}),
+  } : process.env.REVIEW_FILE_ACTIVITY_FIXTURE ? {
     'src/telemetry/batch-scheduler.ts': { lines_inserted: 7, lines_deleted: 1 },
     'src/telemetry/events.ts': { status: 'A', lines_inserted: 26 },
     'src/telemetry/transport.ts': { lines_inserted: 12, lines_deleted: 4 },
@@ -166,6 +176,7 @@ contextBridge.exposeInMainWorld('api', {
     ] }
   },
   fixtureStats: async () => ({ requests, comparisons, reviewedWrites, commentWrites, reviews, drafts: [...drafts.values()], appliedFixes, openedChanges, ownerActions }),
+  fixtureWideFile: async (enabled) => { wideFixture = enabled },
   openChange: async link => { openedChanges.push(link) }, changeUrl: async () => 'https://gerrit.example.com/c/telemetry/+/2481',
   openConnection: noOp, setCompact: noOp,
 })

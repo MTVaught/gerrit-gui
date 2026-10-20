@@ -1,0 +1,16 @@
+{
+  "light": {
+    "automaticWidth": 494.40625,
+    "pointerWidth": 640,
+    "windowLimit": 720,
+    "wrappedWidth": 240,
+    "checks": "passed"
+  },
+  "dark": {
+    "automaticWidth": 494.40625,
+    "pointerWidth": 640,
+    "windowLimit": 720,
+    "wrappedWidth": 240,
+    "checks": "passed"
+  }
+}
