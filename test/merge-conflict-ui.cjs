@@ -31,7 +31,7 @@ app.whenReady().then(async () => {
   const row = id => `[data-change-number="${id}"]`
   async function checkIndicators(theme) {
     for (const id of [102, 106, 109, 112]) {
-      assert.equal(await run(`document.querySelector('${row(id)} .conflict-mark').title`), 'Merge conflict with main')
+      assert.equal(await run(`document.querySelector('${row(id)} .conflict-mark').title`), '')
       assert.equal(await run(`document.querySelector('${row(id)} .conflict-mark').getAttribute('aria-label')`), 'Merge conflict with main')
     }
     for (const id of [101, 103, 104, 105, 107, 108, 110, 111]) {

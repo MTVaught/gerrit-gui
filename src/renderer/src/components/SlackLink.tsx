@@ -1,3 +1,4 @@
+import { TooltipButton } from './Tooltip.tsx'
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeAction, ChangeView } from '../../../shared/types.ts'
 import { slackTag, slackTags, slackUrl } from '../../../shared/model.ts'
@@ -66,15 +67,15 @@ export function SlackLink(props: { view: ChangeView; onAct: (a: ChangeAction) =>
 
   if (v.slackUrl) {
     return (
-      <span className={tab ? 'tabmark' : 'badge slack'} title={`Slack conversation about this change: ${v.slackUrl}`} onClick={stop}>
-        <button className="link" onClick={() => void api.openUrl(v.slackUrl!)}>
+      <span className={tab ? 'tabmark' : 'badge slack'} onClick={stop}>
+        <TooltipButton className="link" title={`Open the Slack conversation about this change: ${v.slackUrl}`} onClick={() => void api.openUrl(v.slackUrl!)}>
           <ChatIcon />
           Slack<span className="long"> ↗</span>
-        </button>
+        </TooltipButton>
         {canEdit && (
-          <button className="chip-x" title="Unlink the Slack conversation: removes the slack: hashtag" onClick={() => void props.onAct({ type: 'hashtag', id, remove: slackTags(c) })}>
+          <TooltipButton className="chip-x" title="Unlink the Slack conversation: removes the slack: hashtag" onClick={() => void props.onAct({ type: 'hashtag', id, remove: slackTags(c) })}>
             ×
-          </button>
+          </TooltipButton>
         )}
       </span>
     )
@@ -82,7 +83,7 @@ export function SlackLink(props: { view: ChangeView; onAct: (a: ChangeAction) =>
   if (!canEdit) return null
   return (
     <span className={tab ? 'tabmark add picker-wrap' : 'picker-wrap slack-add'} ref={wrap} onClick={stop}>
-      <button className={tab ? 'link' : 'link muted small'} onClick={toggle} title="Link the Slack conversation about this change" aria-haspopup="dialog" aria-expanded={editing}>
+      <TooltipButton className={tab ? 'link' : 'link muted small'} onClick={toggle} title="Link the Slack conversation about this change" aria-haspopup="dialog" aria-expanded={editing}>
         {tab ? (
           <>
             <ChatIcon />+<span className="long"> Slack</span>
@@ -90,7 +91,7 @@ export function SlackLink(props: { view: ChangeView; onAct: (a: ChangeAction) =>
         ) : (
           '+ Slack thread'
         )}
-      </button>
+      </TooltipButton>
       {editing && pos && (
         <div className="menu picker slack" role="dialog" aria-label="Link a Slack thread" style={{ top: pos.top, left: pos.left }}>
           <h4>Link a Slack thread</h4>
@@ -112,12 +113,12 @@ export function SlackLink(props: { view: ChangeView; onAct: (a: ChangeAction) =>
           </div>
           {text.trim() && !url && <p className="error small">Not a Slack link: it must start with https:// and be on slack.com.</p>}
           <div className="picker-foot">
-            <button type="button" className="link muted" onClick={() => setEditing(false)}>
+            <TooltipButton type="button" className="link muted" onClick={() => setEditing(false)}>
               Cancel
-            </button>
-            <button type="button" className="btn primary" disabled={!url} onClick={() => void confirm()}>
+            </TooltipButton>
+            <TooltipButton type="button" className="btn primary" disabled={!url} onClick={() => void confirm()}>
               Link
-            </button>
+            </TooltipButton>
           </div>
         </div>
       )}

@@ -1,3 +1,4 @@
+import { Tooltip, TooltipButton } from './Tooltip.tsx'
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
 import { STATE_LABEL, chainTitle, chainStepStatus, displayName, nextInChain, reviewLink, type Chain, type ChangeFamily, type RelatedSet, type SortId } from '../../../shared/model.ts'
@@ -93,8 +94,8 @@ function FamilyBox(props: { family: ChangeFamily; lead: ChangeView } & LineProps
       </tr>
       <tr className="fh">
         <td colSpan={line.columns}>
-          <span className="t" title={`Change-Id ${f.key}`}>
-            <ForkIcon />
+          <span className="t">
+            <Tooltip text={`${f.members.length} related branches. Change-Id ${f.key}`} focusable><span className="status-icon"><ForkIcon /></span></Tooltip>
             <span className="txt">
               <Highlight text={lead.change.subject} term={line.search} />
             </span>
@@ -130,8 +131,8 @@ function ChainBox(props: { chain: Chain; lead: ChangeView; all: RelatedSet | nul
       </tr>
       <tr id={`sequence:${chain.key}`} className="fh">
         <td colSpan={line.columns}>
-          <span className="t" title={`${chain.members.length} changes built on each other on ${anchor.change.branch}; review them from the top down`}>
-            <ChainIcon />
+          <span className="t">
+            <Tooltip text={`${chain.members.length} changes built on each other on ${anchor.change.branch}; review them from the top down`} focusable><span className="status-icon"><ChainIcon /></span></Tooltip>
             <span className="txt">
               <Highlight text={chainTitle(chain)} term={line.search} />
             </span>
@@ -158,27 +159,25 @@ function ChainBox(props: { chain: Chain; lead: ChangeView; all: RelatedSet | nul
         const family = chain.families?.[i]
         const reference = chain.references?.[i]
         const status = chainStepStatus(chain, i, next)
-        const title = (
-          <>
-            <span className={'step' + (status.next ? ' next' : status.done ? ' done' : '')}>
-              {status.done ? <CheckIcon /> : i + 1}
-            </span>
-            <Highlight text={v.change.subject} term={line.search} />
-          </>
-        )
+        const step = <Tooltip text={`Step ${i + 1}: ${status.done ? STATE_LABEL[v.state] : status.next ? 'review this one next' : STATE_LABEL[v.state]}`} focusable>
+          <span className={'step' + (status.next ? ' next' : status.done ? ' done' : '')}>
+            {status.done ? <CheckIcon /> : i + 1}
+          </span>
+        </Tooltip>
+        const title = <Highlight text={v.change.subject} term={line.search} />
         if (family && family.members.length > 1) return (
           <Fragment key={v.change.id}>
             <tr className="fh sequence-family-head"><td colSpan={line.columns}>
-              <span className="t">{title}</span>
-              <span className="n muted"><ForkIcon /> {family.members.length} branches
-              </span>
+              <span className="t">{step}{title}</span>
+              <Tooltip text={`${family.members.length} related branches. Change-Id ${family.key}`} focusable><span className="n muted"><ForkIcon /> {family.members.length} branches
+              </span></Tooltip>
             </td></tr>
             {reference ? <tr className="mem"><td colSpan={line.columns}><SequenceFamilyReference reference={reference} /></td></tr> : family.members.map((member, j) => (
               <LedgerRow key={member.change.id} view={member} {...line} member={{ last: i === chain.members.length - 1 && j === family.members.length - 1 }} />
             ))}
           </Fragment>
         )
-        return <LedgerRow key={v.change.id} view={v} {...line} member={{ last: i === chain.members.length - 1, title }} />
+        return <LedgerRow key={v.change.id} view={v} {...line} member={{ last: i === chain.members.length - 1, title, step }} />
       })}
       <tr className="fsp">
         <td colSpan={line.columns} />
@@ -228,7 +227,7 @@ function LedgerRow(
   props: LineProps & {
     view: ChangeView
     /** A line inside a box: titled by its branch (a family) or by `title` (a sequence: step and subject). */
-    member?: { last: boolean; title?: ReactNode }
+    member?: { last: boolean; title?: ReactNode; step?: ReactNode }
   },
 ) {
   const { view: v, self } = props
@@ -256,7 +255,7 @@ function LedgerRow(
     </>,
   )
   if (!v.isMine && open && v.lastReviewedPatchSet !== null && v.lastReviewedPatchSet < v.patchSet) sub.push(<MyLastReview view={v} />)
-  if ((c.unresolved_comment_count ?? 0) > 0) sub.push(`${c.unresolved_comment_count} unresolved`)
+  if ((c.unresolved_comment_count ?? 0) > 0) sub.push(<Tooltip text={`${c.unresolved_comment_count} unresolved comment ${c.unresolved_comment_count === 1 ? 'thread' : 'threads'}`} focusable><span className="unresolved-count">{c.unresolved_comment_count} unresolved</span></Tooltip>)
   if (c.insertions !== undefined) {
     sub.push(
       <>
@@ -274,6 +273,7 @@ function LedgerRow(
         <td className="c" onClick={toggle}>
           {/* The conversation's tab hangs from the top edge of the line, over the right end of the subject. */}
           <SlackLink view={v} onAct={props.onAct} variant="tab" />
+          {props.member?.step}
           {props.member ? (
             // A member line is titled by its branch; the title opens that branch's change, the rest of the cell toggles the details.
             <button
@@ -298,14 +298,14 @@ function LedgerRow(
               <Highlight text={c.subject} term={props.search} />
             </button>
           )}
-          <div className="s" title={`${c.project} · ${c.branch}`}>
+          <Tooltip text={`${c.project} · ${c.branch}`}><div className="s">
             {sub.map((part, i) => (
               <Fragment key={i}>
                 {i > 0 && <span className="sep">·</span>}
                 {part}
               </Fragment>
             ))}
-          </div>
+          </div></Tooltip>
         </td>
         {props.showCi && (
           <td className="ci" onClick={toggle}>
@@ -327,9 +327,9 @@ function LedgerRow(
           ) : reviewer ? (
             <ReviewShort view={v} />
           ) : (
-            <button className="btn sm more" aria-label={expanded ? 'Hide details' : 'Show details'} aria-expanded={expanded} onClick={toggle}>
+            <TooltipButton className="btn sm more" aria-label={expanded ? 'Hide details' : 'Show details'} aria-expanded={expanded} onClick={toggle}>
               ···
-            </button>
+            </TooltipButton>
           )}
         </td>
       </tr>
@@ -422,17 +422,17 @@ function Avatars(props: { reviewers: ReviewerStatus[]; view: ChangeView; self: A
               ? 'asked to review, has not voted yet'
               : 'reviewer, review not requested'
         return (
-          <span key={r.account._account_id} className={`av h${r.account._account_id % 6}${me ? ' you' : ''}`} title={`${name}: ${status}`}>
+          <Tooltip key={r.account._account_id} text={`${name}: ${status}`} focusable><span className={`av h${r.account._account_id % 6}${me ? ' you' : ''}`}>
             {initials(displayName(r.account))}
             {r.vote !== 0 && <i className={'v ' + (r.vote > 0 ? 'pos' : 'neg')}>{fmtVote(r.vote)}</i>}
             {r.vote === 0 && open && v.reviewRequested && <i className="v pend" />}
-          </span>
+          </span></Tooltip>
         )
       })}
       {extra > 0 && (
-        <span className="av extra" title={sorted.slice(shown.length).map((r) => displayName(r.account)).join(', ')}>
+        <Tooltip text={sorted.slice(shown.length).map((r) => displayName(r.account)).join(', ')} focusable><span className="av extra">
           +{extra}
-        </span>
+        </span></Tooltip>
       )}
     </span>
   )

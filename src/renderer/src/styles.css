@@ -871,3 +871,27 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-existing-participant { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 12px; }
 
 .review-send-dialog textarea { min-height: 96px; resize: vertical; }
+
+/* Dashboard help escapes card and ledger clipping without affecting row size. */
+.dashboard-tooltip {
+  position: fixed;
+  z-index: 1000;
+  width: max-content;
+  max-width: min(340px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--muted);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: 0 3px 12px #0003;
+  font: 12px/1.5 system-ui, sans-serif;
+  font-weight: 400;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+[data-tooltip-trigger]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.status-icon { display: inline-flex; vertical-align: middle; }
+.ledger tr.mem td.c > .step { width: 16px; height: 16px; font-size: 10px; margin-right: 6px; vertical-align: -3px; }
+.ledger tr.mem.seq td.c > .t { max-width: calc(100% - 22px); }

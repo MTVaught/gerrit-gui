@@ -1,3 +1,4 @@
+import { Tooltip, TooltipButton } from './Tooltip.tsx'
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { AccountInfo, ChangeAction, ChangeView, ReviewerStatus } from '../../../shared/types.ts'
 import { STATE_LABEL, accountKeys, chainStepStatus, chainTitle, displayName, nextInChain, preferredKey, reviewerTag, reviewerTagsFor, type Chain, type ChangeFamily, type ParentLink, type RelatedSet, type SortId } from '../../../shared/model.ts'
@@ -91,9 +92,9 @@ export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedS
   return (
     <li id={`sequence:${chain.key}`} className="change chain">
       <div className="change-head">
-        <span className="badge chain" title="These changes are built on each other; review them from the top down">
+        <Tooltip text={`${chain.members.length} changes built on each other on ${c.branch}; review them from the top down`} focusable><span className="badge chain">
           <ChainIcon /> {chain.members.length} in sequence
-        </span>
+        </span></Tooltip>
         <span className="subject">
           <Highlight text={chainTitle(chain)} term={props.search} />
         </span>
@@ -135,7 +136,7 @@ export function ChainCard(props: { chain: Chain; lead: ChangeView; all: RelatedS
           <div key={v.change.id} className="sequence-family" role="group" aria-label={`${v.change.subject}: ${family.members.length} branches`}>
             <div className="sequence-family-head">
               {title}
-              <span className="badge branch" title={`Change-Id ${family.key}`}><ForkIcon /> {family.members.length} branches</span>
+              <Tooltip text={`${family.members.length} related branches. Change-Id ${family.key}`} focusable><span className="badge branch"><ForkIcon /> {family.members.length} branches</span></Tooltip>
             </div>
             {reference ? <SequenceFamilyReference reference={reference} /> : family.members.map((member) => (
               <BranchRow key={member.change.id} view={member} self={props.self} onAct={props.onAct} sort={props.sort} search={props.search} slack />
@@ -177,14 +178,14 @@ function Step(props: { view: ChangeView; index: number; next: boolean; done: boo
   const done = props.done
   if (done)
     return (
-      <span className="step done" title={`Step ${props.index + 1}: ${STATE_LABEL[v.state]}`}>
+      <Tooltip text={`Step ${props.index + 1}: ${STATE_LABEL[v.state]}`} focusable><span className="step done">
         <CheckIcon />
-      </span>
+      </span></Tooltip>
     )
   return (
-    <span className={'step' + (props.next ? ' next' : '')} title={props.next ? `Step ${props.index + 1}: review this one next` : `Step ${props.index + 1}`}>
+    <Tooltip text={props.next ? `Step ${props.index + 1}: review this one next` : `Step ${props.index + 1}`} focusable><span className={'step' + (props.next ? ' next' : '')}>
       {props.index + 1}
-    </span>
+    </span></Tooltip>
   )
 }
 
@@ -199,9 +200,9 @@ export function StubCard(props: { set: RelatedSet; lead: ChangeView; onAct: (a: 
   return (
     <li className="change stub state-in-progress">
       <div className="change-head">
-        <span className="badge chain" title="These changes are built on each other">
+        <Tooltip text={`${set.members.length} changes built on each other on ${lead.change.branch}`} focusable><span className="badge chain">
           <ChainIcon /> {set.members.length} related
-        </span>
+        </span></Tooltip>
         <span className="subject">
           {nums} on <code>{lead.change.branch}</code>
         </span>
@@ -222,9 +223,9 @@ function CardHead(props: { view: ChangeView; family?: ChangeFamily; search: stri
         <Highlight text={c.subject} term={props.search} />
       </button>
       {f && (
-        <span className="badge branch" title={`Change-Id ${f.key}`}>
+        <Tooltip text={`${f.members.length} related branches. Change-Id ${f.key}`} focusable><span className="badge branch">
           <ForkIcon /> {f.members.length} branches
-        </span>
+        </span></Tooltip>
       )}
       <span className="muted small origin">
         {c.project} · {v.isMine ? 'you' : displayName(c.owner)}
@@ -343,14 +344,17 @@ export function PatchSetIndicators(props: { view: ChangeView }) {
   const conflict = v.change.mergeable === false
   if (v.change.status !== 'NEW' || (!conflict && v.verifiedVote === 0)) return null
   const pos = v.verifiedVote > 0
+  const votes = (v.change.labels?.Verified?.all ?? []).map(vote => vote.value ?? 0)
+  const vote = pos ? Math.max(...votes) : Math.min(...votes)
+  const ciHelp = `CI checks ${pos ? 'passed' : 'failed'}. Verified ${pos ? '+' : ''}${vote} on patch set ${v.patchSet}.`
   const warning = `Merge conflict with ${v.change.branch}`
   return (
     <span className="patch-set-indicators">
-      {conflict && <span className="conflict-mark" title={warning} role="img" aria-label={warning}><ConflictIcon /></span>}
+      {conflict && <Tooltip text={warning} focusable><span className="conflict-mark" role="img" aria-label={warning}><ConflictIcon /></span></Tooltip>}
       {v.verifiedVote !== 0 && (
-        <span className={'ci-mark ' + (pos ? 'pos' : 'neg')} title={pos ? `Verified +1 on patch set ${v.patchSet}: CI passed` : `Verified −1 on patch set ${v.patchSet}: CI failed`}>
+        <Tooltip text={ciHelp} focusable><span className={'ci-mark ' + (pos ? 'pos' : 'neg')} role="img" aria-label={ciHelp}>
           {pos ? '✓' : '✕'}
-        </span>
+        </span></Tooltip>
       )}
     </span>
   )
@@ -361,10 +365,10 @@ export function Unresolved(props: { count: number | undefined }) {
   const n = props.count ?? 0
   if (n === 0) return null
   return (
-    <span className="unresolved" title={`${n} unresolved comment ${n === 1 ? 'thread' : 'threads'}`}>
+    <Tooltip text={`${n} unresolved comment ${n === 1 ? 'thread' : 'threads'}`} focusable><span className="unresolved">
       <CommentIcon />
       {n}
-    </span>
+    </span></Tooltip>
   )
 }
 
@@ -393,7 +397,7 @@ export function SizerRow() {
         <span className="badge in-person-review">{STATE_LABEL['in-person-review']}</span>
       </span>
       <span className="cell c-ci">
-        <PrivateBadge />
+        <PrivateBadge help={false} />
       </span>
       <span className="cell c-num">
         <span className="link">#00000</span>
@@ -432,13 +436,14 @@ export function FlagBadge(props: { view: ChangeView }) {
   )
 }
 
-export function PrivateBadge() {
-  return (
-    <span className="badge private" title="Private: only the owner, the reviewers and the CCs can see this change in Gerrit">
+export function PrivateBadge({ help = true }: { help?: boolean }) {
+  const badge = (
+    <span className="badge private">
       <LockIcon />
       Private
     </span>
   )
+  return help ? <Tooltip text="Private: only the owner, the reviewers and the CCs can see this change in Gerrit" focusable>{badge}</Tooltip> : badge
 }
 
 /**
@@ -489,40 +494,40 @@ export function Reviewers(props: ActProps) {
   )
   const demote = (r: ReviewerStatus) =>
     !r.tagOnly && (
-      <button
+      <TooltipButton
         key="demote"
         className="chip-x"
         title="Stop waiting for this vote; the person stays on the change in Gerrit"
         onClick={() => void props.onAct({ type: 'hashtag', id, remove: reviewerTagsFor(c, r.account) })}
       >
         ↓
-      </button>
+      </TooltipButton>
     )
   const removePrimary = (r: ReviewerStatus) => (
-    <button
+    <TooltipButton
       key="remove"
       className="chip-x"
       title="Remove primary reviewer: drops the tag and, when Gerrit lets you, takes the person off the change"
       onClick={() => void props.onAct({ type: 'removePrimaryReviewer', id, key: r.key!, accountId: r.tagOnly ? undefined : r.account._account_id })}
     >
       ×
-    </button>
+    </TooltipButton>
   )
   const promote = (r: ReviewerStatus) => {
     const key = preferredKey(r.account)
     return (
       key && (
-        <button key="promote" className="chip-x" title="Make primary: this vote then decides the state" onClick={() => void props.onAct({ type: 'hashtag', id, add: [reviewerTag(key)] })}>
+        <TooltipButton key="promote" className="chip-x" title="Make primary: this vote then decides the state" onClick={() => void props.onAct({ type: 'hashtag', id, add: [reviewerTag(key)] })}>
           ↑
-        </button>
+        </TooltipButton>
       )
     )
   }
   const removeOther = (r: ReviewerStatus) =>
     owner && (
-      <button key="remove" className="chip-x" title="Remove reviewer" onClick={() => void props.onAct({ type: 'removeReviewer', id, accountId: r.account._account_id })}>
+      <TooltipButton key="remove" className="chip-x" title="Remove reviewer" onClick={() => void props.onAct({ type: 'removeReviewer', id, accountId: r.account._account_id })}>
         ×
-      </button>
+      </TooltipButton>
     )
 
   const primary: Chip[] = byVote(v.reviewers).map((r) => ({
@@ -620,9 +625,9 @@ function ChipRow(props: { chips: Chip[]; trailing?: ReactNode; className?: strin
   return (
     <div ref={ref} className={['reviewers', props.className, expanded ? 'expanded' : ''].filter(Boolean).join(' ')}>
       {shown.map((c) => (
-        <span key={c.key} data-chip="" className={'chip ' + c.className} title={c.title}>
+        <Tooltip key={c.key} text={c.title}><span data-chip="" className={'chip ' + c.className}>
           {c.children}
-        </span>
+        </span></Tooltip>
       ))}
       {hidden.length > 0 && (
         <button className="chip more" title={hidden.map((c) => c.label).join(', ')} onClick={() => setExpanded(true)}>

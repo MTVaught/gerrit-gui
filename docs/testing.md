@@ -183,3 +183,51 @@ and `suggested-fix-preview`, each with `-light` and `-dark` suffixes.
 Draft screenshots also assert that the textarea is visible and receives pointer
 hit testing in both themes. Inline comment zones retain their measured height
 while Monaco hides them offscreen, and editors reveal before receiving focus.
+
+## Dashboard icon tooltips
+
+Dashboard status icons and icon controls show help after a short hover delay,
+or immediately on keyboard focus. Press Escape to close help and keep focus.
+The tooltip stays open when the pointer moves into it. Text wraps inside the
+window in light and dark themes.
+
+Help covers merge conflicts, CI results, sequence steps, related branches,
+unresolved comment threads, private status, reviewer controls, toolbar controls,
+and split-menu controls in standard cards and the compact ledger. A CI check
+means CI checks passed for the stated patch set. A sequence check identifies
+the step's review state. A red CI X means CI checks failed. The conflict warning
+names the destination branch. Help does not change any workflow state or action.
+
+Start the fixture server in one terminal:
+
+```sh
+pnpm exec vite --config vite.web.config.ts --host 127.0.0.1
+```
+
+Then run the tooltip checks and existing conflict regression check:
+
+```sh
+xvfb-run -a -s '-screen 0 1560x1100x24' node_modules/.bin/electron --no-sandbox test/dashboard-tooltips-ui.cjs
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/merge-conflict-ui.cjs
+```
+
+The Linux fixture harness uses Xvfb and xdotool for real pointer and keyboard
+input. It loads the real renderer with simulated Gerrit data and an isolated
+user-data directory. The sandbox flag applies only to this test harness.
+The checks cover hover, Tab focus, accessible descriptions, Escape dismissal,
+pointer travel into help, viewport bounds, unchanged trigger dimensions,
+current vote and branch text after refresh, removal on view changes, and
+retained control actions. Screenshots go to
+`docs/screenshots/dashboard-tooltips/` as matched light and dark pairs.
+
+To record the same hover, focus, and dismissal sequence in both layouts and
+both themes, run this command with FFmpeg installed:
+
+```sh
+TOOLTIP_RECORDINGS=1 xvfb-run -a -s '-screen 0 1560x1100x24' node_modules/.bin/electron --no-sandbox test/dashboard-tooltips-ui.cjs
+```
+
+The videos include the pointer and action captions. They go to
+`docs/videos/dashboard-tooltips/` with `-light` and `-dark` filename suffixes.
+This workflow verifies Linux Electron behavior. It does not contact Gerrit or
+verify native Windows or macOS behavior.

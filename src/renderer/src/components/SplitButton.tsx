@@ -1,3 +1,4 @@
+import { TooltipButton } from './Tooltip.tsx'
 import { useEffect, useRef, useState } from 'react'
 import { actionClass, type ActionSpec } from './actions.ts'
 import { OwnerReviewOptions } from './OwnerReviewOptions.tsx'
@@ -51,7 +52,7 @@ export function SplitButton(props: { spec: ActionSpec; small?: boolean }) {
       <button className={actionClass(spec, `split-main ${size}`)} disabled={spec.disabled} title={spec.title} onClick={spec.run}>
         {props.small ? spec.short : spec.label}
       </button>
-      <button
+      <TooltipButton
         className={actionClass(spec, `split-caret ${size}`)}
         disabled={spec.disabled && !spec.reviewOptions?.length}
         title="Other choices"
@@ -61,7 +62,7 @@ export function SplitButton(props: { spec: ActionSpec; small?: boolean }) {
         onClick={toggle}
       >
         ▾
-      </button>
+      </TooltipButton>
       {open && pos && (
         <div className={`menu${spec.reviewOptions?.length ? ' owner-review-menu' : ''}`} role="menu" style={{ top: pos.top, right: pos.right }}>
           {items.map((m) => (

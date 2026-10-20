@@ -61,7 +61,7 @@ app.whenReady().then(async () => {
   await click('.tabs:not(.ghost) .tab.active .count.split > .iterating')
   assert.equal(await run(`document.querySelectorAll('.filter-summary').length`), 0)
   assert.deepEqual(await run(pills), expected)
-  await click('button[title="Search, filter and sort (Ctrl+F)"]')
+  await click('.view .split-main')
   await until(`Boolean(document.querySelector('input[placeholder]'))`)
   const input = await run(`Array.from(document.querySelectorAll('input')).map(e => ({placeholder:e.placeholder, type:e.type}))`)
   assert.ok(input.some(i => i.placeholder === 'Search titles'))
