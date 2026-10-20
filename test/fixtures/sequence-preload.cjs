@@ -27,5 +27,6 @@ contextBridge.exposeInMainWorld('api', {
  getUi: async () => ({ compact: process.env.SEQUENCE_COMPACT === '1' }),
  getUpdateState: async () => ({status:'idle',currentVersion:'0.1.0',availableVersion:null,downloadedVersion:null,releaseNotes:null,releaseUrl:null,downloadPercent:null,checkedAt:null,message:null,errorContext:null}),
  onUpdateState:subscribe,onCompactChanged:subscribe,onSettingsChanged:subscribe,onRefreshRequested:subscribe,onTabRequested:subscribe,onConnectionChanged:subscribe,
+ onNativeReviewRequested:subscribe,setNativeReviewReady:()=>{},acknowledgeNativeReview:()=>{},
  setBadge:noOp,openChange:noOp,openUrl:noOp,
 })

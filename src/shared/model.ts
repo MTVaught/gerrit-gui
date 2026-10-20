@@ -965,7 +965,8 @@ export function needsAction(v: ChangeView, category: ActionCategory): boolean {
  * does not need the action carries a note saying why (the user already
  * voted, or the branch is in another state), so the family reads as it does
  * on its card. A review opens the diff the Review button opens; the other
- * categories open the change page.
+ * categories target the change page. Native navigation applies the review
+ * destination preference, resolving the current patch set for those pages.
  */
 export function actionMenu(views: ChangeView[]): ActionMenu {
   const menu: ActionMenu = { review: [], fix: [], ready: [], merge: [] }

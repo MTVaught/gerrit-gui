@@ -276,6 +276,12 @@ export interface ChangeLink {
   basePatchSet?: number
 }
 
+/** A native menu selection, retained until the review UI handles it. */
+export type NativeReviewRequest = { requestId: number } & (
+  | { link: ChangeLink; subject: string; error?: never }
+  | { error: string; link?: never; subject?: never }
+)
+
 /** How the macOS menu bar item shows the per-category action counts. */
 export type BadgeStyle = 'color' | 'glyph'
 
@@ -409,7 +415,7 @@ export type ActionCounts = Record<ActionCategory, number>
 export interface ActionMenuMember {
   number: number
   branch: string
-  /** Where a click goes: the diff to review, or the change page. */
+  /** Review comparison, or change-page target when no comparison is specified. */
   link: ChangeLink
   /** This branch needs the category's action. Otherwise it is listed greyed out with the note. */
   actionable: boolean

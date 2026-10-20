@@ -10,7 +10,7 @@ export interface TrayHandlers {
   show(): void
   showTab(tab: TabId): void
   refresh(): void
-  /** Open a change in the browser (from a row of the tray menu). */
+  /** Open a change using the user's review destination preference. */
   openChange(link: ChangeLink): void
   setCompact(on: boolean): void
   setCompactOnTop(on: boolean): void

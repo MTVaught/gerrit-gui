@@ -7,6 +7,7 @@ import type {
   ChangeInfo,
   ChangeInspection,
   ChangeLink,
+  NativeReviewRequest,
   ReviewDiff,
   ReviewBlame,
   GerritDiffPreferences,
@@ -83,6 +84,10 @@ export interface Api {
   onRefreshRequested(cb: () => void): () => void
   /** The tray menu asked for a specific board tab. */
   onTabRequested(cb: (tab: TabId) => void): () => void
+  /** Subscribe before announcing readiness for native review navigation. */
+  onNativeReviewRequested(cb: (request: NativeReviewRequest) => void): () => void
+  setNativeReviewReady(ready: boolean): void
+  acknowledgeNativeReview(requestId: number): void
 
   // The connection (server, account, password) is edited in its own window.
   /** Open or raise the connection window. */

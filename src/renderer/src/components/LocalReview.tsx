@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import { createPortal } from 'react-dom'
 import type { DiffThemePreference, ChangeLink, FileInfo, ReviewComment, ReviewDiscussion, ReviewCommentPosition } from '../../../shared/types.ts'
 import { resolveDiffTheme } from '../../../shared/theme.ts'
@@ -18,7 +18,9 @@ import { reviewContextIsSynced, fromGerritPreferences, loadReviewPreferences, sa
 
 const ReviewEditor = lazy(() => import('./ReviewEditor.tsx'))
 
-export function LocalReview({ link: initialLink, subject, onClose, onMutate }: { link: ChangeLink; subject: string; onClose: () => void; onMutate: (write: () => Promise<void>) => Promise<void> }) {
+export interface LocalReviewHandle { canClose(): boolean }
+
+export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref, navigationError }: { link: ChangeLink; subject: string; onClose: () => void; onMutate: (write: () => Promise<void>) => Promise<void>; ref?: Ref<LocalReviewHandle>; navigationError?: string | null }) {
   const settingsHandle = useSettings()
   const diffTheme = settingsHandle.settings?.diffTheme ?? 'application'
   const applicationTheme = useResolvedTheme(settingsHandle.settings?.theme)
@@ -29,6 +31,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate }: {
   const [commentsOpen, setCommentsOpen] = useState(true)
   const [commentControls, setCommentControls] = useState<HTMLDivElement | null>(null)
   function closeReview() { if (comments.current?.canClose() !== false) onClose() }
+  useImperativeHandle(ref, () => ({ canClose: () => comments.current?.canClose() !== false }))
   const [link, setLink] = useState(initialLink)
   const [patchSets, setPatchSets] = useState<number[] | null>(null)
   const preferenceVersion = useRef(0)
@@ -258,6 +261,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate }: {
       }
     }}>
       <header className="local-review-header">
+        {navigationError && <p className="error" role="alert">{navigationError}</p>}
         <div className="local-review-heading"><span className="muted">#{link.id}</span><h2 id="local-review-title">{subject}</h2></div>
         <div ref={setCommentControls} />
         <button className="btn" data-review-preferences onClick={() => setPreferencesOpen(true)}>Diff preferences</button>

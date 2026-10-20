@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('api', {
   getUi: async () => ({ compact: false }), getPretend: async () => null,
   getUpdateState: async () => ({ status: 'idle', currentVersion: '0.1.0' }),
   onUpdateState: subscribe, onCompactChanged: subscribe, onSettingsChanged: subscribe, onRefreshRequested: subscribe, onTabRequested: subscribe, onConnectionChanged: subscribe,
+  onNativeReviewRequested: subscribe, setNativeReviewReady: () => {}, acknowledgeNativeReview: () => {},
   setBadge: () => {}, lookupAccounts: async () => [], notify: () => {},
   fetchChange: async () => { stats.details++; return structuredClone(detail) },
   fetchDashboard: async () => {
