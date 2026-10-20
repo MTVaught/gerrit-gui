@@ -1,14 +1,26 @@
 import type { FileInfo, ReviewDiscussion, ReviewCommentPosition } from '../../../shared/types.ts'
 import { commentThreads } from '../review-comments.ts'
-import { useRef, useState, type Ref } from 'react'
+import { useLayoutEffect, useRef, useState, type Ref } from 'react'
 
 export function ReviewFileList({ files, discussion, positions, paths, selected, reviewed, busy, onOpen, onReviewed, ref }: {
   positions: ReviewCommentPosition[]; files: Record<string, FileInfo>; discussion: ReviewDiscussion | null; paths: string[]; selected: string; reviewed: Set<string> | null; busy: boolean
   onOpen: (path: string) => void; onReviewed: (path: string, reviewed: boolean) => void; ref: Ref<HTMLElement>
 }) {
   const [unreviewedOnly, setUnreviewedOnly] = useState(false)
-  const [width, setWidth] = useState(240)
+  const [width, setWidth] = useState<number | null>(null)
+  const pane = useRef<HTMLElement>(null)
+  const [size, setSize] = useState({ width: 140, max: 140 })
   const drag = useRef<{ x: number; width: number } | null>(null)
+  useLayoutEffect(() => {
+    const element = pane.current!
+    const parent = element.parentElement!
+    const measure = () => setSize({ width: Math.round(element.getBoundingClientRect().width), max: Math.floor(parent.clientWidth / 2) })
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [])
   const visible = paths.filter((path) => !unreviewedOnly || !reviewed?.has(path))
   const groups = new Map<string, string[]>()
   for (const path of visible) {
@@ -18,9 +30,10 @@ export function ReviewFileList({ files, discussion, positions, paths, selected, 
   }
   const count = paths.filter((path) => reviewed?.has(path)).length
   const allThreads = commentThreads([...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])])
-  function resize(next: number) { setWidth(Math.max(140, Math.min(360, next))) }
+  const min = Math.min(140, size.max)
+  function resize(next: number) { setWidth(Math.max(min, Math.min(size.max, next))) }
   return <>
-    <nav ref={ref} className="review-files" aria-label="Changed files" style={{ width }}>
+    <nav ref={(element) => { pane.current = element; if (typeof ref === 'function') return ref(element); if (ref) ref.current = element }} className="review-files" aria-label="Changed files" style={{ width: width ?? 'max-content' }}>
       <div className="review-files-heading"><strong>Files</strong><span aria-live="polite">{reviewed ? `${count}/${paths.length} reviewed` : 'Loading status…'}</span></div>
       <label className="review-files-filter"><input type="checkbox" checked={unreviewedOnly} disabled={!reviewed} onChange={(e) => setUnreviewedOnly(e.target.checked)} />Unreviewed only</label>
       <div className="review-files-list">
@@ -58,10 +71,10 @@ export function ReviewFileList({ files, discussion, positions, paths, selected, 
         {paths.length > 0 && visible.length === 0 && <p className="review-files-empty">All files reviewed.</p>}
       </div>
     </nav>
-    <div className="review-file-resize" role="separator" aria-label="Resize file list" aria-orientation="vertical" aria-valuemin={140} aria-valuemax={360} aria-valuenow={width} tabIndex={0}
-      onPointerDown={(e) => { if (e.button !== 0) return; e.preventDefault(); drag.current = { x: e.clientX, width }; e.currentTarget.setPointerCapture(e.pointerId) }}
+    <div className="review-file-resize" role="separator" aria-label="Resize file list" aria-orientation="vertical" aria-valuemin={min} aria-valuemax={size.max} aria-valuenow={size.width} tabIndex={0}
+      onPointerDown={(e) => { if (e.button !== 0) return; e.preventDefault(); drag.current = { x: e.clientX, width: pane.current!.getBoundingClientRect().width }; e.currentTarget.setPointerCapture(e.pointerId) }}
       onPointerMove={(e) => { if (drag.current) resize(drag.current.width + e.clientX - drag.current.x) }}
       onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}
-      onKeyDown={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); resize(width + (e.key === 'ArrowRight' ? 10 : -10)) } }} />
+      onKeyDown={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); resize(pane.current!.getBoundingClientRect().width + (e.key === 'ArrowRight' ? 10 : -10)) } }} />
   </>
 }
