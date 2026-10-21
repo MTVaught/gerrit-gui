@@ -44,7 +44,7 @@ export function ReviewFileList({ files, discussion, positions, paths, selected, 
             const threads = allThreads.filter(thread => thread.some(c => c.path === path || c.path === info?.old_path || positions.some(position => position.id === c.id && position.anchor.path === path)))
             const unresolved = threads.filter(t => t.at(-1)?.unresolved).length
             const resolved = threads.filter(t => !t.at(-1)?.unresolved && t.some(c => discussion?.comments.some(published => published.id === c.id))).length
-            const drafts = discussion?.drafts.filter(c => c.path === path || c.path === info?.old_path || positions.some(position => position.id === c.id && position.anchor.path === path)).length ?? 0
+            const drafts = threads.flat().filter(c => discussion?.drafts.some(draft => draft.id === c.id)).length
             const status = ({ A: 'Added', D: 'Deleted', R: 'Renamed', C: 'Copied', W: 'Rewritten' } as Record<string, string>)[info?.status ?? 'M']
             const inserted = info?.lines_inserted ?? 0
             const deleted = info?.lines_deleted ?? 0

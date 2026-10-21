@@ -1,0 +1,62 @@
+{
+  "change": 29,
+  "comments": [
+    {
+      "id": "909f3891_761b8d53",
+      "patch_set": 2,
+      "line": 1,
+      "message": "Please explain the retry limit."
+    },
+    {
+      "id": "26a6d480_7bbea41c",
+      "patch_set": 3,
+      "line": 2,
+      "in_reply_to": "909f3891_761b8d53",
+      "message": "Three attempts limit server load."
+    }
+  ],
+  "writes": [
+    {
+      "method": "PUT",
+      "path": "/changes/29/revisions/3/drafts",
+      "body": {
+        "path": "reply.ts",
+        "side": "REVISION",
+        "line": 2,
+        "in_reply_to": "909f3891_761b8d53",
+        "message": "Three attempts limit server load.",
+        "unresolved": true
+      },
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/changes/29/revisions/3/drafts/26a6d480_7bbea41c",
+      "body": {
+        "path": "reply.ts",
+        "side": "REVISION",
+        "line": 2,
+        "in_reply_to": "909f3891_761b8d53",
+        "message": "Three attempts limit server load.",
+        "unresolved": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/changes/29/revisions/3/review",
+      "body": {
+        "labels": {},
+        "drafts": "PUBLISH_ALL_REVISIONS",
+        "draft_ids_to_publish": [
+          "26a6d480_7bbea41c"
+        ],
+        "notify": "ALL",
+        "reviewers": [],
+        "add_to_attention_set": [],
+        "remove_from_attention_set": []
+      },
+      "status": 200
+    }
+  ]
+}

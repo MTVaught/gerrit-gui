@@ -151,9 +151,10 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
     }).catch((e: Error) => { if (active) setError(e.message) })
     return () => { active = false }
   }, [link, path, files, filesComparison, retry])
-  const markers = [...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])].flatMap(comment => {
+  const discussionComments = [...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])]
+  const markers = discussionComments.flatMap(comment => {
     if (!comment.line && !comment.range) return []
-    const display = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions)
+    const display = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions, discussionComments)
     const pane = display ? commentPane(link, path, loaded?.nameA ?? path, { ...display, patch_set: display.patchSet, id: comment.id, updated: '' }) : null
     return pane ? [{ pane, line: display!.line ?? display!.range?.end_line ?? 1, range: display!.range, draft: Boolean(discussion?.drafts.some(draft => draft.id === comment.id)), unresolved: Boolean(comment.unresolved) }] : []
   })
@@ -299,15 +300,13 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
       <div className="local-review-body">
         <ReviewFileList positions={positions} files={files ?? {}} discussion={discussion} ref={fileList} paths={paths} selected={path} reviewed={reviewed?.patchSet === link.patchSet ? reviewed!.paths : null} busy={marking} onOpen={setPath} onReviewed={(file, done) => void markReviewed(done, file)} />
         <main className="review-file">
-        <ReviewComments ref={comments} positions={positions} controls={commentControls} createInlineHost={createInlineHost} hasEditor={Boolean(loaded && loaded.path === path && loaded.comparison === comparison)} onMutate={onMutate} onDiscussion={setDiscussion} onRefresh={() => { void api.reviewPatchSets(link.id).then(sets => { setPatchSets(sets); if (Math.max(...sets) > link.patchSet!) setUpdateNotice(`New patch set ${Math.max(...sets)} available.`) }).catch(e => setPatchSetError(e.message)); positionCache.current.clear(); setMappingRetry(value => value + 1) }} onHighlight={comment => { if (!comment) { editor.current?.highlightComment(null); return }; const mapped = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions); if (mapped) { const pane = commentPane(link, path, loaded?.nameA ?? path, { ...mapped, patch_set: mapped.patchSet, id: comment.id, updated: '' }); if (pane) editor.current?.highlightComment({ pane, line: mapped.line ?? mapped.range?.end_line ?? 1, range: mapped.range }) } }} link={link} path={path} originalPath={loaded?.nameA} visible={commentsOpen} onOpen={() => setCommentsOpen(true)} onHide={() => setCommentsOpen(false)} onReveal={(comment, original, preserveScroll) => {
+        <ReviewComments ref={comments} positions={positions} controls={commentControls} createInlineHost={createInlineHost} hasEditor={Boolean(loaded && loaded.path === path && loaded.comparison === comparison)} onMutate={onMutate} onDiscussion={setDiscussion} onRefresh={() => { void api.reviewPatchSets(link.id).then(sets => { setPatchSets(sets); if (Math.max(...sets) > link.patchSet!) setUpdateNotice(`New patch set ${Math.max(...sets)} available.`) }).catch(e => setPatchSetError(e.message)); positionCache.current.clear(); setMappingRetry(value => value + 1) }} onHighlight={comment => { if (!comment) { editor.current?.highlightComment(null); return }; const mapped = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions, discussionComments); if (mapped) { const pane = commentPane(link, path, loaded?.nameA ?? path, { ...mapped, patch_set: mapped.patchSet, id: comment.id, updated: '' }); if (pane) editor.current?.highlightComment({ pane, line: mapped.line ?? mapped.range?.end_line ?? 1, range: mapped.range }) } }} link={link} path={path} originalPath={loaded?.nameA} visible={commentsOpen} onOpen={() => setCommentsOpen(true)} onHide={() => setCommentsOpen(false)} onReveal={(comment, original, preserveScroll) => {
           if (comment.path === '/PATCHSET_LEVEL') return
-          const display = original ? null : displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions)
+          const display = original ? null : displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions, discussionComments)
           const pane = display ? commentPane(link, path, loaded?.nameA ?? path, { ...display, patch_set: display.patchSet, id: comment.id, updated: '' }) : null
           if (pane) editor.current?.revealComment(pane, display!.line ?? display!.range?.end_line ?? 1, preserveScroll)
           else {
-            const mapped = original ? null : (positions.find(position => position.id === comment.id && position.anchor.patchSet === link.patchSet)?.anchor
-              ?? positions.find(position => position.id === comment.id && position.anchor.patchSet === link.basePatchSet)?.anchor
-              ?? (comment.patch_set === link.patchSet || comment.patch_set === link.basePatchSet ? { patchSet: comment.patch_set, path: comment.path, side: comment.side ?? 'REVISION', line: comment.line, range: comment.range } : null))
+            const mapped = original ? null : Object.keys(files ?? {}).map(candidate => displayCommentAnchor(link, candidate, files?.[candidate]?.old_path ?? candidate, comment, positions, discussionComments)).find(Boolean)
             const targetPath = mapped && Object.keys(files ?? {}).find(candidate => candidate === mapped.path || files?.[candidate]?.old_path === mapped.path)
             if (mapped && targetPath) {
               pendingComment.current = { ...comment, patch_set: link.patchSet!, path: targetPath, line: mapped.line, range: mapped.range, side: mapped.patchSet === link.basePatchSet || mapped.side === 'PARENT' ? 'PARENT' : 'REVISION' }

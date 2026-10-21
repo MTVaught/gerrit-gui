@@ -8,7 +8,7 @@ app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'gerrit-comments-u
 app.disableHardwareAcceleration()
 process.env.REVIEW_COMMENTS_FIXTURE = '1'
 const delay = ms => new Promise(r => setTimeout(r, ms))
-const timeout = setTimeout(() => app.exit(2), 160000)
+const timeout = setTimeout(() => app.exit(2), 210000)
 app.whenReady().then(async () => {
   nativeTheme.themeSource = 'light'
   const win = new BrowserWindow({ width: 1600, height: 1000, show: true, webPreferences: { contextIsolation: true, sandbox: false, preload: path.join(__dirname, 'fixtures/local-review-preload.cjs') } })
@@ -179,7 +179,7 @@ app.whenReady().then(async () => {
   await until(`(await api.fixtureStats()).drafts.some(c => c.in_reply_to === 'historical') && document.querySelector('.review-comment-compose [role="status"]')?.textContent === 'Saved to Gerrit'`, 'ported reply saved')
   stats = await run('api.fixtureStats()')
   const portedReply = stats.drafts.find(c => c.in_reply_to === 'historical')
-  assert.equal(portedReply.patch_set, 3); assert.equal(portedReply.line, 14); assert.equal(portedReply.path, 'src/telemetry/batch-scheduler.ts')
+  assert.equal(portedReply.patch_set, 1); assert.equal(portedReply.line, 9998); assert.equal(portedReply.path, 'old-scheduler.ts')
   await button('Cancel', '.review-comment-compose')
   await until(`(await api.fixtureStats()).drafts.length === 1 && !document.querySelector('.review-comment-compose')`, 'ported reply canceled on server')
   await button('Edit', '[data-review-comment-id="historical-draft"]'); await type(' Changed.')
@@ -203,6 +203,7 @@ app.whenReady().then(async () => {
   await until(`!document.querySelector('.review-comment-compose')`, 'screenshot edit canceled')
   await button('Discard draft', '[data-review-comment-id="historical-draft"]')
   await until(`(await api.fixtureStats()).drafts.length === 0`, 'older draft discarded')
+  await require('./review-ported-reply-checks.cjs')(win)
   await run(`document.querySelector('[aria-label="File comments on modified"]').focus()`); await button('Outline'); await until(`Boolean(document.querySelector('.review-outline button'))`, 'whole-file outline'); assert.ok(await run(`document.querySelector('.review-outline').textContent.includes('BatchScheduler')`)); await button('Close', '.review-send-dialog')
   await button('Blame'); await until(`document.querySelector('.review-outline')?.textContent.includes('Sam Chen')`, 'blame loaded'); await button('Close', '.review-send-dialog'); assert.equal(await run(`document.querySelector('.review-editor').dataset.blame`), 'true'); await button('Blame'); assert.equal(await run(`document.querySelector('.review-editor').dataset.blame`), 'false')
   await run(`Array.from(document.querySelectorAll('.review-comments button')).find(button => button.textContent.startsWith('All comments')).click()`); await delay(100); await until(`Boolean(document.querySelector('[aria-label="Filter comments"]'))`, 'all-comments filters'); await run(`(() => { const select = document.querySelector('[aria-label="Filter comments"]'); select.value = 'unresolved'; select.dispatchEvent(new Event('change', { bubbles: true })); })()`); await delay(100); assert.equal(await run(`document.querySelectorAll('.review-comment-overview .review-comment-thread').length`), 1); await button('Back to review Esc', '.review-comment-overview')

@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 if (process.env.REVIEW_SPELLING_FIXTURE) require('./spelling-preload.cjs')
 let settings = { serverUrl: 'https://gerrit.example.com', username: 'alex', projects: [], teams: [], primaryTeam: '', mergers: [], badgeStyle: 'color', showZeroCounts: false, showAppBadge: false, showTrayCounts: false, trayClickAction: 'menu', compactOnTop: true, slackWorkspaces: [], localReview: false, hasPassword: true, encrypted: true }
+if (process.env.REVIEW_PORTED_FIXTURE) settings.localReview = true
 const self = { _account_id: 1, username: 'alex', name: 'Alex Rivera', email: 'alex@example.com' }
 const owner = { _account_id: 2, username: 'sam', name: 'Sam Chen', email: 'sam@example.com' }
 const now = process.env.REVIEW_FIXTURE_NOW ?? new Date().toISOString().replace('T', ' ').replace('Z', '')
@@ -52,6 +53,7 @@ const comparisons = []
 const reviewedFlags = new Map()
 const reviewedWrites = []
 const drafts = new Map()
+const draftDeletes = []
 const comments = process.env.REVIEW_COMMENTS_FIXTURE ? [{ id: 'published-1', patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', line: 2, side: 'REVISION', message: 'Please explain the unchanged setup.', updated: now, unresolved: true, author: owner }] : []
 if (process.env.REVIEW_FILE_ACTIVITY_FIXTURE) {
   settings.localReview = true
@@ -107,11 +109,12 @@ contextBridge.exposeInMainWorld('api', {
     if (process.env.REVIEW_NATIVE_FIXTURE) await ipcRenderer.invoke('fixture:saveDraft')
     await new Promise(r => setTimeout(r, 120))
     if (failNextDraft) { failNextDraft = false; throw new Error('Fixture draft save failed') }
+    if (input.id && drafts.get(input.id)?.patch_set !== patchSet) throw new Error('Draft update used the wrong patch set')
     const draft = { ...input, id: input.id ?? 'draft-' + (++draftCounter), patch_set: patchSet, updated: new Date().toISOString() }
     if (draft.fix_suggestions) draft.fix_suggestions = draft.fix_suggestions.map((fix, i) => ({ ...fix, fix_id: 'fix-' + draft.id + '-' + i }))
     drafts.set(draft.id, draft); commentWrites.push(draft); return draft
   },
-  fixtureCommentGaps: async () => {
+  fixtureCommentGaps: async (includeDraft = true) => {
     drafts.clear(); comments.splice(0)
     const file = 'src/telemetry/batch-scheduler.ts'
     const make = (id, line, message, extra = {}) => ({ id, patch_set: 3, path: file, line, side: 'REVISION', message, updated: now, unresolved: false, author: owner, ...extra })
@@ -119,18 +122,25 @@ contextBridge.exposeInMainWorld('api', {
       make('chain-root', 8, 'Should the timeout be configurable?'),
       make('chain-reply', 8, 'Yes, it is passed in through BatchOptions.', { in_reply_to: 'chain-root', author: self, updated: new Date(Date.now() + 1000).toISOString() }),
       make('historical', 9998, 'Could we simplify timer cancellation?', { patch_set: 1, path: 'old-scheduler.ts', unresolved: true }))
-    drafts.set('historical-draft', make('historical-draft', 9999, 'Saved privately on the earlier patch set.', { patch_set: 1, path: 'old-scheduler.ts', author: undefined, unresolved: true }))
+    if (includeDraft) drafts.set('historical-draft', make('historical-draft', 9999, 'Saved privately on the earlier patch set.', { patch_set: 1, path: 'old-scheduler.ts', author: undefined, unresolved: true }))
     historicalPositions = [
       { id: 'historical', anchor: { patchSet: 3, path: file, side: 'REVISION', line: 14 } },
       { id: 'historical-draft', anchor: { patchSet: 3, path: file, side: 'REVISION', line: 18 } },
     ]
   },
   fixtureIncomingUpdate: async () => { patchSets.push(4); comments.push({ id: 'incoming', patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', line: 11, side: 'REVISION', message: 'New feedback from another reviewer.', updated: new Date().toISOString(), author: owner, unresolved: true }) },
-  fixtureOtherFileComment: async () => { comments.push({ id: 'other-file', patch_set: 3, path: 'src/telemetry/types.ts', line: 4, side: 'REVISION', message: 'Could we document this interface?', updated: process.env.REVIEW_FIXTURE_NOW ?? new Date().toISOString(), author: owner, unresolved: true }) },
+  fixtureOtherFileComment: async (older = false) => {
+    comments.push({ id: 'other-file', patch_set: older ? 1 : 3, path: older ? 'old-types.ts' : 'src/telemetry/types.ts', line: older ? 4000 : 4, side: older ? 'PARENT' : 'REVISION', ...(older ? { parent: 2, range: { start_line: 3999, start_character: 1, end_line: 4000, end_character: 4 } } : {}), message: 'Could we document this interface?', updated: process.env.REVIEW_FIXTURE_NOW ?? new Date().toISOString(), author: owner, unresolved: true })
+    if (older) historicalPositions.push({ id: 'other-file', anchor: { patchSet: 3, path: 'src/telemetry/types.ts', side: 'REVISION', line: 4 } })
+  },
+  fixtureRemoveOtherFileComment: async () => { const index = comments.findIndex(c => c.id === 'other-file'); if (index >= 0) comments.splice(index, 1); historicalPositions = historicalPositions.filter(p => p.id !== 'other-file') },
   fixtureAdmin: async value => { canDeletePublished = value },
   fixtureFailDraft: async () => { failNextDraft = true },
   applyReviewFix: async (id, patchSet, fixId) => { appliedFixes.push({ id, patchSet, fixId }) },
-  deleteReviewDraft: async (id, patchSet, draftId) => { drafts.delete(draftId) },
+  deleteReviewDraft: async (id, patchSet, draftId) => {
+    if (drafts.get(draftId)?.patch_set !== patchSet) throw new Error('Draft delete used the wrong patch set')
+    draftDeletes.push({ id, patchSet, draftId }); drafts.delete(draftId)
+  },
   submitReview: async (link, input) => {
     reviews.push({ link, input })
     for (const [label, value] of Object.entries(input.labels)) change.labels[label] = { all: [{ ...self, value }] }
@@ -184,7 +194,7 @@ contextBridge.exposeInMainWorld('api', {
       { ab: ['', '// End of delivery fixtures.'] },
     ] }
   },
-  fixtureStats: async () => ({ requests, comparisons, reviewedWrites, commentWrites, reviews, drafts: [...drafts.values()], appliedFixes, openedChanges, ownerActions }),
+  fixtureStats: async () => ({ requests, comparisons, reviewedWrites, commentWrites, draftDeletes, reviews, drafts: [...drafts.values()], appliedFixes, openedChanges, ownerActions }),
   fixtureWideFile: async (enabled) => { wideFixture = enabled },
   openChange: async link => { openedChanges.push(link) }, changeUrl: async () => 'https://gerrit.example.com/c/telemetry/+/2481',
   openConnection: noOp, setCompact: noOp,

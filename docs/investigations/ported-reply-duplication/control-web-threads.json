@@ -1,0 +1,20 @@
+[
+  {
+    "rootId": "c005cb47_f99d3f83",
+    "comments": [
+      {
+        "id": "c005cb47_f99d3f83",
+        "patch_set": 2,
+        "line": 1,
+        "message": "Please explain the retry limit."
+      },
+      {
+        "id": "60d81942_b6497abb",
+        "patch_set": 2,
+        "line": 1,
+        "in_reply_to": "c005cb47_f99d3f83",
+        "message": "Three attempts limit server load."
+      }
+    ]
+  }
+]

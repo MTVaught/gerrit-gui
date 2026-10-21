@@ -20,13 +20,24 @@ export function InlineReviewComment({ anchor, createHost, children, focus = fals
     host?.reveal(preserveScroll)
     let frame = 0
     let attempts = 0
+    let settled = 0
+    let focused = false
     function focusEditor() {
       const field = element!.querySelector<HTMLTextAreaElement>('textarea')
-      if (field && field.getBoundingClientRect().height > 0) { field.focus({ preventScroll: true }); host?.reveal(preserveScroll); return }
-      if (++attempts < 30) { host?.reveal(preserveScroll); frame = requestAnimationFrame(focusEditor) }
+      if (field && field.getBoundingClientRect().height > 0) {
+        // Once focus is established, respect an explicit move to another
+        // control, such as the editor's Go to line widget.
+        if (focused && document.activeElement !== field && !document.activeElement?.matches('.monaco-editor textarea.inputarea')) return
+        field.focus({ preventScroll: true }); host?.reveal(preserveScroll)
+        focused = true
+        if (++settled >= 3 && attempts >= 30) return
+      } else settled = 0
+      // Large diffs can lay out again after the view zone first appears.
+      // Keep the initial reveal active until focus survives that layout.
+      if (++attempts < 120) { host?.reveal(preserveScroll); frame = requestAnimationFrame(focusEditor) }
     }
     frame = requestAnimationFrame(focusEditor)
     return () => cancelAnimationFrame(frame)
-  }, [element, focus, preserveScroll])
+  }, [host, element, focus, preserveScroll])
   return element ? createPortal(children, element) : null
 }
