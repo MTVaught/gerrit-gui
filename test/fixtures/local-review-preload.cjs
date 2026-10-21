@@ -134,6 +134,13 @@ contextBridge.exposeInMainWorld('api', {
   },
   fixtureRemoveOtherFileComment: async () => { const index = comments.findIndex(c => c.id === 'other-file'); if (index >= 0) comments.splice(index, 1); historicalPositions = historicalPositions.filter(p => p.id !== 'other-file') },
   fixtureAdmin: async value => { canDeletePublished = value },
+  fixtureSelectionComments: async () => {
+    comments.splice(0); drafts.clear(); historicalPositions = []
+    const range = { start_line: 1, start_character: 0, end_line: 2, end_character: 0 }
+    const anchor = { patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', side: 'REVISION', line: 2, range, updated: now, unresolved: true }
+    comments.push({ ...anchor, id: 'boundary-stored', message: 'Stored newline range', author: owner })
+    drafts.set('boundary-draft', { ...anchor, id: 'boundary-draft', message: 'Stored range draft', fix_suggestions: [{ fix_id: 'fix-boundary-draft-0', description: 'Stored replacement', replacements: [{ path: anchor.path, range, replacement: '// Stored replacement\n' }] }] })
+  },
   fixtureFailDraft: async () => { failNextDraft = true },
   applyReviewFix: async (id, patchSet, fixId) => { appliedFixes.push({ id, patchSet, fixId }) },
   deleteReviewDraft: async (id, patchSet, draftId) => {
