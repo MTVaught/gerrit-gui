@@ -322,6 +322,9 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
     content.className = 'review-inline-content'
     node.append(content)
     node.addEventListener('mousedown', event => event.stopPropagation())
+    // React handles comment shortcuts inside the portal first. Keep remaining
+    // keys away from Monaco without cancelling native textarea input.
+    for (const type of ['keydown', 'keypress', 'keyup']) node.addEventListener(type, event => event.stopPropagation())
     // Monaco cancels context menus on view zones. Keep the native spelling
     // and editing menu available without cancelling the browser's default.
     node.addEventListener('contextmenu', event => event.stopPropagation())
