@@ -70,7 +70,7 @@ const longName = 'batch-scheduler-with-region-aware-delivery-and-retry-policy.ts
 const longPath = `${longDirectory}/${longName}`
 const unbrokenPath = `src/${'delivery'.repeat(22)}.ts`
 let wideFixture = false
-if (process.env.REVIEW_FILE_WIDTH_FIXTURE || process.env.REVIEW_WRAP_FIXTURE) settings.localReview = true
+if (process.env.REVIEW_FILE_WIDTH_FIXTURE || process.env.REVIEW_WRAP_FIXTURE || process.env.REVIEW_WHITESPACE_FIXTURE) settings.localReview = true
 const commentWrites = []
 const reviews = []
 let failNextDraft = false
@@ -179,6 +179,15 @@ contextBridge.exposeInMainWorld('api', {
     if (diffUnavailable) throw new Error('Fixture: diff is unavailable')
     comparisons.push({ link: _link, path })
     await new Promise((r) => setTimeout(r, 35))
+    if (process.env.REVIEW_WHITESPACE_FIXTURE) return { meta_a: { name: path }, meta_b: { name: path }, content: [
+      { ab: ['// Add a loop. Its body only gains one tab of indentation.', 'function deliver(events: Event[]) {'] },
+      { a: ['  const payload = prepare(event);', '  send(payload);', '  recordDelivery(payload);', '  flush();'] },
+      { b: ['  for (const event of events) {', '\t  const payload = prepare(event);', '\t  send(payload);', '\t  recordDelivery(payload);', '\t  flush();', '  }'] },
+      { ab: ['}', ''] },
+      { ab: ['', '// A real code edit must stay highlighted.', ''] },
+      { a: ['const retryLimit = 2;'], b: ['\tconst retryLimit = 3;'] },
+      { ab: ['', '// End of whitespace fixture.'] },
+    ] }
     if (process.env.REVIEW_REBASE_FIXTURE) return { meta_a: { name: path }, meta_b: { name: path }, content: [
       { ab: ['// Mixed patch-set comparison', ''] },
       { a: ['const feature = false;'], b: ['const feature = true;'] },

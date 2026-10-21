@@ -1,0 +1,97 @@
+{
+  "fixture": "Synthetic Gerrit chunks: new loop around four statements, each gaining one tab",
+  "policy": "IGNORE_ALL",
+  "original": [
+    "function deliver(events: Event[]) {",
+    "  const payload = prepare(event);",
+    "  send(payload);",
+    "  recordDelivery(payload);",
+    "  flush();",
+    "}",
+    ""
+  ],
+  "modified": [
+    "function deliver(events: Event[]) {",
+    "  for (const event of events) {",
+    "\t  const payload = prepare(event);",
+    "\t  send(payload);",
+    "\t  recordDelivery(payload);",
+    "\t  flush();",
+    "  }",
+    "}",
+    ""
+  ],
+  "baseline": {
+    "revision": "85efd0896ca0d7b6b8bb4f0c17e77809b5ed0f7d",
+    "changes": [
+      {
+        "original": [
+          2,
+          6
+        ],
+        "modified": [
+          2,
+          8
+        ],
+        "innerChanges": []
+      }
+    ]
+  },
+  "fixed": {
+    "changes": [
+      {
+        "original": [
+          2,
+          2
+        ],
+        "modified": [
+          2,
+          3
+        ],
+        "innerChanges": [
+          {
+            "original": {
+              "startLineNumber": 2,
+              "startColumn": 3,
+              "endLineNumber": 2,
+              "endColumn": 3
+            },
+            "modified": {
+              "startLineNumber": 2,
+              "startColumn": 3,
+              "endLineNumber": 3,
+              "endColumn": 4
+            }
+          }
+        ]
+      },
+      {
+        "original": [
+          6,
+          6
+        ],
+        "modified": [
+          7,
+          8
+        ],
+        "innerChanges": [
+          {
+            "original": {
+              "startLineNumber": 5,
+              "startColumn": 11,
+              "endLineNumber": 5,
+              "endColumn": 11
+            },
+            "modified": {
+              "startLineNumber": 6,
+              "startColumn": 12,
+              "endLineNumber": 7,
+              "endColumn": 4
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "assertions": "passed"
+}
