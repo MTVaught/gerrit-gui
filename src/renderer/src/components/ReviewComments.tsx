@@ -190,10 +190,10 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
         const expanded = expandedComments.get(c.id) ?? (draft || Boolean(last.unresolved))
         const mapped = display(c)
         return <article data-review-comment-id={c.id} key={c.id} className={draft ? 'comment-draft' : ''}>
-          <div className="review-comment-heading" onClick={event => { if (!(event.target as HTMLElement).closest('button')) setExpandedComments(current => new Map(current).set(c.id, !expanded)) }}>
+          <div className="review-comment-heading" onClick={event => { if (!(event.target as HTMLElement).closest('button, a')) setExpandedComments(current => new Map(current).set(c.id, !expanded)) }}>
             {draft ? <strong title="Only visible to you until published.">Draft</strong> : <ReviewAccount account={c.author} />}
             {mapped && mapped.patchSet !== c.patch_set && <button className="review-comment-location review-comment-origin" onClick={() => { closeOverview(); onReveal(c, true) }}>From PS {c.patch_set}</button>}
-            {!expanded && <span className="review-comment-preview">{c.message}</span>}
+            {!expanded && <div className="review-comment-preview"><ReviewMarkdown message={c.message ?? ''} compact /></div>}
             {!draft && expanded && discussion?.canDeletePublished && <button className="review-comment-icon" aria-label="Delete published comment" title="Delete comment" disabled={busy} onClick={() => setRedact({ comment: c, reason: '' })}><DeleteIcon /></button>}
             {expanded && <time title={commentDate(c.updated).toLocaleString()} dateTime={Number.isFinite(commentDate(c.updated).getTime()) ? commentDate(c.updated).toISOString() : undefined}>{relativeCommentDate(c.updated)}</time>}
             <button className="review-comment-toggle" aria-label={expanded ? 'Collapse comment' : 'Expand comment'} aria-expanded={expanded} onClick={() => setExpandedComments(current => new Map(current).set(c.id, !expanded))}>{expanded ? '▴' : '▾'}</button>
