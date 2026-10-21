@@ -1,0 +1,75 @@
+{
+  "version": "3.11.2",
+  "originalAnchor": true,
+  "change": 33,
+  "url": "http://127.0.0.1:8080/c/demo/+/33/3/reply.ts",
+  "original": {
+    "id": "c005cb47_f99d3f83",
+    "patch_set": 2,
+    "line": 1,
+    "message": "Please explain the retry limit."
+  },
+  "mapped": {
+    "id": "c005cb47_f99d3f83",
+    "patch_set": 2,
+    "line": 2,
+    "message": "Please explain the retry limit."
+  },
+  "comments": [
+    {
+      "id": "c005cb47_f99d3f83",
+      "patch_set": 2,
+      "line": 1,
+      "message": "Please explain the retry limit."
+    },
+    {
+      "id": "60d81942_b6497abb",
+      "patch_set": 2,
+      "line": 1,
+      "in_reply_to": "c005cb47_f99d3f83",
+      "message": "Three attempts limit server load."
+    }
+  ],
+  "writes": [
+    {
+      "method": "PUT",
+      "path": "/a/changes/33/revisions/2/drafts",
+      "body": {
+        "path": "reply.ts",
+        "side": "REVISION",
+        "line": 1,
+        "in_reply_to": "c005cb47_f99d3f83",
+        "message": "Three attempts limit server load.",
+        "unresolved": true
+      },
+      "status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/a/changes/33/revisions/2/drafts/60d81942_b6497abb",
+      "body": {
+        "path": "reply.ts",
+        "side": "REVISION",
+        "line": 1,
+        "in_reply_to": "c005cb47_f99d3f83",
+        "message": "Three attempts limit server load.",
+        "unresolved": true
+      },
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/a/changes/33/revisions/3/review",
+      "body": {
+        "labels": {},
+        "drafts": "PUBLISH_ALL_REVISIONS",
+        "draft_ids_to_publish": [
+          "60d81942_b6497abb"
+        ],
+        "notify": "NONE"
+      },
+      "status": 200
+    }
+  ],
+  "observation": "Control case: the reply uses the original anchor. Gerrit shows one ported thread."
+}

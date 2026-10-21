@@ -1,4 +1,10 @@
 import type { ChangeLink, CommentAnchor, ReviewComment, ReviewCommentPosition } from '../../shared/types.ts'
+export function originalCommentAnchor(comment: ReviewComment): CommentAnchor {
+  return { patchSet: comment.patch_set, path: comment.path, side: comment.side ?? 'REVISION', parent: comment.parent, line: comment.line, range: comment.range }
+}
+export function commentReply(comment: ReviewComment): { anchor: CommentAnchor; inReplyTo: string } {
+  return { anchor: originalCommentAnchor(comment), inReplyTo: comment.id }
+}
 export function commentAnchor(link: ChangeLink, path: string, originalPath: string, pane: 'original' | 'modified', line?: number, range?: CommentAnchor['range']): CommentAnchor {
   return { patchSet: pane === 'original' && link.basePatchSet ? link.basePatchSet : link.patchSet!, path: pane === 'original' && link.basePatchSet ? originalPath : path, side: pane === 'original' && !link.basePatchSet ? 'PARENT' : 'REVISION', line, range }
 }
@@ -24,8 +30,17 @@ export function commentPane(link: ChangeLink, path: string, originalPath: string
   return comment.patch_set === link.basePatchSet && comment.path === originalPath ? 'original' : null
 }
 
-export function displayCommentAnchor(link: ChangeLink, path: string, originalPath: string, comment: ReviewComment, positions: ReviewCommentPosition[]): CommentAnchor | null {
-  const anchor: CommentAnchor = { patchSet: comment.patch_set, path: comment.path, side: comment.side ?? 'REVISION', parent: comment.parent, line: comment.line, range: comment.range }
-  if (commentPane(link, path, originalPath, comment)) return anchor
-  return positions.find(position => position.id === comment.id && commentPane(link, path, originalPath, { ...position.anchor, patch_set: position.anchor.patchSet, id: comment.id, updated: '' }))?.anchor ?? null
+export function displayCommentAnchor(link: ChangeLink, path: string, originalPath: string, comment: ReviewComment, positions: ReviewCommentPosition[], comments: ReviewComment[] = []): CommentAnchor | null {
+  // A new reply has no mapping of its own yet. Its known parent can place it
+  // in the thread without changing the anchor that is sent to Gerrit.
+  const seen = new Set<string>()
+  let current: ReviewComment | undefined = comment
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id)
+    if (commentPane(link, path, originalPath, current)) return originalCommentAnchor(current)
+    const mapped = positions.find(position => position.id === current!.id && commentPane(link, path, originalPath, { ...position.anchor, patch_set: position.anchor.patchSet, id: current!.id, updated: '' }))
+    if (mapped) return mapped.anchor
+    current = current.in_reply_to ? comments.find(parent => parent.id === current!.in_reply_to) : undefined
+  }
+  return null
 }

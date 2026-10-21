@@ -1,7 +1,16 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { commentAnchor, commentThreads, commentPane, displayCommentAnchor } from './review-comments.ts'
+import { commentAnchor, commentThreads, commentPane, displayCommentAnchor, commentReply } from './review-comments.ts'
 import type { ReviewComment } from '../../shared/types.ts'
+test('reply writes preserve the immediate parent ID and complete original anchor', () => {
+  const range = { start_line: 10, start_character: 2, end_line: 12, end_character: 7 }
+  const root: ReviewComment = { id: 'root', patch_set: 1, path: 'before.ts', line: 12, range, side: 'PARENT', parent: 2, updated: '1' }
+  const reply: ReviewComment = { ...root, id: 'last', in_reply_to: root.id, patch_set: 2, updated: '2' }
+  assert.deepEqual(commentReply(root), { anchor: { patchSet: 1, path: 'before.ts', line: 12, range, side: 'PARENT', parent: 2 }, inReplyTo: 'root' })
+  assert.deepEqual(commentReply(reply), { anchor: { patchSet: 2, path: 'before.ts', line: 12, range, side: 'PARENT', parent: 2 }, inReplyTo: 'last' })
+  assert.equal(commentReply({ ...root, side: undefined, parent: undefined }).anchor.side, 'REVISION')
+  assert.deepEqual(commentReply({ ...root, line: undefined, range: undefined }).anchor.range, undefined)
+})
 test('unchanged lines and ranges attach to the correct patch set and side, including renames', () => {
   const link = { id: 42, project: 'p', patchSet: 5 }
   const range = { start_line: 10, start_character: 2, end_line: 12, end_character: 7 }
@@ -38,4 +47,35 @@ test('ported display coordinates preserve canonical anchors and require server m
   assert.equal(displayCommentAnchor(link, 'new.ts', 'old.ts', comment, [{ id: 'old', anchor: { ...mapped, side: 'PARENT' } }]), null)
   const selected = { ...comment, patch_set: 2, path: 'old.ts' }
   assert.equal(displayCommentAnchor(link, 'new.ts', 'old.ts', selected, [{ id: 'old', anchor: mapped }])?.line, 10000)
+})
+
+test('new reply composers and drafts inherit a known parent mapping without changing write coordinates', () => {
+  const link = { id: 42, project: 'p', patchSet: 3 }
+  const parent: ReviewComment = { id: 'parent', patch_set: 1, path: 'old.ts', line: 9998, updated: '1' }
+  const draft: ReviewComment = { ...parent, id: 'draft', in_reply_to: parent.id, updated: '2' }
+  const mapped = { patchSet: 3, path: 'new.ts', side: 'REVISION' as const, line: 14 }
+  const positions = [{ id: parent.id, anchor: mapped }]
+  for (const comment of [{ ...draft, id: '' }, draft]) {
+    assert.deepEqual(displayCommentAnchor(link, 'new.ts', 'new.ts', comment, positions, [parent]), mapped)
+    assert.equal(commentReply(comment).anchor.patchSet, 1)
+    assert.equal(commentReply(comment).anchor.line, 9998)
+    assert.equal(displayCommentAnchor({ ...link, patchSet: 4 }, 'new.ts', 'new.ts', comment, positions, [parent]), null)
+    assert.equal(displayCommentAnchor(link, 'elsewhere.ts', 'elsewhere.ts', comment, positions, [parent]), null)
+    assert.equal(displayCommentAnchor(link, 'new.ts', 'new.ts', comment, [], [parent]), null)
+  }
+  const direct = { ...mapped, line: 18 }
+  assert.deepEqual(displayCommentAnchor(link, 'new.ts', 'new.ts', draft, [...positions, { id: draft.id, anchor: direct }], [parent]), direct, 'a draft-specific server mapping wins')
+  assert.deepEqual(displayCommentAnchor({ ...link, basePatchSet: 1 }, 'new.ts', 'old.ts', draft, positions, [parent])?.line, 9998, 'an anchor already visible on the selected base is preserved')
+})
+
+test('reply display can follow known chains, but missing parents and cycles do not invent positions', () => {
+  const link = { id: 42, project: 'p', patchSet: 3 }
+  const root: ReviewComment = { id: 'root', patch_set: 1, path: 'old.ts', line: 7, updated: '1' }
+  const parent = { ...root, id: 'parent', in_reply_to: root.id }
+  const reply = { ...root, id: 'reply', in_reply_to: parent.id }
+  const anchor = { patchSet: 3, path: 'new.ts', side: 'REVISION' as const, line: 20 }
+  assert.deepEqual(displayCommentAnchor(link, 'new.ts', 'new.ts', reply, [{ id: root.id, anchor }], [root, parent]), anchor)
+  assert.equal(displayCommentAnchor(link, 'new.ts', 'new.ts', reply, [], []), null)
+  assert.equal(displayCommentAnchor(link, 'new.ts', 'new.ts', reply, [], [{ ...parent, in_reply_to: reply.id }, reply]), null)
+  assert.equal(displayCommentAnchor(link, 'new.ts', 'new.ts', { ...reply, in_reply_to: reply.id }, [], [reply]), null)
 })

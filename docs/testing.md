@@ -184,6 +184,58 @@ Draft screenshots also assert that the textarea is visible and receives pointer
 hit testing in both themes. Inline comment zones retain their measured height
 while Monaco hides them offscreen, and editors reveal before receiving focus.
 
+## Replies to older comments
+
+Reply, Quote, Ack, and Done keep the parent comment's original patch set,
+file path, side, merge parent, line, and range when they save a draft. Server
+mapping places the composer and draft in the current comparison. Autosave,
+Save, editing, Cancel, and discard keep the same draft ID and saved anchor.
+
+Publish all drafts includes replies saved on older patch sets. Publish drafts
+on selected patch set excludes them, and Keep drafts private leaves them
+private. The publish list and count follow the selected scope.
+
+Build first, then run the focused simulated-server workflow:
+
+```sh
+pnpm build
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-ported-reply-ui.cjs
+```
+
+The full `test/review-comments-ui.cjs` workflow also runs these checks. They
+cover older renamed files, parent-side ranges and merge parents, cross-file
+replies from All comments, creation while typing, failed-save retry, draft
+identity, cancel restoration, discard, reopen, and all three publication
+scopes. The fixture rejects updates and deletes sent to the wrong patch set.
+
+For the real-server regression, start a throwaway Gerrit 3.11.2 on loopback
+and seed it with `test/seed-gerrit.sh`, as described in the investigation.
+Then run:
+
+```sh
+GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP=1 xvfb-run -a -s '-screen 0 1440x1000x24' \
+  node_modules/.bin/electron --no-sandbox test/review-ported-reply-gerrit.cjs
+```
+
+This uses the production desktop entrypoint, preload, service, and REST
+client. Xdotool supplies real mouse and keyboard input. The test creates
+changes using dummy Alice and Bob accounts, opens an older comment on patch
+set 3, saves and publishes one reply, and checks the actual REST writes and
+Gerrit web thread data. The reply must belong to patch set 2 at its original
+line and appear once in Gerrit's patch-set-3 web diff. No private copy remains.
+Both themes run with isolated app settings. Linux/Electron is the tested
+platform; the sandbox flag applies only to the Xvfb test.
+
+Set `REPLY_RECORDINGS=1` to capture paired MP4s with captions, visible pointer
+movement, and two-second hovers. Set `REPLY_EVIDENCE_DIR` to choose the output
+directory. The test prints the temporary output path by default and writes
+paired JSON evidence plus screenshots of the same final change and view.
+
+`test/reproduce-ported-reply.ts` remains an API diagnostic for the pre-fix
+payload, with `--original-anchor` as its control. Its default deliberately
+sends the faulty mapped anchor. Use the renderer regression above to verify
+the application fix.
+
 ## Dashboard icon tooltips
 
 Dashboard status icons and icon controls show help after a short hover delay,

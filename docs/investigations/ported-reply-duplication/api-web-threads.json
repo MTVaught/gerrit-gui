@@ -1,0 +1,32 @@
+[
+  {
+    "rootId": "bc70610b_ec1e15e7",
+    "comments": [
+      {
+        "id": "bc70610b_ec1e15e7",
+        "patch_set": 3,
+        "line": 2,
+        "in_reply_to": "50a798fc_d3daebd4",
+        "message": "Three attempts limit server load."
+      }
+    ]
+  },
+  {
+    "rootId": "50a798fc_d3daebd4",
+    "comments": [
+      {
+        "id": "50a798fc_d3daebd4",
+        "patch_set": 2,
+        "line": 1,
+        "message": "Please explain the retry limit."
+      },
+      {
+        "id": "bc70610b_ec1e15e7",
+        "patch_set": 3,
+        "line": 2,
+        "in_reply_to": "50a798fc_d3daebd4",
+        "message": "Three attempts limit server load."
+      }
+    ]
+  }
+]

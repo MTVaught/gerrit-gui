@@ -6,7 +6,7 @@ import { commentSuggestions, commentDate, relativeCommentDate } from '../review-
 import { api } from '../api.ts'
 import { LinkIcon, DeleteIcon } from './Icons.tsx'
 import { InlineReviewComment, type CreateInlineCommentHost } from './InlineReviewComment.tsx'
-import { commentThreads, displayCommentAnchor } from '../review-comments.ts'
+import { commentThreads, displayCommentAnchor, originalCommentAnchor as anchor, commentReply } from '../review-comments.ts'
 
 export interface ReviewCommentsHandle { compose(anchor: CommentAnchor): void; canClose(): boolean; openAt(anchor: CommentAnchor): void; review(): void; navigateThread(direction: number): void }
 interface Composer { anchor: CommentAnchor; id?: string; inReplyTo?: string; message: string; unresolved: boolean; suggestions?: FixSuggestion[] }
@@ -72,7 +72,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     closeOverview()
     setError(''); setSent(''); setSaveState(comment && !reply ? 'Saved to Gerrit' : '')
     saved.current = comment && !reply ? JSON.stringify([comment.message ?? '', comment.unresolved ?? false, comment.fix_suggestions]) : ''
-    const next: Composer = { anchor: reply ? replyAnchor(comment!) : anchor, id: reply ? undefined : comment?.id, inReplyTo: reply ? comment?.id : comment?.in_reply_to, message: message || (!reply ? comment?.message ?? '' : ''), unresolved: comment ? comment.unresolved ?? false : anchor.path !== '/PATCHSET_LEVEL', suggestions: !reply ? comment?.fix_suggestions : undefined }
+    const next: Composer = { ...(reply ? commentReply(comment!) : { anchor, id: comment?.id, inReplyTo: comment?.in_reply_to }), message: message || (!reply ? comment?.message ?? '' : ''), unresolved: comment ? comment.unresolved ?? false : anchor.path !== '/PATCHSET_LEVEL', suggestions: !reply ? comment?.fix_suggestions : undefined }
     editingStart.current = comment && !reply ? structuredClone(next) : null
     setComposer(next)
     onOpen()
@@ -131,16 +131,13 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     const timer = setTimeout(() => { void save(false) }, 600)
     return () => clearTimeout(timer)
   }, [composer, busy, error])
-  function anchor(c: ReviewComment): CommentAnchor { return { patchSet: c.patch_set, path: c.path, side: c.side ?? 'REVISION', parent: c.parent, line: c.line, range: c.range } }
   const draftIds = new Set(discussion?.drafts.map(c => c.id))
-  const threads = commentThreads([...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])])
-  const display = (c: ReviewComment) => hasEditor ? displayCommentAnchor(link, path, originalPath ?? path, c, positions) : null
-  function replyAnchor(comment: ReviewComment): CommentAnchor {
-    return display(comment) ?? positions.find(position => position.id === comment.id && position.anchor.patchSet === link.patchSet)?.anchor ?? positions.find(position => position.id === comment.id && position.anchor.patchSet === link.basePatchSet)?.anchor ?? anchor(comment)
-  }
+  const allComments = [...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])]
+  const threads = commentThreads(allComments)
+  const display = (c: ReviewComment) => hasEditor ? displayCommentAnchor(link, path, originalPath ?? path, c, positions, allComments) : null
   const shown = threads.filter(t => allFiles || t.some(c => c.path === path || c.path === originalPath || display(c) || c.path === '/PATCHSET_LEVEL'))
   const publishing = (discussion?.drafts ?? []).filter(c => publish === 'PUBLISH_ALL_REVISIONS' || publish === 'PUBLISH' && c.patch_set === link.patchSet)
-  const composerPosition = composer ? display({ ...composer.anchor, patch_set: composer.anchor.patchSet, id: composer.id ?? '', updated: '' }) : null
+  const composerPosition = composer ? display({ ...composer.anchor, patch_set: composer.anchor.patchSet, id: composer.id ?? '', in_reply_to: composer.inReplyTo, updated: '' }) : null
   async function cancelEdit() {
     if (!composer || pending.current) return
     const current = composer
@@ -189,8 +186,8 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
       if (compose(anchor(last), last, message, true) && !inline) onReveal(last)
     }
     function quickReply(message: string) {
-      const { patchSet, ...position } = replyAnchor(last)
-      void write(() => api.saveReviewDraft(link.id, patchSet, { ...position, in_reply_to: last.id, message, unresolved: false }))
+      const { anchor: { patchSet, ...position }, inReplyTo } = commentReply(last)
+      void write(() => api.saveReviewDraft(link.id, patchSet, { ...position, in_reply_to: inReplyTo, message, unresolved: false }))
     }
     return <section onMouseEnter={() => onHighlight(thread.find(comment => comment.range) ?? last)} onMouseLeave={() => onHighlight(null)} onFocusCapture={() => onHighlight(thread.find(comment => comment.range) ?? last)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) onHighlight(null) }} className="review-comment-thread" data-unresolved={replyingHere || editingHere ? composer!.unresolved : Boolean(last.unresolved)} data-review-thread-id={root.id} data-active={thread.some(c => c.id === activeId)} key={root.id}>
       {!inline && <button className="review-comment-location" onClick={() => { closeOverview(); onReveal(root) }}>{location(anchor(root))}</button>}
