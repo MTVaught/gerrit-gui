@@ -1,0 +1,14 @@
+{
+  "baseCommit": "0f1478a2c32807bc0598be9b0763ddbb74076c94",
+  "unitTests": 350,
+  "typecheck": "passed",
+  "build": "passed",
+  "strictMainSpecValidation": "10 passed",
+  "uiChecks": {
+    "fullReview": "passed",
+    "independentWrappingBothThemes": "passed",
+    "rebaseHighlightsBothThemes": "passed",
+    "diffPreferencesBothThemes": "passed"
+  },
+  "platform": "Linux Electron with simulated Gerrit data"
+}

@@ -217,20 +217,18 @@ test('review detail APIs preserve file paths and separate fix previews from writ
   })
   const link = { id: 42, project: 'p', patchSet: 3 }
   const fix = { description: 'Fix', replacements: [{ path: 'src/a file.ts', range: { start_line: 2, start_character: 0, end_line: 2, end_character: 8 }, replacement: 'new()' }] }
+  assert.equal('reviewDiffPreferences' in svc, false)
+  assert.equal('saveReviewDiffPreferences' in svc, false)
   await svc.reviewBlame(link, 'src/a file.ts')
-  await svc.reviewDiffPreferences()
-  await svc.saveReviewDiffPreferences({ context: -1, manual_review: false })
   await svc.previewReviewFix(42, 2, fix)
   await svc.previewReviewFix(42, 2, { ...fix, fix_id: 'fix/id' })
   await svc.applyProvidedReviewFix(42, 2, fix)
   assert.ok(requests.some(r => r.url.endsWith('/files/src%2Fa%20file.ts/blame')))
-  assert.ok(requests.some(r => r.url.endsWith('/preferences.diff') && r.method === 'PUT' && (r.body as { context: number }).context === -1))
   assert.ok(requests.some(r => r.url.endsWith('/fixes/fix%2Fid/preview') && r.method === 'GET'))
   assert.ok(requests.some(r => r.url.endsWith('/revisions/2/fix:preview') && r.method === 'POST'))
   assert.deepEqual(requests.find(r => r.url.endsWith('/revisions/current/fix:apply'))?.body, { originalPatchsetForFix: 2, fix_replacement_infos: fix.replacements })
   await svc.setPretend('bob')
   await svc.previewReviewFix(42, 2, fix)
-  await assert.rejects(svc.saveReviewDiffPreferences({ context: 10 }), /read-only/)
   await assert.rejects(svc.applyProvidedReviewFix(42, 2, fix), /read-only/)
 })
 

@@ -1,0 +1,20 @@
+{
+  "platform": "linux",
+  "mode": "desktop",
+  "retainedAfterRestart": true,
+  "expected": {
+    "preferences": {
+      "context": 3,
+      "fitToScreen": true,
+      "diffWidth": 100,
+      "tabWidth": 8,
+      "fontSize": 19,
+      "showTabs": false,
+      "showTrailingWhitespace": true,
+      "syntaxHighlighting": true,
+      "autoMarkReviewed": false,
+      "ignoreWhitespace": "IGNORE_NONE"
+    },
+    "diffTheme": "dark"
+  }
+}

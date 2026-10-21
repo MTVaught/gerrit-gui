@@ -16,9 +16,21 @@ vm.runInNewContext(readFileSync(new URL('./fixtures/local-review-preload.cjs', i
 const store = fileSettings(path.join(scratch, 'settings.json'))
 await store.save({ ...await fixture.getSettings!(), theme: 'system', diffTheme: 'application', password: 'fixture' })
 fixture.getSettings = () => store.getStatus()
-fixture.saveSettings = input => store.save(input)
+const calls: string[] = []
+let failSettings = false
+let delaySettings = 0
+fixture.saveSettings = async input => {
+  const fail = failSettings
+  failSettings = false
+  await new Promise(resolve => setTimeout(resolve, delaySettings))
+  if (fail) throw new Error('Fixture settings write failed')
+  await store.save(input)
+}
+fixture.fixturePreferenceControl = async control => { failSettings = control.fail ?? false; delaySettings = control.delay ?? 0 }
+fixture.fixturePreferenceStatus = async () => ({ settings: await store.getStatus(), calls })
 const server = http.createServer(async (req, res) => {
   try {
+    if (req.url) calls.push(req.url)
     const method = req.url?.match(/^\/api\/([a-zA-Z]+)$/)?.[1]
     if (req.method !== 'POST' || !method || !fixture[method]) { res.writeHead(404).end(); return }
     const chunks = []

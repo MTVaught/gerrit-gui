@@ -1,0 +1,30 @@
+{
+  "light": {
+    "leftResizeMs": 3015,
+    "rightResizeMs": 2762,
+    "endNavigationMs": 102,
+    "zones": 99973,
+    "domNodes": 100858,
+    "independentWrapping": "passed",
+    "rowAlignment": "passed",
+    "linkedScrolling": "passed",
+    "inlineCommentAnchor": "passed",
+    "savedColumnMode": "passed",
+    "windowResize": "passed",
+    "fullFileNavigation": "passed"
+  },
+  "dark": {
+    "leftResizeMs": 2793,
+    "rightResizeMs": 3032,
+    "endNavigationMs": 101,
+    "zones": 99973,
+    "domNodes": 100915,
+    "independentWrapping": "passed",
+    "rowAlignment": "passed",
+    "linkedScrolling": "passed",
+    "inlineCommentAnchor": "passed",
+    "savedColumnMode": "passed",
+    "windowResize": "passed",
+    "fullFileNavigation": "passed"
+  }
+}

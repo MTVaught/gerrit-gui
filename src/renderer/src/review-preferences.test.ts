@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { defaultReviewPreferences, parseReviewPreferences, normalizeReviewLine, reviewSourceColumn } from './review-preferences.ts'
+import { defaultReviewPreferences, parseReviewPreferences, normalizeReviewLine, reviewSourceColumn, loadReviewPreferences, saveReviewPreferences } from './review-preferences.ts'
 
 test('preferences retain whole-file default and reject corrupt persisted values', () => {
   assert.equal(defaultReviewPreferences.context, -1)
@@ -20,12 +20,25 @@ test('Gerrit whitespace modes normalize comparison only and map source columns',
   assert.equal(reviewSourceColumn(line, 7, 'IGNORE_ALL'), line.length + 1)
 })
 
-test('Gerrit preference synchronization preserves local fit setting and manual-review inversion', async () => {
-  const { fromGerritPreferences, toGerritPreferences } = await import('./review-preferences.ts')
-  const local = { ...defaultReviewPreferences, fitToScreen: false, context: 20, autoMarkReviewed: true }
-  const remote = toGerritPreferences(local)
-  assert.equal(remote.manual_review, false)
-  assert.ok(!('fitToScreen' in remote))
-  assert.deepEqual(fromGerritPreferences(remote, local), local)
-  assert.equal(fromGerritPreferences({ context: -1 }).context, -1)
+test('local settings survive reopening and ignore a legacy Gerrit sync marker', (t) => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+  const data = new Map<string, string>([['local-review-gerrit-preferences-synced', 'true']])
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => data.set(key, value),
+  } })
+  t.after(() => { if (previous) Object.defineProperty(globalThis, 'localStorage', previous); else Reflect.deleteProperty(globalThis, 'localStorage') })
+  assert.deepEqual(loadReviewPreferences(), defaultReviewPreferences)
+  const local = { ...defaultReviewPreferences, context: 25, fontSize: 16, fitToScreen: false }
+  saveReviewPreferences(local)
+  assert.deepEqual(loadReviewPreferences(), local)
+  assert.equal(data.get('local-review-gerrit-preferences-synced'), 'true')
+  data.delete('local-review-gerrit-preferences-synced')
+  assert.deepEqual(loadReviewPreferences(), local)
+  data.set('local-review-diff-preferences', JSON.stringify({ ...local, tabWidth: 99 }))
+  assert.deepEqual(loadReviewPreferences(), { ...local, tabWidth: 4 })
+  data.set('local-review-diff-preferences', '{broken')
+  assert.deepEqual(loadReviewPreferences(), defaultReviewPreferences)
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get: () => { throw new Error('Storage blocked') } })
+  assert.deepEqual(loadReviewPreferences(), defaultReviewPreferences)
 })

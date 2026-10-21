@@ -154,8 +154,6 @@ function registerIpc(): void {
   ipc.handle('gerrit:fetchDashboard', () => service.fetchDashboard())
   ipc.handle('gerrit:fetchChange', (_e, id: number) => service.fetchChange(id))
   ipc.handle('gerrit:reviewBlame', (_e, link: ChangeLink, path: string) => service.reviewBlame(link, path))
-  ipc.handle('gerrit:reviewDiffPreferences', () => service.reviewDiffPreferences())
-  ipc.handle('gerrit:saveReviewDiffPreferences', (_e, input: import('../shared/types.ts').GerritDiffPreferences) => service.saveReviewDiffPreferences(input))
   ipc.handle('gerrit:previewReviewFix', (_e, id: number, patchSet: number, fix: import('../shared/types.ts').FixSuggestion) => service.previewReviewFix(id, patchSet, fix))
   ipc.handle('gerrit:applyProvidedReviewFix', (_e, id: number, patchSet: number, fix: import('../shared/types.ts').FixSuggestion) => service.applyProvidedReviewFix(id, patchSet, fix))
   ipc.handle('gerrit:reviewFiles', (_e, link: ChangeLink) => service.reviewFiles(link))

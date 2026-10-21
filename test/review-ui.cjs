@@ -178,7 +178,7 @@ app.whenReady().then(async () => {
   await until(`document.querySelector('.review-side-head')?.textContent.includes('types.ts') && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'second file')
   await click('[data-review-path="src/telemetry/batch-scheduler.ts"]')
   await until(`document.querySelector('.review-side-head')?.textContent.includes('batch-scheduler.ts') && document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'cached file')
-  // Gerrit-style preferences are transactional and keep source fully loaded.
+  // Gerrit-style controls apply local preferences immediately and keep source fully loaded.
   await press('Home', ['control'])
   const requestCountBeforePreferences = (await run('window.api.fixtureStats()')).requests
   await click('button[data-review-preferences]')
@@ -193,10 +193,16 @@ app.whenReady().then(async () => {
     })()`)
     await delay(40)
   }
+  assert.equal(await run(`document.querySelector('.review-preferences button[type=submit]')`), null)
+  await preference('Font size', '')
+  assert.equal(await run(`document.querySelector('.review-preferences [aria-invalid=true]') !== null`), true)
+  assert.equal(await run(`localStorage.getItem('local-review-diff-preferences')`), null)
   await preference('Font size', 18)
+  await press('Enter')
+  assert.equal(await run(`Boolean(document.querySelector('.review-preferences[open]'))`), true, 'Enter does not submit or close')
   await press('Escape')
   assert.equal(await run(`Boolean(document.querySelector('.local-review[open]')) && !document.querySelector('.review-preferences')`), true, 'Escape closes only preferences')
-  assert.equal(await run(`localStorage.getItem('local-review-diff-preferences')`), null, 'cancel discards edits')
+  assert.equal(await run(`JSON.parse(localStorage.getItem('local-review-diff-preferences')).fontSize`), 18, 'Escape retains applied edits')
   await click('button[data-review-preferences]')
   await preference('Fit to screen', false)
   await preference('Diff width', 500)
@@ -207,7 +213,7 @@ app.whenReady().then(async () => {
   await preference('Syntax highlighting', false)
   await preference('Ignore Whitespace', 'IGNORE_ALL')
   await preference('Context', 10)
-  await click('.review-preferences button[type=submit]')
+  await click('.review-preferences button[type=button]')
   await until(`!document.querySelector('.review-preferences') && Boolean(document.querySelector('.diff-hidden-lines-widget'))`, 'context limit applied')
   assert.equal(await run(`getComputedStyle(document.querySelector('${selector} .view-lines')).fontSize`), '18px', 'font size applied to real editor')
   await run(`document.querySelector('${selector} .native-edit-context, ${selector} .inputarea').focus()`)
@@ -219,7 +225,7 @@ app.whenReady().then(async () => {
   // must suppress the whitespace-only first chunk in the actual editor.
   await click('button[data-review-preferences]')
   await preference('Context', -1)
-  await click('.review-preferences button[type=submit]')
+  await click('.review-preferences button[type=button]')
   await until(`!document.querySelector('.diff-hidden-lines-widget')`, 'whole file restored')
   await run(`document.querySelector('${selector} .native-edit-context, ${selector} .inputarea').focus()`)
   await press('Home', ['control'])
@@ -250,7 +256,7 @@ app.whenReady().then(async () => {
   await until(`!document.querySelector('input[aria-label="File reviewed"]').checked && !document.querySelector('input[aria-label="File reviewed"]').disabled`, 'manual reviewed clear')
   await click('button[data-review-preferences]')
   await preference('Automatically mark viewed files reviewed', true)
-  await click('.review-preferences button[type=submit]')
+  await click('.review-preferences button[type=button]')
   await until(`document.querySelector('input[aria-label="File reviewed"]').checked`, 'automatic reviewed write')
   await click('input[aria-label="File reviewed"]')
   await until(`!document.querySelector('input[aria-label="File reviewed"]').checked && !document.querySelector('input[aria-label="File reviewed"]').disabled`, 'manual clear overrides automatic marking for this visit')
