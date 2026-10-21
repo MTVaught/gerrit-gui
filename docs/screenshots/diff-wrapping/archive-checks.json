@@ -1,0 +1,31 @@
+{
+  "change": "fix-independent-diff-wrapping",
+  "schema": "spec-driven",
+  "archive": "openspec/changes/archive/2026-10-21-fix-independent-diff-wrapping",
+  "mainSpec": "openspec/specs/review-diff-layout/spec.md",
+  "artifactFiles": [
+    ".openspec.yaml",
+    "design.md",
+    "proposal.md",
+    "specs/review-diff-layout/spec.md",
+    "tasks.md"
+  ],
+  "artifactHashesPreserved": true,
+  "tasksComplete": 3,
+  "tasksTotal": 3,
+  "requirements": [
+    "Independent viewport wrapping",
+    "Configured column wrapping",
+    "Aligned and usable review navigation"
+  ],
+  "scenarios": [
+    "Narrow the original pane",
+    "Narrow the modified pane",
+    "Change the available space",
+    "Toggle the wrapping mode",
+    "Align unequal visual row counts",
+    "Navigate a large file after resizing"
+  ],
+  "purpose": "Let reviewers resize either side of a diff while each pane uses its available text width and matching source rows stay aligned.",
+  "mainMatchesDelta": true
+}
