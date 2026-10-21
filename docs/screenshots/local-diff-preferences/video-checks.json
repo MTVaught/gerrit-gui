@@ -1,0 +1,82 @@
+[
+  {
+    "file": "desktop/workflow-light.mp4",
+    "codec_name": "h264",
+    "width": 1600,
+    "height": 1000,
+    "pix_fmt": "yuv420p",
+    "r_frame_rate": "20/1",
+    "durationSeconds": 57.0,
+    "decodedWithoutErrors": true
+  },
+  {
+    "file": "desktop/workflow-dark.mp4",
+    "codec_name": "h264",
+    "width": 1600,
+    "height": 1000,
+    "pix_fmt": "yuv420p",
+    "r_frame_rate": "20/1",
+    "durationSeconds": 56.9,
+    "decodedWithoutErrors": true
+  },
+  {
+    "file": "desktop/theme-stays-open-light.mp4",
+    "codec_name": "h264",
+    "width": 1600,
+    "height": 1000,
+    "pix_fmt": "yuv420p",
+    "r_frame_rate": "20/1",
+    "durationSeconds": 15.5,
+    "decodedWithoutErrors": true
+  },
+  {
+    "file": "desktop/theme-stays-open-dark.mp4",
+    "codec_name": "h264",
+    "width": 1600,
+    "height": 1000,
+    "pix_fmt": "yuv420p",
+    "r_frame_rate": "20/1",
+    "durationSeconds": 15.5,
+    "decodedWithoutErrors": true
+  },
+  {
+    "file": "browser/workflow-light.mp4",
+    "codec_name": "h264",
+    "width": 1600,
+    "height": 1000,
+    "pix_fmt": "yuv420p",
+    "r_frame_rate": "20/1",
+    "durationSeconds": 57.15,
+    "decodedWithoutErrors": true
+  },
+  {
+    "file": "browser/workflow-dark.mp4",
+    "codec_name": "h264",
+    "width": 1600,
+    "height": 1000,
+    "pix_fmt": "yuv420p",
+    "r_frame_rate": "20/1",
+    "durationSeconds": 57.1,
+    "decodedWithoutErrors": true
+  },
+  {
+    "file": "browser/theme-stays-open-light.mp4",
+    "codec_name": "h264",
+    "width": 1600,
+    "height": 1000,
+    "pix_fmt": "yuv420p",
+    "r_frame_rate": "20/1",
+    "durationSeconds": 15.5,
+    "decodedWithoutErrors": true
+  },
+  {
+    "file": "browser/theme-stays-open-dark.mp4",
+    "codec_name": "h264",
+    "width": 1600,
+    "height": 1000,
+    "pix_fmt": "yuv420p",
+    "r_frame_rate": "20/1",
+    "durationSeconds": 15.5,
+    "decodedWithoutErrors": true
+  }
+]

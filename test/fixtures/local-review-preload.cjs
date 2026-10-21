@@ -46,6 +46,7 @@ const tail = ['', '    await this.transport.send(batch);', '  }', '}', '', '// D
 const unchanged = Array.from({ length: 99940 }, (_, i) => `export const deliveryCase${String(i + 1).padStart(5, '0')} = { retries: 2, timeoutMs: 5000 };`)
 const patchSets = [1, 2, 3]
 let requests = 0
+let readOnly = false
 const openedChanges = []
 const ownerActions = []
 const comparisons = []
@@ -95,14 +96,12 @@ contextBridge.exposeInMainWorld('api', {
   setBadge: () => undefined, lookupAccounts: async () => [],
   reviewCommentPositions: async () => historicalPositions,
   reviewBlame: async () => [{ author: 'Sam Chen', id: 'abc12345', time: Date.now() / 1000, commit_msg: 'Bound telemetry batches', ranges: [{ start: 1, end: 40 }] }],
-  reviewDiffPreferences: async () => ({ context: -1, line_length: 100, tab_size: 4, font_size: 13, show_tabs: false, show_whitespace_errors: true, syntax_highlighting: true, manual_review: true, ignore_whitespace: 'IGNORE_NONE' }),
-  saveReviewDiffPreferences: async input => process.env.REVIEW_THEME_FIXTURE ? ipcRenderer.invoke('fixture:saveGerrit', input) : input,
   previewReviewFix: async (_id, _ps, suggestion) => Object.fromEntries(suggestion.replacements.map(part => [part.path, { content: [{ a: ['old source'], b: part.replacement.split('\n') }]}])),
   applyProvidedReviewFix: async (id, patchSet, suggestion) => { appliedFixes.push({ id, patchSet, suggestion }) },
   openUrl: noOp,
   suggestReviewers: async () => [{ account: owner, count: 1 }],
   act: async action => { ownerActions.push(action) },
-  reviewDiscussion: async () => ({ comments: [...comments], drafts: [...drafts.values()], self, permittedLabels: { 'Code-Review': ['-2', '-1', '0', '+1', '+2'] }, labels: { 'Code-Review': { ...change.labels['Code-Review'], values: { '+1': 'Looks good' } } }, latestPatchSet: Math.max(...patchSets), owner, reviewers: { REVIEWER: [self], CC: [owner] }, attention: { 1: { account: self } }, readOnly: false, canDeletePublished }),
+  reviewDiscussion: async () => ({ comments: [...comments], drafts: [...drafts.values()], self, permittedLabels: { 'Code-Review': ['-2', '-1', '0', '+1', '+2'] }, labels: { 'Code-Review': { ...change.labels['Code-Review'], values: { '+1': 'Looks good' } } }, latestPatchSet: Math.max(...patchSets), owner, reviewers: { REVIEWER: [self], CC: [owner] }, attention: { 1: { account: self } }, readOnly, canDeletePublished }),
   saveReviewDraft: async (id, patchSet, input) => {
     if (process.env.REVIEW_NATIVE_FIXTURE) await ipcRenderer.invoke('fixture:saveDraft')
     await new Promise(r => setTimeout(r, 120))
@@ -138,7 +137,9 @@ contextBridge.exposeInMainWorld('api', {
   },
   reviewPatchSets: async () => [...patchSets],
   reviewReviewedFiles: async (link) => [...(reviewedFlags.get(link.patchSet) ?? [])],
+  fixtureReadOnly: async value => { readOnly = value },
   setReviewFileReviewed: async (link, path, reviewed) => {
+    if (readOnly) throw new Error('Fixture review is read-only')
     const flags = reviewedFlags.get(link.patchSet) ?? new Set()
     if (reviewed) flags.add(path); else flags.delete(path)
     reviewedFlags.set(link.patchSet, flags)

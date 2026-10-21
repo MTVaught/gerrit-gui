@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local diff preferences proposal</title>
+<style>
+  :root { color-scheme: light; --mock-bg: #fff; --mock-fg: #20252d; --mock-border: #d7dce3; --mock-muted: #596572; --mock-focus: #2769cc; }
+  @media (prefers-color-scheme: dark) { :root { color-scheme: dark; --mock-bg: #20252d; --mock-fg: #e6eaf0; --mock-border: #424b58; --mock-muted: #adb8c6; --mock-focus: #8bb8ff; } }
+  * { box-sizing: border-box; }
+  html, body { background: transparent; }
+  body { margin: 0; font: 14px/1.45 var(--font-sans, system-ui, sans-serif); color: var(--foreground, var(--mock-fg)); }
+  .note { margin: 0 0 16px; color: var(--muted-foreground, var(--mock-muted)); font-size: 12px; }
+  .dialog { width: min(580px, 100%); margin: 0 auto; padding: 24px; border: 1px solid var(--border, var(--mock-border)); border-radius: var(--radius, 8px); background: var(--card, var(--mock-bg)); color: var(--card-foreground, var(--mock-fg)); }
+  h2 { margin: 0 -24px 20px; padding: 0 24px 20px; border-bottom: 1px solid var(--border, var(--mock-border)); font-size: 20px; line-height: 1.25; font-weight: 650; }
+  .fields { display: grid; gap: 14px; }
+  label { display: grid; grid-template-columns: minmax(0, 1fr) 210px; align-items: center; gap: 20px; font-weight: 600; }
+  input, select, button { font: inherit; color: inherit; }
+  input[type=number], select { width: 100%; min-width: 0; padding: 6px 8px; border: 1px solid var(--border, var(--mock-border)); border-radius: 4px; background: var(--card, var(--mock-bg)); }
+  input[type=checkbox] { margin: 0; width: 18px; height: 18px; justify-self: start; accent-color: var(--mock-focus); }
+  input:disabled { opacity: .55; }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--ring, var(--mock-focus)); outline-offset: 3px; }
+  .help { margin: 20px 0; color: var(--muted-foreground, var(--mock-muted)); font-size: 12px; }
+  footer { display: flex; justify-content: flex-end; padding: 16px 24px 0; margin: 0 -24px; border-top: 1px solid var(--border, var(--mock-border)); }
+  button { padding: 7px 16px; border: 1px solid var(--border, var(--mock-border)); background: var(--card, var(--mock-bg)); border-radius: 5px; font-weight: 600; }
+  .boundary { margin: 16px 0 0; color: var(--muted-foreground, var(--mock-muted)); font-size: 12px; text-align: center; }
+  @media (max-width: 520px) { label { grid-template-columns: minmax(0, 1fr) 145px; gap: 12px; } .dialog { padding: 20px; } h2 { margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; } footer { margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; } }
+</style>
+</head>
+<body>
+  <p class="note">Proposal mockup / static layout / simulated values</p>
+  <section class="dialog" role="dialog" aria-labelledby="title">
+    <h2 id="title">Diff Preferences</h2>
+    <div class="fields">
+      <label>Diff theme<select><option selected>Follow application</option><option>Light</option><option>Dark</option></select></label>
+      <label>Context<select><option selected>Whole file</option><option>3 lines</option><option>10 lines</option><option>25 lines</option><option>50 lines</option><option>100 lines</option></select></label>
+      <label>Fit to screen<input type="checkbox" checked></label>
+      <label>Diff width<input type="number" min="20" max="1000" value="100" disabled></label>
+      <label>Tab width<input type="number" min="1" max="16" value="4"></label>
+      <label>Font size<input type="number" min="8" max="32" value="13"></label>
+      <label>Show tabs<input type="checkbox"></label>
+      <label>Show trailing whitespace<input type="checkbox" checked></label>
+      <label>Syntax highlighting<input type="checkbox" checked></label>
+      <label>Automatically mark viewed files reviewed<input type="checkbox"></label>
+      <label>Ignore Whitespace<select><option selected>None</option><option>Trailing</option><option>Leading and trailing</option><option>All</option></select></label>
+    </div>
+    <p class="help">Changes apply automatically in this application.</p>
+    <footer><button type="button">Close</button></footer>
+  </section>
+  <p class="boundary">Gerrit account diff preferences stay unchanged.</p>
+</body>
+</html>

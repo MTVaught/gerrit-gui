@@ -13,7 +13,6 @@ import type {
   ChangeLink,
   ReviewDiff,
   ReviewBlame,
-  GerritDiffPreferences,
   FixSuggestion,
   ReviewDiscussion,
   ReviewCommentPosition,
@@ -47,8 +46,6 @@ export interface Service {
   /** One change, fresh from Gerrit, for updating the board after an action on it. */
   fetchChange(id: number): Promise<ChangeInfo>
   reviewBlame(link: ChangeLink, path: string): Promise<ReviewBlame[]>
-  reviewDiffPreferences(): Promise<GerritDiffPreferences>
-  saveReviewDiffPreferences(input: GerritDiffPreferences): Promise<GerritDiffPreferences>
   previewReviewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<Record<string, ReviewDiff>>
   applyProvidedReviewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<void>
   reviewFiles(link: ChangeLink): Promise<Record<string, FileInfo>>
@@ -173,8 +170,6 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
     },
 
     reviewBlame: async (link, path) => (await client()).blame(link, path),
-    reviewDiffPreferences: async () => (await client()).diffPreferences(),
-    saveReviewDiffPreferences: input => withWrite(async () => (await client()).diffPreferences(input)),
     previewReviewFix: async (id, patchSet, fix) => (await client()).previewFix(id, patchSet, fix),
     applyProvidedReviewFix: (id, patchSet, fix) => withWrite(async () => (await client()).applyProvidedFix(id, patchSet, fix)),
     reviewFiles: async (link) => (await client()).files(link.id, link.patchSet!, link.basePatchSet),

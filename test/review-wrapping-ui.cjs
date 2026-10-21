@@ -10,7 +10,7 @@ const { spawn, execFileSync } = require('node:child_process')
 process.env.REVIEW_WRAP_FIXTURE = '1'
 process.env.REVIEW_FIXTURE_NOW = '2026-10-21 12:00:00.000'
 const data = fs.mkdtempSync(path.join(os.tmpdir(), 'gerrit-wrap-'))
-const output = path.join(__dirname, '../docs/screenshots/diff-wrapping')
+const output = process.env.REVIEW_WRAP_OUTPUT ?? path.join(__dirname, '../docs/screenshots/diff-wrapping')
 const video = process.env.REVIEW_WRAP_VIDEO === '1'
 app.setPath('userData', data)
 app.disableHardwareAcceleration()
@@ -92,7 +92,7 @@ app.whenReady().then(async () => {
       await press('a', ['control'])
       await win.webContents.insertText('40')
     }
-    await click('.review-preferences button[type="submit"]')
+    await click('.review-preferences footer button')
     await until(`!document.querySelector('.review-preferences')`)
   }
   const report = {}

@@ -12,7 +12,7 @@ const handlers = {
  getSettings: () => settings, lookupAccounts: () => [], getPretend: () => null,
  fetchDashboard: () => ({self, open: changes, merged: [], fetchedAt: new Date().toISOString(), truncated: false}),
  fetchChange: id => changes.find(c=>c._number===id),
- reviewPatchSets: () => [1], reviewReviewedFiles: () => [], reviewCommentPositions: () => [], reviewDiffPreferences: () => ({context:-1, line_length:100, tab_size:4, font_size:13, syntax_highlighting:true}),
+ reviewPatchSets: () => [1], reviewReviewedFiles: () => [], reviewCommentPositions: () => [],
  reviewFiles: () => ({'src/batches.ts': {lines_inserted:1,lines_deleted:1}}),
  reviewDiff: (_, path) => ({meta_a:{name:path},meta_b:{name:path},content:[{ab:['// Telemetry batch limits']},{a:['export const batchLimit = 500;'],b:['export const batchLimit = 100;']},{ab:[''] }]}),
  reviewDiscussion: id => { const c=changes.find(c=>c._number===id); return {comments:[],drafts:[],self,owner:c.owner,permittedLabels:{'Code-Review':['-1','0','+1']},labels:{'Code-Review':{...c.labels['Code-Review'],values:{'-1':'Needs changes','0':'No score','+1':'Looks good'}}},latestPatchSet:1,reviewers:c.reviewers,attention:{},readOnly:false,canDeletePublished:false} },

@@ -1,0 +1,43 @@
+{
+  "change": "localize-diff-preferences",
+  "schema": "spec-driven",
+  "archivedTo": "openspec/changes/archive/2026-10-21-localize-diff-preferences",
+  "completedTasks": 10,
+  "totalTasks": 10,
+  "preservedArtifacts": [
+    ".openspec.yaml",
+    "design.md",
+    "previews/README.md",
+    "previews/capture-results.json",
+    "previews/proposal-dark.png",
+    "previews/proposal-light.png",
+    "previews/proposal.html",
+    "proposal.md",
+    "specs/diff-appearance/spec.md",
+    "specs/review-preferences/spec.md",
+    "tasks.md"
+  ],
+  "activeChangeRemoved": true,
+  "sync": {
+    "changedRequirements": {
+      "diff-appearance": [
+        "Shared theme controls",
+        "Local persistence and save feedback"
+      ],
+      "review-preferences": [
+        "Application-owned review preferences",
+        "Automatic application and dismissal",
+        "Validate number edits before application",
+        "Preserve local preferences across sessions",
+        "Recover from local persistence failures"
+      ]
+    },
+    "files": {
+      "openspec/specs/diff-appearance/spec.md": "51f8a673acc1b58a6187a56836ba17a1a43f050581734f63fade6b4327b58d59",
+      "openspec/specs/review-preferences/spec.md": "d28c50033a1c50fce750703e5f66a547a0554dc0baa6499d3ad9d18f1d9e1d41"
+    },
+    "preservedAppearancePurpose": true,
+    "preservedUnchangedRequirements": 2,
+    "allDeltasSynced": true
+  }
+}

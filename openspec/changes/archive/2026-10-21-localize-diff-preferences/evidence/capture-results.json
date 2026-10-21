@@ -1,0 +1,22 @@
+{
+  "platform": "linux",
+  "engine": "44.2.0",
+  "records": [
+    {
+      "width": 820,
+      "height": 930,
+      "bodyHeight": 818,
+      "mode": "light",
+      "heading": "localize-diff-preferences",
+      "status": "Archived and synced"
+    },
+    {
+      "width": 820,
+      "height": 930,
+      "bodyHeight": 818,
+      "mode": "dark",
+      "heading": "localize-diff-preferences",
+      "status": "Archived and synced"
+    }
+  ]
+}

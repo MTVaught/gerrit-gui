@@ -30,7 +30,6 @@ async function start() {
       }
       let result
       if (pathname === '/accounts/self') result = self
-      else if (pathname === '/accounts/self/preferences.diff') result = await api.reviewDiffPreferences()
       else if (pathname === '/accounts/self/capabilities') result = {}
       else if (pathname === '/changes/') result = url.searchParams.getAll('q').map((_, i) => i === 0 ? [change] : [])
       else if (pathname === '/changes/2481/detail') result = change

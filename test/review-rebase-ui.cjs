@@ -94,7 +94,7 @@ app.whenReady().then(async () => {
   assert.equal(await run(`Array.from(document.querySelectorAll('.review-rebase-added-text')).filter(e => e.textContent.includes('spacing')).length`), 1, 'default whitespace policy shows whitespace-only rebase edits')
   await click(`Array.from(document.querySelectorAll('.local-review button')).find(b => b.textContent === 'Diff preferences')`)
   await run(`(() => { const e = Array.from(document.querySelectorAll('.review-preferences select')).find(e => e.closest('label').textContent.includes('Ignore Whitespace')); e.value = 'IGNORE_TRAILING'; e.dispatchEvent(new Event('change', {bubbles:true})); })()`)
-  await click(`Array.from(document.querySelectorAll('.review-preferences button')).find(b => b.textContent === 'Save')`)
+  await click(`Array.from(document.querySelectorAll('.review-preferences button')).find(b => b.textContent === 'Close')`)
   await until(`!Array.from(document.querySelectorAll('.review-rebase-added-text')).some(e => e.textContent.includes('spacing'))`)
   nativeTheme.themeSource = 'dark'
   await until(`getComputedStyle(document.querySelector('.review-rebase-added')).backgroundColor === 'rgb(36, 63, 97)'`)

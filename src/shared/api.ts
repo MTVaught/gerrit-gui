@@ -10,7 +10,6 @@ import type {
   NativeReviewRequest,
   ReviewDiff,
   ReviewBlame,
-  GerritDiffPreferences,
   FixSuggestion,
   ReviewDiscussion,
   ReviewCommentPosition,
@@ -35,8 +34,6 @@ export interface Api {
   /** One change as the board shows it, read after an action on it so only that card is redrawn. */
   fetchChange(id: number): Promise<ChangeInfo>
   reviewBlame(link: ChangeLink, path: string): Promise<ReviewBlame[]>
-  reviewDiffPreferences(): Promise<GerritDiffPreferences>
-  saveReviewDiffPreferences(input: GerritDiffPreferences): Promise<GerritDiffPreferences>
   previewReviewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<Record<string, ReviewDiff>>
   applyProvidedReviewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<void>
   reviewFiles(link: ChangeLink): Promise<Record<string, FileInfo>>

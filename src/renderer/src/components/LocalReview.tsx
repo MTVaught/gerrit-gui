@@ -4,7 +4,7 @@ import type { DiffThemePreference, ChangeLink, FileInfo, ReviewComment, ReviewDi
 import { resolveDiffTheme } from '../../../shared/theme.ts'
 import { useSettings } from '../settings-context.ts'
 import { useResolvedTheme } from '../theme.ts'
-import { commitDiffPreferences } from '../save-diff-preferences.ts'
+import { DiffThemeWriter } from '../diff-theme-writer.ts'
 import { api } from '../api.ts'
 import { diffContents } from '../review.ts'
 import { reviewShortcut, REVIEW_SHORTCUT_HELP } from '../review-shortcuts.ts'
@@ -14,7 +14,7 @@ import { ReviewComments, type ReviewCommentsHandle } from './ReviewComments.tsx'
 import { commentAnchor, commentPane, displayCommentAnchor } from '../review-comments.ts'
 import { ReviewFileList } from './ReviewFileList.tsx'
 import { DiffPreferences } from './DiffPreferences.tsx'
-import { reviewContextIsSynced, fromGerritPreferences, loadReviewPreferences, saveReviewPreferences, type ReviewPreferences } from '../review-preferences.ts'
+import { loadReviewPreferences, updateReviewPreference, type ChangeReviewPreference, type ReviewPreferenceErrors } from '../review-preferences.ts'
 
 const ReviewEditor = lazy(() => import('./ReviewEditor.tsx'))
 
@@ -34,12 +34,9 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   useImperativeHandle(ref, () => ({ canClose: () => comments.current?.canClose() !== false }))
   const [link, setLink] = useState(initialLink)
   const [patchSets, setPatchSets] = useState<number[] | null>(null)
-  const preferenceVersion = useRef(0)
   const [updateNotice, setUpdateNotice] = useState('')
   useEffect(() => {
     let active = true
-    const version = preferenceVersion.current
-    void api.reviewDiffPreferences().then(input => { if (active && version === preferenceVersion.current) setPreferences(current => fromGerritPreferences({ ...input, context: reviewContextIsSynced() ? input.context : current.context }, current)) }).catch(e => { if (active && version === preferenceVersion.current) setPreferenceError(`Could not load Gerrit preferences: ${e.message}`) })
     const poll = async () => {
       if (document.hidden) return
       try { const sets = await api.reviewPatchSets(initialLink.id); if (active) { setPatchSets(current => { if (current && sets.some(set => !current.includes(set))) setUpdateNotice(`New patch set ${Math.max(...sets)} available.`); return sets }) } } catch { /* Keep the current comparison available during network outages. */ }
@@ -50,7 +47,19 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   const [patchSetError, setPatchSetError] = useState('')
   const [preferences, setPreferences] = useState(loadReviewPreferences)
   const [preferencesOpen, setPreferencesOpen] = useState(false)
-  const [preferenceError, setPreferenceError] = useState('')
+  const [preferenceErrors, setPreferenceErrors] = useState<ReviewPreferenceErrors>({})
+  const confirmedPreferences = useRef(preferences)
+  const [requestedTheme, setRequestedTheme] = useState<DiffThemePreference | null>(null)
+  const currentSettingsHandle = useRef(settingsHandle)
+  currentSettingsHandle.current = settingsHandle
+  const themeWriter = useRef<DiffThemeWriter | null>(null)
+  if (!themeWriter.current) themeWriter.current = new DiffThemeWriter(
+    value => currentSettingsHandle.current.save({ diffTheme: value }),
+    error => {
+      setRequestedTheme(null)
+      setPreferenceErrors(current => ({ ...current, diffTheme: error ? `Could not save diff theme: ${error.message}` : undefined }))
+    },
+  )
   const [reviewed, setReviewed] = useState<{ patchSet: number; paths: Set<string> } | null>(null)
   const [reviewedError, setReviewedError] = useState('')
   const [reviewedRetry, setReviewedRetry] = useState(0)
@@ -188,17 +197,17 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
     autoMarkedVisit.current = fileKey
     if (!isReviewed) void markReviewed(true)
   }, [preferences.autoMarkReviewed, readyFile, fileKey, reviewed, isReviewed])
-  async function savePreferences(next: ReviewPreferences, nextTheme: DiffThemePreference) {
-    preferenceVersion.current++
+  const changePreference: ChangeReviewPreference = (name, value) => {
     try {
-      await commitDiffPreferences(preferences, next, diffTheme, nextTheme, {
-        saveGerrit: input => api.saveReviewDiffPreferences(input),
-        saveLocal: (input, synced) => { saveReviewPreferences(input, synced); setPreferences(input) },
-        saveTheme: value => settingsHandle.save({ diffTheme: value }),
-      })
-      setPreferenceError('')
+      const next = updateReviewPreference(confirmedPreferences.current, name, value)
+      confirmedPreferences.current = next
+      setPreferences(next)
+      setPreferenceErrors(current => ({ ...current, [name]: undefined }))
       return true
-    } catch (e) { setPreferenceError(`Could not save diff preferences: ${(e as Error).message}`); return false }
+    } catch (error) {
+      setPreferenceErrors(current => ({ ...current, [name]: `Could not save this preference: ${(error as Error).message}` }))
+      return false
+    }
   }
   const paths = Object.keys(files ?? {}).sort()
   function onKey(event: KeyboardEvent<HTMLDialogElement>) {
@@ -325,7 +334,11 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
         </main>
 
       </div>
-      {preferencesOpen && <DiffPreferences diffTheme={diffTheme} preferences={preferences} error={preferenceError} onSave={savePreferences} onClose={() => { setPreferencesOpen(false); setPreferenceError('') }} />}
+      {preferencesOpen && <DiffPreferences diffTheme={requestedTheme ?? diffTheme} preferences={preferences} errors={preferenceErrors} onChange={changePreference} onThemeChange={value => {
+        setRequestedTheme(value)
+        setPreferenceErrors(current => ({ ...current, diffTheme: undefined }))
+        void themeWriter.current!.change(value)
+      }} onClose={() => setPreferencesOpen(false)} />}
       {help && <ShortcutHelp onClose={() => setHelp(false)} />}
     </dialog>, document.body,
   )
