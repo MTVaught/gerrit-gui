@@ -1,7 +1,44 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { commentAnchor, commentThreads, commentPane, displayCommentAnchor, commentReply } from './review-comments.ts'
+import { commentAnchor, commentThreads, commentPane, displayCommentAnchor, commentReply, commentSelection } from './review-comments.ts'
 import type { ReviewComment } from '../../shared/types.ts'
+
+test('new comment selections exclude a final newline and preserve ordinary ranges', () => {
+  const selection = { startLineNumber: 1, startColumn: 1, endLineNumber: 2, endColumn: 1 }
+  const expected = { line: 1, range: { start_line: 1, start_character: 0, end_line: 1, end_character: 27 } }
+  assert.deepEqual(commentSelection(selection, () => 27), expected)
+  // Monaco orders the range bounds independently of the active cursor.
+  assert.deepEqual(commentSelection({ ...selection, ...{ positionLineNumber: 1, positionColumn: 1 } }, () => 27), expected)
+  assert.deepEqual(selection, { startLineNumber: 1, startColumn: 1, endLineNumber: 2, endColumn: 1 })
+  const noRead = () => { throw new Error('ordinary selections must not read source lengths') }
+  assert.deepEqual(commentSelection({ ...selection, endLineNumber: 1, endColumn: 1 }, noRead), { line: 1 })
+  assert.deepEqual(commentSelection({ ...selection, endLineNumber: 1, endColumn: 8 }, noRead), {
+    line: 1, range: { start_line: 1, start_character: 0, end_line: 1, end_character: 7 },
+  })
+  assert.deepEqual(commentSelection({ ...selection, startColumn: 4, endColumn: 3 }, noRead), {
+    line: 2, range: { start_line: 1, start_character: 3, end_line: 2, end_character: 2 },
+  })
+  assert.deepEqual(commentSelection({ ...selection, startColumn: 28 }, () => 27), { line: 1 }, 'newline only')
+  assert.deepEqual(commentSelection(selection, () => 0), { line: 1 }, 'empty line newline only')
+})
+
+test('boundary comments read one source line and retain blank lines and source columns', () => {
+  for (const newline of ['\n', '\r\n']) {
+    const lines = ['first', 'start', '', '\t😀 end  ', ''].join(newline).split(/\r?\n/)
+    const reads: number[] = []
+    const length = (line: number) => { reads.push(line); return lines[line - 1]!.length }
+    assert.deepEqual(commentSelection({ startLineNumber: 2, startColumn: 3, endLineNumber: 5, endColumn: 1 }, length), {
+      line: 4, range: { start_line: 2, start_character: 2, end_line: 4, end_character: '\t😀 end  '.length },
+    }, 'tabs, Unicode, trailing spaces, and EOF newline use source lengths')
+    assert.deepEqual(reads, [4], 'only the final included line is read')
+    reads.length = 0
+    assert.deepEqual(commentSelection({ startLineNumber: 1, startColumn: 2, endLineNumber: 4, endColumn: 1 }, length), {
+      line: 3, range: { start_line: 1, start_character: 1, end_line: 3, end_character: 0 },
+    }, 'a final blank line is retained')
+    assert.deepEqual(reads, [3])
+  }
+})
+
 test('reply writes preserve the immediate parent ID and complete original anchor', () => {
   const range = { start_line: 10, start_character: 2, end_line: 12, end_character: 7 }
   const root: ReviewComment = { id: 'root', patch_set: 1, path: 'before.ts', line: 12, range, side: 'PARENT', parent: 2, updated: '1' }
