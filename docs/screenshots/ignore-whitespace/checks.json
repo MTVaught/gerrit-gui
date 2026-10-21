@@ -1,0 +1,66 @@
+{
+  "light": {
+    "before": [
+      [
+        "const payload = prepare(event);",
+        "send(payload);",
+        "recordDelivery(payload);",
+        "flush();",
+        "const retryLimit = 2;"
+      ],
+      [
+        "for (const event of events) {",
+        "const payload = prepare(event);",
+        "send(payload);",
+        "recordDelivery(payload);",
+        "flush();",
+        "}",
+        "const retryLimit = 3;"
+      ]
+    ],
+    "after": [
+      [
+        "const retryLimit = 2;"
+      ],
+      [
+        "for (const event of events) {",
+        "}",
+        "const retryLimit = 3;"
+      ]
+    ],
+    "modes": "all four passed",
+    "sourceRequests": 1
+  },
+  "dark": {
+    "before": [
+      [
+        "const payload = prepare(event);",
+        "send(payload);",
+        "recordDelivery(payload);",
+        "flush();",
+        "const retryLimit = 2;"
+      ],
+      [
+        "for (const event of events) {",
+        "const payload = prepare(event);",
+        "send(payload);",
+        "recordDelivery(payload);",
+        "flush();",
+        "}",
+        "const retryLimit = 3;"
+      ]
+    ],
+    "after": [
+      [
+        "const retryLimit = 2;"
+      ],
+      [
+        "for (const event of events) {",
+        "}",
+        "const retryLimit = 3;"
+      ]
+    ],
+    "modes": "all four passed",
+    "sourceRequests": 1
+  }
+}

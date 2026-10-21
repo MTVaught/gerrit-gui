@@ -52,6 +52,76 @@ test('all four whitespace modes preserve Gerrit comparison semantics', () => {
   assert.equal(compute(['foo bar'], ['foobar'], 'IGNORE_LEADING_AND_TRAILING').changes.length, 1)
   assert.equal(compute(['\tfoo bar  '], ['foobar'], 'IGNORE_ALL').changes.length, 0)
 })
+
+test('tab indentation is ignored across adjacent Gerrit deletion and insertion chunks', () => {
+  const code = ['function deliver() {', '  send(batch);', '}']
+  for (const content of [
+    [{ a: code, b: code.map(line => '\t' + line) }],
+    [{ a: code }, { b: code.map(line => '\t' + line), due_to_rebase: true }],
+    [{ b: code.map(line => '\t' + line) }, { a: code }],
+  ]) {
+    const file = diffContents({ content: [{ ab: ['// context'] }, ...content, { ab: ['// tail'] }] })
+    for (const whitespace of ['IGNORE_NONE', 'IGNORE_TRAILING', 'IGNORE_LEADING_AND_TRAILING', 'IGNORE_ALL'] as const) {
+      const result = computeReviewDiff({ id: 1, original: file.original.split('\n'), modified: file.modified.split('\n'), blocks: file.diffBlocks, whitespace, timeout: 10000 })
+      assert.equal(result.changes.length, whitespace === 'IGNORE_NONE' || whitespace === 'IGNORE_TRAILING' ? 1 : 0, whitespace)
+      assert.equal(result.quitEarly, false)
+    }
+  }
+})
+
+test('filtering adjacent chunks retains real edits, source columns, and unchanged anchors', () => {
+  const file = diffContents({ content: [
+    { ab: ['// context'] },
+    { a: ['function deliver() {', '  send(oldBatch);', '}'] },
+    { b: ['\tfunction deliver() {', '\t  send(newBatch);', '\t}'], due_to_rebase: true },
+    { ab: ['', '// anchor'] },
+    { a: ['removed();'] },
+    { ab: ['// another anchor'] },
+    { b: ['\tremoved();', '\tadded();'] },
+    { ab: ['// tail'] },
+  ] })
+  for (const whitespace of ['IGNORE_LEADING_AND_TRAILING', 'IGNORE_ALL'] as const) {
+    const result = computeReviewDiff({ id: 1, original: file.original.split('\n'), modified: file.modified.split('\n'), blocks: file.diffBlocks, whitespace, timeout: 10000 })
+    assert.deepEqual(result.changes.map(c => [c.original, c.modified]), [
+      [[3, 4], [3, 4]], [[7, 8], [7, 7]], [[9, 9], [8, 10]],
+    ])
+    const inner = result.changes[0]!.innerChanges[0]!
+    assert.equal(inner.original.startLineNumber, 3)
+    assert.equal(inner.modified.startLineNumber, 3)
+    assert.equal(inner.modified.startColumn, inner.original.startColumn + 1)
+  }
+})
+
+test('a new loop and braces stay changed while its tab-indented body is ignored', () => {
+  const body = ['  const payload = prepare(event);', '  send(payload);', '  recordDelivery(payload);', '  flush();']
+  const wrapped = ['  for (const event of events) {', ...body.map(line => '\t' + line), '  }']
+  for (const content of [[{ a: body, b: wrapped }], [{ a: body }, { b: wrapped }]]) {
+    const file = diffContents({ content: [
+      { ab: ['function deliver(events: Event[]) {'] }, ...content, { ab: ['}', ''] },
+    ] })
+    for (const whitespace of ['IGNORE_LEADING_AND_TRAILING', 'IGNORE_ALL'] as const) {
+      const result = computeReviewDiff({ id: 1, original: file.original.split('\n'), modified: file.modified.split('\n'), blocks: file.diffBlocks, whitespace, timeout: 10000 })
+      assert.deepEqual(result.changes.map(c => [c.original, c.modified]), [[[2, 2], [2, 3]], [[6, 6], [7, 8]]])
+    }
+  }
+})
+test('switching whitespace modes leaves loaded source, blocks, and rebase ranges intact', () => {
+  const file = diffContents({ content: [
+    { ab: ['// context'] },
+    { a: ['  send(event);', '  flush();'] },
+    { b: ['  for (const event of events) {', '\t  send(event);', '\t  flush();', '  }'], due_to_rebase: true },
+    { ab: ['// tail'] },
+  ] })
+  const snapshot = structuredClone(file)
+  const original = file.original.split('\n')
+  const modified = file.modified.split('\n')
+  for (const whitespace of ['IGNORE_ALL', 'IGNORE_NONE', 'IGNORE_LEADING_AND_TRAILING', 'IGNORE_TRAILING'] as const) {
+    computeReviewDiff({ id: 1, original, modified, blocks: file.diffBlocks, whitespace, timeout: 10000 })
+    assert.deepEqual(file, snapshot)
+    assert.equal(original.join('\n'), snapshot.original)
+    assert.equal(modified.join('\n'), snapshot.modified)
+  }
+})
 test('normalized diffs keep line alignment and intraline ranges in the actual source', () => {
   const original = ['foo   bar', '\treturn oldName;  ', 'last line']
   const modified = ['foobar', '   return newName;', 'last line']
