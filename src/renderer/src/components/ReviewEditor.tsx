@@ -228,7 +228,7 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
     configureReviewDiff(diff.getOriginalEditor().getModel()!, preferences.ignoreWhitespace, file.diffBlocks)
     diff.updateOptions({
       fontSize: preferences.fontSize, lineHeight: Math.round(preferences.fontSize * 1.65),
-      wordWrap: 'wordWrapColumn', wordWrapColumn: preferences.diffWidth,
+      wordWrap: preferences.fitToScreen ? 'on' : 'wordWrapColumn', wordWrapColumn: preferences.diffWidth,
       diffWordWrap: 'inherit',
       renderWhitespace: preferences.showTrailingWhitespace ? 'trailing' : 'none',
       hideUnchangedRegions: { enabled: preferences.context !== -1, contextLineCount: Math.max(0, preferences.context), minimumLineCount: 1, revealLineCount: 20 },
@@ -238,19 +238,6 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
       model.updateOptions({ tabSize: preferences.tabWidth })
       monaco.editor.setModelLanguage(model, preferences.syntaxHighlighting ? reviewLanguage(file.path) : 'plaintext')
     }
-    // Use the same wrap column for both panes. Independent viewport wrapping
-    // can create a spacer for every line when pane widths straddle a wrap point.
-    let wrapFrame = 0
-    let wrapColumn = preferences.diffWidth
-    function fitColumns() {
-      wrapFrame = 0
-      if (!preferences.fitToScreen) return
-      const panes = sideBySide.current ? [diff!.getOriginalEditor(), diff!.getModifiedEditor()] : [diff!.getModifiedEditor()]
-      const column = Math.max(1, Math.min(...panes.map((code) => Math.floor(code.getLayoutInfo().contentWidth / code.getOption(monaco.editor.EditorOption.fontInfo).typicalHalfwidthCharacterWidth))) - 1)
-      if (column !== wrapColumn) { wrapColumn = column; diff!.updateOptions({ wordWrapColumn: column }) }
-    }
-    function scheduleFit() { if (!wrapFrame) wrapFrame = requestAnimationFrame(fitColumns) }
-    fitColumns()
     // Decorate visible tabs only. No DOM or decoration allocation per full-file line.
     const disposables = [diff.getOriginalEditor(), diff.getModifiedEditor()].flatMap((code) => {
       const decorations = code.createDecorationsCollection()
@@ -271,9 +258,9 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
         if (signature !== lastTabs) { lastTabs = signature; decorations.set(tabs) }
       }
       updateTabs()
-      return [code.onDidScrollChange(event => { updateTabs(); if (preferences.fitToScreen && event.scrollLeft !== 0) code.setScrollLeft(0) }), code.onDidLayoutChange(() => { updateTabs(); scheduleFit() }), { dispose: () => decorations.clear() }]
+      return [code.onDidScrollChange(event => { updateTabs(); if (preferences.fitToScreen && event.scrollLeft !== 0) code.setScrollLeft(0) }), code.onDidLayoutChange(updateTabs), { dispose: () => decorations.clear() }]
     })
-    return () => { cancelAnimationFrame(wrapFrame); disposables.forEach((d) => d.dispose()) }
+    return () => disposables.forEach((d) => d.dispose())
   }, [preferences, file])
   useEffect(() => {
     const diff = editor.current
