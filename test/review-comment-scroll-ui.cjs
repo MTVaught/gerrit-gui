@@ -4,13 +4,14 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+const { checkField, checkEditing, checkFallback, longMessage } = require('./review-comment-field-checks.cjs')
 process.env.REVIEW_COMMENTS_FIXTURE = '1'
 app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'gerrit-comment-scroll-')))
 app.disableHardwareAcceleration()
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-const timeout = setTimeout(() => app.exit(2), 60000)
+const timeout = setTimeout(() => app.exit(2), 180000)
 app.whenReady().then(async () => {
-  nativeTheme.themeSource = 'light'
+  nativeTheme.themeSource = process.env.COMMENT_SCROLL_THEME || 'light'
   const win = new BrowserWindow({ width: 1440, height: 960, useContentSize: true, webPreferences: { contextIsolation: true, sandbox: false, preload: path.join(__dirname, 'fixtures/local-review-preload.cjs') } })
   const run = script => win.webContents.executeJavaScript(script)
   async function until(script) { for (let i = 0; i < 100; i++) { if (await run(script)) return; await delay(100) } throw new Error('Timed out: ' + script) }
@@ -62,8 +63,38 @@ app.whenReady().then(async () => {
     assert.ok(Math.abs((await top()) - before) < 2, `${mode}: cancelling preserves selected line position`)
     await run(`Array.from(document.querySelectorAll('.review-editor .comment-draft button')).find(b => b.textContent === 'Discard draft').click()`)
     await until(`!document.querySelector('.review-editor .comment-draft')`)
+    await goToLine(); await press('c')
+    await until(`document.activeElement?.getAttribute('aria-label') === 'Draft comment'`)
+    await win.webContents.insertText(longMessage); await press('Home', ['control']); await delay(1000)
+    await checkField(win)
+    await run(`Array.from(document.querySelectorAll('.review-comment-compose button')).find(b => b.textContent === 'Cancel').click()`)
+    await until(`!document.querySelector('.review-comment-compose')`)
   }
+  console.log('Existing selected-line position checks passed in modified, original, and unified layouts.')
+  await goToLine()
+  await press('c')
+  await until(`document.activeElement?.getAttribute('aria-label') === 'Draft comment'`)
+  const message = longMessage
+  await win.webContents.insertText(message)
+  await press('Home', ['control'])
+  await delay(1000)
+  const field = '[aria-label="Draft comment"]'
+  async function state() {
+    return run(`(() => { const field = document.querySelector(${JSON.stringify(field)}); return { text: field.value, scrollTop: field.scrollTop, panes: [...document.querySelectorAll('.monaco-editor .margin-view-overlays')].map(pane => { const line = pane.querySelector('.line-numbers'); return { line: line?.textContent, top: line?.getBoundingClientRect().top } }) } })()`)
+  }
+  const beforeWheel = await state()
+  const box = await run(`document.querySelector(${JSON.stringify(field)}).getBoundingClientRect().toJSON()`)
+  win.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(box.x + 40), y: Math.round(box.y + 35) })
+  win.webContents.sendInputEvent({ type: 'mouseWheel', x: Math.round(box.x + 40), y: Math.round(box.y + 35), deltaY: -100, deltaX: 0, wheelTicksY: -100 / 120, canScroll: true })
+  await delay(250)
+  const afterWheel = await state()
+  console.log(JSON.stringify({ beforeWheel: { ...beforeWheel, text: undefined }, afterWheel: { ...afterWheel, text: undefined } }))
+  assert.ok(afterWheel.scrollTop > beforeWheel.scrollTop, 'real wheel input scrolls inside the long comment field')
+  assert.deepEqual(afterWheel.panes, beforeWheel.panes, 'wheel input leaves both code pane positions fixed')
+  assert.equal(afterWheel.text, message)
+  await checkEditing(win)
   assert.equal((await run('api.fixtureStats()')).requests, 1, 'toggling comments does not refetch source')
+  await checkFallback(win)
   console.log(JSON.stringify({ selectedLineAnchoring: 'passed', originalPane: 'passed', unified: 'passed', keyboardAndMenu: 'passed', noExtraFetch: 'passed' }))
   clearTimeout(timeout); win.destroy(); app.quit()
 }).catch(error => { console.error(error); app.exit(1) })
