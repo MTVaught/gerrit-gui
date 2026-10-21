@@ -1,0 +1,68 @@
+[
+  {
+    "theme": "light",
+    "file": "docs/evidence/review-features/comment-scroll-light.mp4",
+    "platform": "Linux X11",
+    "electron": "44.2.0",
+    "middle": 368,
+    "bottom": {
+      "top": 394,
+      "max": 394
+    },
+    "before": [
+      {
+        "line": "23",
+        "top": 123.390625
+      },
+      {
+        "line": "23",
+        "top": 123.390625
+      }
+    ],
+    "after": [
+      {
+        "line": "27",
+        "top": 107.390625
+      },
+      {
+        "line": "27",
+        "top": 107.390625
+      }
+    ],
+    "input": "xdotool pointer, click and physical wheel button input",
+    "data": "simulated Gerrit fixture"
+  },
+  {
+    "theme": "dark",
+    "file": "docs/evidence/review-features/comment-scroll-dark.mp4",
+    "platform": "Linux X11",
+    "electron": "44.2.0",
+    "middle": 368,
+    "bottom": {
+      "top": 394,
+      "max": 394
+    },
+    "before": [
+      {
+        "line": "23",
+        "top": 123.390625
+      },
+      {
+        "line": "23",
+        "top": 123.390625
+      }
+    ],
+    "after": [
+      {
+        "line": "27",
+        "top": 107.390625
+      },
+      {
+        "line": "27",
+        "top": 107.390625
+      }
+    ],
+    "input": "xdotool pointer, click and physical wheel button input",
+    "data": "simulated Gerrit fixture"
+  }
+]

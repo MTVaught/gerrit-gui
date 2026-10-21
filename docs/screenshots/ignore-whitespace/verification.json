@@ -1,0 +1,176 @@
+{
+  "change": "fix-review-whitespace-chunks",
+  "verifiedAt": "2026-10-21T18:58:21.623064+00:00",
+  "platform": "Linux Electron under Xvfb",
+  "data": "Synthetic Gerrit diff and account data",
+  "limit": "The private user diff was not available. This fixture reproduces adjacent deletion/insertion chunks.",
+  "baseRevision": "85efd0896ca0d7b6b8bb4f0c17e77809b5ed0f7d",
+  "sourceSha256": {
+    "src/renderer/src/review-diff.ts": "fffb436f32eee36cc1b8217fd4eede295c11b7189a3824ef17c1c832173a7316",
+    "src/renderer/src/review-diff.test.ts": "2e8f2003608781e180cd9c39f937b32dc5cd61e50f1bad479a1e53ea67139a44",
+    "test/fixtures/local-review-preload.cjs": "d9ecd41026aa77591896157fac4163b94ed55c83b6adf906f064ffc17d5eb790",
+    "test/review-whitespace-ui.cjs": "10fd4844c240b2ce2584c0e2fe7eeb7e9d82090f4d4c2801cf46ae881ed612d8",
+    "openspec/changes/fix-review-whitespace-chunks/specs/review-preferences/spec.md": "42f24c42eb643bd440c7edbef493a569e5cc2389c9fae0ce328c7d80835203d8"
+  },
+  "commands": {
+    "pnpm test": {
+      "exitCode": 0,
+      "passed": 354,
+      "failed": 0
+    },
+    "pnpm typecheck": {
+      "exitCode": 0
+    },
+    "pnpm build": {
+      "exitCode": 0
+    },
+    "openspec validate fix-review-whitespace-chunks --strict": {
+      "exitCode": 0
+    },
+    "git diff --check": {
+      "exitCode": 0
+    }
+  },
+  "navigationUI": {
+    "wheel": "passed",
+    "scrollbarDrag": "passed",
+    "synchronized": "passed",
+    "keyboard": "passed",
+    "find": "passed",
+    "searchTooltip": "passed",
+    "gerritShortcuts": "passed",
+    "backgroundScroll": "passed",
+    "sessionCache": "passed",
+    "diffPreferences": "passed",
+    "patchSetComparison": "passed",
+    "reviewedFlags": "passed",
+    "compactSidebar": "passed",
+    "renderedLines": 56,
+    "requests": 4
+  },
+  "rebaseUI": {
+    "rebaseColors": "passed",
+    "ordinaryColors": "passed",
+    "whitespacePolicy": "passed",
+    "darkTheme": "passed",
+    "unified": "passed",
+    "noExtraFetch": "passed"
+  },
+  "whitespaceUI": {
+    "light": {
+      "before": [
+        [
+          "const payload = prepare(event);",
+          "send(payload);",
+          "recordDelivery(payload);",
+          "flush();",
+          "const retryLimit = 2;"
+        ],
+        [
+          "for (const event of events) {",
+          "const payload = prepare(event);",
+          "send(payload);",
+          "recordDelivery(payload);",
+          "flush();",
+          "}",
+          "const retryLimit = 3;"
+        ]
+      ],
+      "after": [
+        [
+          "const retryLimit = 2;"
+        ],
+        [
+          "for (const event of events) {",
+          "}",
+          "const retryLimit = 3;"
+        ]
+      ],
+      "modes": "all four passed",
+      "sourceRequests": 1
+    },
+    "dark": {
+      "before": [
+        [
+          "const payload = prepare(event);",
+          "send(payload);",
+          "recordDelivery(payload);",
+          "flush();",
+          "const retryLimit = 2;"
+        ],
+        [
+          "for (const event of events) {",
+          "const payload = prepare(event);",
+          "send(payload);",
+          "recordDelivery(payload);",
+          "flush();",
+          "}",
+          "const retryLimit = 3;"
+        ]
+      ],
+      "after": [
+        [
+          "const retryLimit = 2;"
+        ],
+        [
+          "for (const event of events) {",
+          "}",
+          "const retryLimit = 3;"
+        ]
+      ],
+      "modes": "all four passed",
+      "sourceRequests": 1
+    }
+  },
+  "baselineComparison": "reproduction.json",
+  "visualVerification": {
+    "status": "passed",
+    "inspection": "Full-size result screenshots and video samples every two seconds in both modes",
+    "videoDecode": {
+      "light": {
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1600,
+            "height": 1000,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "20/1",
+            "nb_frames": "355"
+          }
+        ],
+        "format": {
+          "duration": "17.750000"
+        },
+        "fullFrameDecode": "passed",
+        "sampleIntervalSeconds": 2,
+        "verifiedAt": "2026-10-21T18:58:03.434086+00:00"
+      },
+      "dark": {
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1600,
+            "height": 1000,
+            "pix_fmt": "yuv420p",
+            "r_frame_rate": "20/1",
+            "nb_frames": "354"
+          }
+        ],
+        "format": {
+          "duration": "17.700000"
+        },
+        "fullFrameDecode": "passed",
+        "sampleIntervalSeconds": 2,
+        "verifiedAt": "2026-10-21T18:58:03.665964+00:00"
+      }
+    }
+  },
+  "evidenceSha256": {
+    "loop-indent-dark.mp4": "a973230ef2dc2a2afd86bd0384a423b042d9f4e9cc0331eca371e96888b696d9",
+    "loop-indent-dark.png": "ea6ba80a5b54e3ac5f250c7c68f1db655c4f0404998531c0848ba345a0f674c1",
+    "loop-indent-light.mp4": "bc9e6a57c319412fb107e85ce6acffc9b2b19c2716e9ea3979c54d1c6350fa04",
+    "loop-indent-light.png": "f8cc30dd74a13e79f4fa0f5ca658b9e03ba52f40c3ee6137b938d5b53a8b1963"
+  }
+}

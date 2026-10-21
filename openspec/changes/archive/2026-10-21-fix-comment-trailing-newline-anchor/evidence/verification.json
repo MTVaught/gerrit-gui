@@ -1,0 +1,37 @@
+{
+  "platform": "Linux / Electron 44.2.0",
+  "server": "Simulated Gerrit API and source fixture",
+  "checks": {
+    "pnpm test": "355 passed",
+    "pnpm typecheck": "passed",
+    "pnpm build": "passed",
+    "review-selection-ui.cjs": "passed",
+    "review-comments-ui.cjs": "passed",
+    "review-ported-reply-ui.cjs": "passed"
+  },
+  "captures": [
+    {
+      "mode": "light",
+      "duration": "39.100000",
+      "line": 1,
+      "range": {
+        "start_line": 1,
+        "start_character": 0,
+        "end_line": 1,
+        "end_character": 32
+      }
+    },
+    {
+      "mode": "dark",
+      "duration": "27.950000",
+      "line": 1,
+      "range": {
+        "start_line": 1,
+        "start_character": 0,
+        "end_line": 1,
+        "end_character": 32
+      }
+    }
+  ],
+  "visualReview": "Both screenshot pairs and sampled recording frames inspected after final export. Captions, pointer, selection, source line numbers, composer, and autosave result are visible."
+}

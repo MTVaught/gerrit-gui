@@ -12,6 +12,7 @@ const timeout = setTimeout(() => app.exit(2), 210000)
 app.whenReady().then(async () => {
   nativeTheme.themeSource = 'light'
   const win = new BrowserWindow({ width: 1600, height: 1000, show: true, webPreferences: { contextIsolation: true, sandbox: false, preload: path.join(__dirname, 'fixtures/local-review-preload.cjs') } })
+  const dir = process.env.REVIEW_COMMENTS_OUTPUT ?? path.join(__dirname, '../docs/screenshots/local-review'); fs.mkdirSync(dir, { recursive: true })
   const errors = []
   win.webContents.on('console-message', details => { if (details.level === 'error') errors.push(details.message) })
   const run = script => win.webContents.executeJavaScript(script).catch(e => { console.error(script, errors); throw e })
@@ -61,7 +62,7 @@ app.whenReady().then(async () => {
   await until(`document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'reopen review')
   await until(`Boolean(document.querySelector('.local-review-header .review-comments'))`, 'review actions in header')
   await until(`document.querySelector('.comment-draft')?.textContent.includes('This unchanged setup needs a comment.')`, 'draft restored from Gerrit')
-  const sourceRequests = (await run('api.fixtureStats()')).requests
+  let sourceRequests = (await run('api.fixtureStats()')).requests
   await button('Edit', '.comment-draft'); await type(' Revised.')
   await until(`(await api.fixtureStats()).drafts[0].message.endsWith('Revised.')`, 'edited draft autosaved')
   await button('Cancel', '.review-comment-compose')
@@ -93,17 +94,39 @@ app.whenReady().then(async () => {
   await aligned(3)
   await button('Go to line'); await press('Escape'); await press('Right', ['shift']); await press('Home', ['control']);
   // Shift+Right is reserved for pane navigation; Shift+End selects a real range.
-  await press('End', ['shift']); await press('c'); await type('Selected unchanged range.'); await saved(2)
-  stats = await run('api.fixtureStats()'); assert.equal(stats.drafts[1].range.start_line, 1); assert.equal(stats.drafts[1].range.start_character, 0); assert.ok(stats.drafts[1].range.end_character > 0)
-  await run(`Array.from(document.querySelectorAll('.comment-draft button')).filter(b => b.textContent === 'Edit').at(-1).click()`)
-  await delay(100); await button('Suggest replacement for selected range', '.review-comment-compose')
-  await button('Go to line'); await press('Escape'); await press('Home', ['control'])
-  await until(`document.querySelector('[aria-label="Suggested replacement"]')?.getBoundingClientRect().height > 0`, 'suggested replacement is rendered before typing')
-  await run(`document.querySelector('[aria-label="Suggested replacement"]').focus()`)
-  await until(`document.activeElement?.getAttribute('aria-label') === 'Suggested replacement'`, 'suggested replacement receives keyboard input')
-  await win.webContents.insertText('// Suggested comparison header')
-  await until(`(await api.fixtureStats()).drafts[1].fix_suggestions?.[0].replacements[0].replacement === '// Suggested comparison header' && document.querySelector('.review-comment-compose [role="status"]')?.textContent === 'Saved to Gerrit'`, 'suggested fix autosaved')
+  await press('End', ['shift']); await press('c'); await type('Selected unchanged range.')
+  async function noReplacementControls() {
+    assert.ok(await run(`Boolean(document.querySelector('[aria-label="Draft comment"]')) && !document.querySelector('.review-comment-compose fieldset, [aria-label="Suggested replacement"], [aria-label="Fix description"]') && !Array.from(document.querySelectorAll('.review-comment-compose button')).some(b => /Suggest replacement|Remove suggestion/.test(b.textContent))`), 'comment editor omits replacement controls')
+  }
+  await noReplacementControls()
+  await until(`document.querySelector('.review-comment-compose [role="status"]')?.textContent === 'Saved to Gerrit'`, 'range draft autosaved')
+  await screenshot('range-comment-editor')
   await saved(2)
+  stats = await run('api.fixtureStats()'); assert.equal(stats.drafts[1].range.start_line, 1); assert.equal(stats.drafts[1].range.start_character, 0); assert.ok(stats.drafts[1].range.end_character > 0)
+  assert.equal(stats.drafts[1].fix_suggestions, undefined, 'new range comments contain no suggested replacements')
+  // Simulate a draft created in Gerrit before the editor controls were removed.
+  await run(`(async () => { const { patch_set, updated, ...draft } = (await api.fixtureStats()).drafts[1]; await api.saveReviewDraft('telemetry~main~Idemo', patch_set, { ...draft, fix_suggestions: [{ description: 'Suggested replacement', replacements: [{ path: draft.path, range: draft.range, replacement: '// Suggested comparison header' }] }] }) })()`)
+  await button('Close review'); await run(`document.querySelector('.review-main').click()`)
+  await until(`document.querySelector('.review-editor')?.dataset.reviewReady === 'true' && document.querySelectorAll('.comment-draft').length === 2`, 'stored suggestion draft restored')
+  sourceRequests = (await run('api.fixtureStats()')).requests // Opening a new review starts a new source cache.
+  const originalSuggestionDraft = (await run('api.fixtureStats()')).drafts[1]
+  async function editRangeDraft() {
+    await run(`Array.from(document.querySelectorAll('.comment-draft button')).filter(b => b.textContent === 'Edit').at(-1).click()`)
+    await until(`Boolean(document.querySelector('[aria-label="Draft comment"]'))`, 'stored range draft editor')
+    await noReplacementControls()
+  }
+  await editRangeDraft(); await type(' Canceled edit.')
+  await run(`document.querySelector('.review-comment-compose input[type="checkbox"]').click()`)
+  await until(`(await api.fixtureStats()).drafts[1].message.endsWith('Canceled edit.') && (await api.fixtureStats()).drafts[1].unresolved === false && document.querySelector('.review-comment-compose [role="status"]')?.textContent === 'Saved to Gerrit'`, 'text and resolution autosaved')
+  assert.deepEqual((await run('api.fixtureStats()')).drafts[1].fix_suggestions, originalSuggestionDraft.fix_suggestions, 'autosave preserves stored suggestions')
+  await button('Cancel', '.review-comment-compose')
+  await until(`!document.querySelector('.review-comment-compose')`, 'stored draft edit canceled')
+  let restoredSuggestionDraft = (await run('api.fixtureStats()')).drafts[1]
+  for (const key of ['id', 'range', 'message', 'unresolved', 'fix_suggestions']) assert.deepEqual(restoredSuggestionDraft[key], originalSuggestionDraft[key], 'Cancel restores ' + key)
+  await editRangeDraft(); await type(' Updated.'); await saved(2)
+  restoredSuggestionDraft = (await run('api.fixtureStats()')).drafts[1]
+  assert.equal(restoredSuggestionDraft.message, 'Selected unchanged range. Updated.')
+  for (const key of ['id', 'range', 'fix_suggestions']) assert.deepEqual(restoredSuggestionDraft[key], originalSuggestionDraft[key], 'Save preserves ' + key)
   await button('Reply', 'section:has([data-review-comment-id="published-1"])'); await until(`Boolean(document.querySelector('section:has([data-review-comment-id="published-1"]) [aria-label="Draft comment"]'))`, 'reply editor opens inside its thread'); assert.equal(await run(`document.activeElement?.getAttribute('aria-label')`), 'Draft comment', 'reply editor receives focus'); await type('I will update the documentation.'); await saved(3)
   stats = await run('api.fixtureStats()'); assert.equal(stats.drafts[2].in_reply_to, 'published-1')
   assert.ok(await run(`!Array.from(document.querySelectorAll('section:has([data-review-comment-id="published-1"]) button')).some(b => ['Reply', 'Done', 'Ack'].includes(b.textContent))`), 'pending draft suppresses thread reply actions')
@@ -123,7 +146,6 @@ app.whenReady().then(async () => {
   await button('Send review', '.review-send-dialog'); await until(`(await api.fixtureStats()).reviews.length === 1`, 'vote sent')
   stats = await run('api.fixtureStats()'); assert.equal(stats.reviews[0].input.labels['Code-Review'], 1); assert.deepEqual(stats.reviews[0].input.reviewers, [{ reviewer: '2', state: 'REVIEWER' }]); assert.equal(stats.reviews[0].input.remove_from_attention_set[0].user, '1'); assert.ok(await run(`Boolean(document.querySelector('.local-review'))`), 'voting keeps review mounted after board updates'); assert.equal(stats.drafts.length, 4)
   await run(`document.querySelector('.review-comments > button').click()`); await delay(100); await run(`(() => { const p = document.querySelector('[aria-label="Publish drafts"]'); p.value = 'PUBLISH_ALL_REVISIONS'; p.dispatchEvent(new Event('change', {bubbles:true})); })()`)
-  const dir = path.join(__dirname, '../docs/screenshots/local-review'); fs.mkdirSync(dir, { recursive: true })
   async function screenshot(name) {
     for (const theme of ['light', 'dark']) {
       nativeTheme.themeSource = theme
@@ -218,6 +240,7 @@ app.whenReady().then(async () => {
   await type('I will document the interface.'); await until(`(await api.fixtureStats()).drafts.some(draft => draft.path === 'src/telemetry/types.ts' && draft.patch_set === 3 && draft.in_reply_to === 'other-file')`, 'cross-file reply saved at the selected revision'); await button('Cancel', '.review-comment-compose'); await until(`(await api.fixtureStats()).drafts.length === 0`, 'cross-file reply canceled')
   const afterOtherFile = (await run('api.fixtureStats()')).requests; await run(`document.querySelector('[data-review-path="src/telemetry/batch-scheduler.ts"]').click()`); await until(`document.querySelector('.review-editor')?.dataset.reviewReady === 'true'`, 'original file restored'); assert.equal((await run('api.fixtureStats()')).requests, afterOtherFile, 'cross-file navigation retains source cache')
   assert.deepEqual(errors, [])
-  console.log(JSON.stringify({ unchangedLine: 'passed', baseSide: 'passed', range: 'passed', serverDraftReopen: 'passed', cancelRestoresDraft: 'passed', cancelDeletesNewDraft: 'passed', portedReply: 'passed', originalDraftCoordinates: 'passed', independentExpansion: 'passed', compactResolvedThreads: 'passed', stateColorsBothThemes: 'passed', draftResolutionColor: 'passed', gerritThreadControls: 'passed', directAckDone: 'passed', copyThreadLink: 'passed', headerExpansion: 'passed', latestMessageQuote: 'passed', adminDeleteVisibility: 'passed', editDiscard: 'passed', replyResolve: 'passed', overallComment: 'passed', voteKeepDrafts: 'passed', publishDrafts: 'passed', inlinePlacement: 'passed', alignedPanes: 'passed', inlineMouseFocus: 'passed', inlineResize: 'passed', unifiedComments: 'passed', noSourceRefetch: 'passed', failedSaveRetry: 'passed', serializedAutosave: 'passed', suggestedFix: 'passed', markdown: 'passed', commentFilters: 'passed', summaryAutosave: 'passed', participants: 'passed', metadataPolling: 'passed', outline: 'passed', blame: 'passed', commentShortcuts: 'passed', reviewSurvivesBoardUpdate: 'passed' }))
+  await require('./review-selection-checks.cjs')(win)
+  console.log(JSON.stringify({ unchangedLine: 'passed', baseSide: 'passed', range: 'passed', serverDraftReopen: 'passed', cancelRestoresDraft: 'passed', cancelDeletesNewDraft: 'passed', portedReply: 'passed', originalDraftCoordinates: 'passed', independentExpansion: 'passed', compactResolvedThreads: 'passed', stateColorsBothThemes: 'passed', draftResolutionColor: 'passed', gerritThreadControls: 'passed', directAckDone: 'passed', copyThreadLink: 'passed', headerExpansion: 'passed', latestMessageQuote: 'passed', adminDeleteVisibility: 'passed', editDiscard: 'passed', replyResolve: 'passed', overallComment: 'passed', voteKeepDrafts: 'passed', publishDrafts: 'passed', inlinePlacement: 'passed', alignedPanes: 'passed', inlineMouseFocus: 'passed', inlineResize: 'passed', unifiedComments: 'passed', noSourceRefetch: 'passed', failedSaveRetry: 'passed', serializedAutosave: 'passed', replacementControlsRemoved: 'passed', existingSuggestionsPreserved: 'passed', suggestedFix: 'passed', markdown: 'passed', commentFilters: 'passed', summaryAutosave: 'passed', participants: 'passed', metadataPolling: 'passed', outline: 'passed', blame: 'passed', commentShortcuts: 'passed', reviewSurvivesBoardUpdate: 'passed' }))
   clearTimeout(timeout); win.destroy(); app.quit()
 }).catch(error => { console.error(error); app.exit(1) })

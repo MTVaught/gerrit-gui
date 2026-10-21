@@ -1,0 +1,37 @@
+{
+  "change": "fix-review-whitespace-chunks",
+  "schema": "spec-driven",
+  "archivedAt": "2026-10-21T19:06:46.815515+00:00",
+  "archivePath": "openspec/changes/archive/2026-10-21-fix-review-whitespace-chunks",
+  "mainSpecPath": "openspec/specs/review-preferences/spec.md",
+  "syncedRequirements": [
+    "Whitespace filtering across changed chunks",
+    "Preserve source locations and comparison boundaries"
+  ],
+  "syncedScenarios": [
+    "A block gains one leading tab",
+    "A loop wraps an existing block",
+    "An indented statement also changes a name",
+    "Repeated code occurs beyond an unchanged line",
+    "Rebase and ordinary edits share a changed region"
+  ],
+  "completedTasks": 5,
+  "totalTasks": 5,
+  "allArtifactsPreserved": true,
+  "archivedFilesSha256": {
+    ".openspec.yaml": "30cfdee007123f96b2ab27ca107e406084602caf445d6b7cd2130ab329668ed3",
+    "tasks.md": "03ce99b3e6f81a5c48ba7c0f8e9d3c654884b7d129bf65bded8ecca51edd5c6f",
+    "proposal.md": "b4654731e4a0b4c672cd2dd3dd8e6046e17c34c602c82930024a015547a8b2c6",
+    "design.md": "5c14e82cfcf2c2dbc871172fd0191393a1b710a2358a2c2ac815703c18fac06c",
+    "specs/review-preferences/spec.md": "42f24c42eb643bd440c7edbef493a569e5cc2389c9fae0ce328c7d80835203d8"
+  },
+  "mainSpecSha256": "7633d7f6fa1edfd214f09f10fae78d85be627adcf9188f9dff499c1e96e9affb",
+  "activeChangeRemoved": true,
+  "validation": {
+    "mainSpecs": {
+      "passed": 10,
+      "failed": 0
+    },
+    "change": "passed"
+  }
+}

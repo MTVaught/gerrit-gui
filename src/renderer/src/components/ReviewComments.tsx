@@ -11,6 +11,32 @@ import { commentThreads, displayCommentAnchor, originalCommentAnchor as anchor, 
 export interface ReviewCommentsHandle { compose(anchor: CommentAnchor): void; canClose(): boolean; openAt(anchor: CommentAnchor): void; review(): void; navigateThread(direction: number): void }
 interface Composer { anchor: CommentAnchor; id?: string; inReplyTo?: string; message: string; unresolved: boolean; suggestions?: FixSuggestion[] }
 function signature(c: Composer) { return JSON.stringify([c.message, c.unresolved, c.suggestions]) }
+function commentFieldScrolling(form: HTMLFormElement | null) {
+  if (!form) return
+  function updateOverflow() {
+    form!.querySelectorAll('textarea').forEach(field => {
+      field.style.overscrollBehaviorY = field.scrollHeight > field.clientHeight ? 'contain' : ''
+    })
+  }
+  function wheel(event: WheelEvent) {
+    const field = event.target
+    if (!(field instanceof HTMLTextAreaElement)) return
+    const overflowing = field.scrollHeight > field.clientHeight
+    field.style.overscrollBehaviorY = overflowing ? 'contain' : ''
+    if (!overflowing || !event.deltaY || event.ctrlKey || event.metaKey || event.shiftKey) return
+    // Handle the native event before Monaco's ancestor listener cancels it.
+    // Keep the browser default so it scrolls the textarea with native deltas.
+    event.stopPropagation()
+  }
+  // Update before the next gesture: Chromium can choose a scroll target before
+  // it dispatches a passive wheel event, especially after a native resize.
+  const observer = new ResizeObserver(updateOverflow)
+  observer.observe(form)
+  updateOverflow()
+  form.addEventListener('input', updateOverflow)
+  form.addEventListener('wheel', wheel, { passive: true })
+  return () => { observer.disconnect(); form.removeEventListener('input', updateOverflow); form.removeEventListener('wheel', wheel) }
+}
 function location(c: CommentAnchor) { return `PS ${c.patchSet} · ${c.side === 'PARENT' ? 'Base · ' : ''}${c.path === '/PATCHSET_LEVEL' ? 'Overall review' : c.path}${c.range ? `:${c.range.start_line}–${c.range.end_line}` : c.line ? `:${c.line}` : c.path === '/PATCHSET_LEVEL' ? '' : ' · File comment'}` }
 export function ReviewComments({ link, path, originalPath, visible, onOpen, onHide, onReveal, onHighlight, onRefresh, onDiscussion, onMutate, createInlineHost, hasEditor, controls, positions, ref }: {
   link: ChangeLink; path: string; originalPath?: string; visible: boolean; onOpen(): void; onHide(): void; onReveal(comment: ReviewComment, original?: boolean, preserveScroll?: boolean): void; onHighlight(comment: ReviewComment | null): void; onRefresh(): void; onDiscussion(discussion: ReviewDiscussion): void; onMutate(write: () => Promise<void>): Promise<void>; createInlineHost: CreateInlineCommentHost; hasEditor: boolean; controls: HTMLElement | null; positions: ReviewCommentPosition[]; ref?: Ref<ReviewCommentsHandle>
@@ -150,19 +176,15 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
       setComposer(null)
     })
   }
-  const composerForm = composer ? <form className="review-comment-compose" data-unresolved={composer.unresolved} onKeyDown={e => {
+  const composerForm = composer ? <form ref={commentFieldScrolling} className="review-comment-compose" data-unresolved={composer.unresolved} onKeyDown={e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); void cancelEdit(); return }
+        if (e.nativeEvent.isComposing || e.keyCode === 229) return
         if ((e.ctrlKey || e.metaKey) && (e.key === 'Enter' || e.key.toLowerCase() === 's')) { e.preventDefault(); e.stopPropagation(); void save() }
       }} onSubmit={e => { e.preventDefault(); void save() }}>
         <strong title="Only visible to you. Publish using Reply at the top of the review.">{composer.inReplyTo ? 'Draft reply' : 'Draft'}</strong>
         <textarea rows={3} aria-label="Draft comment" value={composer.message} onChange={e => { setError(''); setComposer({ ...composer, message: e.target.value }) }} placeholder="Write a comment…" />
         <button type="button" className="btn" onClick={() => setMarkdownPreview(value => !value)}>{markdownPreview ? 'Edit comment' : 'Preview formatting'}</button>{markdownPreview && <ReviewMarkdown message={composer.message} />}
         <label><input type="checkbox" checked={!composer.unresolved} disabled={busy} onChange={e => { setError(''); setComposer({ ...composer, unresolved: !e.target.checked }) }} />Resolved</label>
-        {composer.anchor.range && composer.anchor.side === 'REVISION' && <button type="button" className="btn" disabled={busy || Boolean(composer.suggestions?.length)} onClick={() => { setError(''); setComposer({ ...composer, suggestions: [...(composer.suggestions ?? []), { description: 'Suggested replacement', replacements: [{ path: composer.anchor.path, range: composer.anchor.range!, replacement: '' }] }] }) }}>Suggest replacement for selected range</button>}
-        {composer.suggestions?.map((suggestion, index) => <fieldset key={index}><legend>Suggested fix</legend>
-          <input aria-label="Fix description" value={suggestion.description} onChange={e => { setError(''); setComposer({ ...composer, suggestions: composer.suggestions!.map((s, i) => i === index ? { ...s, description: e.target.value } : s) }) }} />
-          {suggestion.replacements.map((replacement, r) => <label key={r}>{replacement.path}:{replacement.range.start_line}–{replacement.range.end_line}<textarea aria-label="Suggested replacement" value={replacement.replacement} onChange={e => { setError(''); setComposer({ ...composer, suggestions: composer.suggestions!.map((s, i) => i === index ? { ...s, replacements: s.replacements.map((part, j) => j === r ? { ...part, replacement: e.target.value } : part) } : s) }) }} /></label>)}
-          <button type="button" className="btn" disabled={busy} onClick={() => setComposer({ ...composer, suggestions: composer.suggestions!.filter((_, i) => i !== index) })}>Remove suggestion</button>
-        </fieldset>)}
         <div><button className="btn primary" disabled={busy || !composer.message.trim()}>Save</button><button type="button" className="btn" disabled={busy} onClick={() => void cancelEdit()}>Cancel</button></div>
         <small role="status">{saveState || 'Drafts save automatically to Gerrit.'}</small>
       </form> : null
@@ -196,10 +218,10 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
         const expanded = expandedComments.get(c.id) ?? (draft || Boolean(last.unresolved))
         const mapped = display(c)
         return <article data-review-comment-id={c.id} key={c.id} className={draft ? 'comment-draft' : ''}>
-          <div className="review-comment-heading" onClick={event => { if (!(event.target as HTMLElement).closest('button')) setExpandedComments(current => new Map(current).set(c.id, !expanded)) }}>
+          <div className="review-comment-heading" onClick={event => { if (!(event.target as HTMLElement).closest('button, a')) setExpandedComments(current => new Map(current).set(c.id, !expanded)) }}>
             {draft ? <strong title="Only visible to you until published.">Draft</strong> : <ReviewAccount account={c.author} />}
             {mapped && mapped.patchSet !== c.patch_set && <button className="review-comment-location review-comment-origin" onClick={() => { closeOverview(); onReveal(c, true) }}>From PS {c.patch_set}</button>}
-            {!expanded && <span className="review-comment-preview">{c.message}</span>}
+            {!expanded && <div className="review-comment-preview"><ReviewMarkdown message={c.message ?? ''} compact /></div>}
             {!draft && expanded && discussion?.canDeletePublished && <button className="review-comment-icon" aria-label="Delete published comment" title="Delete comment" disabled={busy} onClick={() => setRedact({ comment: c, reason: '' })}><DeleteIcon /></button>}
             {expanded && <time title={commentDate(c.updated).toLocaleString()} dateTime={Number.isFinite(commentDate(c.updated).getTime()) ? commentDate(c.updated).toISOString() : undefined}>{relativeCommentDate(c.updated)}</time>}
             <button className="review-comment-toggle" aria-label={expanded ? 'Collapse comment' : 'Expand comment'} aria-expanded={expanded} onClick={() => setExpandedComments(current => new Map(current).set(c.id, !expanded))}>{expanded ? '▴' : '▾'}</button>

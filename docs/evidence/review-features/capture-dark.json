@@ -1,0 +1,10 @@
+{
+  "platform": "Linux Electron",
+  "gerrit": "simulated",
+  "originalView": {
+    "path": "src/telemetry/batch-scheduler.ts",
+    "patchSet": "3"
+  },
+  "draftsAfterEscape": 0,
+  "reviewOpen": true
+}

@@ -48,7 +48,17 @@ function computeGerritDiff(request: ReviewDiffRequest): ReviewDiffResult {
       for (const inner of change.innerChanges) previous.innerChanges.push(inner)
     } else changes.push(change)
   }
+  const blocks: ReviewDiffBlock[] = []
   for (const block of request.blocks!) {
+    const previous = blocks.at(-1)
+    // Separate deletion/insertion chunks can describe one whitespace-only edit.
+    // Compare them together, but never cross Gerrit's unchanged line anchors.
+    if (request.whitespace !== 'IGNORE_NONE' && previous && previous.original[1] === block.original[0] && previous.modified[1] === block.modified[0]) {
+      previous.original[1] = block.original[1]
+      previous.modified[1] = block.modified[1]
+    } else blocks.push({ original: [...block.original], modified: [...block.modified] })
+  }
+  for (const block of blocks) {
     const aOffset = block.original[0] - 1
     const bOffset = block.modified[0] - 1
     const original = request.original.slice(aOffset, block.original[1] - 1)

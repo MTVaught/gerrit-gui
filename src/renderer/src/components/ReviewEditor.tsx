@@ -31,6 +31,7 @@ import 'monaco-editor/languages/definitions/dockerfile/register'
 import type { InlineCommentHost } from './InlineReviewComment.tsx'
 import { api } from '../api.ts'
 import { reviewOutline } from '../review-details.ts'
+import { commentSelection } from '../review-comments.ts'
 import type { ChangeLink, ReviewBlame, CommentRange } from '../../../shared/types.ts'
 import type { ReviewShortcut } from '../review-shortcuts.ts'
 import { reviewLanguage, visibleRebaseRanges, type ReviewContents } from '../review.ts'
@@ -174,7 +175,8 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
       code.addAction({ id: 'review.addComment', label: 'Add review comment', contextMenuGroupId: 'navigation', contextMenuOrder: 0, run: () => {
         lastFocus.current = index === 0 ? 'original' : 'modified'
         const selection = code.getSelection()
-        if (selection) commentCallback.current({ pane: lastFocus.current, line: selection.endLineNumber, range: selection.isEmpty() ? undefined : { start_line: selection.startLineNumber, start_character: selection.startColumn - 1, end_line: selection.endLineNumber, end_character: selection.endColumn - 1 } })
+        const model = code.getModel()
+        if (selection && model) commentCallback.current({ pane: lastFocus.current, ...commentSelection(selection, line => model.getLineLength(line)) })
       } }),
       code.onMouseDown(event => {
         if (![monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN, monaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS].includes(event.target.type) || !event.target.position) return
@@ -297,9 +299,11 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
     code.focus()
   }
   function addComment() {
-    const selection = focusedEditor()?.getSelection()
-    if (!selection) return
-    onComment({ pane: lastFocus.current, line: selection.endLineNumber, range: selection.isEmpty() ? undefined : { start_line: selection.startLineNumber, start_character: selection.startColumn - 1, end_line: selection.endLineNumber, end_character: selection.endColumn - 1 } })
+    const code = focusedEditor()
+    const selection = code?.getSelection()
+    const model = code?.getModel()
+    if (!selection || !model) return
+    onComment({ pane: lastFocus.current, ...commentSelection(selection, line => model.getLineLength(line)) })
   }
   useImperativeHandle(ref, () => ({ outline() { setTool(current => current === 'outline' ? null : 'outline') }, blame() { void toggleBlame() }, highlightComment(location) {
     highlights.current.forEach(collection => collection.clear()); highlights.current = []
@@ -318,6 +322,9 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
     content.className = 'review-inline-content'
     node.append(content)
     node.addEventListener('mousedown', event => event.stopPropagation())
+    // React handles comment shortcuts inside the portal first. Keep remaining
+    // keys away from Monaco without cancelling native textarea input.
+    for (const type of ['keydown', 'keypress', 'keyup']) node.addEventListener(type, event => event.stopPropagation())
     // Monaco cancels context menus on view zones. Keep the native spelling
     // and editing menu available without cancelling the browser's default.
     node.addEventListener('contextmenu', event => event.stopPropagation())

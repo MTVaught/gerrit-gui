@@ -1,0 +1,11 @@
+{
+  "path": "src/telemetry/batch-scheduler.ts",
+  "side": "REVISION",
+  "line": 2,
+  "id": "draft-1",
+  "in_reply_to": "published-1",
+  "message": "Keep the delivery order.\nAdd a timeout test.\nCheck the retry limit too.",
+  "unresolved": true,
+  "patch_set": 3,
+  "updated": "2026-10-21T21:35:50.865Z"
+}

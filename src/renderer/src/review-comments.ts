@@ -1,4 +1,18 @@
 import type { ChangeLink, CommentAnchor, ReviewComment, ReviewCommentPosition } from '../../shared/types.ts'
+
+interface CommentSelection { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number }
+export function commentSelection(selection: CommentSelection, lineLength: (line: number) => number): { line: number; range?: CommentAnchor['range'] } {
+  const { startLineNumber: start_line, startColumn, endLineNumber, endColumn } = selection
+  const start_character = startColumn - 1
+  let end_line = endLineNumber
+  let end_character = endColumn - 1
+  // A selection ending at column 1 includes the preceding newline, not text
+  // on that line. Use source lengths so wrapping and tabs do not shift it.
+  if (endColumn === 1 && end_line > start_line) end_character = lineLength(--end_line)
+  if (start_line === end_line && start_character === end_character) return { line: end_line }
+  return { line: end_line, range: { start_line, start_character, end_line, end_character } }
+}
+
 export function originalCommentAnchor(comment: ReviewComment): CommentAnchor {
   return { patchSet: comment.patch_set, path: comment.path, side: comment.side ?? 'REVISION', parent: comment.parent, line: comment.line, range: comment.range }
 }

@@ -48,6 +48,7 @@ const unchanged = Array.from({ length: 99940 }, (_, i) => `export const delivery
 const patchSets = [1, 2, 3]
 let requests = 0
 let readOnly = false
+let diffUnavailable = false
 const openedChanges = []
 const ownerActions = []
 const comparisons = []
@@ -69,7 +70,7 @@ const longName = 'batch-scheduler-with-region-aware-delivery-and-retry-policy.ts
 const longPath = `${longDirectory}/${longName}`
 const unbrokenPath = `src/${'delivery'.repeat(22)}.ts`
 let wideFixture = false
-if (process.env.REVIEW_FILE_WIDTH_FIXTURE || process.env.REVIEW_WRAP_FIXTURE) settings.localReview = true
+if (process.env.REVIEW_FILE_WIDTH_FIXTURE || process.env.REVIEW_WRAP_FIXTURE || process.env.REVIEW_WHITESPACE_FIXTURE) settings.localReview = true
 const commentWrites = []
 const reviews = []
 let failNextDraft = false
@@ -134,6 +135,13 @@ contextBridge.exposeInMainWorld('api', {
   },
   fixtureRemoveOtherFileComment: async () => { const index = comments.findIndex(c => c.id === 'other-file'); if (index >= 0) comments.splice(index, 1); historicalPositions = historicalPositions.filter(p => p.id !== 'other-file') },
   fixtureAdmin: async value => { canDeletePublished = value },
+  fixtureSelectionComments: async () => {
+    comments.splice(0); drafts.clear(); historicalPositions = []
+    const range = { start_line: 1, start_character: 0, end_line: 2, end_character: 0 }
+    const anchor = { patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', side: 'REVISION', line: 2, range, updated: now, unresolved: true }
+    comments.push({ ...anchor, id: 'boundary-stored', message: 'Stored newline range', author: owner })
+    drafts.set('boundary-draft', { ...anchor, id: 'boundary-draft', message: 'Stored range draft', fix_suggestions: [{ fix_id: 'fix-boundary-draft-0', description: 'Stored replacement', replacements: [{ path: anchor.path, range, replacement: '// Stored replacement\n' }] }] })
+  },
   fixtureFailDraft: async () => { failNextDraft = true },
   applyReviewFix: async (id, patchSet, fixId) => { appliedFixes.push({ id, patchSet, fixId }) },
   deleteReviewDraft: async (id, patchSet, draftId) => {
@@ -148,6 +156,7 @@ contextBridge.exposeInMainWorld('api', {
   reviewPatchSets: async () => [...patchSets],
   reviewReviewedFiles: async (link) => [...(reviewedFlags.get(link.patchSet) ?? [])],
   fixtureReadOnly: async value => { readOnly = value },
+  fixtureDiffUnavailable: async value => { diffUnavailable = value },
   setReviewFileReviewed: async (link, path, reviewed) => {
     if (readOnly) throw new Error('Fixture review is read-only')
     const flags = reviewedFlags.get(link.patchSet) ?? new Set()
@@ -167,8 +176,18 @@ contextBridge.exposeInMainWorld('api', {
   } : { 'src/telemetry/batch-scheduler.ts': { lines_inserted: 8, lines_deleted: 4 }, 'src/telemetry/types.ts': { lines_inserted: 2 } },
   reviewDiff: async (_link, path) => {
     requests++
+    if (diffUnavailable) throw new Error('Fixture: diff is unavailable')
     comparisons.push({ link: _link, path })
     await new Promise((r) => setTimeout(r, 35))
+    if (process.env.REVIEW_WHITESPACE_FIXTURE) return { meta_a: { name: path }, meta_b: { name: path }, content: [
+      { ab: ['// Add a loop. Its body only gains one tab of indentation.', 'function deliver(events: Event[]) {'] },
+      { a: ['  const payload = prepare(event);', '  send(payload);', '  recordDelivery(payload);', '  flush();'] },
+      { b: ['  for (const event of events) {', '\t  const payload = prepare(event);', '\t  send(payload);', '\t  recordDelivery(payload);', '\t  flush();', '  }'] },
+      { ab: ['}', ''] },
+      { ab: ['', '// A real code edit must stay highlighted.', ''] },
+      { a: ['const retryLimit = 2;'], b: ['\tconst retryLimit = 3;'] },
+      { ab: ['', '// End of whitespace fixture.'] },
+    ] }
     if (process.env.REVIEW_REBASE_FIXTURE) return { meta_a: { name: path }, meta_b: { name: path }, content: [
       { ab: ['// Mixed patch-set comparison', ''] },
       { a: ['const feature = false;'], b: ['const feature = true;'] },

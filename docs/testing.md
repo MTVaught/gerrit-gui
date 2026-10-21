@@ -160,7 +160,7 @@ xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-comments-ui.cjs
 It checks unchanged-line and selected-range comments, base-side anchors, server
 draft restoration after reopening, editing and discarding, replies and resolution,
 overall review drafts, label votes while keeping drafts private, explicit publishing,
-and suggested fix creation/application. It also exercises save failure and retry,
+and stored suggested fix preservation/application. It also exercises save failure and retry,
 and typing while a draft creation request is in flight. Comment operations must
 not refetch source files or render the complete file into the DOM. The fixture is
 an in-memory Gerrit API substitute; these tests do not publish to a live server.
@@ -179,6 +179,26 @@ Incoming metadata must preserve the complete-file cache. The native fixture
 keeps the 100,000-line files virtualized throughout these operations. Screenshot
 pairs include `publish-review`, `inline-review-comments`, `inline-review-draft`
 and `suggested-fix-preview`, each with `-light` and `-dark` suffixes.
+
+New comment selections exclude a final newline from the saved range. A selection
+ending at the start of the next line attaches to the preceding source line.
+Selecting only a newline creates a line comment. Existing drafts, replies, and
+supplied replacement ranges keep their stored coordinates. A new suggested
+replacement uses the adjusted range and leaves the source newline in place.
+
+The full comment test also runs the selection boundary checks. To run those
+checks alone after building:
+
+```sh
+xvfb-run -a -s '-screen 0 1600x1100x24' \
+  node_modules/.bin/electron --no-sandbox test/review-selection-ui.cjs
+```
+
+This uses real editor input with simulated Gerrit responses. It checks the
+shortcut and context menu, forward and reverse selections, both split panes,
+an older base patch set, unified code, wrapped lines, autosave, Save, reopen,
+stored ranges, and suggestions. Unit tests cover blank lines, tabs, Unicode,
+CRLF source columns, and the final newline at the end of a file.
 
 Draft screenshots also assert that the textarea is visible and receives pointer
 hit testing in both themes. Inline comment zones retain their measured height

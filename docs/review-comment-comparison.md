@@ -32,6 +32,10 @@ actions. Resolution changes use the draft Resolved checkbox; there are no separa
 Resolve/Unresolve actions. Saved drafts have a Resolved checkbox, Edit and Discard; editors use
 Save and Cancel with privacy guidance in the Draft tooltip.
 
+The comment editor has text, formatting preview, resolution, Save and Cancel
+controls. It has no suggested-replacement controls. Existing suggestions stay
+in the draft when its text or resolution changes.
+
 Cancel restores the server draft's message, resolution state and suggestions
 from when editing started. Canceling a new autosaved draft deletes it from
 Gerrit. Failed writes retain the editor and surface the error.

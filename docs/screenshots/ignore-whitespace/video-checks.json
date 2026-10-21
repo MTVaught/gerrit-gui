@@ -1,0 +1,40 @@
+{
+  "light": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1600,
+        "height": 1000,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1",
+        "nb_frames": "355"
+      }
+    ],
+    "format": {
+      "duration": "17.750000"
+    },
+    "fullFrameDecode": "passed",
+    "sampleIntervalSeconds": 2,
+    "verifiedAt": "2026-10-21T18:58:03.434086+00:00"
+  },
+  "dark": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1600,
+        "height": 1000,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "20/1",
+        "nb_frames": "354"
+      }
+    ],
+    "format": {
+      "duration": "17.700000"
+    },
+    "fullFrameDecode": "passed",
+    "sampleIntervalSeconds": 2,
+    "verifiedAt": "2026-10-21T18:58:03.665964+00:00"
+  }
+}
