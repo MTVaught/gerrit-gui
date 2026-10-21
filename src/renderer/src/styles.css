@@ -831,6 +831,9 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .review-markdown code { font-family: ui-monospace, monospace; background: #80808018; }
 .review-markdown pre code { background: none; }
 .review-markdown blockquote { margin: 8px 0; padding-left: 12px; border-left: 3px solid var(--border); color: var(--muted); }
+/* Keep rendered Markdown in the collapsed comment's single-line preview. */
+.review-comment-preview .review-markdown, .review-comment-preview .review-markdown * { display: inline; white-space: nowrap; margin: 0; padding: 0; border: 0; font-size: inherit; }
+.review-comment-preview .review-markdown > * + *::before, .review-comment-preview .review-markdown li + li::before { content: ' '; white-space: pre; }
 .review-account { display: inline-flex; align-items: center; gap: 6px; position: relative; flex-shrink: 0; }
 .review-avatar { width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; background: #80808030; font-size: 11px; font-weight: 600; }
 .review-account-card { display: none; position: absolute; top: 100%; left: 0; z-index: 60; padding: 12px; min-width: 180px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); border-radius: 4px; box-shadow: 0 3px 12px #0003; pointer-events: none; }
