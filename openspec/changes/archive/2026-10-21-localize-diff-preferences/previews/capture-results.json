@@ -1,0 +1,45 @@
+{
+  "platform": "linux",
+  "engine": "44.2.0",
+  "kind": "static proposal mockup with simulated values",
+  "checks": [
+    {
+      "mode": "light",
+      "fields": 11,
+      "buttons": [
+        "Close"
+      ],
+      "width": 728,
+      "height": 810,
+      "contentHeight": 754,
+      "dialog": {
+        "x": 74,
+        "y": 33.390625,
+        "width": 580,
+        "height": 687.359375
+      },
+      "overflow": false,
+      "help": "Changes apply automatically in this application."
+    },
+    {
+      "mode": "dark",
+      "fields": 11,
+      "buttons": [
+        "Close"
+      ],
+      "width": 728,
+      "height": 810,
+      "contentHeight": 754,
+      "dialog": {
+        "x": 74,
+        "y": 33.390625,
+        "width": 580,
+        "height": 687.359375
+      },
+      "overflow": false,
+      "help": "Changes apply automatically in this application."
+    }
+  ],
+  "compactWidth": 360,
+  "compactHorizontalOverflow": false
+}

@@ -1,4 +1,4 @@
-import type { ReviewBlame, GerritDiffPreferences, FixSuggestion, AccountInfo, ChangeInfo, ChangeLink, ReviewDiff, FileInfo, SuggestedReviewerInfo, ReviewComment, DraftCommentInput, SubmitReviewInput } from '../shared/types.ts'
+import type { ReviewBlame, FixSuggestion, AccountInfo, ChangeInfo, ChangeLink, ReviewDiff, FileInfo, SuggestedReviewerInfo, ReviewComment, DraftCommentInput, SubmitReviewInput } from '../shared/types.ts'
 import { changePath, validateServerUrl } from '../shared/url.ts'
 import { allowLocalTestHttp } from './transport-policy.ts'
 
@@ -153,9 +153,6 @@ export class GerritClient {
 
   blame(link: ChangeLink, path: string): Promise<ReviewBlame[]> {
     return this.req('GET', `/changes/${link.id}/revisions/${link.patchSet}/files/${encodeURIComponent(path)}/blame`)
-  }
-  diffPreferences(input?: GerritDiffPreferences): Promise<GerritDiffPreferences> {
-    return this.req(input ? 'PUT' : 'GET', '/accounts/self/preferences.diff', input)
   }
   previewFix(id: number, patchSet: number, fix: FixSuggestion): Promise<Record<string, ReviewDiff>> {
     return fix.fix_id ? this.req('GET', `/changes/${id}/revisions/${patchSet}/fixes/${encodeURIComponent(fix.fix_id)}/preview`)

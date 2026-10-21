@@ -30,8 +30,6 @@ function browserApi(): Api {
     fetchDashboard: () => call('fetchDashboard'),
     fetchChange: (id) => call('fetchChange', [id]),
     reviewBlame: (link, path) => call('reviewBlame', [link, path]),
-    reviewDiffPreferences: () => call('reviewDiffPreferences', []),
-    saveReviewDiffPreferences: input => call('saveReviewDiffPreferences', [input]),
     previewReviewFix: (id, patchSet, fix) => call('previewReviewFix', [id, patchSet, fix]),
     applyProvidedReviewFix: (id, patchSet, fix) => call('applyProvidedReviewFix', [id, patchSet, fix]),
     reviewFiles: (link) => call('reviewFiles', [link]),

@@ -42,10 +42,9 @@ Diff Preferences and Settings > Appearance SHALL offer Light, Dark, and Follow a
 #### Scenario: Set the theme from Diff Preferences
 
 - **WHEN** a user selects Light under Diff theme in Diff Preferences
-- **THEN** only the dialog's draft selection changes
-- **AND** the review and Settings > Appearance retain the saved theme
-- **WHEN** the user selects Save and the required writes succeed
-- **THEN** the review and Settings > Appearance use Light
+- **THEN** the review applies Light and the application persists the choice automatically
+- **AND** Settings > Appearance uses the same saved Light choice
+- **AND** Diff Preferences stays open without requiring Save
 
 #### Scenario: Match the Diff Preferences form
 
@@ -62,11 +61,11 @@ Diff Preferences and Settings > Appearance SHALL offer Light, Dark, and Follow a
 
 ### Requirement: Local persistence and save feedback
 
-The diff theme SHALL persist in application settings for desktop and browser mode. Missing or invalid values SHALL resolve to Follow application. Diff Preferences SHALL commit the theme only on Save and discard uncommitted changes on Cancel or Escape. A theme-only Save SHALL NOT write Gerrit preferences. A failed required write SHALL keep the dialog open with its draft and an error. A failed theme write SHALL retain the last saved theme.
+The diff theme SHALL persist automatically in application settings for desktop and browser mode when changed in either control. Missing or invalid values SHALL resolve to Follow application. Closing Diff Preferences with Close or Escape SHALL retain successful edits. Theme changes SHALL NOT read or write Gerrit account diff preferences. A failed theme write SHALL show an accessible error and retain the last saved theme without undoing other successful preference edits.
 
 #### Scenario: Reopen and save unrelated settings
 
-- **WHEN** a user saves a diff theme, saves an unrelated setting, and restarts the application
+- **WHEN** a user changes a diff theme, saves an unrelated setting, and restarts the application
 - **THEN** both selectors and the review retain the saved diff theme
 
 #### Scenario: Open older or invalid settings
@@ -78,29 +77,30 @@ The diff theme SHALL persist in application settings for desktop and browser mod
 #### Scenario: Theme save fails
 
 - **GIVEN** the saved diff theme is Follow application
-- **WHEN** a user selects Dark in Diff Preferences, selects Save, and the application settings write fails
-- **THEN** the dialog stays open with Dark selected and shows the failure
-- **AND** the review retains Follow application
-- **AND** the user can retry Save
+- **WHEN** a user selects Dark in Diff Preferences and the automatic application settings write fails
+- **THEN** the dialog stays open and shows the failure
+- **AND** the review and both selectors retain Follow application
+- **AND** the user can select Dark again to retry without Save
 
 #### Scenario: Discard draft selections
 
-- **WHEN** a user changes the diff theme and another preference in Diff Preferences and selects Cancel or presses Escape before saving
-- **THEN** both edits are discarded
-- **AND** the saved theme and review appearance remain unchanged
+- **WHEN** a user changes the diff theme and another preference successfully and selects Close or presses Escape
+- **THEN** both edits remain applied and persisted
+- **AND** there are no staged selections to discard
+- **AND** reopening Diff Preferences shows the saved choices
 
 #### Scenario: Save theme with other preference edits
 
-- **WHEN** a user edits the diff theme and Gerrit-backed preferences and selects Save
-- **THEN** the theme commits only after the required Gerrit write succeeds
-- **AND** a failed Gerrit write leaves the theme unchanged and keeps the dialog open with the draft and error
-- **AND** a later theme write failure keeps confirmed Gerrit changes and permits retry of the pending theme write
+- **WHEN** a user changes the diff theme and other review preferences in Diff Preferences
+- **THEN** each valid change applies and persists automatically through local application storage
+- **AND** a failed theme write retains the last saved theme without undoing successful changes to other preferences
+- **AND** no Gerrit account preference write is required
 
 #### Scenario: Gerrit writes are unavailable
 
-- **WHEN** only the diff theme is changed in Diff Preferences and the user selects Save while Gerrit writes are unavailable or the review is read-only
-- **THEN** the application settings write can save the diff theme independently
-- **AND** no Gerrit preference request is made for that theme change
+- **WHEN** the user changes the diff theme while Gerrit writes are unavailable or the review is read-only
+- **THEN** the application settings write can persist the diff theme independently
+- **AND** no Gerrit account preference request is made
 
 ### Requirement: Consistent review appearance and continuity
 

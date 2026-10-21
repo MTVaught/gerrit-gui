@@ -582,9 +582,4 @@ export interface SubmitReviewInput {
   notify: 'NONE' | 'OWNER' | 'OWNER_REVIEWERS' | 'ALL'
 }
 
-export interface GerritDiffPreferences {
-  context?: number; line_length?: number; tab_size?: number; font_size?: number
-  show_tabs?: boolean; show_whitespace_errors?: boolean; syntax_highlighting?: boolean
-  manual_review?: boolean; ignore_whitespace?: 'IGNORE_NONE' | 'IGNORE_TRAILING' | 'IGNORE_LEADING_AND_TRAILING' | 'IGNORE_ALL'
-}
 export interface ReviewBlame { author: string; id: string; time: number; commit_msg: string; ranges: { start: number; end: number }[] }

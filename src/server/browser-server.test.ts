@@ -207,3 +207,14 @@ test('origin configuration rejects URLs with credentials, paths, queries or frag
   }
   assert.equal(browserOrigin(origin).origin, origin)
 })
+
+
+test('removed account diff preference methods cannot be called over the browser API', async t => {
+  const f = await fixture(t)
+  const Cookie = await f.login()
+  for (const method of ['reviewDiffPreferences', 'saveReviewDiffPreferences']) {
+    const response = await f.request(method, '[]', { Cookie })
+    assert.equal(response.status, 404)
+  }
+  assert.deepEqual(f.outbound, [])
+})
