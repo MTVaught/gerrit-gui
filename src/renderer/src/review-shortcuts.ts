@@ -7,6 +7,7 @@ export const REVIEW_SHORTCUT_HELP = [
   ['a', 'Open the review and vote dialog'],
   ['Shift+N / Shift+P', 'Next / previous comment thread'],
   ['h', 'Show / hide inline comments'],
+  ['Enter / Shift+Enter', 'Add a new line in the comment being edited'],
   ['Ctrl+Enter / Cmd+Enter / Ctrl+S / Cmd+S', 'Save the comment being edited'],
   ['c', 'Comment on the selected line or range'],
   ['n / p', 'Next / previous diff chunk'],

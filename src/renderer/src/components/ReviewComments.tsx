@@ -151,6 +151,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     })
   }
   const composerForm = composer ? <form className="review-comment-compose" data-unresolved={composer.unresolved} onKeyDown={e => {
+        if (e.nativeEvent.isComposing || e.keyCode === 229) return
         if ((e.ctrlKey || e.metaKey) && (e.key === 'Enter' || e.key.toLowerCase() === 's')) { e.preventDefault(); e.stopPropagation(); void save() }
       }} onSubmit={e => { e.preventDefault(); void save() }}>
         <strong title="Only visible to you. Publish using Reply at the top of the review.">{composer.inReplyTo ? 'Draft reply' : 'Draft'}</strong>
