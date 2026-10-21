@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comment field scrolling proposal</title>
+<style>
+:root { color-scheme: light; --page:#ffffff; --ink:#202124; --muted:#5f6368; --line:#cbd1d8; --panel:#f3f5f7; --field:#ffffff; --accent:#185abc; --draft:#fff8e5; --draft-line:#bfa563; --added:#e6f4ea; --radius:8px; }
+@media(prefers-color-scheme:dark) { :root { color-scheme:dark; --page:#181a1e; --ink:#e8eaed; --muted:#b0b7c1; --line:#48505d; --panel:#252a32; --field:#1c2027; --accent:#8ab4f8; --draft:#302b20; --draft-line:#9b844f; --added:#20392a; } }
+* { box-sizing:border-box; }
+html,body { margin:0; background:transparent; color:var(--ink); font:14px/1.5 system-ui,sans-serif; }
+p { margin:0 0 14px; }
+.intro { font-size:16px; }
+.muted, small { color:var(--muted); }
+.states { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.state { min-width:0; }
+.caption { margin:0 0 8px; font-size:14px; font-weight:650; }
+.review { padding:16px; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); }
+.path { padding-bottom:12px; color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+.code { padding:8px; background:var(--field); font:12px/24px ui-monospace,monospace; white-space:nowrap; overflow:hidden; }
+.code.add { background:var(--added); }
+.num { color:var(--muted); margin-right:10px; }
+.compose { margin:12px 0; padding:12px; border:1px solid var(--draft-line); border-radius:5px; background:var(--draft); }
+strong { display:block; margin-bottom:8px; font-size:13px; }
+textarea { display:block; width:100%; height:146px; min-height:80px; padding:8px; border:1px solid var(--line); border-radius:3px; background:var(--field); color:var(--ink); font:12px/24px system-ui,sans-serif; resize:vertical; overflow-y:scroll; }
+textarea::-webkit-scrollbar { width:10px; }
+textarea::-webkit-scrollbar-track { background:var(--panel); }
+textarea::-webkit-scrollbar-thumb { background:var(--muted); border:2px solid var(--panel); border-radius:6px; }
+.format { margin-top:10px; color:var(--accent); font-size:12px; }
+.resolved { margin:10px 0; font-size:12px; }
+button { background:var(--field); border:1px solid var(--line); border-radius:4px; color:var(--ink); padding:5px 10px; margin-right:6px; font:12px system-ui,sans-serif; }
+button.primary { background:var(--accent); color:var(--page); border-color:var(--accent); }
+small { display:block; margin-top:10px; font-size:11px; }
+.note { margin-top:16px; padding:16px; border-radius:var(--radius); background:var(--panel); }
+.note p:last-child { margin:0; }
+.disclaimer { margin:16px 0 0; font-size:12px; }
+@media(max-width:540px) { .states { grid-template-columns:1fr; } }
+</style>
+<body>
+<p class="intro">Proposed comment field scrolling</p>
+<p class="muted">Move through a long draft inside its text field. Keep the surrounding code at the same position.</p>
+<div class="states">
+  <section class="state"><h2 class="caption">Start of draft</h2><div class="review">
+    <div class="path">src/review.ts · Patch set 3</div>
+    <div class="code"><span class="num">41</span>function saveDraft() {</div>
+    <div class="code add"><span class="num">42</span>  return save(comment)</div>
+    <div class="compose"><strong>Draft reply</strong><textarea aria-label="Draft at the start" readonly></textarea><div class="format">Preview formatting</div><div class="resolved">☐ Resolved</div><button class="primary" type="button">Save</button><button type="button">Cancel</button><small>Saved to Gerrit · simulated</small></div>
+    <div class="code"><span class="num">43</span>}</div>
+  </div></section>
+  <section class="state"><h2 class="caption">Intended view after scrolling</h2><div class="review">
+    <div class="path">src/review.ts · Patch set 3</div>
+    <div class="code"><span class="num">41</span>function saveDraft() {</div>
+    <div class="code add"><span class="num">42</span>  return save(comment)</div>
+    <div class="compose"><strong>Draft reply</strong><textarea aria-label="Draft scrolled to the middle" readonly></textarea><div class="format">Preview formatting</div><div class="resolved">☐ Resolved</div><button class="primary" type="button">Save</button><button type="button">Cancel</button><small>Saved to Gerrit · simulated</small></div>
+    <div class="code"><span class="num">43</span>}</div>
+  </div></section>
+</div>
+<div class="note"><p>Only the text moves. The field size, code line 42, and Save and Cancel controls stay in place.</p><p class="muted">At the text boundaries, further scrolling over a long field keeps the code fixed. Move the pointer over code to scroll the diff.</p></div>
+<p class="disclaimer muted">Static proposal mockup with simulated data. This does not verify scrolling in the application. Real-input videos are planned for implementation.</p>
+<script>
+const message = [
+'01 Check the draft save path.',
+'02 Keep the original reply anchor.',
+'03 Read the complete comment.',
+'04 Review the current patch set.',
+'05 Keep the selected file open.',
+'06 Scroll within this text field.',
+'07 Leave the code at line 42.',
+'08 Keep the draft text unchanged.',
+'09 Preserve the resolution state.',
+'10 Check the end of the draft.',
+'11 Save after editing the text.',
+'12 Return to the review.'
+].join('\n');
+const fields = document.querySelectorAll('textarea');
+fields.forEach(field => { field.value=message; });
+fields[1].scrollTop=120;
+</script>
+</body>
+</html>

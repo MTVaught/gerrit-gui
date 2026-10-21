@@ -48,6 +48,7 @@ const unchanged = Array.from({ length: 99940 }, (_, i) => `export const delivery
 const patchSets = [1, 2, 3]
 let requests = 0
 let readOnly = false
+let diffUnavailable = false
 const openedChanges = []
 const ownerActions = []
 const comparisons = []
@@ -155,6 +156,7 @@ contextBridge.exposeInMainWorld('api', {
   reviewPatchSets: async () => [...patchSets],
   reviewReviewedFiles: async (link) => [...(reviewedFlags.get(link.patchSet) ?? [])],
   fixtureReadOnly: async value => { readOnly = value },
+  fixtureDiffUnavailable: async value => { diffUnavailable = value },
   setReviewFileReviewed: async (link, path, reviewed) => {
     if (readOnly) throw new Error('Fixture review is read-only')
     const flags = reviewedFlags.get(link.patchSet) ?? new Set()
@@ -174,6 +176,7 @@ contextBridge.exposeInMainWorld('api', {
   } : { 'src/telemetry/batch-scheduler.ts': { lines_inserted: 8, lines_deleted: 4 }, 'src/telemetry/types.ts': { lines_inserted: 2 } },
   reviewDiff: async (_link, path) => {
     requests++
+    if (diffUnavailable) throw new Error('Fixture: diff is unavailable')
     comparisons.push({ link: _link, path })
     await new Promise((r) => setTimeout(r, 35))
     if (process.env.REVIEW_REBASE_FIXTURE) return { meta_a: { name: path }, meta_b: { name: path }, content: [

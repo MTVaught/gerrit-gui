@@ -1,0 +1,61 @@
+{
+  "platform": "linux",
+  "electron": "44.2.0",
+  "type": "Static mockup with simulated data; not application behavior",
+  "captures": [
+    {
+      "mode": "light",
+      "file": "/home/dev/.t3/worktrees/gerrit-gui/t3-63c26e1a/openspec/changes/enable-comment-field-scrolling/previews/proposal-light.png",
+      "width": 728,
+      "height": 805,
+      "horizontalOverflow": false,
+      "fields": [
+        {
+          "top": 281.5,
+          "height": 144,
+          "scrollTop": 0,
+          "scrollHeight": 304,
+          "text": "01 Check the draft save path.\n02 Keep the original reply anchor.\n03 Read the complete comment.\n04 Review the current patch set.\n05 Keep the selected file open.\n06 Scroll within this text field.\n07 Leave the code at line 42.\n08 Keep the draft text unchanged.\n09 Preserve the resolution state.\n10 Check the end of the draft.\n11 Save after editing the text.\n12 Return to the review."
+        },
+        {
+          "top": 281.5,
+          "height": 144,
+          "scrollTop": 120,
+          "scrollHeight": 304,
+          "text": "01 Check the draft save path.\n02 Keep the original reply anchor.\n03 Read the complete comment.\n04 Review the current patch set.\n05 Keep the selected file open.\n06 Scroll within this text field.\n07 Leave the code at line 42.\n08 Keep the draft text unchanged.\n09 Preserve the resolution state.\n10 Check the end of the draft.\n11 Save after editing the text.\n12 Return to the review."
+        }
+      ],
+      "codePositions": [
+        189,
+        189
+      ]
+    },
+    {
+      "mode": "dark",
+      "file": "/home/dev/.t3/worktrees/gerrit-gui/t3-63c26e1a/openspec/changes/enable-comment-field-scrolling/previews/proposal-dark.png",
+      "width": 728,
+      "height": 805,
+      "horizontalOverflow": false,
+      "fields": [
+        {
+          "top": 281.5,
+          "height": 144,
+          "scrollTop": 0,
+          "scrollHeight": 304,
+          "text": "01 Check the draft save path.\n02 Keep the original reply anchor.\n03 Read the complete comment.\n04 Review the current patch set.\n05 Keep the selected file open.\n06 Scroll within this text field.\n07 Leave the code at line 42.\n08 Keep the draft text unchanged.\n09 Preserve the resolution state.\n10 Check the end of the draft.\n11 Save after editing the text.\n12 Return to the review."
+        },
+        {
+          "top": 281.5,
+          "height": 144,
+          "scrollTop": 120,
+          "scrollHeight": 304,
+          "text": "01 Check the draft save path.\n02 Keep the original reply anchor.\n03 Read the complete comment.\n04 Review the current patch set.\n05 Keep the selected file open.\n06 Scroll within this text field.\n07 Leave the code at line 42.\n08 Keep the draft text unchanged.\n09 Preserve the resolution state.\n10 Check the end of the draft.\n11 Save after editing the text.\n12 Return to the review."
+        }
+      ],
+      "codePositions": [
+        189,
+        189
+      ]
+    }
+  ]
+}

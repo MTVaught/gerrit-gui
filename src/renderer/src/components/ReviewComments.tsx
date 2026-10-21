@@ -11,6 +11,32 @@ import { commentThreads, displayCommentAnchor, originalCommentAnchor as anchor, 
 export interface ReviewCommentsHandle { compose(anchor: CommentAnchor): void; canClose(): boolean; openAt(anchor: CommentAnchor): void; review(): void; navigateThread(direction: number): void }
 interface Composer { anchor: CommentAnchor; id?: string; inReplyTo?: string; message: string; unresolved: boolean; suggestions?: FixSuggestion[] }
 function signature(c: Composer) { return JSON.stringify([c.message, c.unresolved, c.suggestions]) }
+function commentFieldScrolling(form: HTMLFormElement | null) {
+  if (!form) return
+  function updateOverflow() {
+    form!.querySelectorAll('textarea').forEach(field => {
+      field.style.overscrollBehaviorY = field.scrollHeight > field.clientHeight ? 'contain' : ''
+    })
+  }
+  function wheel(event: WheelEvent) {
+    const field = event.target
+    if (!(field instanceof HTMLTextAreaElement)) return
+    const overflowing = field.scrollHeight > field.clientHeight
+    field.style.overscrollBehaviorY = overflowing ? 'contain' : ''
+    if (!overflowing || !event.deltaY || event.ctrlKey || event.metaKey || event.shiftKey) return
+    // Handle the native event before Monaco's ancestor listener cancels it.
+    // Keep the browser default so it scrolls the textarea with native deltas.
+    event.stopPropagation()
+  }
+  // Update before the next gesture: Chromium can choose a scroll target before
+  // it dispatches a passive wheel event, especially after a native resize.
+  const observer = new ResizeObserver(updateOverflow)
+  observer.observe(form)
+  updateOverflow()
+  form.addEventListener('input', updateOverflow)
+  form.addEventListener('wheel', wheel, { passive: true })
+  return () => { observer.disconnect(); form.removeEventListener('input', updateOverflow); form.removeEventListener('wheel', wheel) }
+}
 function location(c: CommentAnchor) { return `PS ${c.patchSet} · ${c.side === 'PARENT' ? 'Base · ' : ''}${c.path === '/PATCHSET_LEVEL' ? 'Overall review' : c.path}${c.range ? `:${c.range.start_line}–${c.range.end_line}` : c.line ? `:${c.line}` : c.path === '/PATCHSET_LEVEL' ? '' : ' · File comment'}` }
 export function ReviewComments({ link, path, originalPath, visible, onOpen, onHide, onReveal, onHighlight, onRefresh, onDiscussion, onMutate, createInlineHost, hasEditor, controls, positions, ref }: {
   link: ChangeLink; path: string; originalPath?: string; visible: boolean; onOpen(): void; onHide(): void; onReveal(comment: ReviewComment, original?: boolean, preserveScroll?: boolean): void; onHighlight(comment: ReviewComment | null): void; onRefresh(): void; onDiscussion(discussion: ReviewDiscussion): void; onMutate(write: () => Promise<void>): Promise<void>; createInlineHost: CreateInlineCommentHost; hasEditor: boolean; controls: HTMLElement | null; positions: ReviewCommentPosition[]; ref?: Ref<ReviewCommentsHandle>
@@ -150,7 +176,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
       setComposer(null)
     })
   }
-  const composerForm = composer ? <form className="review-comment-compose" data-unresolved={composer.unresolved} onKeyDown={e => {
+  const composerForm = composer ? <form ref={commentFieldScrolling} className="review-comment-compose" data-unresolved={composer.unresolved} onKeyDown={e => {
         if ((e.ctrlKey || e.metaKey) && (e.key === 'Enter' || e.key.toLowerCase() === 's')) { e.preventDefault(); e.stopPropagation(); void save() }
       }} onSubmit={e => { e.preventDefault(); void save() }}>
         <strong title="Only visible to you. Publish using Reply at the top of the review.">{composer.inReplyTo ? 'Draft reply' : 'Draft'}</strong>
