@@ -1,0 +1,112 @@
+[
+  {
+    "file": "comment-escape-dark.mp4",
+    "duration": 16.72,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1440,
+      "height": 960,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  },
+  {
+    "file": "comment-escape-light.mp4",
+    "duration": 16.6,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1440,
+      "height": 960,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  },
+  {
+    "file": "comment-keys-dark.mp4",
+    "duration": 26.52,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1440,
+      "height": 1000,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  },
+  {
+    "file": "comment-keys-light.mp4",
+    "duration": 26.44,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1440,
+      "height": 1000,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  },
+  {
+    "file": "comment-scroll-dark.mp4",
+    "duration": 30.92,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1280,
+      "height": 960,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  },
+  {
+    "file": "comment-scroll-light.mp4",
+    "duration": 31.04,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1280,
+      "height": 960,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  },
+  {
+    "file": "fixed-newline-selection-dark.mp4",
+    "duration": 39.2,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1440,
+      "height": 960,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  },
+  {
+    "file": "fixed-newline-selection-light.mp4",
+    "duration": 39.15,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1440,
+      "height": 960,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  },
+  {
+    "file": "loop-indent-dark.mp4",
+    "duration": 17.9,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1600,
+      "height": 1000,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  },
+  {
+    "file": "loop-indent-light.mp4",
+    "duration": 17.9,
+    "stream": {
+      "codec_name": "h264",
+      "width": 1600,
+      "height": 1000,
+      "pix_fmt": "yuv420p"
+    },
+    "fullDecode": "passed"
+  }
+]

@@ -107,11 +107,8 @@ module.exports = async function checkSelections(win) {
   const reopened = (await stats()).requests
   await button('Edit', '.comment-draft'); await placed('modified')
   anchor((await stats()).drafts[0], 3, 'REVISION', '// Comparing base to patch set 3'.length)
-  await button('Suggest replacement for selected range', '.review-comment-compose')
-  await click(`document.querySelector('[aria-label="Suggested replacement"]')`)
-  await win.webContents.insertText('// Replacement preserves the existing newline')
-  await until(`(await api.fixtureStats()).drafts[0].fix_suggestions?.[0].replacements[0].replacement==='// Replacement preserves the existing newline'`)
-  assert.deepEqual((await stats()).drafts[0].fix_suggestions[0].replacements[0].range, wrapped.range)
+  assert.ok(await run(`!document.querySelector('[aria-label="Suggested replacement"]')`), 'range editor omits replacement controls')
+  assert.deepEqual((await stats()).drafts[0].range, wrapped.range, 'reopening retains the normalized range')
   await button('Save', '.review-comment-compose'); await until(`!document.querySelector('.review-comment-compose')`)
   await discard()
   assert.equal((await stats()).requests, reopened)

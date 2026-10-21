@@ -14,7 +14,7 @@ app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'comment-scroll-re
 app.disableHardwareAcceleration()
 app.on('window-all-closed', () => {})
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-const directory = path.resolve(__dirname, '../openspec/changes/enable-comment-field-scrolling/evidence')
+const directory = process.env.REVIEW_FEATURE_EVIDENCE ?? path.resolve(__dirname, '../openspec/changes/archive/2026-10-21-enable-comment-field-scrolling/evidence')
 fs.mkdirSync(directory, { recursive: true })
 const input = (...args) => promisify(execFile)('xdotool', args.map(String)).then(result => result.stdout)
 const timeout = setTimeout(() => app.exit(2), 180000)

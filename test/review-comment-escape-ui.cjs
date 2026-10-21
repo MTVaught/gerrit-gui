@@ -14,7 +14,7 @@ process.env.REVIEW_NATIVE_FIXTURE = '1'
 process.env.REVIEW_FIXTURE_NOW = '2026-10-21 12:00:00.000'
 const mode = process.env.ESCAPE_THEME || 'light'
 const recording = process.env.RECORD_ESCAPE === '1'
-const evidence = path.resolve(__dirname, '../openspec/changes/cancel-comment-on-escape/evidence')
+const evidence = process.env.REVIEW_FEATURE_EVIDENCE ?? path.resolve(__dirname, '../openspec/changes/archive/2026-10-21-cancel-comment-on-escape/evidence')
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 let recorder, win, releaseWrite, holdWrite = false
 ipcMain.handle('fixture:saveDraft', async () => {
@@ -132,19 +132,15 @@ app.whenReady().then(async () => {
     await press('Escape'); await cancelled()
     assert.equal((await stats()).drafts.length, 0)
 
-    // Create a selected-range draft with a suggestion, then restore its saved state.
-    await click(`document.querySelector('.modified-in-monaco-diff-editor .view-line')`)
-    await press('Home', ['control']); await press('End', ['shift']); await press('c')
-    await type('Keep the original draft')
-    await button('Suggest replacement for selected range', '.review-comment-compose')
-    await type('// Original replacement', '[aria-label="Suggested replacement"]')
-    await saved(); await press('Enter', ['control'])
-    await until(`!document.querySelector('.review-comment-compose')`)
+    // Existing suggestions remain stored after authoring controls are removed.
+    await run(`api.saveReviewDraft('telemetry~main~Idemo', 3, { path: 'src/telemetry/batch-scheduler.ts', line: 2, side: 'REVISION', message: 'Keep the original draft', range: { start_line: 2, start_character: 0, end_line: 2, end_character: 10 }, fix_suggestions: [{ description: 'Stored suggestion', replacements: [{ path: 'src/telemetry/batch-scheduler.ts', range: { start_line: 2, start_character: 0, end_line: 2, end_character: 10 }, replacement: '// Original replacement' }] }], unresolved: true })`)
+    await button('Close review'); await click(`document.querySelector('.review-main')`)
+    await until(`document.querySelector('.review-editor')?.dataset.reviewReady === 'true' && Boolean(document.querySelector('.comment-draft'))`)
     const originalDraft = (await stats()).drafts[0]
     assert.ok(originalDraft.fix_suggestions?.length)
     await button('Edit', '.comment-draft'); await type(' edited')
     await click(`document.querySelector('.review-comment-compose input[type="checkbox"]')`)
-    await type(' changed', '[aria-label="Suggested replacement"]')
+    assert.ok(await run(`!document.querySelector('[aria-label="Suggested replacement"]')`))
     await saved()
     await press('Escape'); await cancelled()
     const restored = (await stats()).drafts[0]

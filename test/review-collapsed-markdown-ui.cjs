@@ -37,7 +37,7 @@ app.whenReady().then(async () => {
   win.focus(); win.webContents.focus()
   await click('.review-main')
   await until(`document.querySelector('.review-editor')?.dataset.reviewReady === 'true' && Boolean(document.querySelector('${comment} .review-comment-preview'))`, 'collapsed comment opens inline')
-  const dir = path.join(__dirname, '../docs/screenshots/collapsed-comment-markdown')
+  const dir = process.env.REVIEW_FEATURE_EVIDENCE ?? path.join(__dirname, '../docs/screenshots/collapsed-comment-markdown')
   fs.mkdirSync(dir, { recursive: true })
   for (const theme of ['light', 'dark']) {
     nativeTheme.themeSource = theme

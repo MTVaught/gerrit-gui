@@ -12,7 +12,7 @@ const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'comment-keys-'))
 app.setPath('userData', userData)
 app.disableHardwareAcceleration()
 const capture = process.env.CAPTURE_COMMENT_KEYS === '1'
-const evidence = path.resolve(__dirname, '../openspec/changes/comment-editor-enter-shortcuts/evidence')
+const evidence = process.env.REVIEW_FEATURE_EVIDENCE ?? path.resolve(__dirname, '../openspec/changes/archive/2026-10-21-comment-editor-enter-shortcuts/evidence')
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 const timeout = setTimeout(() => app.exit(2), capture ? 240000 : 90000)
 let recorder

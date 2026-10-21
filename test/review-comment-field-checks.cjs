@@ -41,7 +41,7 @@ async function checkField(win, selector = draft) {
   const { run, press, until, wheel, panes } = controls(win)
   await until(`document.querySelector('.review-comment-compose [role="status"]')?.textContent === 'Saved to Gerrit'`)
   const value = () => run(`(() => { const f = document.querySelector(${JSON.stringify(selector)}), active = document.activeElement; return { text: f.value, top: f.scrollTop, max: f.scrollHeight - f.clientHeight, height: f.clientHeight, focus: active?.tagName + ':' + active?.getAttribute('aria-label') + ':' + (active?.tagName === 'BUTTON' ? active.textContent : ''), dialogTop: f.closest('dialog')?.scrollTop } })()`)
-  const before = await value(), code = await panes(), writes = (await run('api.fixtureStats()')).commentWrites.length
+  const before = await value(), code = await panes(), initialStats = await run('api.fixtureStats()'), writes = initialStats.commentWrites.length
   assert.ok(before.max > 100, 'test field overflows')
   // Supplement the real scrolling checks with a routing check for zoom input.
   // Intercept at the parent so this synthetic event cannot zoom the test UI.
@@ -70,6 +70,7 @@ async function checkField(win, selector = draft) {
   assert.ok((await value()).top > 0, 'hovered field scrolls without keyboard focus')
   assert.equal((await value()).focus, unfocused)
   assert.equal((await run('api.fixtureStats()')).commentWrites.length, writes, 'scrolling sends no draft writes')
+  assert.equal((await run('api.fixtureStats()')).requests, initialStats.requests, 'scrolling does not refetch source')
   await run(`document.querySelector(${JSON.stringify(selector)}).focus({ preventScroll: true })`)
   console.log(JSON.stringify({ internalFieldScroll: 'passed', selector, before: { top: before.top, max: before.max }, bottom: bottom.top, panes: code }))
 }
@@ -135,18 +136,18 @@ async function checkEditing(win) {
   await button('Discard draft', '.comment-draft')
   await until(`(await api.fixtureStats()).drafts.length === 0`)
 
-  await goToLine(1); await press('End', ['shift']); await press('c')
-  await until(`document.activeElement?.getAttribute('aria-label') === 'Draft comment'`)
-  await fill(draft, longMessage)
-  await button('Suggest replacement for selected range', '.review-comment-compose')
-  const replacement = '[aria-label="Suggested replacement"]'
-  await fill(replacement, longMessage)
-  const messageTop = await run(`document.querySelector(${JSON.stringify(draft)}).scrollTop`)
-  await checkField(win, replacement)
-  assert.equal(await run(`document.querySelector(${JSON.stringify(draft)}).scrollTop`), messageTop, 'replacement scrolling leaves message field fixed')
+  // Seed an older suggestion, then scroll its ordinary message editor.
+  // Replacement authoring controls are removed by the companion feature.
+  await run(`api.saveReviewDraft('telemetry~main~Idemo', 3, { path: 'src/telemetry/batch-scheduler.ts', line: 1, side: 'REVISION', message: ${JSON.stringify(longMessage)}, range: { start_line: 1, start_character: 0, end_line: 1, end_character: 10 }, fix_suggestions: [{ description: 'Stored suggestion', replacements: [{ path: 'src/telemetry/batch-scheduler.ts', range: { start_line: 1, start_character: 0, end_line: 1, end_character: 10 }, replacement: '// Stored replacement' }] }], unresolved: true })`)
+  await button('Close review'); await run(`document.querySelector('.review-main').click()`)
+  await until(`document.querySelector('.review-editor')?.dataset.reviewReady === 'true' && Boolean(document.querySelector('.comment-draft'))`)
+  const storedSuggestion = (await run('api.fixtureStats()')).drafts[0].fix_suggestions
+  await button('Edit', '.comment-draft'); await fill(draft, longMessage + '\nUpdated comment.')
+  assert.ok(await run(`!document.querySelector('[aria-label="Suggested replacement"]')`), 'replacement editor stays absent')
+  await checkField(win)
   await button('Save', '.review-comment-compose'); await until(`!document.querySelector('.review-comment-compose')`)
   const suggested = (await run('api.fixtureStats()')).drafts[0]
-  assert.equal(suggested.fix_suggestions[0].replacements[0].replacement, longMessage)
+  assert.deepEqual(suggested.fix_suggestions, storedSuggestion, 'scrolling and saving preserve stored suggestions')
   assert.ok(suggested.range); assert.equal(suggested.line, 1)
   await button('Discard draft', '.comment-draft'); await until(`(await api.fixtureStats()).drafts.length === 0`)
   console.log(JSON.stringify({ keyboard: 'passed', scrollbarDrag: 'passed', nativeResize: 'passed', replyAndEdit: 'passed', suggestions: 'passed' }))

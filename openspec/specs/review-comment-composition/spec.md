@@ -42,7 +42,7 @@ Editing text or resolution and canceling changes SHALL preserve suggested replac
 
 ### Requirement: Comment text fields scroll internally
 
-An overflowing comment text field SHALL support native vertical scrolling with a mouse wheel or trackpad while the pointer is over the field, whether or not it has keyboard focus. This SHALL apply to new comments, replies, edited drafts, and suggested-replacement text fields in both inline and fallback composers, in light and dark mode.
+An overflowing comment text field SHALL support native vertical scrolling with a mouse wheel or trackpad while the pointer is over the field, whether or not it has keyboard focus. This SHALL apply to new comments, replies, and edited drafts in both inline and fallback composers, in light and dark mode.
 
 #### Scenario: Scroll a long comment in either direction
 
@@ -59,7 +59,7 @@ An overflowing comment text field SHALL support native vertical scrolling with a
 
 #### Scenario: Use the shared composer fields
 
-- **WHEN** the reviewer scrolls an overflowing reply, edited draft, or suggested-replacement field
+- **WHEN** the reviewer scrolls an overflowing reply or edited draft field
 - **THEN** that field scrolls its own text
 - **AND** other fields retain their scroll position
 
@@ -114,7 +114,7 @@ Internal scrolling SHALL preserve native keyboard navigation, selection, scrollb
 
 ### Requirement: Escape cancels the focused comment composer
 
-When focus is within a comment composer, Escape SHALL invoke the same cancellation behavior as its Cancel button and prevent review dismissal. This SHALL apply to inline comments, file comments, replies, and suggested-fix fields. The selected file and comparison SHALL remain active.
+When focus is within a comment composer, Escape SHALL invoke the same cancellation behavior as its Cancel button and prevent review dismissal. This SHALL apply to inline comments, file comments, and replies. The selected file and comparison SHALL remain active.
 
 #### Scenario: Cancel a new comment
 
@@ -130,7 +130,7 @@ When focus is within a comment composer, Escape SHALL invoke the same cancellati
 
 #### Scenario: Cancel from another composer field
 
-- **WHEN** a reviewer presses Escape in a suggested replacement or another control within the comment composer
+- **WHEN** a reviewer presses Escape in a control within the comment composer
 - **THEN** the same Cancel action runs and the review remains open
 
 ### Requirement: Escape respects pending draft writes

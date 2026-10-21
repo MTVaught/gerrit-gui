@@ -160,7 +160,7 @@ xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-comments-ui.cjs
 It checks unchanged-line and selected-range comments, base-side anchors, server
 draft restoration after reopening, editing and discarding, replies and resolution,
 overall review drafts, label votes while keeping drafts private, explicit publishing,
-and suggested fix creation/application. It also exercises save failure and retry,
+and stored suggested fix preservation/application. It also exercises save failure and retry,
 and typing while a draft creation request is in flight. Comment operations must
 not refetch source files or render the complete file into the DOM. The fixture is
 an in-memory Gerrit API substitute; these tests do not publish to a live server.

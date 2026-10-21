@@ -4,8 +4,8 @@ const { execFileSync, spawn } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 const assert = require('node:assert/strict')
-const root = process.env.REPRO_ROOT ?? path.resolve(__dirname, '../../../..')
-const evidence = path.join(root, 'openspec/changes/fix-comment-trailing-newline-anchor/evidence')
+const root = process.env.REPRO_ROOT ?? path.resolve(__dirname, '../../../../..')
+const evidence = process.env.REVIEW_FEATURE_EVIDENCE ?? __dirname
 const fixed = process.env.REPRO_EXPECT_FIXED === '1'
 const prefix = fixed ? 'fixed-' : ''
 const scratch = fs.mkdtempSync('/tmp/gerrit-newline-')

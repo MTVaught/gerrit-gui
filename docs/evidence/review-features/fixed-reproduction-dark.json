@@ -1,0 +1,26 @@
+{
+  "platform": "Linux / Electron",
+  "simulated": "Gerrit API and 100000-line source fixture",
+  "input": "Native xdotool mouse and keyboard",
+  "theme": "dark",
+  "controlText": "// Comparing base to patch set 3",
+  "controlZone": "Modified comments after line 1",
+  "selectedText": "// Comparing base to patch set 3\n",
+  "zone": "Modified comments after line 1",
+  "draft": {
+    "path": "src/telemetry/batch-scheduler.ts",
+    "side": "REVISION",
+    "line": 1,
+    "range": {
+      "start_line": 1,
+      "start_character": 0,
+      "end_line": 1,
+      "end_character": 32
+    },
+    "id": "draft-1",
+    "message": "Comment on line 1 including its newline.",
+    "unresolved": true,
+    "patch_set": 3,
+    "updated": "2026-10-21T21:39:12.922Z"
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-21",
+  "platform": "Linux Electron 44.2.0 / Xvfb",
+  "Gerrit": "simulated fixture",
+  "features": [
+    {
+      "change": "remove-comment-suggested-replacement",
+      "threadId": "9dcc4326-ca2d-40b4-934b-863ea222296c",
+      "featureCommit": "344ac7488da3e041c2ebad3a72aecad87bb13646",
+      "archive": "openspec/changes/archive/2026-10-21-remove-comment-suggested-replacement",
+      "completedTasks": 2,
+      "totalTasks": 2,
+      "includedInCombinedBranch": true
+    },
+    {
+      "change": "render-collapsed-comment-markdown",
+      "threadId": "c18c8ada-4259-4374-85bf-dba96b6b0189",
+      "featureCommit": "27a7f06f5cbb3c02979bd69b3279b883dd75e2a4",
+      "archive": "openspec/changes/archive/2026-10-21-render-collapsed-comment-markdown",
+      "completedTasks": 2,
+      "totalTasks": 2,
+      "includedInCombinedBranch": true
+    },
+    {
+      "change": "fix-comment-trailing-newline-anchor",
+      "threadId": "e35c4321-d284-4717-a5c4-d7fac1835b4e",
+      "featureCommit": "ca66fc271d9162ddb959c76f5ce60233e3e9ca34",
+      "archive": "openspec/changes/archive/2026-10-21-fix-comment-trailing-newline-anchor",
+      "completedTasks": 7,
+      "totalTasks": 7,
+      "includedInCombinedBranch": true
+    },
+    {
+      "change": "enable-comment-field-scrolling",
+      "threadId": "e1367ab4-7ca0-42f1-a57e-30572d65ba25",
+      "featureCommit": "c7b927dc0b2db486d30be9e41f62846590d9b918",
+      "archive": "openspec/changes/archive/2026-10-21-enable-comment-field-scrolling",
+      "completedTasks": 7,
+      "totalTasks": 7,
+      "includedInCombinedBranch": true
+    },
+    {
+      "change": "cancel-comment-on-escape",
+      "threadId": "d0fcf08f-45b9-4518-a458-4b37d3a76b2e",
+      "featureCommit": "5f90aa9cc531f9adeada40db1c4fbfa337f6f1cf",
+      "archive": "openspec/changes/archive/2026-10-21-cancel-comment-on-escape",
+      "completedTasks": 3,
+      "totalTasks": 3,
+      "includedInCombinedBranch": true
+    },
+    {
+      "change": "comment-editor-enter-shortcuts",
+      "threadId": "d0958c95-b35f-426e-9f51-91750d34c6fb",
+      "featureCommit": "58a20da35bf974607db97f326c89256c38df0b24",
+      "archive": "openspec/changes/archive/2026-10-21-comment-editor-enter-shortcuts",
+      "completedTasks": 4,
+      "totalTasks": 4,
+      "includedInCombinedBranch": true
+    },
+    {
+      "change": "fix-review-whitespace-chunks",
+      "threadId": "810e218a-e938-4bd0-9e48-b517cb65e765",
+      "featureCommit": "29a8a85d79a1762931c4437bf849a602faeab685",
+      "archive": "openspec/changes/archive/2026-10-21-fix-review-whitespace-chunks",
+      "completedTasks": 5,
+      "totalTasks": 5,
+      "includedInCombinedBranch": true
+    }
+  ],
+  "unitTests": {
+    "pass": 359,
+    "fail": 0,
+    "skipped": 0
+  },
+  "typecheck": "passed",
+  "build": "passed",
+  "strictOpenSpec": "15 items passed: 14 main specs and 1 pre-existing active change",
+  "sourceSha256": {
+    "src/renderer/src/components/ReviewComments.tsx": "1e8527d08c715f82716ed7e4988462c4188c618cc70440bb2009d14408ad6ab5",
+    "src/renderer/src/components/ReviewEditor.tsx": "18e140afd23f92ecec8a6b8eb58c6d1e9bc5923562aad2b6e7b906ad8b11309f",
+    "src/renderer/src/components/ReviewMarkdown.tsx": "30131b6c861bdd74f9b6a0fec4717b0dde6987c5959c79e01cc5e1a17cc67e8a",
+    "src/renderer/src/review-comments.test.ts": "318ef61d5cbd7545f392946f8852b2e8983c8637ab6336317964ee3bb33660bd",
+    "src/renderer/src/review-comments.ts": "8712634a1df7f2c0e4d5642005c53a0d605bab51bfe476021fb8968db8aa9f17",
+    "src/renderer/src/review-diff.test.ts": "2e8f2003608781e180cd9c39f937b32dc5cd61e50f1bad479a1e53ea67139a44",
+    "src/renderer/src/review-diff.ts": "fffb436f32eee36cc1b8217fd4eede295c11b7189a3824ef17c1c832173a7316",
+    "src/renderer/src/review-shortcuts.ts": "41c09f2d7b226e90c39670f363374c14c2088eec1e62afe9138299e9ba19bedc",
+    "src/renderer/src/styles.css": "1b23a5a64952fbe451beef87677fa36d9b1d9b560e67c5d3993330c44f3764af"
+  },
+  "uiChecks": {
+    "comments-and-overview": "passed",
+    "selection-boundaries": "passed",
+    "collapsed-markdown-both-themes": "passed",
+    "scroll-light": "passed",
+    "scroll-dark": "passed",
+    "escape-light": "passed",
+    "escape-dark": "passed",
+    "keyboard-both-themes": "passed",
+    "whitespace-all-modes-both-themes": "passed",
+    "ported-replies": "passed",
+    "rebase-colors": "passed"
+  },
+  "limits": [
+    "Simulated Gerrit data and responses",
+    "Native macOS and Windows not tested",
+    "Physical trackpad not tested",
+    "Meta and composition flags simulated on Linux"
+  ]
+}
