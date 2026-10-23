@@ -12,6 +12,9 @@ import appIconPath from '../../resources/icon.png?asset'
 import { editorContextMenu } from './editor-context-menu.ts'
 import { externalWebUrl, RendererBoundary, trustedIpc } from './renderer-boundary.ts'
 import { pathToFileURL } from 'node:url'
+import { ReviewMutations, REVIEW_WRITES } from './review-mutations.ts'
+import { requireDraftVersion } from '../shared/draft-version.ts'
+import { ReviewWindows, validateReviewLink } from './review-windows.ts'
 import { NativeReviewNavigation } from './native-review.ts'
 
 app.on('web-contents-created', (_event, contents) => {
@@ -27,6 +30,14 @@ app.on('web-contents-created', (_event, contents) => {
 const COMPACT_DEFAULT: WindowBounds = { x: 0, y: 0, width: 460, height: 720 }
 const NORMAL_DEFAULT: WindowBounds = { x: 0, y: 0, width: 1200, height: 800 }
 
+const reviewWindows = new ReviewWindows<BrowserWindow>()
+let connectionGeneration = 0
+const reviewMutations = new ReviewMutations((id, connection, generation) => {
+  for (const win of BrowserWindow.getAllWindows()) {
+    const review = reviewWindows.get(win.webContents.id)
+    if (!review || review.context.connection === connection && review.context.link?.id === id) win.webContents.send('app:reviewChanged', { id, connection, generation })
+  }
+})
 let mainWindow: BrowserWindow | null = null
 /** The connection window: server, account and password, apart from the settings page. */
 let connectionWindow: BrowserWindow | null = null
@@ -55,6 +66,7 @@ const nativeReview = new NativeReviewNavigation({
   openWeb: async (link) => openWebUrl(await service.changeUrl(link)),
   show: showWindow,
   send: (request) => mainWindow?.webContents.send('app:review', request),
+  openSeparate: (link) => createReviewWindow(link),
 })
 
 function showWindow(): void {
@@ -117,10 +129,9 @@ function applyPinning(): void {
 }
 
 async function setCompactOnTop(on: boolean): Promise<void> {
-  const current = await service.getSettings()
-  await service.saveSettings({ ...current, compactOnTop: on })
+  await service.patchSettings({ compactOnTop: on })
   await refreshWindowPrefs()
-  mainWindow?.webContents.send('app:settings')
+  broadcast('app:settings')
 }
 
 /** Re-read window and tray preferences and apply them. */
@@ -141,14 +152,77 @@ function scheduleSaveBounds(): void {
   }, 500)
 }
 
+function broadcast(channel: string, value?: unknown): void {
+  for (const win of BrowserWindow.getAllWindows()) if (!win.isDestroyed()) win.webContents.send(channel, value)
+}
+
 function registerIpc(): void {
-  const ipc = trustedIpc(ipcMain, rendererBoundary)
+  const authenticated = trustedIpc(ipcMain, rendererBoundary, (event, channel, args) => {
+    reviewWindows.authorize(event.sender.id, channel, args, connectionGeneration)
+  })
+  const ipc: typeof authenticated = {
+    on: authenticated.on,
+    handle(channel, listener) {
+      authenticated.handle(channel, async (event, ...args) => {
+        const connection = connectionGeneration
+        if (REVIEW_WRITES.has(channel)) {
+          const first = args[0] as ChangeLink | number
+          const id = typeof first === 'number' ? first : first.id
+          const action = args[0] as { type?: string; add?: number[]; remove?: number[] }
+          const ids = channel === 'gerrit:act' && action.type === 'setSequence' ? [id, ...(action.add ?? []), ...(action.remove ?? [])] : [id]
+          return reviewMutations.run(ids, connection, () => connectionGeneration, async () => {
+            if (channel === 'gerrit:saveReviewDraft' || channel === 'gerrit:deleteReviewDraft') {
+              const draftId = channel === 'gerrit:saveReviewDraft' ? (args[2] as { id?: string }).id : args[2] as string
+              if (draftId) requireDraftVersion((await service.reviewDiscussion(id)).drafts, draftId, args[3] as string | undefined)
+            }
+            return listener(event, ...args)
+          })
+        }
+        const result = await listener(event, ...args)
+        if (channel.startsWith('gerrit:') && connection !== connectionGeneration) throw new Error('Connection changed. The old response was discarded.')
+        return result
+      })
+    },
+  }
+  ipc.handle('window:context', event => {
+    const review = reviewWindows.get(event.sender.id)?.context
+    if (review) return review.connection === connectionGeneration ? review : { ...review, error: 'Connection changed. Close and reopen this review.' }
+    return { kind: event.sender === connectionWindow?.webContents ? 'connection' : 'board' }
+  })
+  ipc.handle('window:openReview', async (_event, link: ChangeLink, subject: string) => {
+    validateReviewLink(link)
+    const prefs = await service.getSettings()
+    if (!prefs.localReview || !prefs.separateReviewWindows) return false
+    await createReviewWindow(link, subject)
+    return true
+  })
+  ipc.handle('window:close', event => { reviewWindows.get(event.sender.id)?.window.close() })
+  ipc.on('window:closeReply', (event, token: number, allowed: boolean) => {
+    const win = reviewWindows.finishClose(event.sender.id, token)
+    if (win && allowed && !reviewMutations.busy(reviewWindows.get(event.sender.id)?.context.link?.id ?? -1)) win.destroy()
+  })
   ipc.handle('settings:get', () => service.getSettings())
   ipc.handle('settings:save', async (_e, input: SettingsInput) => {
     await service.saveSettings(input)
     await refreshWindowPrefs()
-    mainWindow?.webContents.send('app:settings')
-    connectionWindow?.webContents.send('app:settings')
+    broadcast('app:settings')
+  })
+  ipc.handle('settings:patch', async (_e, input: Partial<SettingsInput>) => {
+    const before = await service.getSettings()
+    const saved = await service.patchSettings(input)
+    if (before.serverUrl !== saved.serverUrl || before.username !== saved.username) {
+      connectionGeneration++
+      broadcast('app:connection')
+    }
+    await refreshWindowPrefs()
+    broadcast('app:settings')
+    return saved
+  })
+  ipc.handle('preferences:get', (_e, legacy: unknown) => settings.getReviewPreferences(legacy))
+  ipc.handle('preferences:patch', async (_e, patch) => {
+    const saved = await settings.patchReviewPreferences(patch)
+    broadcast('app:preferences', saved)
+    return saved
   })
   ipc.handle('gerrit:testConnection', () => service.testConnection())
   ipc.handle('gerrit:fetchDashboard', () => service.fetchDashboard())
@@ -178,7 +252,7 @@ function registerIpc(): void {
   ipc.handle('gerrit:changeUrl', (_e, link: ChangeLink) => service.changeUrl(link))
   ipc.handle('gerrit:inspectChange', (_e, id: number) => service.inspectChange(id))
   ipc.handle('gerrit:getPretend', () => service.getPretend())
-  ipc.handle('gerrit:setPretend', (_e, key: string | null) => service.setPretend(key))
+  ipc.handle('gerrit:setPretend', async (_e, key: string | null) => { const result = await service.setPretend(key); connectionGeneration++; broadcast('app:connection'); return result })
   ipc.handle('app:openUrl', async (_e, url: string) => {
     // Comment and Slack links may open a browser. Keep other URI schemes out of the shell.
     const webUrl = externalWebUrl(url)
@@ -199,7 +273,7 @@ function registerIpc(): void {
 
   ipc.handle('connection:open', () => showConnectionWindow())
   ipc.handle('connection:changed', () => {
-    mainWindow?.webContents.send('app:connection')
+    broadcast('app:connection')
   })
   ipc.handle('connection:close', () => connectionWindow?.close())
 
@@ -223,6 +297,46 @@ function registerIpc(): void {
   ipc.handle('update:openReleaseNotes', async () => {
     await openWebUrl(updater?.getState().releaseUrl ?? RELEASES_URL)
   })
+}
+
+async function createReviewWindow(input: ChangeLink, subject?: string): Promise<void> {
+  validateReviewLink(input)
+  const connection = connectionGeneration
+  let link = { ...input }
+  let error: string | undefined
+  try {
+    if (!subject || !link.patchSet) {
+      const change = await service.fetchChange(link.id)
+      subject = change.subject
+      link = { ...link, patchSet: link.patchSet ?? change.revisions?.[change.current_revision ?? '']?._number }
+    }
+    if (!subject || !link.patchSet) throw new Error('The change has no reviewable patch set or subject')
+    if (connection !== connectionGeneration) throw new Error('Connection changed. Close and reopen this review.')
+  } catch (reason) { error = `Could not open review #${link.id}: ${reason instanceof Error ? reason.message : String(reason)}` }
+  const win = new BrowserWindow({
+    ...NORMAL_DEFAULT, minWidth: 640, minHeight: 400, show: false,
+    title: `#${link.id} ${subject ?? 'Review'}`, icon: appIconPath, autoHideMenuBar: true,
+    webPreferences: { preload: path.join(__dirname, '../preload/index.js'), contextIsolation: true, backgroundThrottling: false,
+      nodeIntegration: false, nodeIntegrationInSubFrames: false, webviewTag: false, sandbox: true },
+  })
+  const id = win.webContents.id
+  reviewWindows.add(id, win, { kind: 'review', connection, link, subject, error })
+  win.once('ready-to-show', () => { win.show(); win.focus() })
+  win.on('close', event => {
+    if (quitting) return
+    event.preventDefault()
+    const token = reviewWindows.requestClose(id)
+    if (token === undefined) return
+    win.webContents.send('app:closeReview', token)
+    const timer = setTimeout(() => reviewWindows.finishClose(id, token), 15000)
+    timer.unref()
+  })
+  win.webContents.on('did-start-loading', () => {
+    const pending = reviewWindows.get(id)?.closeToken
+    if (pending) reviewWindows.finishClose(id, pending)
+  })
+  win.on('closed', () => reviewWindows.delete(id))
+  loadRenderer(win, 'review')
 }
 
 function createWindow(): BrowserWindow {

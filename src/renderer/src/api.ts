@@ -26,6 +26,7 @@ function browserApi(): Api {
   return {
     getSettings: () => call('getSettings'),
     saveSettings: (input) => call('saveSettings', [input]),
+    patchSettings: (input) => call('patchSettings', [input]),
     testConnection: () => call('testConnection'),
     fetchDashboard: () => call('fetchDashboard'),
     fetchChange: (id) => call('fetchChange', [id]),

@@ -183,6 +183,15 @@ export class DashboardCache {
     }
   }
 
+  markDirty(id: number): void {
+    const entry = this.entry(id)
+    entry.generation++
+    entry.needsDetail = true
+    entry.protected = true
+  }
+
+  invalidate(id: number): Promise<void> { this.markDirty(id); return this.revalidate(id) }
+
   revalidate(id: number): Promise<void> {
     const entry = this.entry(id)
     if (entry.pending) return Promise.resolve()

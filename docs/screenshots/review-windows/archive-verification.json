@@ -1,0 +1,34 @@
+{
+  "change": "add-separate-review-windows",
+  "schema": "spec-driven",
+  "archive": "openspec/changes/archive/2026-10-23-add-separate-review-windows",
+  "active_change_absent": true,
+  "tasks_complete": 17,
+  "tasks_total": 17,
+  "archive_files": {
+    ".openspec.yaml": "54c2a6955b514abf783374521da3b6364c1d6b221970ad9faa7124a7e1124528",
+    "tasks.md": "5f8ddbf40b65285fe55fb91b452660b46a084c750d246f2c055c2988cc490436",
+    "proposal.md": "2137f583fa0650388524d9ac3880b17a9299a0bc8eea43f5640693f659a13c96",
+    "design.md": "a42aaabce044f92270afdd58ab059def4f3702e5ebeb00c1e391a955589274ff",
+    "evidence/proposal-report.html": "193802575653aa5fd0cda1b0a5929c6c84bf7448793b91c33fc1842a83845359",
+    "evidence/proposal-dark.png": "ef5cca2dfbdecdcb127159cec576a2460b503009274d4fdbd0e60db65175e249",
+    "evidence/proposal-light.png": "465160b2e4003ccb69c8bc0c90a235f64c197b935864ec184bf4c1b26becccc3",
+    "evidence/README.md": "9828c486c33b3f067b8011da1d930a7925dee5d12c21b05ad62479ce81fa6f6b",
+    "specs/native-review-navigation/spec.md": "25187777350230ac489644ca1116119faef6941f75fef1b49131d62371d93797",
+    "specs/review-preferences/spec.md": "6db4f32fe6c90ca2b922d645240ef744ed25a51f95fdb9f5991488a2eccca0e7",
+    "specs/review-windows/spec.md": "a089c295e55daa648259d05fdd077881614602c57651681d988ae032c4010081"
+  },
+  "main_spec_requirement_counts": {
+    "review-windows": 8,
+    "review-preferences": 10,
+    "native-review-navigation": 5
+  },
+  "strict_main_specs": {
+    "items": 15,
+    "passed": 15,
+    "failed": 0
+  },
+  "archived_change_valid": true,
+  "platform": "Linux; repository archive verification",
+  "simulated_data": false
+}

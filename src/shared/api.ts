@@ -1,7 +1,10 @@
 // What the UI can call. Implemented by the Electron preload
 // (IPC to the main process) and by renderer/src/api.ts in browser mode (HTTP).
+import type { ReviewPreferences } from './review-preferences.ts'
 import type {
   AccountInfo,
+  AppWindowContext,
+  ReviewChangeEvent,
   BadgePayload,
   ChangeAction,
   ChangeInfo,
@@ -27,8 +30,18 @@ import type {
 } from './types.ts'
 
 export interface Api {
+  getWindowContext?(): Promise<AppWindowContext>
+  openReviewWindow?(link: ChangeLink, subject: string): Promise<boolean>
+  closeReviewWindow?(): Promise<void>
+  onReviewCloseRequested?(cb: (token: number) => void): () => void
+  replyReviewClose?(token: number, allowed: boolean): void
+  onReviewChanged?(cb: (event: ReviewChangeEvent) => void): () => void
   getSettings(): Promise<SettingsStatus>
   saveSettings(input: SettingsInput): Promise<void>
+  patchSettings?(input: Partial<SettingsInput>): Promise<SettingsStatus>
+  getReviewPreferences?(legacy?: unknown): Promise<{ version: number; value: ReviewPreferences }>
+  patchReviewPreferences?(patch: Partial<ReviewPreferences>): Promise<{ version: number; value: ReviewPreferences }>
+  onReviewPreferencesChanged?(cb: (snapshot: { version: number; value: ReviewPreferences }) => void): () => void
   testConnection(): Promise<AccountInfo>
   fetchDashboard(): Promise<DashboardData>
   /** One change as the board shows it, read after an action on it so only that card is redrawn. */
@@ -43,8 +56,8 @@ export interface Api {
   setReviewFileReviewed(link: ChangeLink, path: string, reviewed: boolean): Promise<void>
   reviewDiscussion(id: number): Promise<ReviewDiscussion>
   reviewCommentPositions(link: ChangeLink): Promise<ReviewCommentPosition[]>
-  saveReviewDraft(id: number, patchSet: number, input: DraftCommentInput): Promise<ReviewComment>
-  deleteReviewDraft(id: number, patchSet: number, draftId: string): Promise<void>
+  saveReviewDraft(id: number, patchSet: number, input: DraftCommentInput, expectedVersion?: string): Promise<ReviewComment>
+  deleteReviewDraft(id: number, patchSet: number, draftId: string, expectedVersion?: string): Promise<void>
   deleteReviewComment(id: number, patchSet: number, commentId: string, reason: string): Promise<ReviewComment>
   applyReviewFix(id: number, patchSet: number, fixId: string): Promise<void>
   submitReview(link: ChangeLink, input: SubmitReviewInput): Promise<void>

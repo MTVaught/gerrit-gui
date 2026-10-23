@@ -5,6 +5,7 @@ import { resolveDiffTheme } from '../../../shared/theme.ts'
 import { useSettings } from '../settings-context.ts'
 import { useResolvedTheme } from '../theme.ts'
 import { DiffThemeWriter } from '../diff-theme-writer.ts'
+import { PreferenceState } from '../preference-state.ts'
 import { api } from '../api.ts'
 import { diffContents } from '../review.ts'
 import { reviewShortcut, REVIEW_SHORTCUT_HELP } from '../review-shortcuts.ts'
@@ -20,7 +21,7 @@ const ReviewEditor = lazy(() => import('./ReviewEditor.tsx'))
 
 export interface LocalReviewHandle { canClose(): boolean }
 
-export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref, navigationError }: { link: ChangeLink; subject: string; onClose: () => void; onMutate: (write: () => Promise<void>) => Promise<void>; ref?: Ref<LocalReviewHandle>; navigationError?: string | null }) {
+export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref, navigationError, separate = false, blocked = false }: { blocked?: boolean; separate?: boolean; link: ChangeLink; subject: string; onClose: () => void; onMutate: (write: () => Promise<void>) => Promise<void>; ref?: Ref<LocalReviewHandle>; navigationError?: string | null }) {
   const settingsHandle = useSettings()
   const diffTheme = settingsHandle.settings?.diffTheme ?? 'application'
   const applicationTheme = useResolvedTheme(settingsHandle.settings?.theme)
@@ -30,8 +31,8 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   const comments = useRef<ReviewCommentsHandle>(null)
   const [commentsOpen, setCommentsOpen] = useState(true)
   const [commentControls, setCommentControls] = useState<HTMLDivElement | null>(null)
-  function closeReview() { if (comments.current?.canClose() !== false) onClose() }
-  useImperativeHandle(ref, () => ({ canClose: () => comments.current?.canClose() !== false }))
+  function closeReview() { if (separate || pendingMarks.current.size === 0 && comments.current?.canClose() !== false) onClose() }
+  useImperativeHandle(ref, () => ({ canClose: () => pendingMarks.current.size === 0 && comments.current?.canClose() !== false }))
   const [link, setLink] = useState(initialLink)
   const [patchSets, setPatchSets] = useState<number[] | null>(null)
   const [updateNotice, setUpdateNotice] = useState('')
@@ -49,6 +50,23 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   const [preferencesOpen, setPreferencesOpen] = useState(false)
   const [preferenceErrors, setPreferenceErrors] = useState<ReviewPreferenceErrors>({})
   const confirmedPreferences = useRef(preferences)
+  const sharedPreferences = useRef<PreferenceState | null>(null)
+  if (!sharedPreferences.current) sharedPreferences.current = new PreferenceState(preferences)
+  const preferenceRequests = useRef(new Map<string, number>())
+  useEffect(() => {
+    if (!api.getReviewPreferences) return
+    let active = true
+    const accept = (snapshot: { version: number; value: typeof preferences }) => {
+      if (!active) return
+      sharedPreferences.current!.accept(snapshot)
+      setPreferences(sharedPreferences.current!.value)
+    }
+    const off = api.onReviewPreferencesChanged?.(accept)
+    void api.getReviewPreferences(loadReviewPreferences()).then(accept).catch(error => {
+      if (active) setPreferenceErrors(current => ({ ...current, context: `Could not load preferences: ${error.message}` }))
+    })
+    return () => { active = false; off?.() }
+  }, [])
   const [requestedTheme, setRequestedTheme] = useState<DiffThemePreference | null>(null)
   const currentSettingsHandle = useRef(settingsHandle)
   currentSettingsHandle.current = settingsHandle
@@ -75,6 +93,21 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   const [mapped, setMapped] = useState<{ comparison: string; positions: ReviewCommentPosition[] } | null>(null)
   const [mappingError, setMappingError] = useState('')
   const [mappingRetry, setMappingRetry] = useState(0)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let active = true
+    const off = api.onReviewChanged?.(event => {
+      if (event.id !== initialLink.id || blocked) return
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        positionCache.current.clear()
+        setMappingRetry(value => value + 1)
+        setReviewedRetry(value => value + 1)
+        void api.reviewPatchSets(initialLink.id).then(sets => { if (active) setPatchSets(sets) }).catch(error => { if (active) setPatchSetError(error.message) })
+      }, 25)
+    })
+    return () => { active = false; clearTimeout(timer); off?.() }
+  }, [initialLink.id, blocked])
   const positions = mapped?.comparison === comparison ? mapped.positions : []
   useEffect(() => {
     let active = true
@@ -111,7 +144,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
     const elements = [document.documentElement, document.body]
     const overflow = elements.map((el) => el.style.overflow)
     elements.forEach((el) => { el.style.overflow = 'hidden' })
-    dialog.current?.showModal()
+    if (separate) dialog.current?.show(); else dialog.current?.showModal()
     const closeMenus = (event: PointerEvent) => {
       dialog.current?.querySelectorAll<HTMLDetailsElement>('.review-menu[open]').forEach(menu => { if (!menu.contains(event.target as Node)) menu.open = false })
     }
@@ -184,7 +217,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   const isReviewed = reviewed && reviewed.patchSet === link.patchSet && reviewed.paths.has(path)
   async function markReviewed(value: boolean, targetPath = path) {
     const markKey = `${link.patchSet}:${targetPath}`
-    if (pendingMarks.current.has(markKey)) return false
+    if (blocked || pendingMarks.current.has(markKey)) return false
     pendingMarks.current.add(markKey)
     setMarking(true)
     setReviewedError('')
@@ -207,6 +240,17 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
     if (!isReviewed) void markReviewed(true)
   }, [preferences.autoMarkReviewed, readyFile, fileKey, reviewed, isReviewed])
   const changePreference: ChangeReviewPreference = (name, value) => {
+    if (api.patchReviewPreferences) {
+      const request = (preferenceRequests.current.get(name) ?? 0) + 1
+      preferenceRequests.current.set(name, request)
+      setPreferenceErrors(current => ({ ...current, [name]: undefined }))
+      void sharedPreferences.current!.change(name, value, api.patchReviewPreferences, () => {
+        setPreferences(sharedPreferences.current!.value)
+      }).catch(error => {
+        if (preferenceRequests.current.get(name) === request) setPreferenceErrors(current => ({ ...current, [name]: `Could not save this preference: ${error.message}` }))
+      })
+      return true
+    }
     try {
       const next = updateReviewPreference(confirmedPreferences.current, name, value)
       confirmedPreferences.current = next
@@ -250,7 +294,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
       case 'toggleComments': setCommentsOpen(value => !value); break
       case 'nextThread': case 'previousThread': comments.current?.navigateThread(shortcut === 'nextThread' ? 1 : -1); break
       case 'comment': editor.current?.addComment(); break
-      case 'up': closeReview(); break
+      case 'up': if (!separate) closeReview(); break
       case 'fileList': (buttons.find((b) => b.getAttribute('aria-current') === 'true') ?? buttons[0])?.focus(); break
       case 'nextFile': case 'previousFile': {
         const visiblePaths = buttons.map((button) => button.dataset.reviewPath!)
@@ -271,7 +315,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
     }
   }
   return createPortal(
-    <dialog ref={dialog} className="local-review" data-review-theme={reviewTheme} aria-labelledby="local-review-title" onCancel={e => { e.preventDefault(); closeReview() }} onKeyDownCapture={onKey} onKeyDown={(e) => {
+    <dialog ref={dialog} className="local-review" data-review-theme={reviewTheme} aria-labelledby="local-review-title" onCancel={e => { e.preventDefault(); if (!separate) closeReview() }} onKeyDownCapture={onKey} onKeyDown={(e) => {
       if (help || preferencesOpen) return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault()
@@ -317,7 +361,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
       <div className="local-review-body">
         <ReviewFileList positions={positions} files={files ?? {}} discussion={discussion} ref={fileList} paths={paths} selected={path} reviewed={reviewed?.patchSet === link.patchSet ? reviewed!.paths : null} busy={marking} onOpen={setPath} onReviewed={(file, done) => void markReviewed(done, file)} />
         <main className="review-file">
-        <ReviewComments ref={comments} positions={positions} controls={commentControls} createInlineHost={createInlineHost} hasEditor={Boolean(loaded && loaded.path === path && loaded.comparison === comparison)} onMutate={onMutate} onDiscussion={setDiscussion} onRefresh={() => { void api.reviewPatchSets(link.id).then(sets => { setPatchSets(sets); if (Math.max(...sets) > link.patchSet!) setUpdateNotice(`New patch set ${Math.max(...sets)} available.`) }).catch(e => setPatchSetError(e.message)); positionCache.current.clear(); setMappingRetry(value => value + 1) }} onHighlight={comment => { if (!comment) { editor.current?.highlightComment(null); return }; const mapped = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions, discussionComments); if (mapped) { const pane = commentPane(link, path, loaded?.nameA ?? path, { ...mapped, patch_set: mapped.patchSet, id: comment.id, updated: '' }); if (pane) editor.current?.highlightComment({ pane, line: mapped.line ?? mapped.range?.end_line ?? 1, range: mapped.range }) } }} link={link} path={path} originalPath={loaded?.nameA} visible={commentsOpen} onOpen={() => setCommentsOpen(true)} onHide={() => setCommentsOpen(false)} onReveal={(comment, original, preserveScroll) => {
+        <ReviewComments blocked={blocked} ref={comments} positions={positions} controls={commentControls} createInlineHost={createInlineHost} hasEditor={Boolean(loaded && loaded.path === path && loaded.comparison === comparison)} onMutate={onMutate} onDiscussion={setDiscussion} onRefresh={() => { void api.reviewPatchSets(link.id).then(sets => { setPatchSets(sets); if (Math.max(...sets) > link.patchSet!) setUpdateNotice(`New patch set ${Math.max(...sets)} available.`) }).catch(e => setPatchSetError(e.message)); positionCache.current.clear(); setMappingRetry(value => value + 1) }} onHighlight={comment => { if (!comment) { editor.current?.highlightComment(null); return }; const mapped = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions, discussionComments); if (mapped) { const pane = commentPane(link, path, loaded?.nameA ?? path, { ...mapped, patch_set: mapped.patchSet, id: comment.id, updated: '' }); if (pane) editor.current?.highlightComment({ pane, line: mapped.line ?? mapped.range?.end_line ?? 1, range: mapped.range }) } }} link={link} path={path} originalPath={loaded?.nameA} visible={commentsOpen} onOpen={() => setCommentsOpen(true)} onHide={() => setCommentsOpen(false)} onReveal={(comment, original, preserveScroll) => {
           if (comment.path === '/PATCHSET_LEVEL') return
           const display = original ? null : displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions, discussionComments)
           const pane = display ? commentPane(link, path, loaded?.nameA ?? path, { ...display, patch_set: display.patchSet, id: comment.id, updated: '' }) : null
@@ -346,12 +390,12 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
         setPreferenceErrors(current => ({ ...current, diffTheme: undefined }))
         void themeWriter.current!.change(value)
       }} onClose={() => setPreferencesOpen(false)} />}
-      {help && <ShortcutHelp onClose={() => setHelp(false)} />}
+      {help && <ShortcutHelp separate={separate} onClose={() => setHelp(false)} />}
     </dialog>, document.body,
   )
 }
 
-function ShortcutHelp({ onClose }: { onClose: () => void }) {
+function ShortcutHelp({ onClose, separate }: { onClose: () => void; separate?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
   function close() {
@@ -370,7 +414,7 @@ function ShortcutHelp({ onClose }: { onClose: () => void }) {
     if (event.key === '?') { event.preventDefault(); close() }
   }}>
     <h2 id="review-shortcuts-title">Review keyboard shortcuts</h2>
-    <table><tbody>{REVIEW_SHORTCUT_HELP.map(([keys, description]) => <tr key={keys}><td><kbd>{keys}</kbd></td><td>{description}</td></tr>)}</tbody></table>
+    <table><tbody>{REVIEW_SHORTCUT_HELP.map(([keys, description]) => <tr key={keys}><td><kbd>{keys}</kbd></td><td>{separate && keys === 'u' ? 'Inactive in a separate review window. Use the window close control.' : description}</td></tr>)}</tbody></table>
     <p className="muted small">Navigation keys follow Gerrit. Ctrl+F / Cmd+F searches the focused file pane. Ctrl+G jumps to a line. F1 opens editor commands. Shortcuts stay inactive while you type in search or other fields.</p>
     <button className="btn" onClick={close}>Close shortcuts</button>
   </dialog>

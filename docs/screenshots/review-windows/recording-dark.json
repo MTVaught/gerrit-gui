@@ -1,0 +1,61 @@
+{
+  "theme": "dark",
+  "platform": "Linux X11",
+  "electron": "44.2.0",
+  "data": "Simulated Gerrit service. Production app, service, preload and renderer.",
+  "input": "xdotool pointer, clicks, typing, U, Escape and Alt+F4",
+  "captions": [
+    {
+      "seconds": 1.195,
+      "text": "Linux Electron with simulated Gerrit data. Enable separate review windows in Settings > Window."
+    },
+    {
+      "seconds": 9.808,
+      "text": "Open a review from the board, then open the same review again."
+    },
+    {
+      "seconds": 22.856,
+      "text": "Two instances of the same review coexist. Change the file in the right window."
+    },
+    {
+      "seconds": 29.391,
+      "text": "Saved diff preferences apply to both windows. Set font size to 16 in the left window."
+    },
+    {
+      "seconds": 54.889,
+      "text": "Save a comment in the left window. The right window updates without input."
+    },
+    {
+      "seconds": 74.016,
+      "text": "Open the same saved draft in both windows. Save a new version on the left."
+    },
+    {
+      "seconds": 87.636,
+      "text": "The right window keeps its text and pauses autosave. Keep its edit as a new draft."
+    },
+    {
+      "seconds": 104.365,
+      "text": "Simulate a slow Gerrit save. Alt+F4 must leave the window open while the write is pending."
+    },
+    {
+      "seconds": 125.643,
+      "text": "The save finished. The window stayed open and the saved draft reached the other view."
+    },
+    {
+      "seconds": 130.545,
+      "text": "Type a new comment, then press Alt+F4. Escape on the discard prompt keeps the unsaved text."
+    },
+    {
+      "seconds": 148.839,
+      "text": "Press U in the left review. App navigation keeps this review window open."
+    },
+    {
+      "seconds": 155.384,
+      "text": "Escape dismisses Diff preferences and leaves the review window open."
+    },
+    {
+      "seconds": 161.701,
+      "text": "Alt+F4 closes the focused review. The second review and board keep running."
+    }
+  ]
+}

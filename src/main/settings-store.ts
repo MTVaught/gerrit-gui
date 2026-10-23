@@ -1,4 +1,5 @@
 import type { BadgeStyle, DiffThemePreference, MergerRule, SettingsInput, SettingsStatus, SlackWorkspace, Team, ThemePreference, TrayClickAction, UiState } from '../shared/types.ts'
+import { parseReviewPreferences, patchReviewPreferences, type ReviewPreferences } from '../shared/review-preferences.ts'
 import { readSettingsFile, writeSettingsFile } from './settings-file.ts'
 import { requireReplacementPassword, sameCredentialIdentity } from '../shared/credentials.ts'
 import { allowLocalTestHttp } from './transport-policy.ts'
@@ -24,6 +25,8 @@ export interface StoredSettings {
   slackWorkspaces?: SlackWorkspace[]
   showAppBadge?: boolean
   localReview?: boolean
+  separateReviewWindows?: boolean
+  reviewPreferences?: ReviewPreferences
   showTrayCounts?: boolean
   trayClickAction?: TrayClickAction
   /** Legacy plaintext or base64 ciphertext. New secrets require an OS keychain. */
@@ -43,6 +46,7 @@ export function settingsStore(file: string, backend?: SecretBackend, env: NodeJS
   const raw = async (): Promise<StoredSettings> => await readSettingsFile<StoredSettings>(file) ?? empty()
   const environmentIdentity = environment.password ? raw().then(effective) : undefined
   // Serialize reads, migrations and writes, including window-state writes.
+  let version = 0
   let pending: Promise<unknown> = Promise.resolve()
   function serial<T>(fn: () => Promise<T>): Promise<T> {
     const result = pending.then(fn)
@@ -71,6 +75,7 @@ export function settingsStore(file: string, backend?: SecretBackend, env: NodeJS
     const identity = effective(stored)
     const s = { ...stored, ...identity }
     return {
+      version,
       theme: normalizeTheme(s.theme),
       diffTheme: normalizeDiffTheme(s.diffTheme),
       serverUrl: s.serverUrl,
@@ -86,6 +91,7 @@ export function settingsStore(file: string, backend?: SecretBackend, env: NodeJS
       showTrayCounts: s.showTrayCounts ?? true,
       trayClickAction: s.trayClickAction === 'my-reviews' ? 'my-reviews' : 'menu',
       localReview: s.localReview === true,
+      separateReviewWindows: s.separateReviewWindows === true,
       ...secrets.status(stored, identity, await environmentPassword(identity)),
     }
   }
@@ -129,6 +135,8 @@ export function settingsStore(file: string, backend?: SecretBackend, env: NodeJS
       showTrayCounts: input.showTrayCounts,
       trayClickAction: input.trayClickAction === 'my-reviews' ? 'my-reviews' : 'menu',
       localReview: input.localReview === true,
+      separateReviewWindows: input.separateReviewWindows === true,
+      reviewPreferences: prev.reviewPreferences,
       password: prev.password,
       passwordEncrypted: prev.passwordEncrypted,
       passwordStorageVersion: prev.passwordStorageVersion,
@@ -137,6 +145,7 @@ export function settingsStore(file: string, backend?: SecretBackend, env: NodeJS
     const update = secrets.prepare(prev, next, input.password)
     await writeSettingsFile(file, update.stored)
     update.commit()
+    version++
   }
 
   async function getUi(): Promise<UiState> {
@@ -152,7 +161,38 @@ export function settingsStore(file: string, backend?: SecretBackend, env: NodeJS
     return ui
   }
 
+  async function patch(input: Partial<SettingsInput>): Promise<SettingsStatus> {
+    const current = await getStatus()
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid settings patch')
+    for (const [name, value] of Object.entries(input)) {
+      if (name === 'version' || name === 'hasPassword' || name === 'encrypted') throw new Error('Invalid settings field')
+      if (!(name in current) && name !== 'password') throw new Error('Unknown settings field')
+      const previous = current[name as keyof SettingsStatus]
+      if (previous !== undefined && typeof value !== typeof previous) throw new Error('Invalid settings value')
+      if (Array.isArray(previous) && !Array.isArray(value)) throw new Error('Invalid settings list')
+    }
+    await save({ ...current, ...input })
+    return getStatus()
+  }
+  async function getReviewPreferences(legacy?: unknown) {
+    const stored = await raw()
+    if (!stored.reviewPreferences) {
+      stored.reviewPreferences = parseReviewPreferences(legacy)
+      await writeSettingsFile(file, stored)
+      version++
+    }
+    return { version, value: parseReviewPreferences(stored.reviewPreferences) }
+  }
+  async function patchPreferences(patch: Partial<ReviewPreferences>) {
+    const stored = await raw()
+    const value = patchReviewPreferences(parseReviewPreferences(stored.reviewPreferences), patch)
+    await writeSettingsFile(file, { ...stored, reviewPreferences: value })
+    return { version: ++version, value }
+  }
   return {
+    patch: (input: Partial<SettingsInput>) => serial(() => patch(input)),
+    getReviewPreferences: (legacy?: unknown) => serial(() => getReviewPreferences(legacy)),
+    patchReviewPreferences: (input: Partial<ReviewPreferences>) => serial(() => patchPreferences(input)),
     getStatus: () => serial(getStatus),
     getCredentials: () => serial(getCredentials),
     save: (input: SettingsInput) => serial(() => save(input)),

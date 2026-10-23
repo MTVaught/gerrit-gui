@@ -277,6 +277,12 @@ export interface ChangeLink {
 }
 
 /** A native menu selection, retained until the review UI handles it. */
+export type AppWindowContext = { kind: 'board' | 'connection' } | {
+  kind: 'review'; instanceId: number; connection: number; link?: ChangeLink; subject?: string; error?: string
+}
+
+export interface ReviewChangeEvent { id: number; connection: number; generation: number }
+
 export type NativeReviewRequest = { requestId: number } & (
   | { link: ChangeLink; subject: string; error?: never }
   | { error: string; link?: never; subject?: never }
@@ -303,6 +309,7 @@ export interface Settings {
   diffTheme: DiffThemePreference
   /** Opt-in local full-file review viewer. */
   localReview: boolean
+  separateReviewWindows?: boolean
   serverUrl: string
   username: string
   /** Colored pills, or monochrome glyphs for people who cannot tell the colors apart. */
@@ -384,6 +391,7 @@ export interface SettingsInput extends Settings {
 }
 
 export interface SettingsStatus extends Settings {
+  version?: number
   hasPassword: boolean
   /** OS keychain encryption available for the stored password. */
   encrypted: boolean

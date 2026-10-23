@@ -61,7 +61,8 @@ function NumberPreference({ label, value, min, max, disabled, error, errorId, on
   const [input, setInput] = useState(String(value))
   const [invalid, setInvalid] = useState(false)
   const validationId = useId()
-  useEffect(() => { setInput(String(value)); setInvalid(false) }, [value])
+  const invalidRef = useRef(false)
+  useEffect(() => { if (!invalidRef.current) setInput(String(value)) }, [value])
   return <label>{label}<span className="review-preference-number">
     <input type="number" required min={min} max={max} step="1" disabled={disabled} value={input}
       aria-invalid={invalid || Boolean(error)} aria-describedby={invalid ? validationId : error ? errorId : undefined}
@@ -69,6 +70,7 @@ function NumberPreference({ label, value, min, max, disabled, error, errorId, on
         const text = e.currentTarget.value
         setInput(text)
         const valid = text !== '' && e.currentTarget.validity.valid && Number.isInteger(Number(text))
+        invalidRef.current = !valid
         setInvalid(!valid)
         if (valid && !onChange(Number(text))) setInput(String(value))
       }} />

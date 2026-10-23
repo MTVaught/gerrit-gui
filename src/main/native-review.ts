@@ -1,7 +1,8 @@
 import type { ChangeInfo, ChangeLink, NativeReviewRequest } from '../shared/types.ts'
 
 interface NativeReviewHandlers {
-  getSettings(): Promise<{ localReview: boolean }>
+  getSettings(): Promise<{ localReview: boolean; separateReviewWindows?: boolean }>
+  openSeparate?(link: ChangeLink): Promise<void>
   fetchChange(id: number): Promise<ChangeInfo>
   openWeb(link: ChangeLink): Promise<void>
   show(): void
@@ -34,6 +35,10 @@ export class NativeReviewNavigation {
     this.pending = null
     try {
       const prefs = await this.handlers.getSettings()
+      if (prefs.localReview && prefs.separateReviewWindows && this.handlers.openSeparate) {
+        await this.handlers.openSeparate(link)
+        return
+      }
       if (requestId !== this.sequence) return
       if (!prefs.localReview) {
         await this.handlers.openWeb(link)

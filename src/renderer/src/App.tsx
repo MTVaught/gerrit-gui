@@ -17,6 +17,7 @@ import { rememberAccounts } from './names.ts'
 import { LocalReviewProvider } from './review-context.tsx'
 import { SettingsContext, type SettingsHandle } from './settings-context.ts'
 import { DashboardRefresh } from './dashboard-refresh.ts'
+import { newerSettings } from './preference-state.ts'
 import { DashboardCache } from './dashboard-cache.ts'
 
 export function App() {
@@ -90,16 +91,29 @@ export function App() {
     setError(null)
     seenNeedsReview.current = null
     seenMergeRequests.current = null
-    setSettings(await api.getSettings())
+    const saved = await api.getSettings()
+    setSettings(previous => newerSettings(previous, saved))
     await refresh()
   }, [refresh])
 
   useEffect(() => {
-    void api.getSettings().then(setSettings)
+    const accept = (saved: SettingsStatus) => setSettings(previous => newerSettings(previous, saved))
+    void api.getSettings().then(accept)
     void api.getUi().then((u) => setCompact(u.compact))
     void api.getPretend().then(setPretend, () => undefined)
     const offCompact = api.onCompactChanged(setCompact)
-    const offSettings = api.onSettingsChanged(() => void api.getSettings().then(setSettings))
+    const offSettings = api.onSettingsChanged(() => void api.getSettings().then(accept))
+    const dirty = new Set<number>()
+    let reviewTimer: ReturnType<typeof setTimeout> | undefined
+    const offReview = api.onReviewChanged?.(event => {
+      dashboardCache.current!.markDirty(event.id)
+      dirty.add(event.id)
+      clearTimeout(reviewTimer)
+      reviewTimer = setTimeout(() => {
+        for (const id of dirty) void dashboardCache.current!.revalidate(id).catch(error => setError(`Could not refresh change: ${error.message}`))
+        dirty.clear()
+      }, 25)
+    })
     const offRefresh = api.onRefreshRequested(() => void refresh())
     const offTab = api.onTabRequested((tab) => {
       setTab(tab)
@@ -107,6 +121,8 @@ export function App() {
     })
     const offConnection = api.onConnectionChanged(() => void reconnect())
     return () => {
+      clearTimeout(reviewTimer)
+      offReview?.()
       offCompact()
       offSettings()
       offRefresh()
@@ -195,9 +211,14 @@ export function App() {
     () => ({
       settings,
       save: async (patch: Partial<SettingsInput>) => {
-        const current = await api.getSettings()
-        await api.saveSettings({ ...current, ...patch })
-        setSettings(await api.getSettings())
+        if (api.patchSettings) {
+          const saved = await api.patchSettings(patch)
+          setSettings(previous => !previous?.version || !saved.version || saved.version >= previous.version ? saved : previous)
+        } else {
+          const current = await api.getSettings()
+          await api.saveSettings({ ...current, ...patch })
+          setSettings(await api.getSettings())
+        }
       },
     }),
     [settings],
