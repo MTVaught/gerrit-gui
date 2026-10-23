@@ -1,0 +1,15 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+body{font:15px/1.5 var(--font-sans,system-ui);color:var(--foreground);margin:0}p{margin:0 0 14px}.tag{color:var(--success-foreground);background:var(--success-surface);padding:5px 10px;border-radius:6px;display:inline-block;font-weight:600}h2{font-size:19px;margin:14px 0 6px}table{width:100%;border-collapse:collapse;margin:8px 0 18px}th,td{text-align:left;vertical-align:top;padding:10px 8px;border-bottom:1px solid var(--border)}th{font-weight:600;color:var(--muted-foreground)}th:first-child,td:first-child{padding-left:0}small,.muted{color:var(--muted-foreground)}code{font-family:var(--font-mono,monospace);font-size:12px;overflow-wrap:anywhere}.note{background:var(--muted);padding:16px;border-radius:var(--radius,8px);margin-top:16px}ul{padding-left:20px;margin:6px 0 18px}li{margin:4px 0}</style><style>
+:root{--foreground:#17202b;--muted-foreground:#536171;--muted:#edf1f6;--border:#ccd5e0;--success-foreground:#14532d;--success-surface:#dcfce7;--radius:8px;--font-sans:Arial,sans-serif;--font-mono:monospace;background:#fff;color-scheme:light}
+:root[data-mode=dark]{--foreground:#edf2f7;--muted-foreground:#b5c0ce;--muted:#242e3c;--border:#475569;--success-foreground:#bbf7d0;--success-surface:#153e2a;background:#121923;color-scheme:dark}
+body{padding:24px;box-sizing:border-box}
+</style><script>document.documentElement.dataset.mode=new URLSearchParams(location.search).get('mode')||'light'</script></head><body>
+<p><span class="tag">Planning complete · strict validation passed</span></p>
+<p><code>add-separate-review-windows</code></p>
+<p>Opt-in review windows. Off by default in Settings &gt; Window.</p>
+<table aria-label="State ownership"><thead><tr><th>Independent in each window</th><th>Shared after save</th></tr></thead><tbody><tr><td>File and patch-set selection<br>Scroll, focus, and dialogs<br>Unsaved comment text</td><td>Application and diff preferences<br>Drafts, comments, and votes<br>Reviewed files and review changes</td></tr></tbody></table>
+<p>Each window stays on one review. The same review can open more than once.</p>
+<ul><li>U and app exit navigation leave the review open.</li><li>Normal system close shortcuts still work.</li><li>Conflicts preserve local text and stop stale autosave.</li></ul>
+<table aria-label="Completed planning artifacts"><thead><tr><th>Artifact</th><th>Result</th></tr></thead><tbody><tr><td>Proposal</td><td>Complete</td></tr><tr><td>Specs</td><td>3 capabilities · 12 requirements · 36 scenarios</td></tr><tr><td>Design</td><td>Window lifecycle, shared state, and conflict handling</td></tr><tr><td>Tasks</td><td>17 implementation and verification tasks</td></tr></tbody></table>
+<div class="note"><strong>Proposal evidence only</strong><br>No application code changed. Feature behavior will need paired light/dark recordings during implementation.</div>
+</body></html>

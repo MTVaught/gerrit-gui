@@ -1,3 +1,4 @@
+import { newerSettings } from '../preference-state.ts'
 import { useTheme } from '../theme.ts'
 import { useEffect, useRef, useState } from 'react'
 import type { SettingsStatus } from '../../../shared/types.ts'
@@ -35,7 +36,7 @@ export function ConnectionWindow() {
           setServerUrl(s.serverUrl)
           setUsername(s.username)
         }
-        setInitial(s)
+        setInitial(previous => newerSettings(previous, s))
         setLoadError(null)
       }).catch(e => { if (active) setLoadError(String(e.message ?? e)) })
     }
@@ -55,14 +56,15 @@ export function ConnectionWindow() {
     setLoadError(null)
     setDone(false)
     try {
-      const current = await api.getSettings()
-      await api.saveSettings({ ...current, serverUrl, username, password: password || undefined })
-      setInitial(await api.getSettings())
+      const patch = { serverUrl, username, ...(password ? { password } : {}) }
+      if (api.patchSettings) await api.patchSettings(patch)
+      else await api.saveSettings({ ...await api.getSettings(), ...patch })
+      { const saved = await api.getSettings(); setInitial(previous => newerSettings(previous, saved)) }
       const me = await api.testConnection()
       setStatus(`Connected as ${me.name ?? me.username} (${me.email ?? 'no email'})`)
       setDone(true)
       setPassword('')
-      setInitial(await api.getSettings())
+      { const saved = await api.getSettings(); setInitial(previous => newerSettings(previous, saved)) }
       await api.connectionChanged()
     } catch (e) {
       setStatus(`Connection failed: ${(e as Error).message.replace(/^Error invoking remote method '[^']+': Error: /, '')}`)

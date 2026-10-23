@@ -77,18 +77,22 @@ export class RendererBoundary {
 }
 
 /** Central registration keeps new channels behind the same sender check. */
-export function trustedIpc(ipcMain: IpcMain, boundary: RendererBoundary): Pick<IpcMain, 'handle' | 'on'> {
+export function trustedIpc(ipcMain: IpcMain, boundary: RendererBoundary, authorize: (event: IpcMainInvokeEvent | IpcMainEvent, channel: string, args: unknown[]) => void = () => {}): Pick<IpcMain, 'handle' | 'on'> {
   return {
     handle(channel, listener) {
       ipcMain.handle(channel, (event, ...args) => {
         if (!boundary.isTrustedSender(event)) throw new Error('Untrusted IPC sender')
+        authorize(event, channel, args)
         return listener(event, ...args)
       })
     },
     on(channel, listener) {
       return ipcMain.on(channel, (event, ...args) => {
         // Send-only IPC has no error reply. Drop it before any side effect.
-        if (boundary.isTrustedSender(event)) listener(event, ...args)
+        if (boundary.isTrustedSender(event)) {
+          try { authorize(event, channel, args) } catch { return }
+          listener(event, ...args)
+        }
       })
     },
   }

@@ -36,11 +36,13 @@ export interface SettingsStore {
   getStatus(): Promise<SettingsStatus>
   getCredentials(): Promise<Credentials | null>
   save(input: SettingsInput): Promise<void>
+  patch?(input: Partial<SettingsInput>): Promise<SettingsStatus>
 }
 
 export interface Service {
   getSettings(): Promise<SettingsStatus>
   saveSettings(input: SettingsInput): Promise<void>
+  patchSettings(input: Partial<SettingsInput>): Promise<SettingsStatus>
   testConnection(): Promise<AccountInfo>
   fetchDashboard(): Promise<DashboardData>
   /** One change, fresh from Gerrit, for updating the board after an action on it. */
@@ -150,6 +152,11 @@ export function createService(store: SettingsStore, fetchImpl: FetchLike): Servi
   return {
     getSettings: () => store.getStatus(),
     saveSettings: (input) => store.save(input),
+    patchSettings: async (input) => {
+      if (store.patch) return store.patch(input)
+      await store.save({ ...await store.getStatus(), ...input })
+      return store.getStatus()
+    },
 
     async testConnection() {
       const g = await realClient()

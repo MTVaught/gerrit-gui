@@ -220,6 +220,11 @@ export function SettingsPanel(props: {
         {section === 'window' && (
           <>
             <label className="check">
+              <input type="checkbox" checked={s.separateReviewWindows ?? false} disabled={!s.localReview || sync.kind === 'saving'} onChange={e => void apply({ separateReviewWindows: e.target.checked })} />
+              Open reviews in separate windows
+            </label>
+            <p className="muted small">Each review opens in its own window. Enable Open reviews in the app under Beta first. Existing reviews stay where they are.</p>
+            <label className="check">
               <input type="checkbox" checked={s.compactOnTop} onChange={(e) => void apply({ compactOnTop: e.target.checked })} />
               Compact window stays on top
             </label>

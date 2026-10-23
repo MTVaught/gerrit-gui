@@ -18,5 +18,8 @@ function settings() {
 export const getStatus = () => settings().getStatus()
 export const getCredentials = () => settings().getCredentials()
 export const save = (input: SettingsInput) => settings().save(input)
+export const patch = (input: Partial<SettingsInput>) => settings().patch(input)
+export const getReviewPreferences = (legacy?: unknown) => settings().getReviewPreferences(legacy)
+export const patchReviewPreferences = (input: Partial<import('../shared/review-preferences.ts').ReviewPreferences>) => settings().patchReviewPreferences(input)
 export const getUi = () => settings().getUi()
 export const saveUi = (patch: Partial<UiState>) => settings().saveUi(patch)

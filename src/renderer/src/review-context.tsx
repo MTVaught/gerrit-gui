@@ -19,6 +19,13 @@ export function LocalReviewProvider({ children, onMutate, onNativeNavigate, onEr
   const callbacks = useRef({ onNativeNavigate, onError })
   callbacks.current = { onNativeNavigate, onError }
   function open(link: ChangeLink, subject: string) {
+    if (api.openReviewWindow) {
+      void api.openReviewWindow(link, subject).then(opened => { if (!opened) openEmbedded(link, subject) }).catch(error => callbacks.current.onError(error.message))
+      return
+    }
+    openEmbedded(link, subject)
+  }
+  function openEmbedded(link: ChangeLink, subject: string) {
     if (viewer.current?.canClose() === false) return
     setReview({ link, subject, session: ++session.current })
   }
@@ -36,7 +43,7 @@ export function LocalReviewProvider({ children, onMutate, onNativeNavigate, onEr
           callbacks.current.onError(request.error)
         }
         else {
-          open(request.link, request.subject)
+          openEmbedded(request.link, request.subject)
           setNavigationError(null)
           callbacks.current.onError(null)
         }

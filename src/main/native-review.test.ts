@@ -163,3 +163,23 @@ test('family branches and sequence steps retain their own link and subject throu
     assert.equal(f.sent[0]?.subject, 'Own subject 2')
   }
 })
+
+test('separate windows keep every selection including duplicates during reversed startup', async () => {
+  const opened: ChangeLink[] = []
+  const slow = deferred<void>()
+  let calls = 0
+  const navigation = new NativeReviewNavigation({
+    getSettings: async () => ({ localReview: true, separateReviewWindows: true }),
+    fetchChange: async () => { throw new Error('separate windows resolve their own metadata') },
+    show: () => assert.fail('the board stays hidden'),
+    send: () => assert.fail('no board delivery'),
+    openWeb: async () => assert.fail('no web fallback'),
+    openSeparate: async link => { if (++calls === 1) await slow.promise; opened.push(link) },
+  })
+  const link = { id: 42, project: 'demo', patchSet: 3, basePatchSet: 1 }
+  const first = navigation.select(link)
+  await Promise.resolve()
+  await navigation.select(link)
+  slow.resolve(); await first
+  assert.deepEqual(opened, [link, link])
+})

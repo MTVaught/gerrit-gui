@@ -33,6 +33,21 @@ function states(data: DashboardData) {
   return classifyAll(data.open, alice._account_id, NO_TEAMS, accountKeys(alice)).map(v => v.state)
 }
 
+test('a confirmed write in another window invalidates older detail and search responses', async () => {
+  const slow = deferred<ChangeInfo>()
+  const fresh = change(1, '1,2')
+  let reads = 0
+  const { cache } = await seed(async () => ++reads === 1 ? slow.promise : fresh)
+  const search = cache.beginRefresh()
+  const oldRead = cache.revalidate(1)
+  cache.markDirty(1)
+  await cache.revalidate(1)
+  slow.resolve(change())
+  await oldRead
+  await cache.acceptDashboard(dashboard([change()]), search)
+  assert.deepEqual(states(cache.snapshot!), ['needs-review'])
+})
+
 test('branch-only mergeability refreshes at an unchanged revision and timestamp without detail reads', async () => {
   let reads = 0
   const initial = { ...change(), mergeable: false }

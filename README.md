@@ -50,6 +50,28 @@ Family branch counts and sequence size remain. State totals are removed from the
 
 ![Needs Review](docs/screenshots/needs-my-review.png)
 
+## Separate review windows
+
+In the desktop app, enable **Open reviews in the app** under Settings > Beta.
+Then enable **Open reviews in separate windows** under Settings > Window.
+The second setting defaults to off. It applies to the next review opened from
+the board or native menu and does not move existing reviews.
+
+Each window stays on one change. You can open the same change more than once.
+Files, comparisons, scroll position, and unsaved text stay local to each window.
+Saved application and diff settings apply to all open reviews. Saved drafts,
+comments, votes, and reviewed-file flags update the other views automatically.
+U and outer Escape leave a separate review window open. Escape still closes
+nested dialogs and menus. Use Close review, the window close button, or the
+normal system close shortcut to close one review. Pending writes block closure;
+unsaved text uses the existing discard prompt.
+
+If two windows edit one saved draft, a conflict keeps local text and pauses
+autosave. Choose Load saved version or Keep as new draft. This protects writes
+within this app process; it is not shared text editing with other Gerrit clients.
+A server or account change disables writes in old review windows. Close and
+reopen them to use the new connection.
+
 ## The workflow
 
 1. The author pushes a change and adds primary reviewers with the "+"
