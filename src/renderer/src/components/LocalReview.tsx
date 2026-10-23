@@ -8,7 +8,7 @@ import { DiffThemeWriter } from '../diff-theme-writer.ts'
 import { api } from '../api.ts'
 import { diffContents } from '../review.ts'
 import { reviewShortcut, REVIEW_SHORTCUT_HELP } from '../review-shortcuts.ts'
-import type { ReviewEditorHandle, LoadedReviewFile } from './ReviewEditor.tsx'
+import type { ReviewEditorHandle, LoadedReviewFile, ReviewEditorSession } from './ReviewEditor.tsx'
 import type { CreateInlineCommentHost } from './InlineReviewComment.tsx'
 import { ReviewComments, type ReviewCommentsHandle } from './ReviewComments.tsx'
 import { commentAnchor, commentPane, displayCommentAnchor } from '../review-comments.ts'
@@ -89,6 +89,14 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   const fileLists = useRef(new Map<string, Record<string, FileInfo>>())
   const dialog = useRef<HTMLDialogElement>(null)
   const editor = useRef<ReviewEditorHandle>(null)
+  const editorSession = useRef<ReviewEditorSession>({ editor: null })
+  const editorSessionLifetime = useRef(0)
+  useEffect(() => {
+    const session = editorSession.current
+    const lifetime = ++editorSessionLifetime.current
+    // Child cleanup saves its file view state before the shared editor is disposed.
+    return () => { queueMicrotask(() => { if (editorSessionLifetime.current === lifetime) { session.editor?.dispose(); session.editor = null } }) }
+  }, [])
   const fileList = useRef<HTMLElement>(null)
   const [help, setHelp] = useState(false)
   const [filesComparison, setFilesComparison] = useState('')
@@ -324,7 +332,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
           }
         }} />
           {error ? <div className="review-message" role="alert">{error}<p><button className="btn" onClick={() => { fileLists.current.delete(comparison); setRetry((v) => v + 1) }}>Retry</button></p></div>
-            : loaded && loaded.path === path && loaded.comparison === comparison ? <Suspense fallback={<p className="review-message" role="status">Opening review editor…</p>}><ReviewEditor theme={reviewTheme} ref={editor} key={fileKey} file={loaded} link={link} preferences={preferences} commentsVisible={commentsOpen} markers={markers} onComment={position => { const anchor = commentAnchor(link, path, loaded.nameA, position.pane, position.line, position.range); if (position.existing) comments.current?.openAt(anchor); else comments.current?.compose(anchor) }} onReady={() => {
+            : loaded && loaded.path === path && loaded.comparison === comparison ? <Suspense fallback={<p className="review-message" role="status">Opening review editor…</p>}><ReviewEditor theme={reviewTheme} ref={editor} session={editorSession.current} key={fileKey} file={loaded} link={link} preferences={preferences} commentsVisible={commentsOpen} markers={markers} onComment={position => { const anchor = commentAnchor(link, path, loaded.nameA, position.pane, position.line, position.range); if (position.existing) comments.current?.openAt(anchor); else comments.current?.compose(anchor) }} onReady={() => {
               setReadyFile(fileKey); setEditorGeneration(generation => generation + 1)
               const comment = pendingComment.current
               if (comment && comment.patch_set === link.patchSet && comment.path === path) { editor.current?.revealComment(comment.side === 'PARENT' ? 'original' : 'modified', comment.line ?? comment.range?.end_line ?? 1); pendingComment.current = null }

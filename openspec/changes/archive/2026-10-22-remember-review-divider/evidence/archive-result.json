@@ -1,0 +1,29 @@
+{
+  "change": "remember-review-divider",
+  "schema": "spec-driven",
+  "archive": "openspec/changes/archive/2026-10-22-remember-review-divider",
+  "activeChangeAbsent": true,
+  "specsSynced": true,
+  "requirement": "Shared review divider position",
+  "scenarios": 5,
+  "completedTasks": 3,
+  "totalTasks": 3,
+  "originalFilesPreserved": 9,
+  "files": {
+    ".openspec.yaml": "0ad492a63d87e00a8bc135b0a1a2b19270dbb9ffd997a69b89fd4ab72015a944",
+    "verification.md": "5f8bc8ddc18e324f740624accb838e37d878a1f1379fa4c1726570ea777fa9c3",
+    "tasks.md": "a49319ad88080145d671918030c0c60fd5f64487a9962cfe83a4f164bf148e68",
+    "proposal.md": "be728682a01b880c7fd0df9168d878ce4b125fa2bcc377b213810bdd3cbacd81",
+    "design.md": "296de4c90ab69709d4bc4d313aff500278d0d761facdc19f6db7ab270e802962",
+    "evidence/shared-divider-light.mp4": "52ec6cd896845a4328a5575c1594db6c80dce3be2ae64ed8c5c1b0b681b7e310",
+    "evidence/shared-divider-dark.mp4": "12a1938644b8903a931a486919966aadb83db2d6615873319372383efb1a98a0",
+    "evidence/checks.json": "9cf4a3418295f8dffa86e5dce10f2ffb0425f96dc3a5f25fac9d80cc77eb056d",
+    "specs/review-diff-layout/spec.md": "6c67f8ab64d25a898e7cbb48abb6c5d100dc6dc0465b75c65ea5d58ca714a12d"
+  },
+  "mainSpecsValidation": "14 passed, 0 failed",
+  "testSyntax": "passed",
+  "evidenceModes": [
+    "light",
+    "dark"
+  ]
+}
