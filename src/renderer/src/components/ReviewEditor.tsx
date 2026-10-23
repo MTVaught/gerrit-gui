@@ -71,8 +71,9 @@ export interface LoadedReviewFile extends ReviewContents {
 
 export interface ReviewEditorHandle { outline(): void; blame(): void; highlightComment(location: EditorCommentLocation | null): void; createInlineHost(pane: 'original' | 'modified', line: number): InlineCommentHost | null; navigate(shortcut: ReviewShortcut): void; addComment(): void; find(): void; goToLine(): void; revealComment(pane: 'original' | 'modified', line: number, preserveScroll?: boolean): void }
 export interface EditorCommentLocation { pane: 'original' | 'modified'; line: number; range?: CommentRange; existing?: boolean }
+export interface ReviewEditorSession { editor: monaco.editor.IStandaloneDiffEditor | null }
 
-export default function ReviewEditor({ file, link, preferences, theme, commentsVisible, onReady, onComment, markers, ref }: { theme: 'light' | 'dark'; link: ChangeLink; commentsVisible: boolean; markers: { range?: CommentRange; pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle> }) {
+export default function ReviewEditor({ file, link, preferences, theme, commentsVisible, onReady, onComment, markers, ref, session }: { theme: 'light' | 'dark'; link: ChangeLink; commentsVisible: boolean; markers: { range?: CommentRange; pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle>; session: ReviewEditorSession }) {
   useLayoutEffect(() => { monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs') }, [theme])
   const [tool, setTool] = useState<'outline' | 'blame' | null>(null)
   const [showBlame, setShowBlame] = useState(false)
@@ -138,7 +139,11 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
     const original = monaco.editor.createModel(file.original, language)
     const modified = monaco.editor.createModel(file.modified, language)
     configureReviewDiff(original, preferences.ignoreWhitespace, file.diffBlocks)
-    const diff = monaco.editor.createDiffEditor(container.current!, {
+    // Keep Monaco's divider ratio across file mounts, including loading gaps.
+    const host = session.editor?.getContainerDomNode() ?? document.createElement('div')
+    host.style.height = '100%'
+    container.current!.append(host)
+    const diff = session.editor ?? monaco.editor.createDiffEditor(host, {
       automaticLayout: true,
       readOnly: true,
       originalEditable: false,
@@ -167,6 +172,9 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
       occurrencesHighlight: 'singleFile',
       ariaLabel: 'Full file review comparison',
     })
+    session.editor = diff
+    diff.updateOptions({ renderSideBySide: true })
+    diff.layout({ width: container.current!.clientWidth, height: container.current!.clientHeight })
     editor.current = diff
     const originalFocus = diff.getOriginalEditor().onDidFocusEditorText(() => { lastFocus.current = 'original' })
     const modifiedFocus = diff.getModifiedEditor().onDidFocusEditorText(() => { lastFocus.current = 'modified' })
@@ -200,7 +208,8 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
       }
     }
     const updated = diff.onDidUpdateDiff(() => { setDiffMs(performance.now() - start); updateRebase() })
-    diff.setModel({ original, modified })
+    const viewModel = diff.createViewModel({ original, modified })
+    diff.setModel(viewModel)
     if (file.viewState) diff.restoreViewState(file.viewState)
     diff.getModifiedEditor().focus()
     const frame = requestAnimationFrame(onReady)
@@ -218,7 +227,9 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
       commentScrollFrame.current = 0
       commentScroll.current = null
       editor.current = null
-      diff.dispose()
+      diff.setModel(null)
+      viewModel.dispose()
+      host.remove()
       original.dispose()
       modified.dispose()
     }

@@ -1,0 +1,24 @@
+{
+  "light": {
+    "firstRatio": 0.31973355537052456,
+    "latestRatio": 0.6602830974188176,
+    "newFile": "passed",
+    "cachedFile": "passed",
+    "perFileScrollAndCursor": "passed",
+    "extremePositions": "passed",
+    "windowResize": "passed",
+    "comparisonChange": "passed",
+    "closeAndReopen": "passed"
+  },
+  "dark": {
+    "firstRatio": 0.31973355537052456,
+    "latestRatio": 0.6602830974188176,
+    "newFile": "passed",
+    "cachedFile": "passed",
+    "perFileScrollAndCursor": "passed",
+    "extremePositions": "passed",
+    "windowResize": "passed",
+    "comparisonChange": "passed",
+    "closeAndReopen": "passed"
+  }
+}
