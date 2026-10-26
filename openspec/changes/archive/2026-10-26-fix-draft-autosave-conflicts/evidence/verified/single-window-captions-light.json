@@ -1,0 +1,54 @@
+[
+  {
+    "seconds": 1.507,
+    "text": "One dashboard window: create a file comment and wait for autosave."
+  },
+  {
+    "seconds": 12.149,
+    "text": "Edit the autosaved comment. The next save must keep the same draft ID."
+  },
+  {
+    "seconds": 12.15,
+    "text": "Edit the autosaved comment. The next save must keep the same draft ID. Ctrl+End moves to the end."
+  },
+  {
+    "seconds": 19.509,
+    "text": "Open Reply and autosave an overall review comment."
+  },
+  {
+    "seconds": 27.028,
+    "text": "Update the overall comment, then reopen Reply to confirm it was saved."
+  },
+  {
+    "seconds": 27.028,
+    "text": "Update the overall comment, then reopen Reply to confirm it was saved. Ctrl+End moves to the end."
+  },
+  {
+    "seconds": 37.402,
+    "text": "Clear the summary. Ctrl+A and Backspace delete its saved overall draft."
+  },
+  {
+    "seconds": 37.403,
+    "text": "Clear the summary. Ctrl+A and Backspace delete its saved overall draft. Ctrl+A selects the current text."
+  },
+  {
+    "seconds": 41.252,
+    "text": "Write a replacement overall comment. A new saved draft is created."
+  },
+  {
+    "seconds": 45.765,
+    "text": "Choose Keep drafts private. End and Enter select the last option."
+  },
+  {
+    "seconds": 52.183,
+    "text": "The comments are still private. Reopen Reply, then publish all drafts."
+  },
+  {
+    "seconds": 55.315,
+    "text": "Choose Publish all drafts. Home and Enter select the first option."
+  },
+  {
+    "seconds": 61.722,
+    "text": "The source comment and overall review are published once. No private copies remain."
+  }
+]

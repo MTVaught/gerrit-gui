@@ -1,0 +1,50 @@
+{
+  "platform": "Linux/Electron",
+  "gerritVersion": "3.11.2",
+  "data": "Generated changes and dummy accounts; no simulated Gerrit responses",
+  "checks": {
+    "unitTestsPassed": 374,
+    "unitTestsFailed": 0,
+    "typecheck": "passed",
+    "build": "passed",
+    "commentFixtureUI": "passed",
+    "windowFixtureUI": "passed",
+    "realServerRegressionBothThemes": "passed",
+    "overallReviewFromEachWindowBothThemes": "passed",
+    "portedReplyRealWebUIBothThemes": "passed"
+  },
+  "media": [
+    {
+      "file": "single-window-dark.mp4",
+      "durationSeconds": 72.15,
+      "codec_name": "h264",
+      "width": 1920,
+      "height": 1080,
+      "pix_fmt": "yuv420p"
+    },
+    {
+      "file": "single-window-light.mp4",
+      "durationSeconds": 72.05,
+      "codec_name": "h264",
+      "width": 1920,
+      "height": 1080,
+      "pix_fmt": "yuv420p"
+    },
+    {
+      "file": "two-windows-dark.mp4",
+      "durationSeconds": 103.6,
+      "codec_name": "h264",
+      "width": 1920,
+      "height": 1080,
+      "pix_fmt": "yuv420p"
+    },
+    {
+      "file": "two-windows-light.mp4",
+      "durationSeconds": 103.4,
+      "codec_name": "h264",
+      "width": 1920,
+      "height": 1080,
+      "pix_fmt": "yuv420p"
+    }
+  ]
+}

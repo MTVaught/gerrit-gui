@@ -1,0 +1,84 @@
+{
+  "version": "3.11.2",
+  "theme": "light",
+  "change": 31,
+  "requests": [
+    {
+      "path": "/a/changes/31/revisions/2/drafts",
+      "method": "PUT",
+      "body": {
+        "path": "reply.ts",
+        "side": "REVISION",
+        "line": 1,
+        "in_reply_to": "ed3c25bb_f719df9b",
+        "message": "Three attempts limit server load.",
+        "unresolved": true
+      },
+      "status": 201
+    },
+    {
+      "path": "/a/changes/31/revisions/2/drafts/63f4723d_ae816cea",
+      "method": "PUT",
+      "body": {
+        "path": "reply.ts",
+        "side": "REVISION",
+        "line": 1,
+        "in_reply_to": "ed3c25bb_f719df9b",
+        "message": "Three attempts limit server load.",
+        "unresolved": true
+      },
+      "status": 200
+    },
+    {
+      "path": "/a/changes/31/revisions/3/review",
+      "method": "POST",
+      "body": {
+        "labels": {},
+        "drafts": "PUBLISH_ALL_REVISIONS",
+        "draft_ids_to_publish": [
+          "63f4723d_ae816cea"
+        ],
+        "notify": "ALL",
+        "reviewers": [],
+        "add_to_attention_set": [],
+        "remove_from_attention_set": []
+      },
+      "status": 200
+    }
+  ],
+  "comments": [
+    {
+      "id": "ed3c25bb_f719df9b",
+      "patch_set": 2,
+      "line": 1,
+      "message": "Please explain the retry limit."
+    },
+    {
+      "id": "63f4723d_ae816cea",
+      "patch_set": 2,
+      "line": 1,
+      "in_reply_to": "ed3c25bb_f719df9b",
+      "message": "Three attempts limit server load."
+    }
+  ],
+  "threads": [
+    {
+      "rootId": "ed3c25bb_f719df9b",
+      "comments": [
+        {
+          "id": "ed3c25bb_f719df9b",
+          "patch_set": 2,
+          "line": 1,
+          "message": "Please explain the retry limit."
+        },
+        {
+          "id": "63f4723d_ae816cea",
+          "patch_set": 2,
+          "line": 1,
+          "in_reply_to": "ed3c25bb_f719df9b",
+          "message": "Three attempts limit server load."
+        }
+      ]
+    }
+  ]
+}

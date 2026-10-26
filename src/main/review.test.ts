@@ -5,6 +5,7 @@ import { fileSettings } from '../server/file-settings.ts'
 import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import type { DraftCommentInput } from '../shared/types.ts'
 
 test('review requests full context, preserves whitespace and pins both patch sets', async () => {
   const urls: URL[] = []
@@ -71,7 +72,7 @@ test('comment CRUD preserves encoded IDs, range coordinates, draft privacy and p
     if (init.method === 'DELETE') return new Response(null, { status: 204 })
     return new Response(JSON.stringify({ id: 'draft%2Fid', message: 'Draft', updated: 'now' }))
   })
-  const input = { path: 'dir/a #%.ts', side: 'PARENT' as const, line: 12, range: { start_line: 10, start_character: 2, end_line: 12, end_character: 7 }, message: 'Draft', unresolved: true, in_reply_to: 'published%2Fid' }
+  const input = { path: 'dir/a #%.ts', side: 'PARENT' as const, parent: 2, line: 12, range: { start_line: 10, start_character: 2, end_line: 12, end_character: 7 }, message: 'Draft', unresolved: true, in_reply_to: 'published%2Fid', fix_suggestions: [{ description: 'Preserve fix', replacements: [] }] }
   assert.equal((await g.saveDraft(42, 5, input)).patch_set, 5)
   await g.saveDraft(42, 5, { ...input, id: 'draft%2Fid', message: 'Edited' })
   await g.deleteDraft(42, 5, 'draft%2Fid')
@@ -85,6 +86,34 @@ test('comment CRUD preserves encoded IDs, range coordinates, draft privacy and p
   await assert.rejects(g.deleteDraft(42, 5, 'id'), /refused/)
   await assert.rejects(g.submitReview({ id: 42, project: 'p', patchSet: 5 }, { labels: {}, drafts: 'KEEP', notify: 'NONE' }), /refused/)
   assert.equal(calls.length, 4)
+})
+
+test('overall draft creation and update omit source positions without changing their input', async () => {
+  const calls: { path: string; body: unknown }[] = []
+  const g = new GerritClient('https://gerrit.test', 'bob', 'test', async (url, init) => {
+    const body = JSON.parse(String(init.body))
+    assert.equal(['side', 'line', 'range', 'parent'].some(key => key in body), false, 'valid overall REST payload')
+    calls.push({ path: new URL(url).pathname, body })
+    return new Response(JSON.stringify({ id: 'summary%2Fid', updated: '2026-10-26 14:13:53.072000000', message: body.message }))
+  })
+  const input: DraftCommentInput = {
+    path: '/PATCHSET_LEVEL', side: 'REVISION', line: 1, parent: 2,
+    range: { start_line: 1, start_character: 0, end_line: 1, end_character: 6 },
+    message: 'Overall review', unresolved: false,
+  }
+  const original = structuredClone(input)
+  const created = await g.saveDraft(42, 2, input)
+  assert.equal(created.id, 'summary%2Fid')
+  assert.equal(created.path, '/PATCHSET_LEVEL')
+  assert.equal(created.patch_set, 2)
+  const edit = { ...input, id: created.id, message: 'Updated review' }
+  await g.saveDraft(42, 2, edit)
+  assert.deepEqual(input, original)
+  assert.deepEqual(edit, { ...original, id: created.id, message: 'Updated review' })
+  assert.deepEqual(calls, [
+    { path: '/a/changes/42/revisions/2/drafts', body: { path: '/PATCHSET_LEVEL', message: 'Overall review', unresolved: false } },
+    { path: '/a/changes/42/revisions/2/drafts/summary%2Fid', body: { path: '/PATCHSET_LEVEL', message: 'Updated review', unresolved: false } },
+  ])
 })
 
 test('published comment redaction and suggested fixes use revision-pinned Gerrit endpoints', async () => {

@@ -170,6 +170,13 @@ export class GerritClient {
   capabilities(): Promise<Record<string, boolean>> { return this.req('GET', '/accounts/self/capabilities') }
   async saveDraft(id: number, patchSet: number, input: DraftCommentInput): Promise<ReviewComment> {
     const { id: draftId, ...body } = input
+    if (body.path === '/PATCHSET_LEVEL') {
+      // Overall drafts have no source position, even when their display anchor does.
+      delete body.side
+      delete body.line
+      delete body.range
+      delete body.parent
+    }
     // IDs returned by Gerrit are already URL encoded, unlike file paths.
     const draft = await this.req<ReviewComment>('PUT', `/changes/${id}/revisions/${patchSet}/drafts${draftId ? '/' + draftId : ''}`, body)
     return { ...draft, path: draft.path ?? input.path, patch_set: patchSet }

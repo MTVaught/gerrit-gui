@@ -1,0 +1,27 @@
+{
+  "change": "fix-draft-autosave-conflicts",
+  "planningComplete": true,
+  "strictValidation": "Change 'fix-draft-autosave-conflicts' is valid",
+  "requirements": 4,
+  "scenarios": 15,
+  "uncheckedTasks": 9,
+  "artifacts": [
+    {
+      "id": "proposal",
+      "status": "done"
+    },
+    {
+      "id": "specs",
+      "status": "done"
+    },
+    {
+      "id": "design",
+      "status": "done"
+    },
+    {
+      "id": "tasks",
+      "status": "done"
+    }
+  ],
+  "applicationCodeChanged": false
+}

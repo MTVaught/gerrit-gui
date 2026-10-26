@@ -1,0 +1,23 @@
+{
+  "platform": "Linux/Electron static verified archive report",
+  "results": [
+    {
+      "theme": "light",
+      "width": 848,
+      "height": 855,
+      "contentHeight": 835,
+      "horizontalOverflow": false,
+      "scrollY": 0,
+      "ready": true
+    },
+    {
+      "theme": "dark",
+      "width": 848,
+      "height": 855,
+      "contentHeight": 835,
+      "horizontalOverflow": false,
+      "scrollY": 0,
+      "ready": true
+    }
+  ]
+}

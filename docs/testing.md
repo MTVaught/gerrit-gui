@@ -204,6 +204,55 @@ Draft screenshots also assert that the textarea is visible and receives pointer
 hit testing in both themes. Inline comment zones retain their measured height
 while Monaco hides them offscreen, and editors reveal before receiving focus.
 
+## Draft autosave and overall reviews
+
+The draft fixtures return fractional timestamps on save and whole-second
+timestamps on persisted reads, as observed on Gerrit 3.11.2. The production
+HTTP fixture rejects source-position fields on `/PATCHSET_LEVEL` drafts.
+
+Build, then run the comment and production-IPC window checks:
+
+```sh
+pnpm build
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-comments-ui.cjs
+xvfb-run -a node_modules/.bin/electron --no-sandbox test/review-windows-ui.cjs
+```
+
+Successive autosaves and Save must keep one draft ID. Cancel restores an
+existing draft or deletes a new one, and retry keeps a saved draft's ID.
+Overall summaries must autosave, update, reopen, clear, and publish without
+HTTP 400 or a false conflict. Keep drafts private retains the summary ID;
+publication leaves one published comment and no private copy. Real
+same-second content changes, deletion, and publication in another window
+must still pause stale edits. Both conflict recovery choices are checked.
+
+For real-server acceptance, seed a new throwaway Gerrit 3.11.2 with
+`test/seed-gerrit.sh`, using dummy Alice and Bob accounts. Then run:
+
+```sh
+GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP=1 \
+  GERRIT_TEST_URL=http://127.0.0.1:18080 \
+  DRAFT_EVIDENCE_DIR=/tmp/draft-autosave-verified \
+  xvfb-run -a -s '-screen 0 1920x1080x24' \
+  node_modules/.bin/electron --no-sandbox test/draft-autosave-gerrit.cjs
+```
+
+This runs the built desktop app, production preload, service, and client
+with real X11 input on Linux. It tests one dashboard window, two review
+windows on the same change, independent source comments, real conflicts
+and recovery, and overall review publication. It checks actual REST
+requests and stored comment IDs. Line, range, and reply checks include
+repeated autosave, explicit Save, Cancel restoration, and discard.
+
+Set `DRAFT_RECORDINGS=1` to save matched light/dark videos with a visible
+pointer, two-second hovers, and captions. `DRAFT_FIX_THEME=light` or `dark`
+selects a single theme for a focused run. Paired screenshots use the same
+view, data, and scroll position. FFmpeg is required in addition to Xvfb and
+xdotool. The test stops its app and recorder;
+stop the throwaway Gerrit container after all server tests are complete.
+The original `test/reproduce-draft-autosave*.{ts,cjs}` diagnostics document
+the pre-fix failures and are not passing regression checks for the fix.
+
 ## Replies to older comments
 
 Reply, Quote, Ack, and Done keep the parent comment's original patch set,
