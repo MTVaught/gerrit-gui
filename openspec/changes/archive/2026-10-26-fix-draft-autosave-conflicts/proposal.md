@@ -29,4 +29,4 @@ The fix affects `src/shared/draft-version.ts`, draft serialization in `src/main/
 
 No new dependency, setting, server extension, or stored-data migration is needed. Existing duplicate drafts remain available for manual review and deletion. Automatic duplicate cleanup and stronger atomic coordination with external Gerrit clients are out of scope.
 
-The scope is based on [the real-server investigation](../../../docs/investigations/draft-autosave-conflict.md), including its recorded requests and paired UI evidence. That evidence demonstrates the defects; implementation must supply separate evidence of the corrected behavior.
+The scope is based on [the real-server investigation](../../../../docs/investigations/draft-autosave-conflict.md), including its recorded requests and paired UI evidence. That evidence demonstrates the defects; implementation must supply separate evidence of the corrected behavior.

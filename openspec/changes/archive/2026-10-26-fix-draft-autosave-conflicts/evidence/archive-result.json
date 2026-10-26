@@ -1,0 +1,83 @@
+{
+  "change": "fix-draft-autosave-conflicts",
+  "schema": "spec-driven",
+  "archivedTo": "openspec/changes/archive/2026-10-26-fix-draft-autosave-conflicts",
+  "completedTasks": 9,
+  "totalTasks": 9,
+  "sync": {
+    "review-comment-composition": {
+      "operation": "ADDED",
+      "requirements": [
+        "Successive draft saves retain one identity",
+        "Overall summary drafts use valid Gerrit payloads",
+        "Draft failures retain text for retry"
+      ],
+      "deltaScenarios": 9,
+      "unchangedRequirementsPreserved": 8,
+      "titleAndPurposePreserved": true,
+      "allDeltasSynced": true,
+      "sha256": "6c7cbb0c8190f392fd4aee3792afb3d6203ce1b9e352433ed1271047cfdc5afd"
+    },
+    "review-windows": {
+      "operation": "MODIFIED",
+      "requirements": [
+        "Concurrent draft edits do not silently overwrite work"
+      ],
+      "deltaScenarios": 6,
+      "unchangedRequirementsPreserved": 7,
+      "titleAndPurposePreserved": true,
+      "allDeltasSynced": true,
+      "sha256": "6ed812b044f596617bd7614704da19b9ef80ebe97630fd0db7d7a7fb0b26c12e"
+    }
+  },
+  "strictSpecValidation": {
+    "passed": 15,
+    "failed": 0
+  },
+  "preservedArtifacts": [
+    ".openspec.yaml",
+    "design.md",
+    "evidence/README.md",
+    "evidence/capture-results.json",
+    "evidence/planning-check.json",
+    "evidence/proposal-dark.png",
+    "evidence/proposal-light.png",
+    "evidence/proposal-report.html",
+    "evidence/verified/README.md",
+    "evidence/verified/additional-window-dark.json",
+    "evidence/verified/additional-window-light.json",
+    "evidence/verified/multiwindow-result-dark.png",
+    "evidence/verified/multiwindow-result-light.png",
+    "evidence/verified/published-result-dark.png",
+    "evidence/verified/published-result-light.png",
+    "evidence/verified/reply-anchor-dark.json",
+    "evidence/verified/reply-anchor-light.json",
+    "evidence/verified/single-window-captions-dark.json",
+    "evidence/verified/single-window-captions-light.json",
+    "evidence/verified/single-window-dark.mp4",
+    "evidence/verified/single-window-light.mp4",
+    "evidence/verified/two-windows-captions-dark.json",
+    "evidence/verified/two-windows-captions-light.json",
+    "evidence/verified/two-windows-dark.mp4",
+    "evidence/verified/two-windows-light.mp4",
+    "evidence/verified/verification-summary.json",
+    "evidence/verified/verified-dark.json",
+    "evidence/verified/verified-light.json",
+    "proposal.md",
+    "specs/review-comment-composition/spec.md",
+    "specs/review-windows/spec.md",
+    "tasks.md"
+  ],
+  "filesPreservedByMove": true,
+  "activeChangeRemoved": true,
+  "strictValidationAfterArchive": {
+    "passed": 16,
+    "failed": 0
+  },
+  "relativeLinksUpdated": [
+    "proposal.md",
+    "design.md",
+    "evidence/verified/README.md",
+    "docs/investigations/draft-autosave-conflict.md"
+  ]
+}

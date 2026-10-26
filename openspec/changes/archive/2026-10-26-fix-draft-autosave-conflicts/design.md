@@ -2,7 +2,7 @@
 
 ## Context
 
-See [proposal.md](proposal.md) for the defect and scope, and the [investigation](../../../docs/investigations/draft-autosave-conflict.md) for actual requests. The current renderer records a version from each PUT response, then compares it with discussion reads after mutation notifications. The desktop main process uses the same `draftVersion()` function before updating or deleting a saved draft. Gerrit 3.11.2 retains milliseconds in the PUT response but truncates them in persisted GET responses.
+See [proposal.md](proposal.md) for the defect and scope, and the [investigation](../../../../docs/investigations/draft-autosave-conflict.md) for actual requests. The current renderer records a version from each PUT response, then compares it with discussion reads after mutation notifications. The desktop main process uses the same `draftVersion()` function before updating or deleting a saved draft. Gerrit 3.11.2 retains milliseconds in the PUT response but truncates them in persisted GET responses.
 
 Overall summary anchors include a display side. `GerritClient.saveDraft()` currently forwards that field to the REST endpoint, which rejects it for `/PATCHSET_LEVEL`. The current HTTP fixture stores and returns the same timestamp for both operations and accepts that invalid payload. The preload fixture bypasses REST serialization.
 

@@ -76,4 +76,4 @@ payloads.
 The temporary app, recorders, displays, and Gerrit instance were stopped.
 Native macOS and Windows were not tested. Existing duplicate drafts are kept
 for manual inspection. The earlier defect evidence remains in
-[the investigation](../../../../../docs/investigations/draft-autosave-conflict.md).
+[the investigation](../../../../../../docs/investigations/draft-autosave-conflict.md).

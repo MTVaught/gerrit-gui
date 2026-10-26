@@ -205,7 +205,7 @@ extra copies. Separate overall reviews posted from the left and right windows
 are each stored once. Deletion and publication still reject stale updates
 and deletes, and final private draft storage is empty.
 
-The [verification evidence](../../openspec/changes/fix-draft-autosave-conflicts/evidence/verified/README.md)
+The [verification evidence](../../openspec/changes/archive/2026-10-26-fix-draft-autosave-conflicts/evidence/verified/README.md)
 contains paired videos, outcome screenshots, actual requests, and stored IDs.
 The two video pairs cover the single-window summary lifecycle and two-window
 comment/conflict/publication workflow. Additional recorded request data covers
