@@ -5,6 +5,7 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { startReviewServer } = require('./fixtures/review-windows-server.cjs')
+const { draftVersion } = require('../src/shared/draft-version.ts')
 app.disableHardwareAcceleration()
 app.on('browser-window-created', (_e, win) => win.webContents.on('console-message', (_e, details) => { if (details.level === 'error') console.error('Renderer:', details.message) }))
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'review-windows-ui-'))
@@ -28,7 +29,7 @@ async function click(win, expression) {
   win.webContents.sendInputEvent({ type: 'mouseUp', ...point })
   await delay(90)
 }
-const button = (win, text) => click(win, `Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === ${JSON.stringify(text)})`)
+const button = (win, text, scope = '') => click(win, `Array.from(document.querySelectorAll(${JSON.stringify(scope + ' button')})).find(b => b.textContent.trim() === ${JSON.stringify(text)})`)
 const selector = (win, css) => click(win, `document.querySelector(${JSON.stringify(css)})`)
 async function key(win, keyCode, modifiers = []) {
   win.focus(); win.webContents.focus()
@@ -44,6 +45,7 @@ async function input(win, expression, value) {
   await delay(80)
 }
 const font = `Array.from(document.querySelectorAll('label')).find(el => el.textContent.startsWith('Font size'))?.querySelector('input')`
+const versionOf = async (win, id) => draftVersion(await run(win, `api.reviewDiscussion(2481).then(d=>d.drafts.find(c=>c.id===${JSON.stringify(id)}))`))
 let fixture
 const timeout = setTimeout(() => { console.error('Integration timed out'); app.exit(2) }, 120000)
 
@@ -101,8 +103,59 @@ const timeout = setTimeout(() => { console.error('Integration timed out'); app.e
   await key(a, 'U'); await key(a, 'Escape')
   assert.equal(a.isDestroyed(), false)
   assert.ok(await run(a, `Boolean(document.querySelector('#local-review-title'))`))
+  async function ownAutosave(win) {
+    await until(() => run(win, `document.querySelector('.review-editor')?.dataset.reviewReady==='true' && document.querySelector('.review-comments > button')?.disabled===false`), 'review discussion ready for composition')
+    await selector(win, '.review-menu summary'); await button(win, 'File comment')
+    await until(() => run(win, `Boolean(document.querySelector('[aria-label="Draft comment"]'))`), 'file composer ready')
+    await input(win, `document.querySelector('[aria-label="Draft comment"]')`, 'My first autosave')
+    await until(() => run(win, `document.querySelector('.review-comment-compose [role="status"]')?.textContent==='Saved to Gerrit' && !document.querySelector('.review-comment-compose .primary').disabled`), 'own autosave succeeds')
+    const id = fixture.state.drafts.find(c => c.message === 'My first autosave').id
+    await delay(150)
+    assert.equal(await run(win, `Boolean(document.querySelector('.review-draft-conflict'))`), false)
+    await input(win, `document.querySelector('[aria-label="Draft comment"]')`, 'My second autosave')
+    await until(() => fixture.state.drafts.find(c => c.id === id)?.message === 'My second autosave', 'second save keeps ID')
+    await until(() => run(win, `!document.querySelector('.review-comment-compose .primary').disabled`), 'save remains enabled')
+    await button(win, 'Save'); await until(() => run(win, `!document.querySelector('.review-comment-compose')`), 'Save closes after autosave')
+    assert.equal(fixture.state.drafts.filter(c => c.id === id).length, 1)
+    await button(win, 'Discard draft', `[data-review-comment-id="${id}"]`)
+    await until(() => !fixture.state.drafts.some(c => c.id === id), 'own draft discarded')
+  }
+  await ownAutosave(a)
+  async function summaryLifecycle(win) {
+    const field = `document.querySelector('[aria-label="Review summary"]')`
+    const stored = () => fixture.state.drafts.find(c => c.path === '/PATCHSET_LEVEL')
+    const ready = () => run(win, `document.querySelector('.review-send-dialog [role="status"]')?.textContent==='Saved to Gerrit' && !document.querySelector('.review-send-dialog .primary').disabled`)
+    await selector(win, '.review-comments > button')
+    await input(win, field, 'Overall summary first save')
+    await until(ready, 'overall summary autosaved')
+    const id = stored().id
+    await input(win, field, 'Overall summary second save')
+    await until(() => stored()?.message === 'Overall summary second save', 'summary update saved')
+    await until(ready, 'summary update settled')
+    assert.equal(stored().id, id)
+    await button(win, 'Cancel', '.review-send-dialog'); await selector(win, '.review-comments > button')
+    assert.equal(await run(win, `(${field}).value`), 'Overall summary second save')
+    await input(win, field, '')
+    await until(() => !stored(), 'cleared summary deleted')
+    await input(win, field, 'Replacement overall summary')
+    await until(ready, 'replacement summary saved')
+    const replacementId = stored().id
+    assert.notEqual(replacementId, id)
+    await run(win, `(() => {const e=document.querySelector('[aria-label="Publish drafts"]');e.value='KEEP';e.dispatchEvent(new Event('change',{bubbles:true}))})()`)
+    await button(win, 'Send review', '.review-send-dialog')
+    await until(() => run(win, `!document.querySelector('.review-send-dialog')`), 'private review sent')
+    assert.equal(stored().id, replacementId)
+    await selector(win, '.review-comments > button')
+    await run(win, `(() => {const e=document.querySelector('[aria-label="Publish drafts"]');e.value='PUBLISH_ALL_REVISIONS';e.dispatchEvent(new Event('change',{bubbles:true}))})()`)
+    await button(win, 'Send review', '.review-send-dialog')
+    await until(() => !stored() && fixture.state.comments.some(c => c.id === replacementId), 'summary published once')
+    assert.equal(fixture.state.comments.filter(c => c.id === replacementId).length, 1)
+    assert.equal(fixture.state.calls.filter(c => c.method==='PUT' && c.body.path==='/PATCHSET_LEVEL').some(c => ['side','line','range','parent'].some(key=>key in c.body)), false)
+  }
+  await summaryLifecycle(a)
   // Shared saved draft and reviewed state through production API, never a fixture bridge.
   const link = { id: 2481, project: 'telemetry', patchSet: 3 }
+  fixture.state.draftTime = '2026-10-23 12:00:05'
   const draft = await run(a, `api.saveReviewDraft(2481,3,{path:'src/telemetry/types.ts',line:2,side:'REVISION',message:'Saved in window A',unresolved:true})`)
   await until(() => run(b, `document.body.innerText.includes('Saved in window A')`), 'saved draft propagated')
   await run(a, `api.setReviewFileReviewed(${JSON.stringify(link)},'src/telemetry/types.ts',true)`)
@@ -110,7 +163,7 @@ const timeout = setTimeout(() => { console.error('Integration timed out'); app.e
   // Open the saved draft in B and keep local dirty text while A saves it.
   await button(b, 'Edit')
   await input(b, `document.querySelector('[aria-label="Draft comment"]')`, 'Unsaved in window B')
-  const version = await run(a, `api.reviewDiscussion(2481).then(d => { const c=d.drafts.find(c=>c.id===${JSON.stringify(draft.id)}); return JSON.stringify([c.id,c.updated,c.message??'',Boolean(c.unresolved),c.fix_suggestions??[],c.path,c.patch_set,c.side??'REVISION',c.line,c.range]) })`)
+  const version = await versionOf(a, draft.id)
   await run(a, `api.saveReviewDraft(2481,3,{id:${JSON.stringify(draft.id)},path:'src/telemetry/types.ts',line:2,side:'REVISION',message:'New saved version in A',unresolved:true},${JSON.stringify(version)})`)
   await until(() => run(b, `Boolean(document.querySelector('.review-draft-conflict'))`), 'conflict reported')
   assert.equal(await run(b, `document.querySelector('[aria-label="Draft comment"]').value`), 'Unsaved in window B')
@@ -118,20 +171,49 @@ const timeout = setTimeout(() => { console.error('Integration timed out'); app.e
   assert.equal(fixture.state.drafts.find(c => c.id === draft.id).message, 'New saved version in A')
   await button(b, 'Keep as new draft')
   await until(() => fixture.state.drafts.length === 2, 'conflict saved as distinct draft')
+  await until(() => run(b, `!document.querySelector('.review-comment-compose .primary').disabled`), 'new draft saved without a repeated conflict')
+  const recoveryId = fixture.state.drafts.find(c => c.id !== draft.id).id
+  await input(b, `document.querySelector('[aria-label="Draft comment"]')`, 'Continue the recovered draft')
+  await until(() => fixture.state.drafts.find(c => c.id === recoveryId)?.message === 'Continue the recovered draft', 'recovery accepts subsequent autosave')
+  assert.equal(fixture.state.drafts.length, 2)
+  await until(() => run(b, `!document.querySelector('.review-comment-compose .primary').disabled`), 'recovered save ready')
   await button(b, 'Save')
   // A stale explicit save also fails even if its event has not been handled yet.
   const stale = await run(a, `api.saveReviewDraft(2481,3,{id:${JSON.stringify(draft.id)},path:'src/telemetry/types.ts',line:2,message:'stale overwrite',unresolved:true},${JSON.stringify(version)}).then(()=> 'allowed',e=>e.message)`)
   assert.match(stale, /Draft conflict/)
+  assert.match(await run(a, `api.deleteReviewDraft(2481,3,${JSON.stringify(draft.id)},${JSON.stringify(version)}).then(()=> 'allowed',e=>e.message)`), /Draft conflict/)
   assert.equal(fixture.state.drafts.find(c => c.id === draft.id).message, 'New saved version in A')
   await button(b, 'Edit')
   await input(b, `document.querySelector('[aria-label="Draft comment"]')`, 'Local text kept for reload choice')
-  const currentVersion = await run(a, `api.reviewDiscussion(2481).then(d => { const c=d.drafts.find(c=>c.id===${JSON.stringify(draft.id)}); return JSON.stringify([c.id,c.updated,c.message??'',Boolean(c.unresolved),c.fix_suggestions??[],c.path,c.patch_set,c.side??'REVISION',c.line,c.range]) })`)
+  const currentVersion = await versionOf(a, draft.id)
   await run(a, `api.saveReviewDraft(2481,3,{id:${JSON.stringify(draft.id)},path:'src/telemetry/types.ts',line:2,side:'REVISION',message:'Saved version to load',unresolved:true},${JSON.stringify(currentVersion)})`)
   await until(() => run(b, `Boolean(document.querySelector('.review-draft-conflict'))`), 'second conflict')
   await button(b, 'Load saved version')
   assert.equal(await run(b, `document.querySelector('[aria-label="Draft comment"]').value`), 'Saved version to load')
+  await input(b, `document.querySelector('[aria-label="Draft comment"]')`, 'Edit after loading saved version')
+  await until(() => fixture.state.drafts.find(c => c.id === draft.id)?.message === 'Edit after loading saved version', 'loaded version accepts autosave')
+  await until(() => run(b, `!document.querySelector('.review-comment-compose .primary').disabled`), 'loaded version save ready')
   await button(b, 'Save')
   // Pending service writes block native closure even without a local composer.
+  for (const action of ['delete', 'publish']) {
+    const doomed = await run(a, `api.saveReviewDraft(2481,3,{path:'src/telemetry/types.ts',line:2,side:'REVISION',message:'Draft before ${action}',unresolved:true})`)
+    await until(() => run(b, `Boolean(document.querySelector('[data-review-comment-id="${doomed.id}"]'))`), action + ' draft propagated')
+    const expected = await versionOf(a, doomed.id)
+    const pane = await run(b, `document.querySelector('.modified-in-monaco-diff-editor .monaco-scrollable-element').getBoundingClientRect().toJSON()`)
+    b.webContents.sendInputEvent({ type: 'mouseWheel', x: Math.round(pane.x + 15), y: Math.round(pane.y + 50), deltaY: 2000, deltaX: 0, canScroll: true, wheelTicksY: 16, hasPreciseScrollingDeltas: true })
+    await delay(250)
+    await until(() => run(b, `document.querySelector('[data-review-comment-id="${doomed.id}"] button')?.getBoundingClientRect().height>0`), 'removal draft revealed')
+    await button(b, 'Edit', `[data-review-comment-id="${doomed.id}"]`)
+    await input(b, `document.querySelector('[aria-label="Draft comment"]')`, 'Keep local text after ' + action)
+    if (action === 'delete') await run(a, `api.deleteReviewDraft(2481,3,${JSON.stringify(doomed.id)},${JSON.stringify(expected)})`)
+    else await run(a, `api.submitReview(${JSON.stringify(link)},{labels:{},drafts:'PUBLISH_ALL_REVISIONS',notify:'NONE'})`)
+    await until(() => run(b, `Boolean(document.querySelector('.review-draft-conflict'))`), action + ' pauses editor')
+    assert.equal(await run(b, `document.querySelector('[aria-label="Draft comment"]').value`), 'Keep local text after ' + action)
+    assert.match(await run(a, `api.saveReviewDraft(2481,3,{id:${JSON.stringify(doomed.id)},path:'src/telemetry/types.ts',line:2,side:'REVISION',message:'Late autosave',unresolved:true},${JSON.stringify(expected)}).then(()=> 'allowed',e=>e.message)`), /Draft conflict/)
+    assert.equal(fixture.state.drafts.some(c=>c.id===doomed.id), false)
+    await button(b, 'Load saved version')
+    await until(() => run(b, `!document.querySelector('.review-comment-compose')`), 'deleted/published draft load closes editor')
+  }
   fixture.state.draftDelay = 600
   const pending = run(a, `api.saveReviewDraft(2481,3,{path:'src/telemetry/types.ts',line:3,message:'Pending draft',unresolved:true})`)
   await delay(100); a.close(); await delay(150)
@@ -164,7 +246,7 @@ const timeout = setTimeout(() => { console.error('Integration timed out'); app.e
   // Every production review mutation publishes to other matching views.
   await run(b, 'window.changeEvents=[]; void api.onReviewChanged(event=>window.changeEvents.push(event))')
   const extra = await run(a, `api.saveReviewDraft(2481,3,{path:'src/telemetry/types.ts',line:4,message:'Disposable draft',unresolved:true})`)
-  const extraVersion = JSON.stringify([extra.id,extra.updated,extra.message,Boolean(extra.unresolved),extra.fix_suggestions||[],extra.path,extra.patch_set,extra.side||'REVISION',extra.line,extra.range])
+  const extraVersion = draftVersion(extra)
   const commentId = fixture.state.comments[0].id
   const operations = [
     `api.deleteReviewDraft(2481,3,${JSON.stringify(extra.id)},${JSON.stringify(extraVersion)})`,
@@ -199,6 +281,8 @@ const timeout = setTimeout(() => { console.error('Integration timed out'); app.e
   await selector(board, '.review-main')
   await until(() => run(board, `Boolean(document.querySelector('.local-review[open]'))`), 'embedded fallback')
   assert.equal(BrowserWindow.getAllWindows().length, 3)
+  await ownAutosave(board)
+  await selector(board, '.modified-in-monaco-diff-editor .view-lines')
   await key(board, 'U')
   await until(() => run(board, `!document.querySelector('.local-review')`), 'embedded U retained')
   a.close()

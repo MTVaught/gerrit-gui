@@ -1,0 +1,23 @@
+{
+  "platform": "Linux/Electron static planning report",
+  "results": [
+    {
+      "theme": "light",
+      "width": 848,
+      "height": 922,
+      "contentHeight": 902,
+      "horizontalOverflow": false,
+      "scrollY": 0,
+      "ready": true
+    },
+    {
+      "theme": "dark",
+      "width": 848,
+      "height": 922,
+      "contentHeight": 902,
+      "horizontalOverflow": false,
+      "scrollY": 0,
+      "ready": true
+    }
+  ]
+}

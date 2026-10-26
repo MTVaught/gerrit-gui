@@ -76,6 +76,7 @@ const reviews = []
 let failNextDraft = false
 const appliedFixes = []
 let draftCounter = 0
+let draftWriteCounter = 0
 let historicalPositions = []
 let canDeletePublished = false
 const noOp = async () => undefined
@@ -110,9 +111,10 @@ contextBridge.exposeInMainWorld('api', {
     await new Promise(r => setTimeout(r, 120))
     if (failNextDraft) { failNextDraft = false; throw new Error('Fixture draft save failed') }
     if (input.id && drafts.get(input.id)?.patch_set !== patchSet) throw new Error('Draft update used the wrong patch set')
-    const draft = { ...input, id: input.id ?? 'draft-' + (++draftCounter), patch_set: patchSet, updated: new Date().toISOString() }
+    const second = new Date(Date.parse(now.slice(0, 19).replace(' ', 'T') + 'Z') + ++draftWriteCounter * 1000).toISOString().slice(0, 19).replace('T', ' ')
+    const draft = { ...input, id: input.id ?? 'draft-' + (++draftCounter), patch_set: patchSet, updated: second + '.123000000' }
     if (draft.fix_suggestions) draft.fix_suggestions = draft.fix_suggestions.map((fix, i) => ({ ...fix, fix_id: 'fix-' + draft.id + '-' + i }))
-    drafts.set(draft.id, draft); commentWrites.push(draft); return draft
+    drafts.set(draft.id, { ...draft, updated: second + '.000000000' }); commentWrites.push(draft); return draft
   },
   fixtureCommentGaps: async (includeDraft = true) => {
     drafts.clear(); comments.splice(0)

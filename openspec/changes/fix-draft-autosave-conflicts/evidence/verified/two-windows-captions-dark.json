@@ -1,0 +1,50 @@
+[
+  {
+    "seconds": 1.506,
+    "text": "Same review in two windows. Save an independent comment in each window."
+  },
+  {
+    "seconds": 29.354,
+    "text": "Open the same left draft in both windows, then save an edit on the left."
+  },
+  {
+    "seconds": 35.656,
+    "text": "Open the same left draft in both windows, then save an edit on the left. Ctrl+A selects the current text."
+  },
+  {
+    "seconds": 43.226,
+    "text": "The right window retains its text. Keep a new local comment as a separate draft."
+  },
+  {
+    "seconds": 43.227,
+    "text": "The right window retains its text. Keep a new local comment as a separate draft. Ctrl+A selects the current text."
+  },
+  {
+    "seconds": 50.774,
+    "text": "Continue editing the recovered draft. Further autosaves must keep its new ID."
+  },
+  {
+    "seconds": 50.775,
+    "text": "Continue editing the recovered draft. Further autosaves must keep its new ID. Ctrl+End moves to the end."
+  },
+  {
+    "seconds": 58.14,
+    "text": "Test Load saved version on the other shared draft."
+  },
+  {
+    "seconds": 64.434,
+    "text": "Test Load saved version on the other shared draft. Ctrl+A selects the current text."
+  },
+  {
+    "seconds": 75.141,
+    "text": "Test Load saved version on the other shared draft. Ctrl+A selects the current text. Ctrl+End moves to the end."
+  },
+  {
+    "seconds": 82.589,
+    "text": "Publish the three source comments and an overall review from the left window."
+  },
+  {
+    "seconds": 93.304,
+    "text": "Both windows show the published review. All four saved IDs were published once."
+  }
+]

@@ -17,14 +17,14 @@ async function startReviewServer(port = 0) {
   change.permitted_labels = { 'Code-Review': ['-1', '0', '+1'] }
   change.revisions.r1 = { _number: 1, created: change.created }
   change.revisions.r2 = { _number: 2, created: change.created }
-  const state = { drafts: [], comments: [], reviewed: new Map(), calls: [], sequence: 0, draftDelay: 0, failDraft: false, failDiscussion: false, failMetadata: false }
+  const state = { drafts: [], comments: [], reviewed: new Map(), calls: [], sequence: 0, draftTime: undefined, draftDelay: 0, failDraft: false, failDiscussion: false, failMetadata: false }
   const group = comments => Object.fromEntries([...new Set(comments.map(c => c.path))].map(file => [file, comments.filter(c => c.path === file)]))
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://127.0.0.1')
       const route = decodeURIComponent(url.pathname.replace(/^\/a/, ''))
       const body = JSON.parse(await new Promise(resolve => { let text = ''; req.on('data', part => { text += part }); req.on('end', () => resolve(text || '{}')) }))
-      state.calls.push({ method: req.method, route })
+      state.calls.push({ method: req.method, route, body })
       let result
       const ps = Number(route.match(/\/revisions\/(\d+)/)?.[1] || 3)
       if (route === '/accounts/self') result = self
@@ -41,8 +41,12 @@ async function startReviewServer(port = 0) {
         const draftId = route.match(/\/drafts\/([^/]+)$/)?.[1]
         if (req.method === 'DELETE') state.drafts = state.drafts.filter(c => c.id !== draftId)
         else {
-          const draft = { ...body, id: draftId || `draft-${++state.sequence}`, patch_set: ps, updated: `2026-10-23 12:00:${String(++state.sequence).padStart(2, '0')}.000000000` }
-          state.drafts = [...state.drafts.filter(c => c.id !== draft.id), draft]
+          if (body.path === '/PATCHSET_LEVEL' && ['side', 'line', 'range', 'parent'].some(key => key in body)) {
+            res.writeHead(400).end("patchset-level comments can't have side, range, or line"); return
+          }
+          const second = state.draftTime ?? new Date(Date.UTC(2026, 9, 23, 12) + ++state.sequence * 1000).toISOString().slice(0, 19).replace('T', ' ')
+          const draft = { ...body, id: draftId || `draft-${++state.sequence}`, patch_set: ps, updated: second + '.123000000' }
+          state.drafts = [...state.drafts.filter(c => c.id !== draft.id), { ...draft, updated: second + '.000000000' }]
           result = draft
         }
       } else if (/\/(comments|drafts)$/.test(route)) {

@@ -20,7 +20,14 @@ app.whenReady().then(async () => {
   async function button(text, scope = '.local-review') { await run(`Array.from(document.querySelectorAll(${JSON.stringify(scope + ' button')})).find(b => b.textContent === ${JSON.stringify(text)}).click()`); await delay(100) }
   async function press(keyCode, modifiers = []) { win.webContents.sendInputEvent({ type: 'keyDown', keyCode, modifiers }); win.webContents.sendInputEvent({ type: 'keyUp', keyCode, modifiers }); await delay(80) }
   async function type(text) { await until(`document.querySelector('[aria-label="Draft comment"]')?.getBoundingClientRect().height > 0`, 'draft is rendered before typing'); await run(`document.querySelector('[aria-label="Draft comment"]').focus()`); await until(`document.activeElement?.getAttribute('aria-label') === 'Draft comment'`, 'draft receives keyboard input'); await press('End', ['control']); await win.webContents.insertText(text) }
-  async function saved(count) { await until(`(await api.fixtureStats()).drafts.length === ${count} && document.querySelector('.review-comment-compose [role="status"]')?.textContent === 'Saved to Gerrit'`, 'draft saved'); await button('Save'); await until(`!document.querySelector('.review-comment-compose')`, 'composer closed') }
+  async function saved(count) {
+    await until(`(await api.fixtureStats()).drafts.length === ${count} && document.querySelector('.review-comment-compose [role="status"]')?.textContent === 'Saved to Gerrit'`, 'draft saved')
+    const ids = (await run('api.fixtureStats()')).drafts.map(c => c.id)
+    await button('Refresh comments', '.review-comments'); await delay(200)
+    assert.equal(await run(`Boolean(document.querySelector('.review-draft-conflict'))`), false, 'persisted GET after fractional PUT does not conflict')
+    await button('Save'); await until(`!document.querySelector('.review-comment-compose')`, 'composer closed')
+    assert.deepEqual((await run('api.fixtureStats()')).drafts.map(c => c.id), ids, 'explicit save updates the same IDs')
+  }
   await win.loadFile(path.join(__dirname, '../out/renderer/index.html'))
   await run(`window.addEventListener('unhandledrejection', event => console.error(event.reason?.stack ?? event.reason))`)
   await until(`Boolean(document.querySelector('.review-main'))`, 'dashboard')
@@ -68,6 +75,13 @@ app.whenReady().then(async () => {
   await button('Cancel', '.review-comment-compose')
   await until(`(await api.fixtureStats()).drafts[0].message === 'This unchanged setup needs a comment.' && !document.querySelector('.review-comment-compose')`, 'cancel restores server draft before editing')
   await button('Edit', '.comment-draft'); await type(' Revised.'); await saved(1)
+  const retryId = (await run('api.fixtureStats()')).drafts[0].id
+  await button('Edit', '.comment-draft'); await run('api.fixtureFailDraft()'); await type(' Retry update.')
+  await until(`document.querySelector('.review-comment-notice [role="alert"]')?.textContent.includes('Fixture draft save failed')`, 'existing draft update failed')
+  assert.equal((await run('api.fixtureStats()')).drafts[0].id, retryId)
+  await button('Save'); await until(`!document.querySelector('.review-comment-compose')`, 'existing draft update retried')
+  assert.equal((await run('api.fixtureStats()')).drafts[0].id, retryId)
+  assert.ok((await run('api.fixtureStats()')).drafts[0].message.endsWith('Retry update.'))
   await button('Discard draft', '.comment-draft'); await until(`(await api.fixtureStats()).drafts.length === 0`, 'discard server draft')
   await run(`document.querySelector('[aria-label="File comments on modified"]').click()`); await delay(100); await run('api.fixtureFailDraft()'); await type('Retain this text after a failed save.')
   await until(`document.querySelector('.review-comment-notice [role="alert"]')?.textContent.includes('Fixture draft save failed')`, 'save error surfaced')
@@ -127,7 +141,11 @@ app.whenReady().then(async () => {
   restoredSuggestionDraft = (await run('api.fixtureStats()')).drafts[1]
   assert.equal(restoredSuggestionDraft.message, 'Selected unchanged range. Updated.')
   for (const key of ['id', 'range', 'fix_suggestions']) assert.deepEqual(restoredSuggestionDraft[key], originalSuggestionDraft[key], 'Save preserves ' + key)
-  await button('Reply', 'section:has([data-review-comment-id="published-1"])'); await until(`Boolean(document.querySelector('section:has([data-review-comment-id="published-1"]) [aria-label="Draft comment"]'))`, 'reply editor opens inside its thread'); assert.equal(await run(`document.activeElement?.getAttribute('aria-label')`), 'Draft comment', 'reply editor receives focus'); await type('I will update the documentation.'); await saved(3)
+  await button('Reply', 'section:has([data-review-comment-id="published-1"])'); await until(`Boolean(document.querySelector('section:has([data-review-comment-id="published-1"]) [aria-label="Draft comment"]'))`, 'reply editor opens inside its thread'); assert.equal(await run(`document.activeElement?.getAttribute('aria-label')`), 'Draft comment', 'reply editor receives focus'); await type('I will update the documentation.')
+  await until(`(await api.fixtureStats()).drafts.length === 3 && document.querySelector('.review-comment-compose [role="status"]')?.textContent === 'Saved to Gerrit'`, 'reply autosaved')
+  const replyId = (await run('api.fixtureStats()')).drafts[2].id
+  await type(' With an example.'); await saved(3)
+  assert.equal((await run('api.fixtureStats()')).drafts[2].id, replyId)
   stats = await run('api.fixtureStats()'); assert.equal(stats.drafts[2].in_reply_to, 'published-1')
   assert.ok(await run(`!Array.from(document.querySelectorAll('section:has([data-review-comment-id="published-1"]) button')).some(b => ['Reply', 'Done', 'Ack'].includes(b.textContent))`), 'pending draft suppresses thread reply actions')
   await button('Discard draft', 'section:has([data-review-comment-id="published-1"])'); await until(`(await api.fixtureStats()).drafts.length === 2`, 'reply draft discarded')
@@ -137,14 +155,22 @@ app.whenReady().then(async () => {
   await button('Go to line'); await press('Escape'); await press('N', ['shift']); await until(`Boolean(document.querySelector('.review-comment-thread[data-active="true"]'))`, 'next comment thread shortcut'); await press('h'); await until(`!document.querySelector('.review-editor .review-comment-thread')`, 'hide comment panel shortcut'); await press('h'); await press('a'); await until(`Boolean(document.querySelector('.review-send-dialog'))`, 'review dialog shortcut'); await run(`document.querySelector('[aria-label="Review summary"]').focus()`); await win.webContents.insertText('Ready for another look.'); await until(`(await api.fixtureStats()).drafts.length === 4 && document.querySelector('.review-send-dialog [role="status"]')?.textContent === 'Saved to Gerrit'`, 'overall summary saved'); await button('Cancel', '.review-send-dialog')
   await run(`document.querySelector('.review-comments > button').click()`); await delay(100)
   assert.equal(await run(`document.querySelector('[aria-label="Review summary"]').value`), 'Ready for another look.', 'summary resumes server draft')
+  const summaryId = (await run('api.fixtureStats()')).drafts.find(c => c.path === '/PATCHSET_LEVEL').id
+  await run(`document.querySelector('[aria-label="Review summary"]').focus()`); await press('End', ['control']); await win.webContents.insertText(' Next pass.')
+  await until(`(await api.fixtureStats()).drafts.find(c => c.id === ${JSON.stringify(summaryId)})?.message === 'Ready for another look. Next pass.' && !document.querySelector('.review-send-dialog .primary').disabled`, 'summary edit keeps ID')
+  await button('Cancel', '.review-send-dialog'); await run(`document.querySelector('.review-comments > button').click()`); await delay(100)
+  assert.equal(await run(`document.querySelector('[aria-label="Review summary"]').value`), 'Ready for another look. Next pass.')
   await run(`document.querySelector('[aria-label="Review summary"]').focus()`); await press('a', ['control']); await press('Backspace'); await until(`!(await api.fixtureStats()).drafts.some(c => c.path === '/PATCHSET_LEVEL')`, 'cleared summary deletes the Gerrit draft'); await win.webContents.insertText('Ready for another look. All checks passed.')
   await until(`(await api.fixtureStats()).drafts.find(c => c.path === '/PATCHSET_LEVEL')?.message === 'Ready for another look. All checks passed.' && !document.querySelector('.review-send-dialog .primary').disabled`, 'summary autosaves before publishing')
+  const replacementSummaryId = (await run('api.fixtureStats()')).drafts.find(c => c.path === '/PATCHSET_LEVEL').id
+  assert.notEqual(replacementSummaryId, summaryId, 'cleared summary is replaced with one new ID')
   await run(`document.querySelector('.review-participants').open = true; document.querySelector('[aria-label="Add reviewer account"]').focus()`); await win.webContents.insertText('sam')
   await until(`Boolean(document.querySelector('.review-participants .review-outline button'))`, 'reviewer suggestions')
   await run(`document.querySelector('.review-participants .review-outline button').click(); Array.from(document.querySelectorAll('.review-participants fieldset label')).find(label => label.textContent.includes('Alex Rivera')).querySelector('input').click()`); await delay(100)
   await run(`(() => { document.querySelector('[aria-label="Code-Review +1"]').click(); const p = document.querySelector('[aria-label="Publish drafts"]'); p.value = 'KEEP'; p.dispatchEvent(new Event('change', {bubbles:true})); })()`)
   await button('Send review', '.review-send-dialog'); await until(`(await api.fixtureStats()).reviews.length === 1`, 'vote sent')
   stats = await run('api.fixtureStats()'); assert.equal(stats.reviews[0].input.labels['Code-Review'], 1); assert.deepEqual(stats.reviews[0].input.reviewers, [{ reviewer: '2', state: 'REVIEWER' }]); assert.equal(stats.reviews[0].input.remove_from_attention_set[0].user, '1'); assert.ok(await run(`Boolean(document.querySelector('.local-review'))`), 'voting keeps review mounted after board updates'); assert.equal(stats.drafts.length, 4)
+  assert.equal(stats.drafts.find(c => c.path === '/PATCHSET_LEVEL').id, replacementSummaryId, 'Keep retains the summary ID')
   await run(`document.querySelector('.review-comments > button').click()`); await delay(100); await run(`(() => { const p = document.querySelector('[aria-label="Publish drafts"]'); p.value = 'PUBLISH_ALL_REVISIONS'; p.dispatchEvent(new Event('change', {bubbles:true})); })()`)
   async function screenshot(name) {
     for (const theme of ['light', 'dark']) {

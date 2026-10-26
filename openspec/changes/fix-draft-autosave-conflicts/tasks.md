@@ -1,0 +1,19 @@
+# Tasks
+
+## 1. Stable saved-draft versions
+
+- [x] 1.1 Normalize recognized Gerrit timestamps to whole seconds inside `src/shared/draft-version.ts`, preserving raw display timestamps and all other version fields. Add focused tests using the recorded PUT/GET values; verify fractional precision compares equal, different seconds differ, unknown formats remain distinct, and changed message, resolution, suggestions, or source position still conflict within the same second.
+- [x] 1.2 Update the HTTP and preload draft fixtures to return separate fractional save and whole-second persisted read responses with deterministic nonzero fractions. Extend comment UI checks to verify line, file, range, and reply autosave followed by another edit and Save retains one ID, typing during creation retains current text, cancel restores or deletes correctly, discard succeeds, and a failed update retries on the same ID.
+- [x] 1.3 Extend desktop mutation and review-window checks to verify the app's own notification does not cause a conflict in embedded and separate reviews, but same-second concurrent content edits, stale deletes, deletion, and publication still do. Verify both recovery choices, including exactly one new ID after Keep as new draft and subsequent autosave on that ID. Document the timestamp rule and review-reopen step in the investigation's fix-verification notes.
+
+## 2. Valid overall-summary drafts
+
+- [x] 2.1 Strip `side`, `line`, `range`, and `parent` only from `/PATCHSET_LEVEL` REST draft bodies in `src/main/gerrit.ts`. Add client request assertions for creation and update, unchanged caller input, preserved ID routing, and unchanged parent-side/range/reply/suggestion payloads. Make the HTTP fixture reject invalid overall wire payloads and verify the client tests pass against that rule.
+- [x] 2.2 Extend the comment and production-IPC UI workflows to verify summary creation, successive autosave, reopen with the same ID, clear/delete, replacement, Keep drafts private, and publication with no private copy. Verify Send review is enabled after successful save and source comments retain their anchors. Update `docs/testing.md` with the summary regression command and expected stored outcomes, then run that command.
+
+## 3. Real-server acceptance and evidence
+
+- [x] 3.1 Add a passing real-Gerrit regression based on the investigation harness, using an isolated profile, generated data, dummy accounts, and production desktop IPC. On local Gerrit 3.11.2, verify single embedded and separate-window successive saves, stable IDs for source comment types, actual PUT/GET precision differences, and valid summary requests through creation, edit, clear, private retention, and publication. Record requests and final storage; retain the original defect evidence separately.
+- [x] 3.2 Exercise real conflicting edits in two review windows and verify preserved local text, stale update/delete rejection, both recovery choices, and deletion/publication protection. Use deterministic same-second fixture cases for timing-sensitive guards and real-server checks for end-to-end recovery. Run the existing real-server reply-anchor regression to verify saved and published replies keep their original anchors and appear once.
+- [x] 3.3 Use the record-actions skill to capture the corrected single-window autosave, Reply summary, and genuine-conflict recovery workflows with real input. Save matched light/dark videos with visible pointer movement, two-second hovers, captions, and readable final states; inspect both and include request/storage evidence. Add links and tested-platform limits to the investigation's fix-verification notes.
+- [x] 3.4 Run `pnpm test`, `pnpm typecheck`, `pnpm build`, the affected comment/window UI checks, and the real-server regressions after the final edits. Verify strict OpenSpec validation, reconcile the fix-verification notes with actual results, and stop temporary app, recorder, display, and Gerrit processes.

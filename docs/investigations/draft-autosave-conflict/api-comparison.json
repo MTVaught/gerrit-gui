@@ -1,0 +1,190 @@
+{
+  "version": "3.11.2",
+  "change": 27,
+  "results": [
+    {
+      "name": "line",
+      "saved": {
+        "unresolved": true,
+        "id": "5fb4b65c_e752df36",
+        "path": "review.ts",
+        "line": 1,
+        "updated": "2026-10-26 14:13:53.072000000",
+        "message": "Line draft",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "patch_set": 2
+      },
+      "read": {
+        "unresolved": true,
+        "context_lines": [
+          {
+            "line_number": 1,
+            "context_line": "export const attempts = 3;"
+          },
+          {
+            "line_number": 2,
+            "context_line": "export const timeout = 1000;"
+          }
+        ],
+        "source_content_type": "application/typescript",
+        "patch_set": 2,
+        "id": "5fb4b65c_e752df36",
+        "line": 1,
+        "updated": "2026-10-26 14:13:53.000000000",
+        "message": "Line draft",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "path": "review.ts"
+      },
+      "savedVersion": "[\"5fb4b65c_e752df36\",\"2026-10-26 14:13:53.072000000\",\"Line draft\",true,[],\"review.ts\",2,\"REVISION\",1,null]",
+      "readVersion": "[\"5fb4b65c_e752df36\",\"2026-10-26 14:13:53.000000000\",\"Line draft\",true,[],\"review.ts\",2,\"REVISION\",1,null]",
+      "falseConflict": true,
+      "rereadVersionAccepted": true
+    },
+    {
+      "name": "file",
+      "saved": {
+        "unresolved": true,
+        "id": "04c8be54_8de20a13",
+        "path": "review.ts",
+        "updated": "2026-10-26 14:13:53.090000000",
+        "message": "File draft",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "patch_set": 2
+      },
+      "read": {
+        "unresolved": true,
+        "context_lines": [],
+        "source_content_type": "",
+        "patch_set": 2,
+        "id": "04c8be54_8de20a13",
+        "updated": "2026-10-26 14:13:53.000000000",
+        "message": "File draft",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "path": "review.ts"
+      },
+      "savedVersion": "[\"04c8be54_8de20a13\",\"2026-10-26 14:13:53.090000000\",\"File draft\",true,[],\"review.ts\",2,\"REVISION\",null,null]",
+      "readVersion": "[\"04c8be54_8de20a13\",\"2026-10-26 14:13:53.000000000\",\"File draft\",true,[],\"review.ts\",2,\"REVISION\",null,null]",
+      "falseConflict": true,
+      "rereadVersionAccepted": true
+    },
+    {
+      "name": "range",
+      "saved": {
+        "unresolved": true,
+        "id": "06359896_4c16e248",
+        "path": "review.ts",
+        "line": 1,
+        "range": {
+          "start_line": 1,
+          "start_character": 0,
+          "end_line": 1,
+          "end_character": 6
+        },
+        "updated": "2026-10-26 14:13:53.108000000",
+        "message": "Range draft",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "patch_set": 2
+      },
+      "read": {
+        "unresolved": true,
+        "context_lines": [
+          {
+            "line_number": 1,
+            "context_line": "export const attempts = 3;"
+          },
+          {
+            "line_number": 2,
+            "context_line": "export const timeout = 1000;"
+          }
+        ],
+        "source_content_type": "application/typescript",
+        "patch_set": 2,
+        "id": "06359896_4c16e248",
+        "line": 1,
+        "range": {
+          "start_line": 1,
+          "start_character": 0,
+          "end_line": 1,
+          "end_character": 6
+        },
+        "updated": "2026-10-26 14:13:53.000000000",
+        "message": "Range draft",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "path": "review.ts"
+      },
+      "savedVersion": "[\"06359896_4c16e248\",\"2026-10-26 14:13:53.108000000\",\"Range draft\",true,[],\"review.ts\",2,\"REVISION\",1,{\"start_line\":1,\"start_character\":0,\"end_line\":1,\"end_character\":6}]",
+      "readVersion": "[\"06359896_4c16e248\",\"2026-10-26 14:13:53.000000000\",\"Range draft\",true,[],\"review.ts\",2,\"REVISION\",1,{\"start_line\":1,\"start_character\":0,\"end_line\":1,\"end_character\":6}]",
+      "falseConflict": true,
+      "rereadVersionAccepted": true
+    },
+    {
+      "name": "reply",
+      "saved": {
+        "unresolved": true,
+        "id": "18ddd289_bcc8e69a",
+        "path": "review.ts",
+        "line": 1,
+        "in_reply_to": "d5eb0339_074b5a8e",
+        "updated": "2026-10-26 14:13:53.124000000",
+        "message": "Reply draft",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "patch_set": 2
+      },
+      "read": {
+        "unresolved": true,
+        "context_lines": [
+          {
+            "line_number": 1,
+            "context_line": "export const attempts = 3;"
+          },
+          {
+            "line_number": 2,
+            "context_line": "export const timeout = 1000;"
+          }
+        ],
+        "source_content_type": "application/typescript",
+        "patch_set": 2,
+        "id": "18ddd289_bcc8e69a",
+        "line": 1,
+        "in_reply_to": "d5eb0339_074b5a8e",
+        "updated": "2026-10-26 14:13:53.000000000",
+        "message": "Reply draft",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "path": "review.ts"
+      },
+      "savedVersion": "[\"18ddd289_bcc8e69a\",\"2026-10-26 14:13:53.124000000\",\"Reply draft\",true,[],\"review.ts\",2,\"REVISION\",1,null]",
+      "readVersion": "[\"18ddd289_bcc8e69a\",\"2026-10-26 14:13:53.000000000\",\"Reply draft\",true,[],\"review.ts\",2,\"REVISION\",1,null]",
+      "falseConflict": true,
+      "rereadVersionAccepted": true
+    },
+    {
+      "name": "validSummary",
+      "saved": {
+        "unresolved": false,
+        "id": "de760c23_83bc0bf5",
+        "path": "/PATCHSET_LEVEL",
+        "updated": "2026-10-26 14:13:53.139000000",
+        "message": "Summary without side",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "patch_set": 2
+      },
+      "read": {
+        "unresolved": false,
+        "context_lines": [],
+        "source_content_type": "",
+        "patch_set": 2,
+        "id": "de760c23_83bc0bf5",
+        "updated": "2026-10-26 14:13:53.000000000",
+        "message": "Summary without side",
+        "commit_id": "4460c516737130f8d6daa7f1d288374182cfc763",
+        "path": "/PATCHSET_LEVEL"
+      },
+      "savedVersion": "[\"de760c23_83bc0bf5\",\"2026-10-26 14:13:53.139000000\",\"Summary without side\",false,[],\"/PATCHSET_LEVEL\",2,\"REVISION\",null,null]",
+      "readVersion": "[\"de760c23_83bc0bf5\",\"2026-10-26 14:13:53.000000000\",\"Summary without side\",false,[],\"/PATCHSET_LEVEL\",2,\"REVISION\",null,null]",
+      "falseConflict": true,
+      "rereadVersionAccepted": true
+    }
+  ],
+  "summaryError": "PUT /changes/27/revisions/2/drafts: 400 patchset-level comments can't have side, range, or line",
+  "platform": "Node production REST client, real local Gerrit, generated data"
+}

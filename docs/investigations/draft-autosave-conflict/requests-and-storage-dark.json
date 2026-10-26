@@ -1,0 +1,211 @@
+{
+  "theme": "dark",
+  "change": 32,
+  "windows": 1,
+  "drafts": [
+    {
+      "unresolved": true,
+      "patch_set": 2,
+      "id": "3fc3962a_b0767215",
+      "updated": "2026-10-26 14:18:56.000000000",
+      "message": "Please explain the retry limit.",
+      "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+    },
+    {
+      "unresolved": true,
+      "patch_set": 2,
+      "id": "fab6a503_6b0391bd",
+      "updated": "2026-10-26 14:18:48.000000000",
+      "message": "Please explain the retry limit.",
+      "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+    }
+  ],
+  "state": {
+    "summary": "Please document the retry limit.",
+    "error": "Error invoking remote method 'gerrit:saveReviewDraft': Error: PUT /changes/32/revisions/2/drafts: 400 patchset-level comments can't have side, range, or line",
+    "sendDisabled": true
+  },
+  "requests": [
+    {
+      "path": "/a/changes/32/drafts",
+      "method": "GET",
+      "status": 200,
+      "response": {}
+    },
+    {
+      "path": "/a/changes/32/revisions/2/drafts",
+      "method": "PUT",
+      "input": {
+        "path": "review.ts",
+        "side": "REVISION",
+        "message": "Please explain the retry limit.",
+        "unresolved": true
+      },
+      "status": 201,
+      "response": {
+        "unresolved": true,
+        "id": "fab6a503_6b0391bd",
+        "path": "review.ts",
+        "updated": "2026-10-26 14:18:48.595000000",
+        "message": "Please explain the retry limit.",
+        "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+      }
+    },
+    {
+      "path": "/a/changes/32/drafts",
+      "method": "GET",
+      "status": 200,
+      "response": {
+        "review.ts": [
+          {
+            "unresolved": true,
+            "context_lines": [],
+            "source_content_type": "",
+            "patch_set": 2,
+            "id": "fab6a503_6b0391bd",
+            "updated": "2026-10-26 14:18:48.000000000",
+            "message": "Please explain the retry limit.",
+            "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/a/changes/32/drafts",
+      "method": "GET",
+      "status": 200,
+      "response": {
+        "review.ts": [
+          {
+            "unresolved": true,
+            "context_lines": [],
+            "source_content_type": "",
+            "patch_set": 2,
+            "id": "fab6a503_6b0391bd",
+            "updated": "2026-10-26 14:18:48.000000000",
+            "message": "Please explain the retry limit.",
+            "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/a/changes/32/revisions/2/drafts",
+      "method": "PUT",
+      "input": {
+        "path": "review.ts",
+        "side": "REVISION",
+        "message": "Please explain the retry limit.",
+        "unresolved": true
+      },
+      "status": 201,
+      "response": {
+        "unresolved": true,
+        "id": "3fc3962a_b0767215",
+        "path": "review.ts",
+        "updated": "2026-10-26 14:18:56.207000000",
+        "message": "Please explain the retry limit.",
+        "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+      }
+    },
+    {
+      "path": "/a/changes/32/drafts",
+      "method": "GET",
+      "status": 200,
+      "response": {
+        "review.ts": [
+          {
+            "unresolved": true,
+            "context_lines": [],
+            "source_content_type": "",
+            "patch_set": 2,
+            "id": "3fc3962a_b0767215",
+            "updated": "2026-10-26 14:18:56.000000000",
+            "message": "Please explain the retry limit.",
+            "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+          },
+          {
+            "unresolved": true,
+            "context_lines": [],
+            "source_content_type": "",
+            "patch_set": 2,
+            "id": "fab6a503_6b0391bd",
+            "updated": "2026-10-26 14:18:48.000000000",
+            "message": "Please explain the retry limit.",
+            "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/a/changes/32/drafts",
+      "method": "GET",
+      "status": 200,
+      "response": {
+        "review.ts": [
+          {
+            "unresolved": true,
+            "context_lines": [],
+            "source_content_type": "",
+            "patch_set": 2,
+            "id": "3fc3962a_b0767215",
+            "updated": "2026-10-26 14:18:56.000000000",
+            "message": "Please explain the retry limit.",
+            "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+          },
+          {
+            "unresolved": true,
+            "context_lines": [],
+            "source_content_type": "",
+            "patch_set": 2,
+            "id": "fab6a503_6b0391bd",
+            "updated": "2026-10-26 14:18:48.000000000",
+            "message": "Please explain the retry limit.",
+            "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/a/changes/32/drafts",
+      "method": "GET",
+      "status": 200,
+      "response": {
+        "review.ts": [
+          {
+            "unresolved": true,
+            "context_lines": [],
+            "source_content_type": "",
+            "patch_set": 2,
+            "id": "3fc3962a_b0767215",
+            "updated": "2026-10-26 14:18:56.000000000",
+            "message": "Please explain the retry limit.",
+            "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+          },
+          {
+            "unresolved": true,
+            "context_lines": [],
+            "source_content_type": "",
+            "patch_set": 2,
+            "id": "fab6a503_6b0391bd",
+            "updated": "2026-10-26 14:18:48.000000000",
+            "message": "Please explain the retry limit.",
+            "commit_id": "8cfbed3046e2ca7c584d650c3715864d664e4543"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/a/changes/32/revisions/2/drafts",
+      "method": "PUT",
+      "input": {
+        "path": "/PATCHSET_LEVEL",
+        "side": "REVISION",
+        "message": "Please document the retry limit.",
+        "unresolved": false
+      },
+      "status": 400,
+      "response": "patchset-level comments can't have side, range, or line\n"
+    }
+  ]
+}
