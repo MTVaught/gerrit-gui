@@ -2,8 +2,8 @@ import type { FileInfo, ReviewDiscussion, ReviewCommentPosition } from '../../..
 import { commentThreads } from '../review-comments.ts'
 import { useLayoutEffect, useRef, useState, type Ref } from 'react'
 
-export function ReviewFileList({ files, discussion, positions, paths, selected, reviewed, busy, onOpen, onReviewed, ref }: {
-  positions: ReviewCommentPosition[]; files: Record<string, FileInfo>; discussion: ReviewDiscussion | null; paths: string[]; selected: string; reviewed: Set<string> | null; busy: boolean
+export function ReviewFileList({ files, discussion, positions, paths, selected, reviewed, pending, blocked, onOpen, onReviewed, ref }: {
+  positions: ReviewCommentPosition[]; files: Record<string, FileInfo>; discussion: ReviewDiscussion | null; paths: string[]; selected: string; reviewed: Set<string> | null; pending: ReadonlySet<string>; blocked: boolean
   onOpen: (path: string) => void; onReviewed: (path: string, reviewed: boolean) => void; ref: Ref<HTMLElement>
 }) {
   const [unreviewedOnly, setUnreviewedOnly] = useState(false)
@@ -51,7 +51,7 @@ export function ReviewFileList({ files, discussion, positions, paths, selected, 
             const details = `${status ?? 'Modified'} · ${inserted} lines added · ${deleted} lines removed · ${unresolved} unresolved · ${resolved} resolved · ${drafts} drafts`
             const done = Boolean(reviewed?.has(path))
             return <div key={path} className={'review-file-row' + (path === selected ? ' selected' : '') + (done ? ' is-reviewed' : '')}>
-              <button className="review-status" aria-label={`${done ? 'Mark unreviewed' : 'Mark reviewed'}: ${path}`} aria-pressed={done} disabled={!reviewed || busy} title={done ? 'Reviewed. Click to mark unreviewed.' : 'Unreviewed. Click to mark reviewed.'} onClick={() => onReviewed(path, !done)}>
+              <button className="review-status" aria-label={`${done ? 'Mark unreviewed' : 'Mark reviewed'}: ${path}`} aria-pressed={done} disabled={!reviewed || blocked || pending.has(path)} aria-busy={pending.has(path)} title={done ? 'Reviewed. Click to mark unreviewed.' : 'Unreviewed. Click to mark reviewed.'} onClick={() => onReviewed(path, !done)}>
                 {done ? <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg> : <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" /></svg>}
               </button>
               <button className="review-file-name" data-review-path={path} aria-label={`Open ${path}`} title={`${path} · ${details}`} aria-current={path === selected} onClick={() => onOpen(path)}>{path === '/COMMIT_MSG' ? 'Commit message' : path === '/MERGE_LIST' ? 'Merge list' : path.split('/').at(-1)}</button>

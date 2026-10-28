@@ -1,0 +1,17 @@
+{
+  "change": "fix-reviewed-file-updates",
+  "archive": "openspec/changes/archive/2026-10-28-fix-reviewed-file-updates",
+  "main": "openspec/specs/reviewed-files/spec.md",
+  "archiveFiles": [
+    ".openspec.yaml",
+    "proposal.md",
+    "design.md",
+    "tasks.md",
+    "specs/reviewed-files/spec.md"
+  ],
+  "tasksComplete": 4,
+  "requirements": 4,
+  "scenarios": 8,
+  "absentFromActiveChanges": true,
+  "deltaMatchesMain": true
+}

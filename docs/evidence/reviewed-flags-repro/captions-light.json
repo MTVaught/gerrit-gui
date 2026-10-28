@@ -1,0 +1,26 @@
+[
+  {
+    "seconds": 0.001,
+    "text": "Linux Electron. Simulated Gerrit data and latency. All five files start reviewed."
+  },
+  {
+    "seconds": 0.936,
+    "text": "Click one checkmark. Watch all five status icons during the refresh. Read delay: 600 ms."
+  },
+  {
+    "seconds": 6.191,
+    "text": "One file changed. The other four checkmarks disappeared, then returned."
+  },
+  {
+    "seconds": 8.895,
+    "text": "Reset the first file to reviewed before the rapid-click test."
+  },
+  {
+    "seconds": 14.011,
+    "text": "Click three files 200 ms apart. Fast input is required here. Write delay: 900 ms."
+  },
+  {
+    "seconds": 20.579,
+    "text": "Only the first click was saved. The next two files still have checkmarks."
+  }
+]

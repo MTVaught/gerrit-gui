@@ -1,0 +1,34 @@
+{
+  "change": "fix-reviewed-file-updates",
+  "checks": {
+    "typecheck": "passed",
+    "unitTests": {
+      "passed": 381,
+      "failed": 0
+    },
+    "build": "passed",
+    "reviewed-files-ui": "passed",
+    "review-ui": "passed",
+    "review-windows-ui": "passed",
+    "openspecStrictValidation": "passed"
+  },
+  "recordings": {
+    "light": {
+      "writes": 3,
+      "untouchedFlagsStayedReviewed": true,
+      "loadingTransitions": 0,
+      "video": "reviewed-flags-light.mp4",
+      "platform": "Linux X11 / Electron 44.2.0"
+    },
+    "dark": {
+      "writes": 3,
+      "untouchedFlagsStayedReviewed": true,
+      "loadingTransitions": 0,
+      "video": "reviewed-flags-dark.mp4",
+      "platform": "Linux X11 / Electron 44.2.0"
+    }
+  },
+  "simulation": "Gerrit data and HTTP response delays, 600 ms reads and 900 ms writes in the rapid sequence. Production app, preload, IPC, service, and renderer. Real xdotool pointer and click input.",
+  "captureReview": "Both MP4 files decoded without errors. Paired screenshots and video frames inspected for flags, progress, captions, pointer, framing, and readability.",
+  "limitations": "Linux X11 with Electron 44.2.0. Native macOS and Windows were not exercised."
+}

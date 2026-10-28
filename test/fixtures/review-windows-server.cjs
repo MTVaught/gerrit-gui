@@ -17,7 +17,12 @@ async function startReviewServer(port = 0) {
   change.permitted_labels = { 'Code-Review': ['-1', '0', '+1'] }
   change.revisions.r1 = { _number: 1, created: change.created }
   change.revisions.r2 = { _number: 2, created: change.created }
-  const state = { drafts: [], comments: [], reviewed: new Map(), calls: [], sequence: 0, draftTime: undefined, draftDelay: 0, failDraft: false, failDiscussion: false, failMetadata: false }
+  const state = {
+    drafts: [], comments: [], reviewed: new Map(), calls: [], sequence: 0,
+    draftTime: undefined, draftDelay: 0, failDraft: false, failDiscussion: false, failMetadata: false,
+    files: { 'src/telemetry/batch-scheduler.ts': { lines_inserted: 3, lines_deleted: 2 }, 'src/telemetry/types.ts': { lines_inserted: 1 } },
+    reviewedReadDelay: 0, reviewedWriteDelay: 0, failReviewedRead: false, failReviewedWrites: new Set(),
+  }
   const group = comments => Object.fromEntries([...new Set(comments.map(c => c.path))].map(file => [file, comments.filter(c => c.path === file)]))
   const server = http.createServer(async (req, res) => {
     try {
@@ -66,13 +71,18 @@ async function startReviewServer(port = 0) {
         result = {}
       } else if (/\/reviewed$/.test(route)) {
         const file = route.match(/\/files\/(.+)\/reviewed$/)[1]
+        if (state.reviewedWriteDelay) await new Promise(resolve => setTimeout(resolve, state.reviewedWriteDelay))
+        if (state.failReviewedWrites.has(file)) { res.writeHead(503).end('Simulated reviewed flag save failure'); return }
         const reviewed = state.reviewed.get(ps) || new Set()
         if (req.method === 'PUT') reviewed.add(file); else reviewed.delete(file)
         state.reviewed.set(ps, reviewed)
-      } else if (/\/files$/.test(route)) result = url.searchParams.has('reviewed')
-        ? [...(state.reviewed.get(ps) || [])]
-        : { 'src/telemetry/batch-scheduler.ts': { lines_inserted: 3, lines_deleted: 2 }, 'src/telemetry/types.ts': { lines_inserted: 1 } }
-      else if (/\/diff$/.test(route)) {
+      } else if (/\/files$/.test(route)) {
+        if (url.searchParams.has('reviewed')) {
+          result = [...(state.reviewed.get(ps) || [])]
+          if (state.reviewedReadDelay) await new Promise(resolve => setTimeout(resolve, state.reviewedReadDelay))
+          if (state.failReviewedRead) { res.writeHead(503).end('Simulated reviewed status read failure'); return }
+        } else result = state.files
+      } else if (/\/diff$/.test(route)) {
         const file = route.match(/\/files\/(.+)\/diff$/)[1]
         result = { meta_a: { name: file }, meta_b: { name: file }, content: [
           { ab: [`// Simulated Gerrit data. Patch set ${ps}, base ${url.searchParams.get('base') || 'base'}.`, '', 'export class BatchScheduler {', '  enqueue(event: Event): void {', '    this.pending.push(event);'] },

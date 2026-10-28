@@ -170,6 +170,11 @@ change status, additions/deletions and comment indicators; hover for the full
 thread, unresolved and draft counts. Merge List is included for merge commits. The current
 file's full path and Reviewed checkbox stay above the diff. Automatic marking is off until enabled in Diff preferences.
 
+Reviewed flags update as soon as you click. You can change other files while
+a flag saves; only the file being saved is disabled. Status refreshes keep known
+checkmarks visible. A failed save restores that file's flag and shows an error.
+Click the file again to retry the change, or use Retry to reload saved status.
+
 Rebase edits identified by Gerrit appear in blue for additions and yellow for
 removals, with hover labels. Ordinary edits retain green/red colors.
 This works in side-by-side and unified views, using the same full-file response.

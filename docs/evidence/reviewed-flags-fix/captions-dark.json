@@ -1,0 +1,26 @@
+[
+  {
+    "seconds": 0,
+    "text": "Linux Electron. Simulated Gerrit data and latency. All five files start reviewed."
+  },
+  {
+    "seconds": 0.945,
+    "text": "Click one checkmark. The other four stay visible during the 600 ms status read."
+  },
+  {
+    "seconds": 6.201,
+    "text": "One file changed. The other four checkmarks stayed visible throughout the refresh."
+  },
+  {
+    "seconds": 8.903,
+    "text": "Reset the first file to reviewed before the rapid-click test."
+  },
+  {
+    "seconds": 14.026,
+    "text": "Click three files with 200 ms pauses to test rapid input. Each save takes 900 ms."
+  },
+  {
+    "seconds": 21.288,
+    "text": "All three clicks were saved. Two files remain reviewed. No status flash occurred."
+  }
+]
