@@ -6,6 +6,7 @@ import { useSettings } from '../settings-context.ts'
 import { useResolvedTheme } from '../theme.ts'
 import { DiffThemeWriter } from '../diff-theme-writer.ts'
 import { PreferenceState } from '../preference-state.ts'
+import { ReviewedFilesState } from '../reviewed-files.ts'
 import { api } from '../api.ts'
 import { diffContents } from '../review.ts'
 import { reviewShortcut, REVIEW_SHORTCUT_HELP } from '../review-shortcuts.ts'
@@ -78,16 +79,19 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
       setPreferenceErrors(current => ({ ...current, diffTheme: error ? `Could not save diff theme: ${error.message}` : undefined }))
     },
   )
-  const [reviewed, setReviewed] = useState<{ patchSet: number; paths: Set<string> } | null>(null)
-  const [reviewedError, setReviewedError] = useState('')
+  const reviewedStates = useRef(new Map<string, ReviewedFilesState>())
+  const reviewedKey = `${link.id}:${link.patchSet}`
+  if (!reviewedStates.current.has(reviewedKey)) reviewedStates.current.set(reviewedKey, new ReviewedFilesState())
+  const reviewedState = reviewedStates.current.get(reviewedKey)!
+  const reviewed = reviewedState.paths
+  const reviewedError = reviewedState.error
+  const [, setFlagVersion] = useState(0)
+  const flagsChanged = useCallback(() => setFlagVersion(version => version + 1), [])
   const [reviewedRetry, setReviewedRetry] = useState(0)
   const [editorGeneration, setEditorGeneration] = useState(0)
   const [readyFile, setReadyFile] = useState('')
-  const [marking, setMarking] = useState(false)
   const autoMarkedVisit = useRef('')
   const pendingMarks = useRef(new Set<string>())
-  const currentPatchSet = useRef(link.patchSet)
-  currentPatchSet.current = link.patchSet
   const comparison = `${link.basePatchSet ?? 0}:${link.patchSet}`
   const positionCache = useRef(new Map<string, ReviewCommentPosition[]>())
   const [mapped, setMapped] = useState<{ comparison: string; positions: ReviewCommentPosition[] } | null>(null)
@@ -159,12 +163,9 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   }, [link.id])
   useEffect(() => {
     let active = true
-    setReviewed(null)
-    setReviewedError('')
-    void api.reviewReviewedFiles(link).then((paths) => { if (active) setReviewed({ patchSet: link.patchSet!, paths: new Set(paths) }) })
-      .catch((e: Error) => { if (active) setReviewedError(e.message) })
+    void reviewedState.refresh(() => api.reviewReviewedFiles(link), () => { if (active) flagsChanged() })
     return () => { active = false }
-  }, [link.id, link.patchSet, reviewedRetry])
+  }, [reviewedState, reviewedRetry, flagsChanged])
   useEffect(() => {
     let active = true
     setFiles(null)
@@ -214,28 +215,21 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
     const pane = commentPane(link, path, loaded.nameA, { ...anchor, patch_set: anchor.patchSet, id: '', updated: '' })
     return pane ? editor.current?.createInlineHost(pane, anchor.line ?? anchor.range?.end_line ?? 0) ?? null : null
   }, [loaded, path, comparison, link.patchSet, link.basePatchSet, editorGeneration])
-  const isReviewed = reviewed && reviewed.patchSet === link.patchSet && reviewed.paths.has(path)
+  const isReviewed = Boolean(reviewed?.has(path))
   async function markReviewed(value: boolean, targetPath = path) {
-    const markKey = `${link.patchSet}:${targetPath}`
-    if (blocked || pendingMarks.current.has(markKey)) return false
+    const markKey = `${reviewedKey}:${targetPath}`
+    if (blocked || !reviewedState.paths || pendingMarks.current.has(markKey)) return false
     pendingMarks.current.add(markKey)
-    setMarking(true)
-    setReviewedError('')
     try {
-      await api.setReviewFileReviewed(link, targetPath, value)
-      setReviewed((previous) => {
-        if (!previous || previous.patchSet !== link.patchSet) return previous
-        const next = new Set(previous.paths)
-        if (value) next.add(targetPath); else next.delete(targetPath)
-        return { patchSet: link.patchSet!, paths: next }
-      })
-      return true
-    } catch (e) { if (currentPatchSet.current === link.patchSet) setReviewedError((e as Error).message); return false }
-    finally { pendingMarks.current.delete(markKey); setMarking(pendingMarks.current.size > 0) }
+      return await reviewedState.change(targetPath, value, () => api.setReviewFileReviewed(link, targetPath, value), flagsChanged)
+    } finally {
+      pendingMarks.current.delete(markKey)
+      setReviewedRetry(value => value + 1)
+    }
   }
   useEffect(() => {
     if (!preferences.autoMarkReviewed) { autoMarkedVisit.current = ''; return }
-    if (readyFile !== fileKey || reviewed?.patchSet !== link.patchSet || autoMarkedVisit.current === fileKey) return
+    if (readyFile !== fileKey || !reviewed || autoMarkedVisit.current === fileKey) return
     autoMarkedVisit.current = fileKey
     if (!isReviewed) void markReviewed(true)
   }, [preferences.autoMarkReviewed, readyFile, fileKey, reviewed, isReviewed])
@@ -281,11 +275,11 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
     switch (shortcut) {
       case 'blame': editor.current?.blame(); break
       case 'preferences': setPreferencesOpen(true); break
-      case 'toggleReviewed': if (reviewed?.patchSet === link.patchSet) void markReviewed(!isReviewed); break
+      case 'toggleReviewed': if (reviewed) void markReviewed(!isReviewed); break
       case 'nextUnreviewed': {
-        if (!reviewed || reviewed.patchSet !== link.patchSet) break
+        if (!reviewed) break
         const index = paths.indexOf(path)
-        const next = [...paths.slice(index + 1), ...paths.slice(0, index)].find(candidate => !reviewed.paths.has(candidate))
+        const next = [...paths.slice(index + 1), ...paths.slice(0, index)].find(candidate => !reviewed.has(candidate))
         void markReviewed(true).then(success => { if (success && next) setPath(next) })
         break
       }
@@ -353,13 +347,13 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
           setLink({ ...link, patchSet, basePatchSet: link.basePatchSet === patchSet ? undefined : link.basePatchSet })
         }}>{(patchSets ?? [link.patchSet!]).map((n) => <option key={n} value={n}>Patch set {n}</option>)}</select></label>
         {patchSetError && <span role="alert" className="error">Could not load patch sets: {patchSetError}</span>}
-        {loaded?.comparison === comparison && loaded.path === path && <label className="reviewed-file"><input type="checkbox" aria-label="File reviewed" checked={Boolean(isReviewed)} disabled={marking || reviewed?.patchSet !== link.patchSet} onChange={(e) => void markReviewed(e.target.checked)} />Reviewed</label>}
+        {loaded?.comparison === comparison && loaded.path === path && <label className="reviewed-file"><input type="checkbox" aria-label="File reviewed" checked={isReviewed} disabled={blocked || !reviewed || reviewedState.pending.has(path)} aria-busy={reviewedState.pending.has(path)} onChange={(e) => void markReviewed(e.target.checked)} />Reviewed</label>}
       </div>
-      {reviewedError && <div className="review-flag-error" role="alert">Reviewed flag: {reviewedError} <button className="btn" onClick={() => { autoMarkedVisit.current = ''; setReviewedRetry((n) => n + 1) }}>Retry</button></div>}
+      {reviewedError && <div className="review-flag-error" role="alert">Reviewed flag: {reviewedError} <button className="btn" onClick={() => { reviewedState.clearErrors(); autoMarkedVisit.current = ''; setReviewedRetry((n) => n + 1) }}>Retry</button></div>}
       {mappingError && <div className="review-flag-error" role="alert">Could not place older comments: {mappingError} <button className="btn" onClick={() => { positionCache.current.delete(comparison); setMappingRetry(value => value + 1) }}>Retry</button></div>}
       {updateNotice && <div className="review-comment-notice" role="status">{updateNotice} <button className="btn" onClick={() => { setLink(current => ({ ...current, patchSet: Math.max(...(patchSets ?? [current.patchSet!])), basePatchSet: undefined })); setUpdateNotice('') }}>Open latest patch set</button><button className="btn" onClick={() => setUpdateNotice('')}>Dismiss</button></div>}
       <div className="local-review-body">
-        <ReviewFileList positions={positions} files={files ?? {}} discussion={discussion} ref={fileList} paths={paths} selected={path} reviewed={reviewed?.patchSet === link.patchSet ? reviewed!.paths : null} busy={marking} onOpen={setPath} onReviewed={(file, done) => void markReviewed(done, file)} />
+        <ReviewFileList positions={positions} files={files ?? {}} discussion={discussion} ref={fileList} paths={paths} selected={path} reviewed={reviewed} pending={reviewedState.pending} blocked={blocked} onOpen={setPath} onReviewed={(file, done) => void markReviewed(done, file)} />
         <main className="review-file">
         <ReviewComments blocked={blocked} ref={comments} positions={positions} controls={commentControls} createInlineHost={createInlineHost} hasEditor={Boolean(loaded && loaded.path === path && loaded.comparison === comparison)} onMutate={onMutate} onDiscussion={setDiscussion} onRefresh={() => { void api.reviewPatchSets(link.id).then(sets => { setPatchSets(sets); if (Math.max(...sets) > link.patchSet!) setUpdateNotice(`New patch set ${Math.max(...sets)} available.`) }).catch(e => setPatchSetError(e.message)); positionCache.current.clear(); setMappingRetry(value => value + 1) }} onHighlight={comment => { if (!comment) { editor.current?.highlightComment(null); return }; const mapped = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions, discussionComments); if (mapped) { const pane = commentPane(link, path, loaded?.nameA ?? path, { ...mapped, patch_set: mapped.patchSet, id: comment.id, updated: '' }); if (pane) editor.current?.highlightComment({ pane, line: mapped.line ?? mapped.range?.end_line ?? 1, range: mapped.range }) } }} link={link} path={path} originalPath={loaded?.nameA} visible={commentsOpen} onOpen={() => setCommentsOpen(true)} onHide={() => setCommentsOpen(false)} onReveal={(comment, original, preserveScroll) => {
           if (comment.path === '/PATCHSET_LEVEL') return

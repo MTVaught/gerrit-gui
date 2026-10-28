@@ -1,0 +1,424 @@
+{
+  "theme": "dark",
+  "platform": "Linux X11 / Electron 44.2.0",
+  "simulated": "Gerrit data; 600 ms reviewed-list reads; 900 ms writes during rapid sequence",
+  "input": "Real xdotool mouse clicks, 200 ms apart in rapid sequence. Hover pauses before isolated actions; rapid sequence deliberately omits per-target hover.",
+  "states": [
+    {
+      "at": 1406,
+      "heading": "Files5/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark unreviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "at": 5867,
+      "heading": "Files5/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark unreviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "at": 5872,
+      "heading": "Files4/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark reviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "false",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "at": 5898,
+      "heading": "FilesLoading status…",
+      "flags": [
+        {
+          "label": "Mark reviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/clock.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/queue.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/transport.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/types.ts",
+          "checked": "false",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "at": 6508,
+      "heading": "Files4/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark reviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "false",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "at": 13817,
+      "heading": "Files4/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark reviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "at": 13820,
+      "heading": "Files5/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark unreviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "at": 13847,
+      "heading": "FilesLoading status…",
+      "flags": [
+        {
+          "label": "Mark reviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/clock.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/queue.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/transport.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/types.ts",
+          "checked": "false",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "at": 14457,
+      "heading": "Files5/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark unreviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "at": 18939,
+      "heading": "Files5/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark unreviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": true
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "at": 19844,
+      "heading": "Files4/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark reviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "false",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "at": 19871,
+      "heading": "FilesLoading status…",
+      "flags": [
+        {
+          "label": "Mark reviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/clock.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/queue.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/transport.ts",
+          "checked": "false",
+          "disabled": true
+        },
+        {
+          "label": "Mark reviewed: src/telemetry/types.ts",
+          "checked": "false",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "at": 20484,
+      "heading": "Files4/5 reviewed",
+      "flags": [
+        {
+          "label": "Mark reviewed: src/telemetry/batch-scheduler.ts",
+          "checked": "false",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/clock.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/queue.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/transport.ts",
+          "checked": "true",
+          "disabled": false
+        },
+        {
+          "label": "Mark unreviewed: src/telemetry/types.ts",
+          "checked": "true",
+          "disabled": false
+        }
+      ]
+    }
+  ],
+  "writes": [
+    {
+      "method": "DELETE",
+      "route": "/changes/2481/revisions/3/files/src/telemetry/batch-scheduler.ts/reviewed",
+      "body": {}
+    }
+  ],
+  "serverReviewed": [
+    "src/telemetry/clock.ts",
+    "src/telemetry/queue.ts",
+    "src/telemetry/transport.ts",
+    "src/telemetry/types.ts"
+  ]
+}
