@@ -2,8 +2,9 @@ import type { FileInfo, ReviewDiscussion, ReviewCommentPosition } from '../../..
 import { commentThreads } from '../review-comments.ts'
 import { useLayoutEffect, useRef, useState, type Ref } from 'react'
 
-export function ReviewFileList({ files, discussion, positions, paths, selected, reviewed, pending, blocked, onOpen, onReviewed, ref }: {
+export function ReviewFileList({ files, discussion, positions, paths, selected, reviewed, pending, blocked, resetting, resetDisabled, onReset, onOpen, onReviewed, ref }: {
   positions: ReviewCommentPosition[]; files: Record<string, FileInfo>; discussion: ReviewDiscussion | null; paths: string[]; selected: string; reviewed: Set<string> | null; pending: ReadonlySet<string>; blocked: boolean
+  resetting: boolean; resetDisabled: boolean; onReset: () => void
   onOpen: (path: string) => void; onReviewed: (path: string, reviewed: boolean) => void; ref: Ref<HTMLElement>
 }) {
   const [unreviewedOnly, setUnreviewedOnly] = useState(false)
@@ -34,7 +35,13 @@ export function ReviewFileList({ files, discussion, positions, paths, selected, 
   function resize(next: number) { setWidth(Math.max(min, Math.min(size.max, next))) }
   return <>
     <nav ref={(element) => { pane.current = element; if (typeof ref === 'function') return ref(element); if (ref) ref.current = element }} className="review-files" aria-label="Changed files" style={{ width: width ?? 'max-content' }}>
-      <div className="review-files-heading"><strong>Files</strong><span aria-live="polite">{reviewed ? `${count}/${paths.length} reviewed` : 'Loading status…'}</span></div>
+      <div className="review-files-heading">
+        <strong>Files</strong>
+        <span aria-live="polite">{reviewed ? `${count}/${paths.length} reviewed` : 'Loading status…'}</span>
+        <button className="btn review-reset" aria-label={resetting ? 'Marking all unreviewed...' : 'Mark all unreviewed'} disabled={blocked || resetting || resetDisabled || !reviewed?.size || pending.size > 0} aria-busy={resetting} title={resetting ? 'Marking all unreviewed...' : 'Mark all unreviewed. Clear your reviewed flags for all files in this patch set.'} onClick={onReset}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6M4 4l16 16" /></svg>
+        </button>
+      </div>
       <label className="review-files-filter"><input type="checkbox" checked={unreviewedOnly} disabled={!reviewed} onChange={(e) => setUnreviewedOnly(e.target.checked)} />Unreviewed only</label>
       <div className="review-files-list">
         {[...groups].map(([directory, groupedPaths]) => <section key={directory} aria-label={directory || 'Root files'}>
@@ -51,7 +58,7 @@ export function ReviewFileList({ files, discussion, positions, paths, selected, 
             const details = `${status ?? 'Modified'} · ${inserted} lines added · ${deleted} lines removed · ${unresolved} unresolved · ${resolved} resolved · ${drafts} drafts`
             const done = Boolean(reviewed?.has(path))
             return <div key={path} className={'review-file-row' + (path === selected ? ' selected' : '') + (done ? ' is-reviewed' : '')}>
-              <button className="review-status" aria-label={`${done ? 'Mark unreviewed' : 'Mark reviewed'}: ${path}`} aria-pressed={done} disabled={!reviewed || blocked || pending.has(path)} aria-busy={pending.has(path)} title={done ? 'Reviewed. Click to mark unreviewed.' : 'Unreviewed. Click to mark reviewed.'} onClick={() => onReviewed(path, !done)}>
+              <button className="review-status" aria-label={`${done ? 'Mark unreviewed' : 'Mark reviewed'}: ${path}`} aria-pressed={done} disabled={!reviewed || blocked || resetting || pending.has(path)} aria-busy={resetting || pending.has(path)} title={done ? 'Reviewed. Click to mark unreviewed.' : 'Unreviewed. Click to mark reviewed.'} onClick={() => onReviewed(path, !done)}>
                 {done ? <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg> : <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" /></svg>}
               </button>
               <button className="review-file-name" data-review-path={path} aria-label={`Open ${path}`} title={`${path} · ${details}`} aria-current={path === selected} onClick={() => onOpen(path)}>{path === '/COMMIT_MSG' ? 'Commit message' : path === '/MERGE_LIST' ? 'Merge list' : path.split('/').at(-1)}</button>

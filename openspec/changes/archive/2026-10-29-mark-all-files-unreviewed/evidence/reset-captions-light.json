@@ -1,0 +1,26 @@
+[
+  {
+    "seconds": 0,
+    "text": "Linux Electron with simulated Gerrit data. Three of five files are reviewed."
+  },
+  {
+    "seconds": 2.73,
+    "text": "Enable Unreviewed only. The three reviewed files will be hidden."
+  },
+  {
+    "seconds": 8.144,
+    "text": "Use the reset glyph beside the reviewed count to clear hidden files too."
+  },
+  {
+    "seconds": 14.075,
+    "text": "All five files are unreviewed. The filter and selected file stay the same."
+  },
+  {
+    "seconds": 18.006,
+    "text": "Close and reopen this review to check the saved flags."
+  },
+  {
+    "seconds": 25.174,
+    "text": "The reopened review still has zero reviewed files. The reset was saved."
+  }
+]

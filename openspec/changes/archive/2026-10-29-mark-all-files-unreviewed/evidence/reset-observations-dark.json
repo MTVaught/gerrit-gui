@@ -1,0 +1,25 @@
+{
+  "theme": "dark",
+  "platform": "Linux X11 / Electron 44.9.3",
+  "simulated": "Gerrit data; 400 ms reviewed-list reads; 650 ms reviewed-file writes",
+  "input": "Real xdotool mouse clicks with two-second hover pauses.",
+  "writes": [
+    {
+      "method": "DELETE",
+      "route": "/changes/2481/revisions/3/files/src/telemetry/batch-scheduler.ts/reviewed",
+      "body": {}
+    },
+    {
+      "method": "DELETE",
+      "route": "/changes/2481/revisions/3/files/src/telemetry/clock.ts/reviewed",
+      "body": {}
+    },
+    {
+      "method": "DELETE",
+      "route": "/changes/2481/revisions/3/files/src/telemetry/queue.ts/reviewed",
+      "body": {}
+    }
+  ],
+  "serverReviewed": [],
+  "persistedAfterReopen": true
+}
