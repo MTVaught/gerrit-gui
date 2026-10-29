@@ -32,8 +32,8 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   const comments = useRef<ReviewCommentsHandle>(null)
   const [commentsOpen, setCommentsOpen] = useState(true)
   const [commentControls, setCommentControls] = useState<HTMLDivElement | null>(null)
-  function closeReview() { if (separate || pendingMarks.current.size === 0 && comments.current?.canClose() !== false) onClose() }
-  useImperativeHandle(ref, () => ({ canClose: () => pendingMarks.current.size === 0 && comments.current?.canClose() !== false }))
+  function closeReview() { if (!reviewWritesPending() && (separate || comments.current?.canClose() !== false)) onClose() }
+  useImperativeHandle(ref, () => ({ canClose: () => !reviewWritesPending() && comments.current?.canClose() !== false }))
   const [link, setLink] = useState(initialLink)
   const [patchSets, setPatchSets] = useState<number[] | null>(null)
   const [updateNotice, setUpdateNotice] = useState('')
@@ -85,13 +85,22 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   const reviewedState = reviewedStates.current.get(reviewedKey)!
   const reviewed = reviewedState.paths
   const reviewedError = reviewedState.error
+  const resetting = reviewedState.resetting
+  const reviewContext = useRef<{ state: ReviewedFilesState; blocked: boolean } | null>(null)
+  reviewContext.current = { state: reviewedState, blocked: blocked || Boolean(discussion?.readOnly) }
+  useEffect(() => {
+    reviewContext.current = { state: reviewedState, blocked: blocked || Boolean(discussion?.readOnly) }
+    return () => { reviewContext.current = null }
+  }, [reviewedState, blocked, discussion?.readOnly])
   const [, setFlagVersion] = useState(0)
   const flagsChanged = useCallback(() => setFlagVersion(version => version + 1), [])
   const [reviewedRetry, setReviewedRetry] = useState(0)
   const [editorGeneration, setEditorGeneration] = useState(0)
   const [readyFile, setReadyFile] = useState('')
   const autoMarkedVisit = useRef('')
+  const resetVisit = useRef('')
   const pendingMarks = useRef(new Set<string>())
+  function reviewWritesPending() { return pendingMarks.current.size > 0 || [...reviewedStates.current.values()].some(state => state.resetting) }
   const comparison = `${link.basePatchSet ?? 0}:${link.patchSet}`
   const positionCache = useRef(new Map<string, ReviewCommentPosition[]>())
   const [mapped, setMapped] = useState<{ comparison: string; positions: ReviewCommentPosition[] } | null>(null)
@@ -218,7 +227,7 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
   const isReviewed = Boolean(reviewed?.has(path))
   async function markReviewed(value: boolean, targetPath = path) {
     const markKey = `${reviewedKey}:${targetPath}`
-    if (blocked || !reviewedState.paths || pendingMarks.current.has(markKey)) return false
+    if (blocked || resetting || reviewedState.resetting || !reviewedState.paths || pendingMarks.current.has(markKey)) return false
     pendingMarks.current.add(markKey)
     try {
       return await reviewedState.change(targetPath, value, () => api.setReviewFileReviewed(link, targetPath, value), flagsChanged)
@@ -227,12 +236,22 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
       setReviewedRetry(value => value + 1)
     }
   }
+  async function markAllUnreviewed() {
+    if (blocked || !discussion || discussion.readOnly || pendingMarks.current.size || !reviewedState.statusReady || !reviewed?.size || reviewedState.resetting) return
+    autoMarkedVisit.current = fileKey
+    resetVisit.current = fileKey
+    const current = () => reviewContext.current?.state === reviewedState && !reviewContext.current.blocked
+    await reviewedState.resetAll(target => api.setReviewFileReviewed(link, target, false), () => api.reviewReviewedFiles(link), current, flagsChanged)
+  }
   useEffect(() => {
+    if (resetVisit.current !== fileKey) resetVisit.current = ''
+    if (resetting) resetVisit.current = fileKey
+    if (resetVisit.current === fileKey) { autoMarkedVisit.current = fileKey; return }
     if (!preferences.autoMarkReviewed) { autoMarkedVisit.current = ''; return }
     if (readyFile !== fileKey || !reviewed || autoMarkedVisit.current === fileKey) return
     autoMarkedVisit.current = fileKey
     if (!isReviewed) void markReviewed(true)
-  }, [preferences.autoMarkReviewed, readyFile, fileKey, reviewed, isReviewed])
+  }, [preferences.autoMarkReviewed, readyFile, fileKey, reviewed, isReviewed, resetting])
   const changePreference: ChangeReviewPreference = (name, value) => {
     if (api.patchReviewPreferences) {
       const request = (preferenceRequests.current.get(name) ?? 0) + 1
@@ -338,24 +357,26 @@ export function LocalReview({ link: initialLink, subject, onClose, onMutate, ref
         <button className="btn" onClick={closeReview}>Close review</button>
       </header>
       <div className="review-comparison" aria-label="Patch set comparison">
-        <label>Base<select aria-label="Base patch set" disabled={!patchSets} value={link.basePatchSet ?? 'base'} onChange={(e) => setLink({ ...link, basePatchSet: e.target.value === 'base' ? undefined : Number(e.target.value) })}>
+        <label>Base<select aria-label="Base patch set" disabled={!patchSets || resetting} value={link.basePatchSet ?? 'base'} onChange={(e) => { if (!reviewedState.resetting) setLink({ ...link, basePatchSet: e.target.value === 'base' ? undefined : Number(e.target.value) }) }}>
           <option value="base">Base</option>{(patchSets ?? [link.basePatchSet].filter((n): n is number => n !== undefined)).filter((n) => n !== link.patchSet).map((n) => <option key={n} value={n}>Patch set {n}</option>)}
         </select></label>
         <span aria-hidden="true">→</span>
-        <label>Patch set<select aria-label="Compared patch set" disabled={!patchSets} value={link.patchSet} onChange={(e) => {
+        <label>Patch set<select aria-label="Compared patch set" disabled={!patchSets || resetting} value={link.patchSet} onChange={(e) => {
+          if (reviewedState.resetting) return
           const patchSet = Number(e.target.value)
           setLink({ ...link, patchSet, basePatchSet: link.basePatchSet === patchSet ? undefined : link.basePatchSet })
         }}>{(patchSets ?? [link.patchSet!]).map((n) => <option key={n} value={n}>Patch set {n}</option>)}</select></label>
         {patchSetError && <span role="alert" className="error">Could not load patch sets: {patchSetError}</span>}
-        {loaded?.comparison === comparison && loaded.path === path && <label className="reviewed-file"><input type="checkbox" aria-label="File reviewed" checked={isReviewed} disabled={blocked || !reviewed || reviewedState.pending.has(path)} aria-busy={reviewedState.pending.has(path)} onChange={(e) => void markReviewed(e.target.checked)} />Reviewed</label>}
+        {loaded?.comparison === comparison && loaded.path === path && <label className="reviewed-file"><input type="checkbox" aria-label="File reviewed" checked={isReviewed} disabled={blocked || resetting || !reviewed || reviewedState.pending.has(path)} aria-busy={resetting || reviewedState.pending.has(path)} onChange={(e) => void markReviewed(e.target.checked)} />Reviewed</label>}
       </div>
-      {reviewedError && <div className="review-flag-error" role="alert">Reviewed flag: {reviewedError} <button className="btn" onClick={() => { reviewedState.clearErrors(); autoMarkedVisit.current = ''; setReviewedRetry((n) => n + 1) }}>Retry</button></div>}
+      {reviewedError && <div className="review-flag-error" role="alert">Reviewed flag: {reviewedError} <button className="btn" disabled={resetting} onClick={() => { reviewedState.clearWriteErrors(); if (resetVisit.current !== fileKey) autoMarkedVisit.current = ''; setReviewedRetry((n) => n + 1) }}>Retry</button></div>}
       {mappingError && <div className="review-flag-error" role="alert">Could not place older comments: {mappingError} <button className="btn" onClick={() => { positionCache.current.delete(comparison); setMappingRetry(value => value + 1) }}>Retry</button></div>}
-      {updateNotice && <div className="review-comment-notice" role="status">{updateNotice} <button className="btn" onClick={() => { setLink(current => ({ ...current, patchSet: Math.max(...(patchSets ?? [current.patchSet!])), basePatchSet: undefined })); setUpdateNotice('') }}>Open latest patch set</button><button className="btn" onClick={() => setUpdateNotice('')}>Dismiss</button></div>}
+      {updateNotice && <div className="review-comment-notice" role="status">{updateNotice} <button className="btn" disabled={resetting} onClick={() => { if (reviewedState.resetting) return; setLink(current => ({ ...current, patchSet: Math.max(...(patchSets ?? [current.patchSet!])), basePatchSet: undefined })); setUpdateNotice('') }}>Open latest patch set</button><button className="btn" onClick={() => setUpdateNotice('')}>Dismiss</button></div>}
       <div className="local-review-body">
-        <ReviewFileList positions={positions} files={files ?? {}} discussion={discussion} ref={fileList} paths={paths} selected={path} reviewed={reviewed} pending={reviewedState.pending} blocked={blocked} onOpen={setPath} onReviewed={(file, done) => void markReviewed(done, file)} />
+        <ReviewFileList positions={positions} files={files ?? {}} discussion={discussion} ref={fileList} paths={paths} selected={path} reviewed={reviewed} pending={reviewedState.pending} blocked={blocked} resetting={resetting} resetDisabled={!discussion || discussion.readOnly || !reviewedState.statusReady || pendingMarks.current.size > 0} onReset={() => void markAllUnreviewed()} onOpen={setPath} onReviewed={(file, done) => void markReviewed(done, file)} />
         <main className="review-file">
         <ReviewComments blocked={blocked} ref={comments} positions={positions} controls={commentControls} createInlineHost={createInlineHost} hasEditor={Boolean(loaded && loaded.path === path && loaded.comparison === comparison)} onMutate={onMutate} onDiscussion={setDiscussion} onRefresh={() => { void api.reviewPatchSets(link.id).then(sets => { setPatchSets(sets); if (Math.max(...sets) > link.patchSet!) setUpdateNotice(`New patch set ${Math.max(...sets)} available.`) }).catch(e => setPatchSetError(e.message)); positionCache.current.clear(); setMappingRetry(value => value + 1) }} onHighlight={comment => { if (!comment) { editor.current?.highlightComment(null); return }; const mapped = displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions, discussionComments); if (mapped) { const pane = commentPane(link, path, loaded?.nameA ?? path, { ...mapped, patch_set: mapped.patchSet, id: comment.id, updated: '' }); if (pane) editor.current?.highlightComment({ pane, line: mapped.line ?? mapped.range?.end_line ?? 1, range: mapped.range }) } }} link={link} path={path} originalPath={loaded?.nameA} visible={commentsOpen} onOpen={() => setCommentsOpen(true)} onHide={() => setCommentsOpen(false)} onReveal={(comment, original, preserveScroll) => {
+          if (reviewedState.resetting) return
           if (comment.path === '/PATCHSET_LEVEL') return
           const display = original ? null : displayCommentAnchor(link, path, loaded?.nameA ?? path, comment, positions, discussionComments)
           const pane = display ? commentPane(link, path, loaded?.nameA ?? path, { ...display, patch_set: display.patchSet, id: comment.id, updated: '' }) : null

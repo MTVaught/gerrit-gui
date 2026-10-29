@@ -636,9 +636,13 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .local-review h2 { margin: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .local-review-body { display: flex; flex: 1; min-height: 0; }
 .review-files { flex-shrink: 0; min-width: min(140px, 50%); max-width: 50%; display: flex; flex-direction: column; background: var(--panel); font-size: 12px; }
-.review-files-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 8px 6px; }
+.review-files-heading { display: flex; align-items: center; gap: 4px; padding: 6px 8px; }
 .review-files-heading strong { font-size: 13px; }
-.review-files-heading span { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.review-files-heading span { margin-left: auto; min-width: 0; color: var(--muted); font-size: 11px; text-align: right; }
+.review-files-heading .review-reset { display: grid; place-items: center; flex: 0 0 22px; width: 22px; height: 22px; padding: 3px; border-color: transparent; background: transparent; color: var(--muted); }
+.review-reset svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.review-reset[aria-busy="true"] svg { stroke-dasharray: 2 2; }
+.review-reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .review-files-filter { display: flex; align-items: center; gap: 5px; padding: 4px 8px 9px; border-bottom: 1px solid var(--border); cursor: pointer; }
 .review-files-filter input { margin: 0; }
 .review-files-list { flex: 1; min-height: 0; overflow: auto; padding: 4px 0; }
