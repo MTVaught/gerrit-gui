@@ -1,831 +1,141 @@
 # Gerrit Review Board
 
-Gerrit Review Board is a desktop application for Gerrit 3.11. It shows code
-review as a workflow with a request and a response. The author asks for a
-review of one patch set. Each primary reviewer votes on that patch set. The
-result is set after the last primary reviewer votes.
-
-The application shows three things:
-
-- The changes that you must review
-- The changes that you review
-- The status of your changes
-
-All users get the same five tabs, which go by your part on each change:
-owner, reviewer, tagged primary reviewer or named merger. Two more tabs,
-the team tab and "External Reviews", appear when you set teams in the
-settings (refer to "Teams" below). The team tab is a watched team's whole
-backlog; External Reviews is what you are on from outside your team. Neither
-takes a change off the five tabs.
-The "View"
-button in the top bar (or Ctrl+F) opens the search, filter and sort for every
-tab: a search over the subjects, an author filter, and the row order. The
-author field suggests the owners of the changes on the current tab first,
-then any Gerrit account; "Me" picks your own changes without typing. The
-rows can be ordered by the most recent update (default), by overall age with
-the oldest change first, or by the age of the current patch set with the
-oldest first. The age shown on each row follows the chosen order. The
-application remembers the sort; the search and filter last for the session.
-
-| Tab | Contents |
-| --- | --- |
-| Needs Review | The author asked for a review of the current patch set. You are a primary reviewer. You did not vote on that patch set. The WIP status has no effect. Two sections: "Pass Around" for reviews you do on your own, "In Person" for reviews done together with the author. The count is split the same way; both parts use the review color. |
-| Reviewing | All open changes on which you are a reviewer, primary or not, in groups by state. |
-| My Changes | Your open changes, grouped into sections, with the actions of the owner. Pills count individual public open changes, including every displayed branch and sequence member regardless of owner, in fixed order: Needs Changes, Ready to Merge, Approved, In Review, Iterating, In Progress. Zero counts disappear; private changes contribute nothing. Counts cover the whole tab regardless of View filters. Private standalone changes are in one section at the bottom, whatever their state. Your own are the only private changes the application shows: a private change of another author is never listed, even when you are a reviewer or CC on it. |
-| External Reviews | The open changes you are on whose owner is not on your team, in groups by state. Only when you picked your team. |
-| Team tab | Named after your team, or "Watched". Every open change owned by someone else on a watched team, in groups by state, whether or not you are on it. With several watched teams, a caret shows one at a time or all together. |
-| Merged | Approved changes that the author asked you, by name, to merge, above the changes that Gerrit merged in the last 14 days. The count gains a purple segment while anything waits on you to merge. |
-
-Workflow colors are consistent across state pills, badges, card borders, family and
-sequence member labels, the compact ledger, and colored tray indicators: red for Needs
-Changes, purple for Ready to Merge, green for Approved, indigo for both review
-modes, amber for Iterating, and gray for In Progress. Pills are informational and
-do not apply filters. State names remain available in the aggregate pill tooltip.
-If no public open changes remain, My Changes has no count pill. Other tabs and
-tray indicators retain their own eligibility and counting rules.
-
-Section titles on every tab omit counts in both standard and compact views.
-Family branch counts and sequence size remain. State totals are removed from their headers. Each member keeps its state label.
-
-
-![Needs Review](docs/screenshots/needs-my-review.png)
-
-## Separate review windows
-
-In the desktop app, enable **Open reviews in the app** under Settings > Beta.
-Then enable **Open reviews in separate windows** under Settings > Window.
-The second setting defaults to off. It applies to the next review opened from
-the board or native menu and does not move existing reviews.
-
-Each window stays on one change. You can open the same change more than once.
-Files, comparisons, scroll position, and unsaved text stay local to each window.
-Saved application and diff settings apply to all open reviews. Saved drafts,
-comments, votes, and reviewed-file flags update the other views automatically.
-U and outer Escape leave a separate review window open. Escape still closes
-nested dialogs and menus. Use Close review, the window close button, or the
-normal system close shortcut to close one review. Pending writes block closure;
-unsaved text uses the existing discard prompt.
-
-If two windows edit one saved draft, a conflict keeps local text and pauses
-autosave. Choose Load saved version or Keep as new draft. This protects writes
-within this app process; it is not shared text editing with other Gerrit clients.
-A server or account change disables writes in old review windows. Close and
-reopen them to use the new connection.
-
-## The workflow
-
-1. The author pushes a change and adds primary reviewers with the "+"
-   button on the row. It opens a checklist of your team from Settings; anyone
-   else on the server can be searched for and joins the list. One button adds
-   everyone checked. With "Primary" selected, the application adds each one
-   as a reviewer in Gerrit, if needed, and tags the change
-   `reviewer:<username>`. The primary reviewers are the people whose votes
-   decide. Anyone else on the change, added in Gerrit, by CI or with the
-   "Other" choice of the same button, is shown but not waited for. If the author pushes more patch sets, the state does not
-   change. The application does not ask a reviewer to look at the change yet.
-2. When the patch set is ready, the author pushes the "Request review" button.
-   The button is off until the change has a primary reviewer. All primary
-   reviewers then see the change on the "Needs Review" tab. The button asks
-   for a pass-around review: each reviewer reads the change on their own.
-   The caret next to it offers an in-person review instead: the reviewers
-   go through the change together with the author, then vote in Gerrit the
-   same way. An in-person change is listed in its own "In Person" section
-   on every tab, and it is not counted in the menu bar. While the request
-   is open, the caret on "Withdraw request" (or, on a later round, the
-   "Pass around" / "In person" button) switches the kind without starting
-   a new round.
-3. Each primary reviewer pushes the "Review" button. It opens the change in Gerrit,
-   showing the diff from the last patch set that reviewer looked at to the
-   current one (or the whole change on a first look). The reviewer votes +1
-   or -1 in Gerrit. After a reviewer votes, the application removes the change
-   from the "Needs Review" tab of that reviewer.
-4. After the last primary reviewer votes, the change gets the "Approved"
-   state (all votes are +1) or the "Needs Changes" state (one or more votes
-   are -1). Votes that come before the last vote do not change the state.
-   The votes of the other reviewers never change the state.
-5. If the state is "Needs Changes", the author pushes the corrections and
-   pushes the "Request review" button again. The application asks all
-   reviewers again, for the new patch set only. If the change still has the
-   `ready-to-merge` hashtag from an earlier patch set, the button also removes
-   the hashtag. The application does not remove the hashtag on its own. The
-   `reviewer:` tags stay: the same people are asked again.
-6. If the state is "Approved", the change is Active (not WIP) and CI voted
-   Verified +1 on the current patch set, the author pushes the "Ready to
-   Merge" button and picks the person to merge: one of the mergers set for the project in
-   "Settings", or anyone else on the server. The change then shows
-   "Ready to Merge · Dave" on "My Changes".
-7. The person who was asked sees the change at the top of the "Merged" tab,
-   in the tray count, and in a desktop notification. That person opens the
-   change in Gerrit, votes +2 and submits it there; the application has no
-   merge button. Nobody else is asked; if the merger cannot merge, the author
-   picks someone else with "Change merger".
-
-Refer to `docs/walkthrough.md` for the same flow with a screenshot of each
-step, from the developer's, a reviewer's and the merger's window.
-
-The WIP status is not part of this workflow. A change can go through the full
-workflow with the WIP status. The application shows WIP or Active as a
-separate badge with a separate switch. This is useful if you use WIP to stop
-CI until the review is complete. The "Ready to Merge" button does not remove
-the WIP status; it is disabled until the change is Active and Verified +1, so
-the merger is only asked once CI has passed.
-
-The Verified vote on the current patch set is shown after the patch set
-number on an open change: a green check for +1, a red cross for −1, nothing
-while CI has not voted. A new patch set clears it, as it clears the vote.
-
-An amber or yellow warning triangle before the Verified glyph means Gerrit
-reports a merge conflict. Hover over it for "Merge conflict with <branch>".
-It also appears when CI has not voted. Each affected open branch or sequence
-member has its own warning, in standard and compact views. The warning is
-informational; it does not change review states, counts, or available actions.
-Missing mergeability data shows no warning and does not confirm a clean merge.
-Dashboard refresh and direct change reads update the result, including after
-the destination branch changes without a new patch set.
-
-## Local review beta
-
-Settings → Beta → **Open reviews in the app** enables the local diff viewer. It is off by default. With it enabled, the Review button and its
-patch-set comparison options open the local viewer. The comparison still
-starts from your last reviewed patch set, or from base on a first review.
-
-The selected file loads with all context on both sides. Whole file is the
-default; Diff preferences can limit visible context while keeping both complete
-files in memory. Scrolling, whole-file search, line jumps and change navigation use
-that loaded content without further Gerrit requests. Files and comparisons opened during the
-same review stay cached until you close it, so memory use grows with the files
-you open. Each side can scroll horizontally; vertical scrolling is synchronized.
-The Base and Patch set selectors change either revision in the comparison.
-Returning to a comparison reuses its cached files and scroll positions.
-Diff preferences has the Gerrit options for context, fit to screen, diff width,
-tab width, font size, tabs, trailing whitespace, syntax highlighting, automatic
-reviewed flags and all four ignore-whitespace modes. Preferences sync with your
-Gerrit account; fit to screen remains local. First use defaults to Whole file,
-and later sessions respect your saved context choice. Display settings and whitespace
-comparisons apply locally without changing the source text or fetching it again.
-The compact, resizable file sidebar groups filenames by directory. Its checkmarks
-read and write Gerrit's reviewed flags independently of opening files. A progress
-count and Unreviewed only filter help track the remaining files. Rows also show
-change status, additions/deletions and comment indicators; hover for the full
-thread, unresolved and draft counts. Merge List is included for merge commits. The current
-file's full path and Reviewed checkbox stay above the diff. Automatic marking is off until enabled in Diff preferences.
-
-Reviewed flags update as soon as you click. You can change other files while
-a flag saves; only the file being saved is disabled. Status refreshes keep known
-checkmarks visible. A failed save restores that file's flag and shows an error.
-Click the file again to retry the change, or use Retry to reload saved status.
-
-Rebase edits identified by Gerrit appear in blue for additions and yellow for
-removals, with hover labels. Ordinary edits retain green/red colors.
-This works in side-by-side and unified views, using the same full-file response.
-
-The Monaco diff editor owns the scrollbars and text rendering. Ctrl+F or Cmd+F
-searches the focused side, Ctrl+G jumps to a line, and F1 opens editor commands.
-The header keeps Reply and diff preferences visible. Comments and More menus
-contain secondary actions; file-level comments are also available from each
-pane's file header. Performance timings remain internal to the test harness.
-Gerrit navigation keys work in the review window: `j`/`k` or Up/Down for lines,
-`n`/`p` for diff chunks, `]`/`[` for files, Shift+Left/Right for panes, and `.`
-for visible code. Press `f` for the file list, where `j`/`k` select an entry and
-`o`/Enter opens it. `m` toggles unified/side-by-side mode, `u` returns to the
-board, and `?` shows shortcut help. Typing in search and other editor fields
-does not trigger navigation. Background scrolling is hidden during review
-and restored when you close it.
-Syntax and character-level highlighting, text selection and matching-text
-highlighting work locally. Editor models are disposed when you switch files;
-the cached file content and scroll position remain available for reopening.
-
-The editor renders visible lines and computes alignment
-in a bundled worker. No source code is sent to a CDN or a language service.
-Select any line or range on either side and press `c`, use Add comment or the
-editor context menu, or click the comment gutter. Unchanged lines accept comments.
-Comments and draft editors appear inline beneath the selected code, on the
-commented side of the comparison. Reply editors open inside their thread. Click
-a file header to add file-level comments above the first line.
-Both panes keep matching code aligned as threads expand, collapse or resize.
-The Comments menu's All comments action opens a dialog for
-threads on other files or patch sets and overall review comments. Drafts autosave to Gerrit after typing pauses, with an explicit
-save button and Ctrl+Enter / Cmd+Enter or Ctrl+S / Cmd+S. They are private until
-Send review publishes them. No comment text is persisted in app storage. Save
-failures keep your edits available for retry, and in-flight saves are serialized.
-Comments render CommonMark formatting, links, quotes and code blocks, without
-loading embedded images or executing HTML. Hovering or focusing a thread highlights
-its commented code range. All comments can be filtered by author, resolution or
-draft status and include available source snippets.
-Inline threads support replies, Quote, Done, Ack, resolution changes, draft editing
-and deletion, comment permalinks, and suggested replacements for selected ranges.
-Structured fixes and fenced `suggestion` blocks support a diff preview before
-applying to a Gerrit change edit; publishing that
-edit remains in Gerrit. Administrators can redact published comments with a reason.
-Press Shift+N / Shift+P to navigate threads, `h` to show or hide inline threads, or `a`
-to open the review dialog. The dialog offers permitted label votes on the latest
-patch set, a summary that autosaves as a Gerrit draft, editable draft links,
-selected-patch-set or all-change draft publishing, keeping drafts private,
-reviewer/CC changes, attention-set adjustments and notification recipients.
-Clearing the summary deletes its saved draft.
-The board reloads the change after publishing without closing the review window.
-Metadata polling every 30 seconds notifies you of new patch sets and comments
-without replacing the active comparison or refetching source files. Refresh
-comments also updates patch-set choices and historical comment mapping.
-More offers Blame and a local declaration outline. Blame is cached with the
-opened file and exposes commit details in the diff gutter. Gerrit shortcuts
-include `b` for blame, `,` for preferences, `r` for reviewed status and Shift+M
-for marking reviewed and moving to the next unreviewed file.
-Use **Open in Gerrit** for binary files and semantic symbol hovers. The local
-outline scans declaration patterns and indexes up to 2,000 entries; it does not
-use a language server. Gerrit
-still computes the API diff, so a slow server response can still delay opening
-a file.
-
-## How the states are related to Gerrit data
-
-The application has no database. The application calculates each state from
-data that Gerrit already has. Thus, a user who looks at Gerrit directly sees
-the same votes, hashtags and WIP flags.
-
-| Workflow item | Gerrit data |
-| --- | --- |
-| Request review | The application appends the number of the current patch set to the custom keyed value `review-requested-ps` of the change, a comma-separated list of every patch set asked about, in order: `2,4,5`. |
-| In-person review | The request also sets the custom keyed value `in-person-review-ps` to the number of the current patch set. A pass-around request removes it. The value counts only while it equals the current patch set and a review is requested for that patch set; a push after the request drops the kind with the request. |
-| Withdraw request | Removes `review-requested-ps` and `in-person-review-ps`. Offered only for a first request on the current patch set that no primary reviewer has voted on; later rounds stay on record. |
-| Switch kind | Sets or removes `in-person-review-ps` for the current patch set; `review-requested-ps` is not touched, so the round stays as it is. |
-| Primary reviewer X | The change has the hashtag `reviewer:<username>`, with the Gerrit username of X in lower case, or the email address for an account with no username. One tag per primary reviewer. |
-| Needs Review by X | The last number in `review-requested-ps` is the same as the number of the current patch set. X is a primary reviewer. X has no Code-Review vote on the current patch set. |
-| In-Person Review | As Needs Review, and `in-person-review-ps` is the number of the current patch set. Everything else is the same: the votes of the primary reviewers decide, and the last vote sets Approved or Needs Changes. |
-| Iterating | No review is requested for the current patch set, and a primary reviewer voted on an earlier patch set listed in `review-requested-ps`. The vote is read from the change messages, since Gerrit drops the votes of earlier patch sets from the labels. Shown on My Changes only; a reviewer sees these as In Progress. |
-| Reviewer finished | X has a Code-Review vote (+1 or -1) on the current patch set. |
-| "+" button, "Primary" | For each person checked: adds them as a reviewer of the change in Gerrit, when they are not one yet, then adds the `reviewer:` tag. One account per tag; a group is refused. |
-| "×" on a primary reviewer | Removes the `reviewer:` tag, then tries to remove the reviewer in Gerrit. Gerrit lets only the owner, an administrator or the person themself do the second part; for anyone else the tag goes and the person stays on the change as an other reviewer. |
-| "↑" and "↓" on a reviewer | Adds or removes the `reviewer:` tag only. The person stays on the change in Gerrit. |
-| Review button | Opens Gerrit at `/c/<project>/+/<change>/<last>..<current>`, where `<last>` is the highest patch set with a vote or reply from you in the change messages. Without one, it opens the current patch set against base. The caret offers the other diffs and the change page. |
-| Needs Changes | All primary reviewers voted on the current patch set. One or more of them voted -1. |
-| Approved | All primary reviewers voted +1 on the current patch set. There is at least one primary reviewer. |
-| Ready to Merge | The state is Approved, the change has the hashtag `ready-to-merge`, and the custom value `ready-to-merge-ps` equals the current patch set number. A tag for an earlier patch set (or without the value, from an older version) is stale: the change stays Approved and asking Ready to Merge again, or re-requesting review, writes over it. |
-| Ready to Merge button | Enabled when the state is Approved, the change is not WIP, and the `Verified` label has a +1 (or higher) vote and no negative vote on the current patch set. The application adds the hashtags `ready-to-merge` and `merger:<username>` in one request, then sets the custom value `ready-to-merge-ps` to the current patch set number. The username is the Gerrit username of the person asked, in lower case; the email address for an account with no username. A change has one `merger:` tag; "Change merger" replaces it. |
-| Asked of you | The change is Ready to Merge and the `merger:` tag names your username or email address. |
-| Slack thread | The change has the hashtag `slack:<url>`, where `<url>` is an https link on `slack.com` or a workspace under it. The board shows it as "Slack ↗" and opens it in the browser, or in the Slack app when Settings knows the workspace. One per change; a tag whose value is not a Slack link is ignored. |
-| Tagged without a merger | The change is Ready to Merge and has no `merger:` tag. Only an older version of the application makes this. Every user with +2 sees it. |
-| Merge | Done in the Gerrit web UI: the merger votes +2 and submits there. The application only lists the change. |
-
-These rules have these effects:
-
-- When a user pushes a new patch set, Gerrit removes the votes that are not
-  sticky. The last number in `review-requested-ps` is then different from
-  the number of the current patch set. Thus, a new push puts the change back
-  in the "In Progress" state, or in "Iterating" when a reviewer had voted on
-  a patch set that was asked about. The application does not ask a reviewer.
-  A trivial rebase keeps the copied votes. Thus, an approved change stays
-  approved after a trivial rebase.
-- A +2 vote does not count for the "Approved" state. Gerrit has no query that
-  tells if a user can submit a change before the change is submittable. The
-  application cannot warn the author that the person picked has no +2; the
-  person asked finds out in Gerrit.
-- The merger is not added as a reviewer or CC. Gerrit itself sends the merger
-  nothing. The application is the notification channel, so a merger who does
-  not run the application learns of the request from the author.
-- "Re-request review" and "Clear ready-to-merge" remove the `merger:` tag
-  together with the `ready-to-merge` tag.
-- Only the owner of the change or an administrator can write custom keyed
-  values. Thus, a reviewer cannot request a review for a different user.
-- Anyone may add or remove a `reviewer:` tag, if Gerrit lets them edit
-  hashtags. Gerrit grants "Edit Hashtags" to the owner and administrators
-  only by default. Grant it to "Registered Users" on the project, or on
-  `All-Projects`, so that reviewers can tag each other. `test/seed-gerrit.sh`
-  shows the REST call.
-- A `reviewer:` tag for a person who is not a reviewer of the change in
-  Gerrit still counts. The application shows the person with a dotted
-  outline and waits for their vote, and the person sees the change on their
-  own board. This happens when someone removes the reviewer in Gerrit but
-  not the tag, or writes the tag by hand.
-- A change with reviewers but no `reviewer:` tag has nobody to decide. It
-  stays in "Needs Review" after a request, and the "Request review" button
-  is off until a primary reviewer is tagged. Changes made before this
-  version have no tags: tag the reviewers, with "↑" on each chip.
-- The application does not use the attention set.
-- Bots and the owner do not count as reviewers, tagged or not. Bots are the
-  members of the Gerrit "Service Users" group.
-- The Gerrit `reviewer:` search operator does not find WIP changes. Thus,
-  the application also scans the open WIP changes of other owners and keeps
-  the changes on which you are a reviewer. On a large server, set a project
-  scope in "Settings" to keep this scan small. If Gerrit truncates a result,
-  the application shows a warning.
-
-## One change on several branches
-
-A cherry-pick to another branch is a separate change in Gerrit. It keeps the
-Change-Id of the original commit. The application shows the changes that
-have the same Change-Id as one card. Each branch is a row in the card. A
-change on one branch is a card with one row, so both read the same way.
-
-- The card is in the section of its most urgent branch. The order of
-  urgency is the same for the owner and for a reviewer: Needs Changes, Needs
-  Review, Iterating, In Progress, Approved, Ready to Merge. If two branches have the
-  same state, the card goes to the earlier section. Thus, on "Reviewing", a
-  branch that waits on you comes before a branch that you reviewed.
-- Each row shows the branch, the state, a "Private" badge on a change that
-  is private in Gerrit, the WIP or Active badge, the change number, the patch set, the reviewers with their votes, the size of the
-  diff, the time of the last update and the buttons of that change. The
-  cards in a section share the same columns. Each branch is reviewed on its
-  own. A vote on the master change does not count for the release change.
-- The reviewers fit on one line. Reviewers who voted come first, a -1 before
-  a +1. If there are too many, the rest are behind a "+N" chip. Point at it
-  to see their names, or click it to show them all.
-- A merged branch stays in the card. The row is grey, shows when the change
-  was merged and has no buttons. Thus, while you work on a release branch,
-  you can see that the change is already in on master. On the "Recently
-  Merged" tab, the merged branch leads the card and the open branches are
-  below it.
-- My Changes counts every public open branch displayed in the tab,
-  including branches owned by someone else. Other tab counts
-  count cards, so a family counts once however many branches it has.
-  Section headings have no counts. The card header shows the branch count. It has no state totals.
-  Each branch keeps its state label.
-- In the compact window the card is a box in the section: a header line
-  with the subject and the number of branches, then one line per branch,
-  titled by the branch. Each line opens like any other line of the ledger.
-
-![Changes grouped by Change-Id](docs/screenshots/change-id-groups.png)
-
-`docs/mockups/change-id-groups/` has five mockups of ways to show a group.
-The application uses mockup 3.
-
-## A sequence of changes
-
-Private changes cannot join a sequence. They are not shown in sequence pickers
-or sequence cards, even if they have an old sequence tag. Private cherry-picks
-stay outside the sequence card. Making a change private removes its sequence
-tag. Make the change public before you add it to a sequence.
-
-Commits pushed together on one branch become one change each, and Gerrit
-submits a change only after the ones below it. The owner can show such
-changes to reviewers as one card, in the order they are built on each
-other, with the "sequence" hashtag on each one.
-
-- On "My Changes", changes of yours that are built on each other and not
-  yet in a sequence get a dashed card above them: "#61, #62, #63, #64 on
-  master" with a "Set up a sequence…" button. The button opens a checklist
-  of those changes, base first, every one ticked. Untick any change that
-  should stay on its own, then save. The application writes the tag on the
-  ticked changes.
-- Tagged changes that are built on each other form one card, on every tab,
-  with a row per change, base first. The subject is in the first column,
-  with a step number in front: a tick once the change is approved or
-  merged, blue on the change a reviewer should read next, which is the
-  lowest one that waits on them. The head line names the sequence (its
-  topic, or the first and last change numbers), the branch, and the sequence
-  size. It has no state totals. Each change keeps its state label.
-  A change built on an older patch set of the one below it says so, "on #62 PS 1", since a rebase is due.
-- On My Changes and Reviewing, sequences have their own Sequences section.
-  The header has no state totals and does not assign a state to the
-  entire sequence. Needs Review includes the sequence while any member or
-  cherry-pick branch has a current request awaiting your vote. Reviewing one
-  member leaves it there until the last pending review is answered.
-- The head line of your own sequence has an "Edit sequence…" button. It
-  opens the same checklist with the members ticked. Untick everything to
-  dissolve the sequence.
-- The tag says which changes to show together. Commit dependencies determine
-  their reading order. Untagged changes can be omitted without splitting a
-  sequence. Merged steps remain as context while a tagged member is open;
-  a lone tagged change with no related tagged member is an ordinary card.
-- Nothing else changes. Request review, Ready to Merge, the reviewers and
-  the votes stay per change, and only the owner sets or clears the tag. A
-  sequence counts as one card on other tabs. My Changes counts each public
-  open member shown in the sequence. Cherry-picks stay inside
-  their sequence steps, with their own states and actions.
-- In the compact window the sequence is a box like a family, the lines
-  titled by their subjects with the step in front, and the dashed offer is
-  one header line.
-
-![A sequence on the Needs Review tab](docs/screenshots/sequence.png)
-
-![The owner sets up a sequence](docs/screenshots/sequence-picker.png)
-
-`docs/mockups/dependency-chains/` has five mockups of the card, five of the
-picker and five of the button that opens it; the application uses the first
-of each, the fourth for the button.
-
-## Slack threads
-
-A review sometimes has a conversation on Slack. To keep it with the change,
-link it: point at the card, and a dashed "+ Slack" tab hangs from its top
-edge at the right; it opens a panel with one field. Paste the link from "Copy link" on
-the Slack message. The application stores it as the hashtag `slack:<url>` on
-the change, so Gerrit shows it too, as a hashtag chip on the change page.
-The tab then reads "Slack ↗" and opens the conversation; its "×", shown on
-hover, removes the tag. In the compact window the
-same tab hangs from the top edge of the line, over the right end of the
-subject, and opens the conversation without opening the line; the detail
-row has the link as a pill. The owner and every reviewer of an open change
-may link or unlink; a change has one link, a new one replaces it. Only https links on `slack.com` or a workspace under it are accepted, so
-a tag written by hand cannot open another site.
-
-In a sequence, each Change-Id has its own Slack conversation. The full board
-keeps the hanging "Slack ↗" or "+ Slack" tab at the top right of each
-member's row; the compact window keeps the tab on each member's line.
-Linking or unlinking affects only that member's change, so every review in
-the sequence can have a different thread. A family card keeps its
-conversation on the lead change.
-
-The conversation opens in the browser, unless "Slack" in Settings lists the
-workspace. Slack's "Copy link" names the workspace by its subdomain
-(`acme` in `acme.slack.com`), but the Slack app opens a message only by the
-workspace's team ID (`T0123ABCD`, or the org's `E…` ID on Enterprise
-Grid), which the link does not carry; the
-settings page says where to read it off. With the row present, the tab
-turns the https link into `slack://channel?team=…&id=…&message=…` (with the
-`thread_ts` of a reply) and opens that, so the Slack app comes to the
-front on the message. The change keeps the https link, so Gerrit and
-anyone without the setting open it in a browser; and so does the board when
-the workspace is not listed, the link is not to a channel or message, or
-the Slack app cannot be opened. The browser build of the board always uses
-the browser.
-
-![Slack thread on a card](docs/screenshots/slack-tab.png)
-
-![Slack thread in the compact window](docs/screenshots/slack-tab-compact.png)
-
-`docs/mockups/slack-link/` has five mockups of ways to show the link, and a
-screenshot of the tag in the Gerrit web UI. The application uses mockup 7.
-
-## Settings
-
-The gear at the right of the tab row opens the settings in place of the
-board, like a tab; any tab click closes them. The page has one section per
-entry in its left column (Team, Mergers, Scope, Slack, App icon, Window,
-Menu bar, About), and "Connection" at the bottom, which opens the connection window.
-There is no Save button: every control is written as soon as it changes, and
-the board follows at once. A "Saved" or "Saving…" pill in the section
-header shows the state of the last write. Text fields are written when they
-lose focus or on Enter. In the compact window the column is a picker above
-the section.
-
-## Teams
-
-In "Settings", under "Teams", add a team by name, then the people on it.
-Enter a username or an email address, or start to type and select an
-account from the server. The comparison ignores case. Add as many teams as
-you like. Pick one of them as "Your team"; the first team you add is picked
-for you, and "None" is a choice too. You are always on your own team, so
-you do not need to add yourself to it.
-
-Each team has a "Watch" box. A watched team's open changes are all on the
-board, whether or not you are on them; your own team is always watched. A
-team that is not watched only names its people: the changes of theirs that
-you are on show as usual. So an engineer watches their own team, and a
-lead watches several.
-
-The teams have no say in the state of a change, nor in the five regular
-tabs and the tray counts: the primary reviewers, tagged on each change,
-decide the state (refer to "The workflow"), and your part on a change
-decides the tabs. A request from an owner on another team is on "Needs
-Review" like any other. The teams add two tabs:
-
-- The team tab, named after your team, or "Watched" when you have not
-  picked one, lists every open change owned by someone else on a watched
-  team, in groups by state, whether or not you are on it. With several
-  watched teams the tab has a caret: it opens each team with its count,
-  and "Watched" for all of them together. The label does not change; the
-  line above the list says which team is showing. Clicking the label returns
-  to your default team, or all watched teams if you have no default.
-  The tab is there once a team is watched.
-- The "External Reviews" tab lists the open changes you are on, as a
-  reviewer, a tagged primary reviewer or the asked merger, whose owner is
-  not on your team. It is there only when you picked your team. A watched
-  team's change you have no part in is on the team tab and not here.
-
-Both tabs are a second listing: the changes on them that you are on, or
-that wait on you, are on "Reviewing", "Needs Review" or "Merged" as well.
-Your own changes are on "My Changes" and on neither tab, whoever reviews
-them. Someone on two teams is listed under both.
-
-Without any team, both tabs are hidden. The teams are a setting of your
-computer. Each team member enters the same lists. A settings file from
-before teams had names is read as one team, named "Team", picked as yours
-and watched.
-
-![The team tab](docs/screenshots/team-reviews.png)
-
-![The team tab, another watched team picked](docs/screenshots/team-watched.png)
-
-![External Reviews](docs/screenshots/external-reviews.png)
-
-![Teams in Settings](docs/screenshots/settings-team.png)
-
-## Mergers
-
-In "Settings", under "Mergers", list the people to offer when you ask for a
-merge, by project. A row is a project and the people for it. The project is
-an exact name, a prefix ending in `*`, or `*` alone for every project. A
-change in `platform/core` gets the people from the rows `platform/core`,
-`platform/*` and `*`, most specific row first.
-
-The "Ready to Merge" button opens that list, with the person asked last time
-for that project preselected. Once asked, the button reads "Change merger"
-and opens the same list; "Clear ready-to-merge" is a link in that menu. "Someone else" searches the accounts on the
-server for a one-off request; a checkbox under the search adds that person
-to the row for the project. The list only fills the menu: a wrong or empty
-list costs one search. It is a setting of your computer, and it does not
-have to match anyone else's.
-
-The person who was asked sees the change on the "Merged" tab under
-"Asked of you", and nowhere else on that tab: a request for somebody else is
-not listed. A person without +2 rights who was asked by mistake sees the
-change with a hint to tell the author.
-
-![Ready to Merge picker](docs/walkthrough/08-dev-pick-merger.png)
-
-## The tray icon
-
-The application stays open. It is independent of the browser.
-
-The tray icon shows what waits on you, in four categories and always in this
-order. The counts are cards, as on the tabs: a change on several branches
-counts once per category, however many of its branches need that action.
-
-| Category | Color | Glyph | Meaning |
-| --- | --- | --- | --- |
-| Needs Review | Blue | ◉ | The author asked you to review the current patch set. |
-| Needs Changes | Red | ✎ | Your change has the "Needs Changes" state. |
-| Approved | Green | ◆ | Your change is approved. Push "Ready to Merge". |
-| Ready to Merge | Purple | ⇧ | The author asked you to merge the change. |
-
-On macOS, the menu bar item shows one colored count per category that is not
-zero. If you cannot tell the colors apart, select "Show glyphs instead of
-colored counts" in the settings. The item then shows the glyph and the count
-as text. The counts take the place of the app icon; the icon shows only when
-nothing waits on you. Select "Always show Needs Review, Needs Changes and Approved, even at
-zero" to keep those counts in place. The Ready to Merge count appears only when
-someone asked you to merge, because most users never are. On Windows and Linux, the total is part of
-the icon image, because these trays cannot show text. Clear "Show counts on
-the menu bar icon" in the settings to keep the plain icon on every platform.
-The tooltip and the tray menu show the counts by category on all platforms,
-also with the counts off. A category in the tray menu opens a submenu with
-one row per card: the number, the subject, the branch and, on Needs Review
-and Ready to Merge, the owner. A row opens the change in the browser; on
-Needs Review it opens the diff the Review button opens. A change on several
-branches is one row that opens a submenu of its branches; a branch that does
-not need the action is greyed out with the reason, so the family reads whole.
-The last row of a submenu opens the tab that lists those changes, and a
-category at zero opens its tab directly. Clicking the tray icon opens the
-menu only; it does not raise the board window. The tray menu also has
-Open board, Refresh, Compact window, Compact window stays on top, and Quit, and a
-disabled row with the version and the
-short git commit the build was made from (a trailing `+` means the working
-tree had uncommitted changes). The total goes to the macOS dock, the Linux
-launcher and the Windows taskbar overlay. Clear "Show the total as a badge
-on the app icon" in the settings to turn that badge off.
-
-Compact mode is a narrow window with a layout made for 320 to 460 pixels.
-The tabs have short names in a strip that scrolls sideways. The board is a
-table with one line per change: the subject, the WIP or Active state, the
-reviewers as initials with their vote, and the one main button for that
-change. Tap a line to open it. The open line shows the state, the reviewer
-chips with add and remove, the other buttons, and a link to the change in
-Gerrit. Start compact mode with the shrink button in the top bar or from the
-tray menu. By default the compact
-window stays on top of the other windows and moves with you to each
-workspace. To turn that off, clear "Compact window stays on top" in
-"Settings" or in the tray menu. The full-size window is never pinned. The
-application keeps the position of the normal window and the position of the
-compact window separately.
-
-If you close the window, the application hides the window in the tray. To
-stop the application, use "Quit" in the tray menu. Only one instance of the
-application can run. If you start the application again, the application
-shows the window that is already open.
-
-## Start the application
-
-You must have Node 22 or a newer version and pnpm. The `packageManager`
-field in `package.json` gives the pnpm version. To get that version, run
-`corepack enable` one time.
+A desktop app for Gerrit 3.11 on macOS, Windows, and Linux. It tracks review
+requests for each patch set and shows what needs your attention.
+
+![Needs Review tab](docs/screenshots/needs-my-review.png)
+
+## Get started
+
+Download a build from [Releases](https://github.com/MTVaught/gerrit-gui/releases).
+On first launch, enter your Gerrit URL, username, and HTTP password, then
+select "Test and save". Create the password in Gerrit under Settings > HTTP
+Credentials.
+
+Use the HTTPS base URL, including any path prefix, such as
+`https://gerrit.example.com/gerrit`. The app uses your system proxy and
+Chromium's certificate store. For a private CA, see the
+[connection checks](docs/testing.md#gerrit-transport-security).
+
+The desktop app saves passwords only when a secure OS keychain is available.
+Otherwise, the password stays in memory until you quit. Enter a new password
+if you change the server or username.
+
+In Settings, add your team and the people who can merge each project's changes.
+Teams control which backlogs you see. Primary reviewers on each change decide
+its review state.
+
+## Review flow
+
+1. Push a change and use the "+" button to add primary reviewers.
+2. Select "Request review" when the patch set is ready. Choose pass-around
+   review for individual reviews, or in-person review to go through it together.
+3. Primary reviewers open "Needs Review", select "Review", and vote +1 or -1.
+   The diff starts at their last reviewed patch set, or at base on a first review.
+4. After every primary reviewer votes, the change is "Approved" if all votes
+   are +1, or "Needs Changes" if any vote is -1. Other reviewers' votes do not
+   decide this state.
+5. Push fixes and request review again for the new patch set. A push alone
+   does not request another review.
+6. Once approved, mark the change Active and wait for Verified +1 from CI.
+   Select "Ready to Merge" and name the person who will merge it.
+7. That person gets the request on the "Merged" tab and submits it in Gerrit.
+
+WIP does not block review. It blocks "Ready to Merge" until the change is Active.
+Review requests, votes, and tags live in Gerrit; the app has no separate workflow
+database.
+
+The [walkthrough](docs/walkthrough.md) shows a full review from the author's,
+reviewers', and merger's views.
+
+## Using the board
+
+- "Needs Review" lists requests waiting for your vote. "Reviewing" lists all
+  open changes where you are a reviewer. "My Changes" tracks your own work.
+- Configure teams to see watched backlogs and reviews from outside your team.
+- Use "View" or Ctrl+F to search subjects, filter by author, or change the sort.
+- Changes with the same Change-Id share a card, with a row per branch. Group
+  dependent changes into a sequence to show their review order. Votes and
+  actions apply to each change separately.
+- The tray menu shows pending work and opens a compact board. Closing the main
+  window hides it in the tray. Use "Quit" in the tray menu to stop the app.
+
+Reviews open in Gerrit by default. Enable "Open reviews in the app" under
+Settings > Beta to use the local diff viewer, comments, drafts, and voting.
+Enable "Open reviews in separate windows" under Settings > Window if needed.
+Press `?` in a review for keyboard shortcuts. Drafts save to Gerrit and stay
+private until you send the review.
+
+Release builds check for updates at startup and once an hour. Download and
+installation each need a click. You can also check from Settings > About.
+On macOS, automatic updates require a signed release build.
+
+## Development
+
+Use Node 22 or later and the pnpm version in `package.json`. Run
+`corepack enable` once, then:
 
 ```sh
 pnpm install
-pnpm dev           # development build with hot reload
-pnpm build && pnpm start
-pnpm dist          # packaged application in dist/ (AppImage, dmg, nsis)
+pnpm dev           # desktop app with hot reload
+pnpm build         # production build
+pnpm start         # run the production build
+pnpm dist          # package installers in dist/
 ```
 
-To install the application, download the signed build for your platform
-from the GitHub releases page rather than packaging it yourself: only the
-signed release build can update itself.
+The scripts download the Electron binary if needed. On Ubuntu 24.04 and later,
+they show a one-time sandbox setup command if the kernel blocks Electron.
 
-The `electron` package does not download the Electron binary at install time.
-The `dev`, `build`, `start` and `dist` scripts download the binary first if it
-is not present. On Ubuntu 24.04 and newer versions, the kernel does not permit
-unprivileged user namespaces. The same scripts then show a one-time root
-command that corrects the Electron sandbox.
+### Browser mode
 
-The packaged AppImage has the same requirement on these systems. The usual
-correction there is `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`.
-
-At the first start, a "Connection" window opens. Enter the server URL, your
-username and an HTTP password, and press "Test and save". The same window
-opens later from "Connection" at the bottom of the settings page; it is the
-only place that tests the connection and reloads the board.
-The app reuses a saved password only for the same server origin and username.
-An origin includes the scheme, host and port. If you change the origin or
-username, enter a replacement HTTP password before you test and save.
-
-Make the HTTP password in Gerrit under "Settings", "HTTP Credentials". The
-server URL is the base URL of Gerrit. Include the path prefix. For example,
-enter `https://host/gerrit1`, not only the host. You can also paste the URL of
-a change or a dashboard. The application cuts that URL to the base URL. The
-application stores the password with Electron `safeStorage` only when a secure
-OS keychain is available. Linux `basic_text` and unknown backends do not qualify.
-Otherwise, new passwords stay in memory until the app restarts. A keychain error
-also keeps a new password in memory. The connection window shows its storage state.
-
-Readable legacy passwords migrate to trusted keychain encryption when it succeeds.
-Otherwise, normal application startup automatically removes their saved fields by
-atomic replacement, before desktop UI setup or browser API readiness. Opening
-Connection and saving are not required.
-A readable password can stay in memory for its original origin and account until
-restart. An unreadable legacy copy is removed and requires password re-entry.
-Already trusted, versioned keychain copies stay on disk even when locked. Each
-stored copy has a separate `passwordIdentity`. A retained secure copy keeps its
-original origin and account when a new connection uses a memory password. It
-cannot be returned for the new connection, including after restart. Memory
-passwords also stay bound to their origin and account. A blank-password edit
-cannot move them to another identity.
-On POSIX systems, settings reads repair file permissions to `0600`. Saves use a private temporary
-file and atomic replacement. Invalid settings files cause an error and stay intact.
-
-Gerrit connections require HTTPS. The application rejects remote HTTP before
-it saves settings or creates an authenticated request. This also applies to old
-settings and environment overrides. Change an old HTTP URL to the server's
-HTTPS URL in Connection, or update `GERRIT_URL` if it overrides the settings.
-Authenticated requests reject redirects. Enter the final HTTPS base URL,
-including the Gerrit path prefix.
-
-REST calls go through the Chromium network stack. Thus, the application trusts
-the certificates that the operating system trusts, and it uses the proxy
-settings of the system. You must install a private CA in the store that
-Chromium reads:
-
-| OS | Where to install the CA |
-| --- | --- |
-| macOS | Keychain Access, System or login keychain. Set the CA to "Always Trust". |
-| Windows | Certificate store, "Trusted Root Certification Authorities". |
-| Linux | The NSS user database, not the OpenSSL bundle: `certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "Private CA" -i ca.crt` (package `libnss3-tools`). |
-
-To see if the network stack of the application trusts a server, run
-`pnpm exec electron scripts/net-check.cjs https://your-gerrit/`.
-
-## Releases
-
-Every pull request runs the "CI" workflow in GitHub Actions. It runs the
-typecheck, the unit tests and the build, then the integration test against a
-Gerrit 3.11 container, and lints the workflow files and the release scripts.
-It then runs the same "Build" workflow the release uses, unsigned, on Linux,
-macOS and Windows, checks that every release file is there (installers,
-`latest*.yml` manifests, macOS `.zip` archives and `.blockmap` files), and
-runs the publish script as a dry run against the downloaded artifacts. So a
-change that breaks packaging, drops a release file or breaks the release
-job's wiring fails on the pull request, not after the merge. The workflow
-uses no secrets, so it also runs on pull requests from forks.
-
-GitHub runs no CI on a pull request that has a merge conflict; the checks
-just do not appear. The "Merge check" workflow fills that gap. It runs when
-a pull request is opened or gets a new commit, also with a conflict, and
-fails with a message when GitHub reports the pull request as not mergeable.
-Rebase the branch, resolve the conflict and push again; the CI workflow then
-runs. The workflow uses the `pull_request_target` event, so it takes effect
-for a pull request only after the workflow file is on `main`, and it never
-runs code from the pull request.
-
-Every push to `main` (a merged pull request) runs the "Release" workflow in
-GitHub Actions. The workflow builds the AppImage, the macOS DMG for Intel and
-Apple silicon, and the Windows installer, uploads them one at a time to a
-draft release, checks that every file landed, and publishes it; GitHub
-creates the `v` tag at that commit on publish. A failed run leaves the draft
-behind, and the next run reuses it. The version comes from
-`scripts/pick-version.sh` (tested by `test/pick-version.test.sh`): the one in
-`package.json` when it is newer than every `vX.Y.Z` tag; otherwise the
-workflow bumps the patch number of the newest tag. To release a new minor or
-major version, raise the version in `package.json` in the pull request.
-
-A push of a tag that starts with `v` (for example `v0.2.0`) releases that
-exact version. A manual run of the workflow makes a draft release instead.
-
-### Updates
-
-The desktop application checks the releases of this repository for a newer
-version shortly after it starts and then once an hour. When one exists, a
-button in the top bar offers to download it. The download checks once more
-first, so a release published since the last check is the one downloaded. The download runs in the
-background, and the button then offers a restart to finish the install. Nothing is downloaded or installed without a click. Settings has an
-About section with the version, the release notes and a "Check for updates"
-button, and the tray menu has the same action.
-
-The updater reads the files the release workflow attaches next to the
-installers: the `latest*.yml` manifests, the macOS `.zip` archives and the
-`.blockmap` files. A release made by hand needs them too. On macOS the
-application must be signed to update itself; the workflow signs it, a local
-`pnpm dist` build does not, and that build reports an error on download
-instead. Refer to `docs/testing.md` to try the flow from the source
-tree.
-
-The macOS build is signed with a Developer ID certificate and notarized with
-an App Store Connect API key. The workflow reads these from the repository
-secrets `CSC_LINK` (base64 of the `.p12`), `CSC_KEY_PASSWORD`,
-`APPLE_API_KEY` (the text of the `.p8`), `APPLE_API_KEY_ID` and
-`APPLE_API_ISSUER`. Linux and Windows builds are not signed.
-
-## Browser mode
-
-Electron needs a display. On a machine without a display, for example with VS
-Code Remote SSH, you can use the same UI in a browser. Run:
+To work without a desktop display:
 
 ```sh
 pnpm web
 ```
 
-This command starts two servers. The local API server is at 127.0.0.1:5174.
-This is the part of the application that does not use Electron. The Vite
-development server is at http://localhost:5173/. Open the one-use link printed
-in the terminal after Vite is ready. Its fragment holds a random startup key.
-The page removes this key from the URL and exchanges it for an HttpOnly,
-SameSite=Strict session cookie. The key works once. The session lasts until
-the API stops or you clear the cookie. Reloads and connection tabs use the
-same cookie. A new browser profile needs a new link from a server restart.
-Do not share the link or terminal output that contains it.
+Open the one-use link printed after Vite starts. Keep the link private. The UI
+runs at `http://localhost:5173` and the local API at `127.0.0.1:5174`. Both bind
+to loopback. Browser mode has no tray, app badge, or compact window.
 
-Both servers bind to loopback. The API requires the session, an exact Origin
-and Host match, and a JSON array body of at most 1 MiB. It does not allow CORS.
-The default origin is `http://localhost:5173`. To use a different browser URL,
-set `WEB_ORIGIN` to that exact origin before you run `pnpm web`. Set `WEB_PORT`
-and `API_PORT` to change local ports. For example:
+Passwords stay in the server process memory until restart. Settings go in
+`~/.config/gerrit-gui/web-settings.json`. You can also set `GERRIT_URL`,
+`GERRIT_USER`, and `GERRIT_PASSWORD` in the environment.
+
+For different ports, set all three values:
 
 ```sh
 WEB_PORT=5183 API_PORT=5184 WEB_ORIGIN=http://localhost:5183 pnpm web
 ```
 
-VS Code can forward the web port. Use its exact browser origin in `WEB_ORIGIN`.
-Forwarding must preserve the Host and Origin headers. The API does not trust
-`X-Forwarded-*` headers. Use HTTPS for a remote forwarding URL. HTTPS origins
-also get a Secure session cookie. Keep the development server private. Local
-processes that can read the startup link and scripts running at the approved
-origin remain trusted.
+For remote port forwarding, set `WEB_ORIGIN` to the exact HTTPS browser origin
+and preserve the Host and Origin headers. Keep the development server private.
 
-The application writes the settings that you enter in the
-browser to `~/.config/gerrit-gui/web-settings.json`. New passwords stay in the
-server process memory until restart. Reloading a tab keeps that process alive.
-Legacy saved copies are automatically removed when the browser server starts,
-before it accepts requests or prints its startup link. No browser needs to connect. Readable passwords stay
-bound to their original identity in server memory; re-enter them after restart.
-A failed replacement reports an error and keeps the old data intact. Environment
-passwords never enter JSON. As an alternative, set
-`GERRIT_URL`, `GERRIT_USER` and `GERRIT_PASSWORD` in the environment. A URL or username override cannot reuse
-a file password for a different origin or account. If `GERRIT_PASSWORD` is
-set, change the connection identity through the environment and restart
-browser mode. The form rejects identity changes while that override is active.
-The tray icon, the badge and compact
-mode do not operate in a browser. All other functions operate.
-For isolated tests, `GERRIT_GUI_WEB_SETTINGS` selects a separate settings file.
-
-
-## Tests
+### Tests
 
 ```sh
-pnpm test                                # unit tests of the classifier
-docker run -d --name gerrit-test -p 8080:8080 gerritcodereview/gerrit:3.11.2
-./test/seed-gerrit.sh                    # users alice/bob/carol/dave, erin from another team, primary reviewers tagged, changes in each state
-./test/seed-more-states.sh               # the rest: in-person and second-round requests, stale tags, Verified, a named merger, tagged commit messages
-GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP=1 node --test test/integration.test.ts
+pnpm typecheck
+pnpm test
 ```
 
-For local fixtures with dummy accounts only, start the application or tests
-with `GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP=1`. This process setting permits HTTP
-only at the loopback IP addresses `127.0.0.1` and `[::1]`. Use, for example,
-`http://127.0.0.1:8080`. DNS names, including `localhost`, and LAN or remote
-addresses cannot use this exception. The flag is off by default and cannot be
-enabled in saved settings or through the UI or browser API. Never use real
-credentials with a local HTTP fixture. TLS certificate checks remain enabled.
+Integration tests need a local Gerrit fixture with dummy accounts:
 
-Refer to `docs/testing.md` for UI checks without a display, and to
-`docs/walkthrough/shoot.sh` for the script that makes the screenshots in
-`docs/walkthrough.md` against an empty Gerrit.
+```sh
+docker run -d --name gerrit-test -p 127.0.0.1:8080:8080 gerritcodereview/gerrit:3.11.2
+./test/seed-gerrit.sh
+./test/seed-more-states.sh
+GERRIT_GUI_ALLOW_LOCAL_TEST_HTTP=1 pnpm test:integration
+```
 
-## Fallback dashboard
+The HTTP test flag permits only `127.0.0.1` and `[::1]`, not `localhost` or
+remote hosts. Use dummy credentials only. Normal connections require HTTPS.
 
-If you cannot use the application, use the Gerrit dashboard in
-`gerrit-dashboard/`. This is a standard Gerrit project dashboard with similar
-sections. Install it one time for the full server. Refer to
-`gerrit-dashboard/README.md`. The dashboard has these limits:
+See [testing](docs/testing.md) for UI checks, screenshots, and transport tests.
 
-- It cannot show that all reviewers approved a change.
-- It cannot see the review request for a patch set.
-- It cannot show the WIP changes that you review.
+## More documentation
 
-## Layout
-
-- `src/shared/model.ts` is the state classifier. It has only pure functions. It has unit tests.
-- `src/main/service.ts` has all the functions that the UI can call. It does not use Electron.
-- `src/main/gerrit.ts` is the REST client. It gets a fetch implementation as an argument. Electron gives the Chromium fetch. The tests give the Node fetch.
-- `src/main/settings.ts` stores the credentials in encrypted form.
-- `src/main/tray.ts` controls the tray icon and the badge.
-- `src/preload/index.ts` makes the service available to the renderer as `window.api`.
-- `src/server/` gives the same service on loopback HTTP for browser mode.
-- `src/renderer/` is the React UI.
+- [Review walkthrough](docs/walkthrough.md)
+- [Workflow design](docs/design/primary-reviewers.md)
+- [Team setup](docs/design/teams.md)
+- [Merge requests](docs/design/merge-request.md)
+- [Fallback Gerrit dashboard](gerrit-dashboard/README.md)
