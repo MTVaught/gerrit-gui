@@ -1,0 +1,24 @@
+[
+  {
+    "theme": "light",
+    "options": [
+      "all",
+      "10",
+      "3",
+      "2",
+      "1"
+    ],
+    "checks": "defaults, numeric order, drafts, original patch set, whole threads, combined filters, empty result, reset, retained selection, continuity, desktop and narrow layout passed"
+  },
+  {
+    "theme": "dark",
+    "options": [
+      "all",
+      "10",
+      "3",
+      "2",
+      "1"
+    ],
+    "checks": "defaults, numeric order, drafts, original patch set, whole threads, combined filters, empty result, reset, retained selection, continuity, desktop and narrow layout passed"
+  }
+]

@@ -73,6 +73,15 @@ if (process.env.REVIEW_FILE_ACTIVITY_FIXTURE) {
   )
   drafts.set('activity-draft', { id: 'activity-draft', patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', line: 2, side: 'REVISION', in_reply_to: 'activity-open', message: 'I will add that explanation.', updated: now, unresolved: true })
 }
+if (process.env.REVIEW_PATCH_SET_FILTER_FIXTURE) {
+  const anchor = { path: 'src/telemetry/batch-scheduler.ts', side: 'REVISION', updated: now }
+  comments.push(
+    { ...anchor, id: 'filter-old', patch_set: 1, line: 6, author: owner, unresolved: true, message: 'Keep the queue limit from patch set 1.' },
+    { ...anchor, id: 'filter-reply', patch_set: 2, line: 6, author: self, in_reply_to: 'filter-old', unresolved: true, message: 'Patch set 2 keeps that limit. This reply stays with its original thread.' },
+    { ...anchor, id: 'filter-resolved', patch_set: 2, path: 'src/telemetry/types.ts', line: 4, author: owner, unresolved: false, message: 'The patch set 2 interface is ready.' },
+  )
+  drafts.set('filter-draft', { ...anchor, id: 'filter-draft', patch_set: 10, line: 8, unresolved: true, message: 'Draft feedback saved on patch set 10.' })
+}
 const longDirectory = 'src/telemetry/delivery-pipeline/retry-policies/region-failover'
 const longName = 'batch-scheduler-with-region-aware-delivery-and-retry-policy.ts'
 const longPath = `${longDirectory}/${longName}`
@@ -85,7 +94,7 @@ let failNextDraft = false
 const appliedFixes = []
 let draftCounter = 0
 let draftWriteCounter = 0
-let historicalPositions = []
+let historicalPositions = process.env.REVIEW_PATCH_SET_FILTER_FIXTURE ? [{ id: 'filter-old', anchor: { patchSet: 3, path: 'src/telemetry/batch-scheduler.ts', side: 'REVISION', line: 6 } }] : []
 let canDeletePublished = false
 const noOp = async () => undefined
 const subscribe = () => () => undefined

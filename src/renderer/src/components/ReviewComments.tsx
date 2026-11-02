@@ -61,6 +61,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
   const [redact, setRedact] = useState<{ comment: ReviewComment; reason: string } | null>(null)
   const [commentFilter, setCommentFilter] = useState('all')
   const [authorFilter, setAuthorFilter] = useState('all')
+  const [patchSetFilter, setPatchSetFilter] = useState('all')
   const [preview, setPreview] = useState<{ comment: ReviewComment; suggestion: FixSuggestion; diffs?: Record<string, ReviewDiff> } | null>(null)
   const [markdownPreview, setMarkdownPreview] = useState(false)
   const [newReviewer, setNewReviewer] = useState('')
@@ -189,6 +190,11 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
   const draftIds = new Set(discussion?.drafts.map(c => c.id))
   const allComments = [...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])]
   const threads = commentThreads(allComments)
+  const commentPatchSets = [...new Set(allComments.map(comment => comment.patch_set))].sort((a, b) => b - a)
+  const overviewThreads = threads.filter(thread =>
+    (commentFilter === 'all' || commentFilter === 'unresolved' && thread.at(-1)?.unresolved || commentFilter === 'resolved' && !thread.at(-1)?.unresolved || commentFilter === 'drafts' && thread.some(c => draftIds.has(c.id))) &&
+    (authorFilter === 'all' || thread.some(c => String(c.author?._account_id ?? discussion?.self._account_id) === authorFilter)) &&
+    (patchSetFilter === 'all' || thread.some(c => String(c.patch_set) === patchSetFilter)))
   const display = (c: ReviewComment) => hasEditor ? displayCommentAnchor(link, path, originalPath ?? path, c, positions, allComments) : null
   const shown = threads.filter(t => allFiles || t.some(c => c.path === path || c.path === originalPath || display(c) || c.path === '/PATCHSET_LEVEL'))
   const publishing = (discussion?.drafts ?? []).filter(c => publish === 'PUBLISH_ALL_REVISIONS' || publish === 'PUBLISH' && c.patch_set === link.patchSet)
@@ -323,7 +329,13 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     })}
     {composer && composerPosition && !embeddedComposer && <InlineReviewComment focus preserveScroll={editingStart.current === null && !composer.inReplyTo} anchor={composerPosition!} createHost={createInlineHost}>{composerForm}</InlineReviewComment>}
     {composer && !composerPosition && !sendOpen && <SendReview onClose={() => { if (canClose()) setComposer(null) }}><h2>{location(composer.anchor)}</h2>{composerForm}</SendReview>}
-    {allFiles && <CommentOverview dialog={overview} onClose={closeOverview} returnFocus={commentsMenu} filters={<div className="review-comment-filters"><label>Show<select aria-label="Filter comments" value={commentFilter} onChange={e => setCommentFilter(e.target.value)}><option value="all">All comments</option><option value="unresolved">Unresolved</option><option value="resolved">Resolved</option><option value="drafts">My drafts</option></select></label><label>Author<select aria-label="Filter comment author" value={authorFilter} onChange={e => setAuthorFilter(e.target.value)}><option value="all">Everyone</option>{[...new Map([...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])].map(c => [c.author?._account_id ?? discussion?.self._account_id, c.author ?? discussion?.self])).values()].map(account => account && <option key={account._account_id} value={account._account_id}>{account.name ?? account.username}</option>)}</select></label></div>}>{threads.filter(thread => (commentFilter === 'all' || commentFilter === 'unresolved' && thread.at(-1)?.unresolved || commentFilter === 'resolved' && !thread.at(-1)?.unresolved || commentFilter === 'drafts' && thread.some(c => draftIds.has(c.id))) && (authorFilter === 'all' || thread.some(c => String(c.author?._account_id ?? discussion?.self._account_id) === authorFilter))).map(thread => <div key={thread[0]!.id}>{thread[0]!.context_lines?.length ? <pre className="review-comment-context">{thread[0]!.context_lines.map(line => `${line.line_number}: ${line.context_line}`).join('\n')}</pre> : null}{renderThread(thread)}</div>)}</CommentOverview>}
+    {allFiles && <CommentOverview dialog={overview} onClose={closeOverview} returnFocus={commentsMenu} filters={<div className="review-comment-filters">
+      <label>Show<select aria-label="Filter comments" value={commentFilter} onChange={e => setCommentFilter(e.target.value)}><option value="all">All comments</option><option value="unresolved">Unresolved</option><option value="resolved">Resolved</option><option value="drafts">My drafts</option></select></label>
+      <label>Author<select aria-label="Filter comment author" value={authorFilter} onChange={e => setAuthorFilter(e.target.value)}><option value="all">Everyone</option>{[...new Map(allComments.map(c => [c.author?._account_id ?? discussion?.self._account_id, c.author ?? discussion?.self])).values()].map(account => account && <option key={account._account_id} value={account._account_id}>{account.name ?? account.username}</option>)}</select></label>
+      <label>Patch set<select aria-label="Filter comment patch set" value={patchSetFilter} onChange={e => setPatchSetFilter(e.target.value)}><option value="all">All patch sets</option>{commentPatchSets.map(patchSet => <option key={patchSet} value={patchSet}>PS {patchSet}</option>)}</select></label>
+    </div>}>
+      {overviewThreads.length ? overviewThreads.map(thread => <div key={thread[0]!.id}>{thread[0]!.context_lines?.length ? <pre className="review-comment-context">{thread[0]!.context_lines.map(line => `${line.line_number}: ${line.context_line}`).join('\n')}</pre> : null}{renderThread(thread)}</div>) : <p className="muted" role="status">No comments match these filters.</p>}
+    </CommentOverview>}
     {redact && <SendReview onClose={() => { if (!busy) setRedact(null) }}><form className="review-comment-compose" onSubmit={e => { e.preventDefault(); void write(async () => { await onMutate(async () => { await api.deleteReviewComment(link.id, redact.comment.patch_set, redact.comment.id, redact.reason) }); setRedact(null) }) }}>
         <strong>Delete published comment</strong><p>This removes its text for all reviewers. Gerrit records the deletion reason.</p>
         <input aria-label="Deletion reason" placeholder="Reason" required value={redact.reason} disabled={blocked || busy} onChange={e => setRedact({ ...redact, reason: e.target.value })} />
