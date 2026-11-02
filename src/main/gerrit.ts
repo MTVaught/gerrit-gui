@@ -3,6 +3,9 @@ import { changePath, validateServerUrl } from '../shared/url.ts'
 import { allowLocalTestHttp } from './transport-policy.ts'
 
 const XSSI_PREFIX = ")]}'"
+// Gerrit copies older reviewed flags when a patch set has no review rows.
+// This reserved pseudo-path keeps an explicit empty state without marking a file.
+const UNREVIEWED_MARKER = '/GERRIT_GUI_UNREVIEWED'
 
 export class GerritError extends Error {
   status: number
@@ -143,12 +146,16 @@ export class GerritClient {
     return diff
   }
 
-  reviewedFiles(link: ChangeLink): Promise<string[]> {
-    return this.req('GET', `/changes/${link.id}/revisions/${link.patchSet}/files`, undefined, new URLSearchParams({ reviewed: '' }))
+  async reviewedFiles(link: ChangeLink): Promise<string[]> {
+    const paths = await this.req<string[]>('GET', `/changes/${link.id}/revisions/${link.patchSet}/files`, undefined, new URLSearchParams({ reviewed: '' }))
+    return paths.filter(path => path !== UNREVIEWED_MARKER)
   }
 
-  setFileReviewed(link: ChangeLink, path: string, reviewed: boolean): Promise<void> {
-    return this.req(reviewed ? 'PUT' : 'DELETE', `/changes/${link.id}/revisions/${link.patchSet}/files/${encodeURIComponent(path)}/reviewed`)
+  async setFileReviewed(link: ChangeLink, path: string, reviewed: boolean): Promise<void> {
+    const files = `/changes/${link.id}/revisions/${link.patchSet}/files`
+    // Save before deleting so another window cannot trigger inheritance in between.
+    if (!reviewed) await this.req('PUT', `${files}/${encodeURIComponent(UNREVIEWED_MARKER)}/reviewed`)
+    await this.req(reviewed ? 'PUT' : 'DELETE', `${files}/${encodeURIComponent(path)}/reviewed`)
   }
 
   blame(link: ChangeLink, path: string): Promise<ReviewBlame[]> {

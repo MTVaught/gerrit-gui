@@ -97,6 +97,33 @@ replacement password. Paired light/dark captures are saved under
 
 Updates are off when the application runs from the source tree. To exercise the check, download and restart flow in `pnpm dev`, set `GERRIT_GUI_DEV_UPDATE=1`. The updater then reads `dev-app-update.yml` (the GitHub repository to poll) in place of the metadata a packaged application carries. The download step needs a packaged application, and on macOS a signed one, so in `pnpm dev` it ends with an error, shown in the top bar button's tooltip and in Settings. The check and the top bar button work.
 
+## Reviewed-file reset persistence
+
+Gerrit 3.11.2 copies unchanged reviewed flags from an older patch set when the
+selected patch set has no review rows. Deleting its last flag can therefore
+restore old flags on the next read. Before clearing a file, the client saves
+`/GERRIT_GUI_UNREVIEWED` as an internal pseudo-path for that user and patch set.
+It hides this marker from reviewed-file results. Real files, other patch sets,
+and other users keep their own flags. The marker remains on Gerrit so closing
+the app does not undo the reset. Each clear needs an extra idempotent PUT.
+
+Seed a throwaway Gerrit 3.11.2 with `test/seed-gerrit.sh`, build the app, then run:
+
+```sh
+GERRIT_TEST_URL=http://127.0.0.1:18080 RESET_RECORDINGS=1 \
+  RESET_REVIEWED_EVIDENCE=docs/evidence/reset-reviewed-persistence \
+  xvfb-run -a -s '-screen 0 1440x1080x24' dbus-run-session -- \
+  node_modules/.bin/electron --no-sandbox test/reset-reviewed-files-gerrit.cjs
+```
+
+This check first reproduces the old behavior with real REST calls. It then uses
+real X11 clicks in the production Linux desktop to reset hidden files and
+reopen the review in light and dark mode. It checks Gerrit's saved state,
+older patch-set flags, and a second user's flags. The recordings use generated
+changes and dummy accounts with real Gerrit responses. They include pointer
+movement, two-second hovers, and captions. The sandbox flag applies only to
+this Xvfb test. Windows and macOS are not covered by this check.
+
 ## Local review editor
 
 The dashboard cache regression runs against independently controlled search

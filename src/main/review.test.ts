@@ -59,10 +59,57 @@ test('reviewed flags are Gerrit state, scoped to revision and encoded file path'
   await g.setFileReviewed(link, 'dir/a #%.ts', true)
   await g.setFileReviewed(link, 'dir/a #%.ts', false)
   assert.equal(decodeURIComponent(calls[1]!.url.pathname), '/a/changes/42/revisions/3/files/dir/a #%.ts/reviewed')
-  assert.deepEqual(calls.map((c) => c.method), ['GET', 'PUT', 'DELETE'])
+  assert.deepEqual(calls.map((c) => c.method), ['GET', 'PUT', 'PUT', 'DELETE'])
+  assert.equal(decodeURIComponent(calls[2]!.url.pathname), '/a/changes/42/revisions/3/files//GERRIT_GUI_UNREVIEWED/reviewed')
   g.pretendAs = { _account_id: 7, name: 'Someone else' }
   await assert.rejects(g.setFileReviewed(link, 'file', true), /refused/)
-  assert.equal(calls.length, 3, 'no writes escape pretend mode')
+  await assert.rejects(g.setFileReviewed(link, 'file', false), /refused/)
+  assert.equal(calls.length, 4, 'no writes escape pretend mode')
+})
+
+test('clearing the last reviewed file does not copy older patch-set flags back', async () => {
+  const marker = '/GERRIT_GUI_UNREVIEWED'
+  const flags = new Map([[2, new Set(['a.ts', 'b.ts'])], [3, new Set(['a.ts', 'b.ts'])]])
+  const calls: { patchSet: number; method: string; path?: string }[] = []
+  const fetchImpl: import('./gerrit.ts').FetchLike = async (url, init) => {
+    const route = decodeURIComponent(new URL(url).pathname)
+    const patchSet = Number(route.match(/revisions\/(\d+)/)![1])
+    const path = route.match(/files\/(.+)\/reviewed$/)?.[1]
+    calls.push({ patchSet, method: init.method!, path })
+    if (init.method === 'GET') {
+      // Gerrit finds the latest nonempty patch set, then copies unchanged files.
+      const source = [...flags.keys()].sort((a, b) => b - a).find(ps => ps <= patchSet && flags.get(ps)!.size)
+      if (source !== undefined && source !== patchSet) flags.set(patchSet, new Set([...flags.get(source)!].filter(file => file !== marker)))
+      return new Response(JSON.stringify([...(flags.get(patchSet) ?? [])]))
+    }
+    const paths = flags.get(patchSet) ?? new Set<string>()
+    if (init.method === 'PUT') paths.add(path!); else paths.delete(path!)
+    flags.set(patchSet, paths)
+    return new Response(null, { status: 204 })
+  }
+  const link = { id: 42, project: 'test', patchSet: 3, basePatchSet: 2 }
+  const client = () => new GerritClient('https://gerrit.test', 'alice', 'test', fetchImpl)
+  const g = client()
+  for (const path of await g.reviewedFiles(link)) await g.setFileReviewed(link, path, false)
+  assert.deepEqual(await g.reviewedFiles(link), [])
+  assert.deepEqual(await client().reviewedFiles(link), [], 'a new client also sees the saved reset')
+  assert.deepEqual([...flags.get(2)!], ['a.ts', 'b.ts'], 'older patch set is unchanged')
+  assert.ok(calls.every(call => call.patchSet === 3))
+  assert.deepEqual([...flags.get(3)!], [marker], 'only the internal marker remains')
+  await g.setFileReviewed(link, 'a.ts', true)
+  assert.deepEqual(await g.reviewedFiles(link), ['a.ts'], 'normal marking resumes and hides the marker')
+  await g.setFileReviewed(link, 'a.ts', false)
+  assert.deepEqual(await g.reviewedFiles(link), [], 'clearing one last file is also durable')
+})
+
+test('a failed empty-state marker prevents deletion and preserves the error', async () => {
+  const methods: string[] = []
+  const g = new GerritClient('https://gerrit.test', 'alice', 'test', async (_url, init) => {
+    methods.push(init.method!)
+    return new Response('marker unavailable', { status: 503 })
+  })
+  await assert.rejects(g.setFileReviewed({ id: 42, project: 'test', patchSet: 3 }, 'a.ts', false), /503 marker unavailable/)
+  assert.deepEqual(methods, ['PUT'], 'the file must stay reviewed if the marker cannot be saved')
 })
 
 test('comment CRUD preserves encoded IDs, range coordinates, draft privacy and publish scope', async () => {

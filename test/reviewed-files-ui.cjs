@@ -69,10 +69,10 @@ const timeout = setTimeout(() => { console.error('Reviewed-files integration tim
   a.close(); await delay(100)
   assert.equal(a.isDestroyed(), false, 'pending batch blocks closure')
   await until(async () => (await summary(a)).flags.every(f => !f.disabled), 'all saves settled')
-  const writes = fixture.state.calls.slice(start).filter(call => /reviewed$/.test(call.route))
+  const writes = fixture.state.calls.slice(start).filter(call => /reviewed$/.test(call.route) && call.method === 'DELETE')
   assert.equal(writes.length, 3, 'all different files saved, duplicate pending click ignored')
   assert.ok(writes.every(call => call.method === 'DELETE'))
-  assert.deepEqual([...fixture.state.reviewed.get(3)], files.slice(3))
+  assert.deepEqual([...fixture.state.reviewed.get(3)].filter(p => p !== '/GERRIT_GUI_UNREVIEWED'), files.slice(3))
   await until(async () => (await summary(b)).count === 'Files2/5 reviewed', 'confirmed flags in second window')
   for (const win of [a, b]) assert.equal(await run(win, `window.flagObservations.some(s=>s.includes('Loading'))`), false, 'no status flash')
 

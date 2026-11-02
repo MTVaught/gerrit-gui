@@ -81,11 +81,11 @@ setTimeout(()=>{console.error('timeout');finish(2)},150000).unref()
   await input('windowactivate','--sync',review.getNativeWindowHandle().readUInt32LE())
   await say('The reopened review still has zero reviewed files. The reset was saved.')
   await delay(3500)
-  const writes=fixture.state.calls.slice(clickStart).filter(c=>/reviewed$/.test(c.route))
+  const writes=fixture.state.calls.slice(clickStart).filter(c=>/reviewed$/.test(c.route) && c.method === 'DELETE')
   assert.equal(writes.length,3,'one delete per reviewed file')
   assert.ok(writes.every(w=>w.method==='DELETE'))
-  assert.equal(fixture.state.reviewed.get(3).size,0)
-  const result={theme,platform:'Linux X11 / Electron '+process.versions.electron,simulated:'Gerrit data; 400 ms reviewed-list reads; 650 ms reviewed-file writes',input:'Real xdotool mouse clicks with two-second hover pauses.',writes,serverReviewed:[...fixture.state.reviewed.get(3)],persistedAfterReopen:true}
+  assert.equal([...fixture.state.reviewed.get(3)].filter(p => p !== '/GERRIT_GUI_UNREVIEWED').length,0)
+  const result={theme,platform:'Linux X11 / Electron '+process.versions.electron,simulated:'Gerrit data; 400 ms reviewed-list reads; 650 ms reviewed-file writes',input:'Real xdotool mouse clicks with two-second hover pauses.',writes,serverReviewed:[...fixture.state.reviewed.get(3)].filter(p => p !== '/GERRIT_GUI_UNREVIEWED'),persistedAfterReopen:true}
   fs.writeFileSync(path.join(output,'reset-observations-'+theme+'.json'),JSON.stringify(result,null,2)+'\n')
   console.log(JSON.stringify(result))
   recorder.stdin.write('q');await new Promise(r=>recorder.once('exit',r));recorder=null
