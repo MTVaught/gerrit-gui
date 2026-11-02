@@ -3,6 +3,8 @@ const { app, BrowserWindow, nativeTheme } = require('electron')
 const assert = require('node:assert/strict')
 const fs = require('node:fs'), path = require('node:path')
 const { startReviewServer } = require('./fixtures/review-windows-server.cjs')
+const evidence = path.resolve(process.env.RESET_REVIEWED_EVIDENCE || 'openspec/changes/archive/2026-10-29-mark-all-files-unreviewed/evidence')
+fs.mkdirSync(evidence, { recursive: true })
 const scratch = fs.mkdtempSync('/tmp/reset-reviewed-ui-')
 app.setPath('userData', scratch); app.disableHardwareAcceleration(); nativeTheme.themeSource = 'light'
 process.env.GERRIT_GUI_USER_DATA = scratch
@@ -64,7 +66,7 @@ const timeout = setTimeout(() => { console.error('Reset integration timed out');
     await until(()=>run(a, `document.documentElement.dataset.theme===${JSON.stringify(theme)} && document.querySelector('.local-review').dataset.reviewTheme===${JSON.stringify(theme)}`),'heading appearance '+theme)
     const rect = await run(a, `document.querySelector('.review-files').getBoundingClientRect().toJSON()`)
     const image = await a.webContents.capturePage({x:Math.floor(rect.x),y:Math.floor(rect.y),width:Math.ceil(rect.width),height:300})
-    fs.writeFileSync(path.resolve('openspec/changes/archive/2026-10-29-mark-all-files-unreviewed/evidence/reset-heading-'+theme+'.png'),image.toPNG())
+    fs.writeFileSync(path.join(evidence, 'reset-heading-'+theme+'.png'),image.toPNG())
   }
 
   await click(b, fileButton(files[2]))
@@ -88,10 +90,10 @@ const timeout = setTimeout(() => { console.error('Reset integration timed out');
   a.close(); await delay(80)
   assert.equal(a.isDestroyed(),false,'pending reset blocks native closure')
   await count(a,0); await idle(a); await count(b,0)
-  const writes = fixture.state.calls.slice(start).filter(c=>/reviewed$/.test(c.route))
+  const writes = fixture.state.calls.slice(start).filter(c=>/reviewed$/.test(c.route) && c.method === 'DELETE')
   assert.equal(writes.length,4,'duplicate click and shortcut did not add writes')
   assert.ok(writes.every(c=>c.method==='DELETE' && c.route.includes('/revisions/3/')))
-  assert.equal(fixture.state.reviewed.get(3).size,0)
+  assert.equal([...fixture.state.reviewed.get(3)].filter(p => p !== '/GERRIT_GUI_UNREVIEWED').length,0)
   assert.deepEqual([...fixture.state.reviewed.get(2)],[files[0]])
   assert.equal(fixture.state.comments[0].message,'Keep this comment')
   assert.equal(await run(a,`document.querySelector('.review-files-filter input').checked`),true)
@@ -113,7 +115,7 @@ const timeout = setTimeout(() => { console.error('Reset integration timed out');
   await click(a,'.review-reset')
   await idle(a)
   assert.match(await run(a,`document.querySelector('.review-flag-error')?.textContent`),/Could not mark all files unreviewed/)
-  assert.equal(fixture.state.reviewed.get(3).size,2,'first failure kept flags')
+  assert.equal([...fixture.state.reviewed.get(3)].filter(p => p !== '/GERRIT_GUI_UNREVIEWED').length,2,'first failure kept flags')
   fixture.state.failReviewedWrites.clear()
   fixture.state.failReviewedWrites.add(files[2])
   await click(a,'.review-reset'); await idle(a); await count(a,1)
@@ -126,7 +128,7 @@ const timeout = setTimeout(() => { console.error('Reset integration timed out');
   await click(a,'.review-reset'); await idle(a); await count(a,0)
   assert.equal(await run(board,`api.getReviewPreferences().then(s=>s.value.autoMarkReviewed)`),true)
   await delay(350)
-  assert.equal(fixture.state.reviewed.get(3).size,0,'automatic marking did not undo reset')
+  assert.equal([...fixture.state.reviewed.get(3)].filter(p => p !== '/GERRIT_GUI_UNREVIEWED').length,0,'automatic marking did not undo reset')
   await click(a,fileButton(files[2])); await until(()=>fixture.state.reviewed.get(3).has(files[2]),'automatic marking resumes')
   await idle(a)
   // Tab to the button and activate with Enter, then Space in a fresh visit.
@@ -157,7 +159,7 @@ const timeout = setTimeout(() => { console.error('Reset integration timed out');
   await until(()=>run(a,`!document.querySelector('.review-reset').disabled`),'outside flag enables reset')
   await count(a,0)
   await click(a,'.review-reset'); await idle(a)
-  assert.equal(fixture.state.reviewed.get(3).size,0)
+  assert.equal([...fixture.state.reviewed.get(3)].filter(p => p !== '/GERRIT_GUI_UNREVIEWED').length,0)
 
   // Resize with real pointer input, then inspect the same narrow view in both themes.
   const separator = await run(a, `document.querySelector('.review-file-resize').getBoundingClientRect().toJSON()`)
@@ -166,7 +168,6 @@ const timeout = setTimeout(() => { console.error('Reset integration timed out');
   a.webContents.sendInputEvent({type:'mouseMove',x:140,y:dragStart.y,button:'left'})
   a.webContents.sendInputEvent({type:'mouseUp',x:140,y:dragStart.y,button:'left',clickCount:1})
   await delay(150)
-  const evidence = path.resolve('openspec/changes/archive/2026-10-29-mark-all-files-unreviewed/evidence')
   for (const theme of ['light','dark']) {
     await run(board, `api.patchSettings({theme:${JSON.stringify(theme)},diffTheme:'application'})`)
     await until(()=>run(a, `document.documentElement.dataset.theme===${JSON.stringify(theme)}`),'appearance '+theme)

@@ -1,0 +1,65 @@
+{
+  "version": "3.11.2",
+  "theme": "light",
+  "id": 33,
+  "inherited": [
+    "review/a.ts",
+    "review/b.ts"
+  ],
+  "reverted": [
+    "review/a.ts",
+    "review/b.ts"
+  ],
+  "writes": [
+    {
+      "path": "/a/changes/33/revisions/3/files//GERRIT_GUI_UNREVIEWED/reviewed",
+      "method": "PUT",
+      "status": 201
+    },
+    {
+      "path": "/a/changes/33/revisions/3/files/review/a.ts/reviewed",
+      "method": "DELETE",
+      "status": 204
+    },
+    {
+      "path": "/a/changes/33/revisions/3/files//GERRIT_GUI_UNREVIEWED/reviewed",
+      "method": "PUT",
+      "status": 200
+    },
+    {
+      "path": "/a/changes/33/revisions/3/files/review/b.ts/reviewed",
+      "method": "DELETE",
+      "status": 204
+    }
+  ],
+  "reviewed": [
+    "/GERRIT_GUI_UNREVIEWED"
+  ],
+  "persistedAfterReopen": true,
+  "olderPatchSetUnchanged": true,
+  "otherUserUnchanged": true,
+  "platform": "Linux Electron",
+  "data": "Real throwaway Gerrit with generated changes and dummy accounts; no simulated responses.",
+  "captions": [
+    {
+      "seconds": 0,
+      "text": "Linux Electron with real Gerrit 3.11.2 and generated data. Two of four files are reviewed."
+    },
+    {
+      "seconds": 2.205,
+      "text": "Enable Unreviewed only to hide the reviewed files."
+    },
+    {
+      "seconds": 6.772,
+      "text": "Click the reset glyph to mark all files unreviewed, including hidden files."
+    },
+    {
+      "seconds": 12.344,
+      "text": "All four files stay unreviewed. Close and reopen to check the saved state."
+    },
+    {
+      "seconds": 18.474,
+      "text": "The reopened review still has zero reviewed files. Older patch sets and the other user are unchanged."
+    }
+  ]
+}

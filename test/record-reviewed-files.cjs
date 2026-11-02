@@ -72,12 +72,12 @@ setTimeout(()=>{console.error('timeout');finish(2)},150000).unref()
   await say('All three clicks were saved. Two files remain reviewed. No status flash occurred.')
   await snapshot('result');await delay(3500)
   const states=await run(review,'window.reproStates')
-  const writes=fixture.state.calls.slice(clickStart).filter(c=>/reviewed$/.test(c.route))
+  const writes=fixture.state.calls.slice(clickStart).filter(c=>/reviewed$/.test(c.route) && c.method === 'DELETE')
   assert.equal(writes.length,3,'all three real clicks reached Gerrit')
   assert.ok(writes.every(w=>w.method==='DELETE'))
   assert.equal(states.some(s=>s.heading?.includes('Loading status')),false,'no status flash')
-  assert.deepEqual([...fixture.state.reviewed.get(3)],files.slice(3))
-  const result={theme,platform:'Linux X11 / Electron '+process.versions.electron,simulated:'Gerrit data; 600 ms reviewed-list reads; 900 ms writes during rapid sequence',input:'Real xdotool mouse clicks, 200 ms pauses between clicks in rapid sequence. Hover pauses before isolated actions; rapid sequence deliberately omits per-target hover.',states,writes,serverReviewed:[...fixture.state.reviewed.get(3)]}
+  assert.deepEqual([...fixture.state.reviewed.get(3)].filter(p => p !== '/GERRIT_GUI_UNREVIEWED'),files.slice(3))
+  const result={theme,platform:'Linux X11 / Electron '+process.versions.electron,simulated:'Gerrit data; 600 ms reviewed-list reads; 900 ms writes during rapid sequence',input:'Real xdotool mouse clicks, 200 ms pauses between clicks in rapid sequence. Hover pauses before isolated actions; rapid sequence deliberately omits per-target hover.',states,writes,serverReviewed:[...fixture.state.reviewed.get(3)].filter(p => p !== '/GERRIT_GUI_UNREVIEWED')}
   fs.writeFileSync(path.join(output,'observations-'+theme+'.json'),JSON.stringify(result,null,2)+'\n')
   console.log(JSON.stringify({writes,serverReviewed:result.serverReviewed,flash:states.some(s=>s.heading?.includes('Loading status'))}))
   recorder.stdin.write('q');await new Promise(r=>recorder.once('exit',r));recorder=null
