@@ -34,6 +34,7 @@ import { reviewOutline } from '../review-details.ts'
 import { commentSelection } from '../review-comments.ts'
 import type { ChangeLink, ReviewBlame, CommentRange } from '../../../shared/types.ts'
 import type { ReviewShortcut } from '../review-shortcuts.ts'
+import { hideOriginalPane } from '../review-pane-layout.ts'
 import { reviewLanguage, visibleRebaseRanges, type ReviewContents } from '../review.ts'
 import type { ReviewPreferences } from '../review-preferences.ts'
 import { reviewDiffFactory, configureReviewDiff } from '../review-diff-provider.ts'
@@ -71,7 +72,7 @@ export interface LoadedReviewFile extends ReviewContents {
 
 export interface ReviewEditorHandle { outline(): void; blame(): void; highlightComment(location: EditorCommentLocation | null): void; createInlineHost(pane: 'original' | 'modified', line: number): InlineCommentHost | null; navigate(shortcut: ReviewShortcut): void; addComment(): void; find(): void; goToLine(): void; revealComment(pane: 'original' | 'modified', line: number, preserveScroll?: boolean): void }
 export interface EditorCommentLocation { pane: 'original' | 'modified'; line: number; range?: CommentRange; existing?: boolean }
-export interface ReviewEditorSession { editor: monaco.editor.IStandaloneDiffEditor | null }
+export interface ReviewEditorSession { editor: monaco.editor.IStandaloneDiffEditor | null; originalHidden?: boolean }
 
 export default function ReviewEditor({ file, link, preferences, theme, commentsVisible, onReady, onComment, markers, ref, session }: { theme: 'light' | 'dark'; link: ChangeLink; commentsVisible: boolean; markers: { range?: CommentRange; pane: 'original' | 'modified'; line: number; draft: boolean; unresolved: boolean }[]; onComment: (location: EditorCommentLocation) => void; file: LoadedReviewFile; preferences: ReviewPreferences; onReady: () => void; ref?: Ref<ReviewEditorHandle>; session: ReviewEditorSession }) {
   useLayoutEffect(() => { monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs') }, [theme])
@@ -95,6 +96,12 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
   const inlineLayouts = useRef(new Set<() => void>())
   const sideBySide = useRef(true)
   const [unified, setUnified] = useState(false)
+  const [originalHidden, setOriginalHidden] = useState(session.originalHidden ?? false)
+  function showOriginal() {
+    session.originalHidden = false
+    setOriginalHidden(false)
+    if (editor.current) hideOriginalPane(editor.current, false)
+  }
   const lastFocus = useRef<'original' | 'modified'>('modified')
   const commentScroll = useRef<{ code: monaco.editor.IStandaloneCodeEditor; position: monaco.IPosition; offset: number; frames: number } | null>(null)
   const commentScrollFrame = useRef(0)
@@ -210,6 +217,7 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
     const updated = diff.onDidUpdateDiff(() => { setDiffMs(performance.now() - start); updateRebase() })
     const viewModel = diff.createViewModel({ original, modified })
     diff.setModel(viewModel)
+    hideOriginalPane(diff, session.originalHidden ?? false)
     if (file.viewState) diff.restoreViewState(file.viewState)
     diff.getModifiedEditor().focus()
     const frame = requestAnimationFrame(onReady)
@@ -251,6 +259,7 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
       model.updateOptions({ tabSize: preferences.tabWidth })
       monaco.editor.setModelLanguage(model, preferences.syntaxHighlighting ? reviewLanguage(file.path) : 'plaintext')
     }
+    hideOriginalPane(diff, session.originalHidden ?? false)
     // Decorate visible tabs only. No DOM or decoration allocation per full-file line.
     const disposables = [diff.getOriginalEditor(), diff.getModifiedEditor()].flatMap((code) => {
       const decorations = code.createDecorationsCollection()
@@ -402,6 +411,7 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
       restoreAria()
     } }
   }, addComment, find: () => action('actions.find'), goToLine: () => action('editor.action.gotoLine'), revealComment(pane, line, preserveScroll = false) {
+    if (pane === 'original') showOriginal()
     const code = pane === 'original' ? editor.current?.getOriginalEditor() : editor.current?.getModifiedEditor()
     code?.setPosition({ lineNumber: line, column: 1 })
     if (!preserveScroll) code?.revealLineInCenter(line)
@@ -411,6 +421,16 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
     const code = focusedEditor()
     if (!diff || !code) return
     switch (shortcut) {
+      case 'toggleOriginal': {
+        if (!sideBySide.current) break
+        const hidden = !session.originalHidden
+        if (hidden && lastFocus.current === 'original') diff.getModifiedEditor().focus()
+        session.originalHidden = hidden
+        setOriginalHidden(hidden)
+        hideOriginalPane(diff, hidden)
+        inlineLayouts.current.forEach(layout => layout())
+        break
+      }
       case 'nextLine': case 'previousLine':
         code.focus()
         code.trigger('gerrit-review', shortcut === 'nextLine' ? 'cursorDown' : 'cursorUp', {})
@@ -428,6 +448,7 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
         break
       }
       case 'leftPane': case 'rightPane': {
+        if (shortcut === 'leftPane') showOriginal()
         // Map the cursor through the diff, rather than assuming line numbers align.
         const position = code.getPosition()
         const target = shortcut === 'leftPane' ? diff.getOriginalEditor() : diff.getModifiedEditor()
@@ -457,6 +478,7 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
         break
       }
       case 'toggleMode':
+        showOriginal()
         sideBySide.current = !sideBySide.current
         setUnified(!sideBySide.current)
         diff.updateOptions({ renderSideBySide: sideBySide.current })
@@ -476,7 +498,7 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
       {tool === 'outline' ? <><p className="muted">Declarations in the complete file.</p><ul className="review-outline">{outlineItems.map(item => <li key={item.line}><button className="btn" onClick={() => { setTool(null); const code = editor.current?.getModifiedEditor(); code?.setPosition({ lineNumber: item.line, column: 1 }); code?.revealLineInCenter(item.line); code?.focus() }}>{item.line}: {item.name}</button></li>)}</ul>{outlineItems.length === 0 && <p>No declarations found for this file.</p>}</> : <><p className="muted">Select a commit to reveal its code. Commit details also appear when you hover its gutter in the diff.</p>{toolError && <p className="error" role="alert">{toolError}</p>}{!blames && !toolError && <p role="status">Loading blame…</p>}<ul className="review-outline">{blames?.flatMap(blame => blame.ranges.map(range => <li key={`${blame.id}:${range.start}`}><button className="btn" title={blame.commit_msg} onClick={() => { setTool(null); const code = editor.current?.getModifiedEditor(); code?.setPosition({ lineNumber: range.start, column: 1 }); code?.revealLineInCenter(range.start); code?.focus() }}>{range.start}–{range.end} · {blame.author} · {blame.id.slice(0, 8)} · {blame.commit_msg.split('\n')[0]}</button></li>))}</ul></>}
       <button className="btn" onClick={() => setTool(null)}>Close</button>
     </dialog>}
-    <div className={'review-side-head' + (unified ? ' unified' : '')}>{!unified && <button className="review-file-comment-header" aria-label="File comments on original" disabled={file.nameA === 'File added'} title="File-level comments" onClick={() => commentCallback.current({ pane: 'original', line: 0, existing: true })}>{file.nameA}</button>}<button className="review-file-comment-header" aria-label="File comments on modified" disabled={file.nameB === 'File deleted'} title="File-level comments" onClick={() => commentCallback.current({ pane: 'modified', line: 0, existing: true })}>{file.nameB}</button></div>
+    <div className={'review-side-head' + (unified || originalHidden ? ' unified' : '')}>{!unified && !originalHidden && <button className="review-file-comment-header" aria-label="File comments on original" disabled={file.nameA === 'File added'} title="File-level comments" onClick={() => commentCallback.current({ pane: 'original', line: 0, existing: true })}>{file.nameA}</button>}<button className="review-file-comment-header" aria-label="File comments on modified" disabled={file.nameB === 'File deleted'} title="File-level comments" onClick={() => commentCallback.current({ pane: 'modified', line: 0, existing: true })}>{file.nameB}</button></div>
     <div ref={container} className="review-editor" data-blame={showBlame} data-review-ready={diffMs !== null} />
   </>
 }

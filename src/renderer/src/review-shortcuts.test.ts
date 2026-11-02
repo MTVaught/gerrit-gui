@@ -38,3 +38,16 @@ test('typing, IME, modified keys, and repeats cannot accidentally navigate', () 
   assert.equal(reviewShortcut({ key: 'M', shiftKey: true }), 'nextUnreviewed')
   assert.equal(reviewShortcut({ key: 'ArrowLeft' }), null)
 })
+
+
+test('Shift+A toggles the original pane without overriding review or typing', () => {
+  const key = { key: 'A', shiftKey: true }
+  assert.equal(reviewShortcut(key), 'toggleOriginal')
+  assert.equal(reviewShortcut(key, { fileList: true }), 'toggleOriginal')
+  assert.equal(reviewShortcut({ key: 'a' }), 'review')
+  assert.equal(reviewShortcut({ key: 'A' }), null)
+  assert.equal(reviewShortcut(key, { textEntry: true }), null)
+  for (const flag of ['ctrlKey', 'metaKey', 'altKey', 'isComposing', 'repeat']) {
+    assert.equal(reviewShortcut({ ...key, [flag]: true }), null)
+  }
+})

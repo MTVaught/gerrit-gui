@@ -904,3 +904,7 @@ mark { background: var(--warn-bg); color: inherit; border-radius: 2px; padding: 
 .status-icon { display: inline-flex; vertical-align: middle; }
 .ledger tr.mem td.c > .step { width: 16px; height: 16px; font-size: 10px; margin-right: 6px; vertical-align: -3px; }
 .ledger tr.mem.seq td.c > .t { max-width: calc(100% - 22px); }
+
+/* A hidden original pane must not expose its text, controls, or divider. */
+.review-original-hidden .original-in-monaco-diff-editor,
+.review-original-hidden > .monaco-sash { visibility: hidden; }

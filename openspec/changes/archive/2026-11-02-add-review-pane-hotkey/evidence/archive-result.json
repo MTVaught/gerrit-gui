@@ -1,0 +1,21 @@
+{
+  "change": "add-review-pane-hotkey",
+  "archive": "openspec/changes/archive/2026-11-02-add-review-pane-hotkey",
+  "schema": "spec-driven",
+  "tasksComplete": 3,
+  "tasksTotal": 3,
+  "preservedFiles": 14,
+  "fileHashesPreservedOnMove": true,
+  "mainSpec": "openspec/specs/review-diff-layout/spec.md",
+  "syncedRequirements": [
+    "Toggle the original diff pane",
+    "Guard the pane shortcut during text entry"
+  ],
+  "requirements": 6,
+  "scenarios": 16,
+  "specValidation": {
+    "passed": 16,
+    "failed": 0
+  },
+  "strictSpecValidation": "passed"
+}

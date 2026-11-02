@@ -1,9 +1,10 @@
 /** Gerrit 3.11 bindings: https://gerrit.googlesource.com/gerrit/+/refs/heads/stable-3.11/polygerrit-ui/app/services/shortcuts/shortcuts-config.ts */
-export type ReviewShortcut = 'blame' | 'preferences' | 'toggleReviewed' | 'nextUnreviewed' | 'review' | 'toggleComments' | 'nextThread' | 'previousThread' | 'comment' | 'nextLine' | 'previousLine' | 'visibleLine' | 'nextChunk' | 'previousChunk' | 'nextFile' | 'previousFile' | 'leftPane' | 'rightPane' | 'fileList' | 'nextFileCursor' | 'previousFileCursor' | 'openFile' | 'toggleMode' | 'up' | 'help'
+export type ReviewShortcut = 'toggleOriginal' | 'blame' | 'preferences' | 'toggleReviewed' | 'nextUnreviewed' | 'review' | 'toggleComments' | 'nextThread' | 'previousThread' | 'comment' | 'nextLine' | 'previousLine' | 'visibleLine' | 'nextChunk' | 'previousChunk' | 'nextFile' | 'previousFile' | 'leftPane' | 'rightPane' | 'fileList' | 'nextFileCursor' | 'previousFileCursor' | 'openFile' | 'toggleMode' | 'up' | 'help'
 
 export const REVIEW_SHORTCUT_HELP = [
   ['j / Down', 'Next line; next file entry while the file list is focused'],
   ['k / Up', 'Previous line; previous file entry while the file list is focused'],
+  ['Shift+A', 'Show / hide the original diff pane'],
   ['a', 'Open the review and vote dialog'],
   ['Shift+N / Shift+P', 'Next / previous comment thread'],
   ['h', 'Show / hide inline comments'],
@@ -38,8 +39,9 @@ export interface ReviewKey {
 export function reviewShortcut(event: ReviewKey, context: { textEntry?: boolean; fileList?: boolean } = {}): ReviewShortcut | null {
   if (context.textEntry || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return null
   const { key } = event
-  if (event.shiftKey && !['?', 'ArrowLeft', 'ArrowRight', 'N', 'P', 'M'].includes(key)) return null
+  if (event.shiftKey && !['?', 'ArrowLeft', 'ArrowRight', 'N', 'P', 'M', 'A'].includes(key)) return null
   if (event.repeat && !['j', 'k', 'ArrowDown', 'ArrowUp'].includes(key)) return null
+  if (event.shiftKey && key === 'A') return 'toggleOriginal'
   if (event.shiftKey && key === 'ArrowLeft') return 'leftPane'
   if (event.shiftKey && key === 'ArrowRight') return 'rightPane'
   if (key === 'j' || key === 'ArrowDown') return context.fileList ? 'nextFileCursor' : 'nextLine'

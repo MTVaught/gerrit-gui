@@ -1,0 +1,98 @@
+{
+  "embedded-light": {
+    "ratio": 0.369627579904039,
+    "initial": {
+      "left": 455,
+      "width": 1230.96875,
+      "modified": 745,
+      "hidden": false,
+      "focus": true
+    },
+    "collapsed": {
+      "left": 0,
+      "width": 1230.96875,
+      "modified": 1200,
+      "hidden": true,
+      "focus": true
+    },
+    "checks": "passed",
+    "searchGuard": true,
+    "windowResize": true,
+    "originalNavigation": true,
+    "unifiedMode": true,
+    "fileSwitch": true,
+    "help": true
+  },
+  "embedded-dark": {
+    "ratio": 0.369627579904039,
+    "initial": {
+      "left": 455,
+      "width": 1230.96875,
+      "modified": 745,
+      "hidden": false,
+      "focus": true
+    },
+    "collapsed": {
+      "left": 0,
+      "width": 1230.96875,
+      "modified": 1200,
+      "hidden": true,
+      "focus": true
+    },
+    "checks": "passed",
+    "searchGuard": true,
+    "windowResize": true,
+    "originalNavigation": true,
+    "unifiedMode": true,
+    "fileSwitch": true,
+    "help": true
+  },
+  "separate-light": {
+    "ratio": 0.369627579904039,
+    "initial": {
+      "left": 455,
+      "width": 1230.96875,
+      "modified": 745,
+      "hidden": false,
+      "focus": true
+    },
+    "collapsed": {
+      "left": 0,
+      "width": 1230.96875,
+      "modified": 1200,
+      "hidden": true,
+      "focus": true
+    },
+    "checks": "passed",
+    "searchGuard": true,
+    "windowResize": true,
+    "originalNavigation": true,
+    "unifiedMode": true,
+    "fileSwitch": true,
+    "help": true
+  },
+  "separate-dark": {
+    "ratio": 0.369627579904039,
+    "initial": {
+      "left": 455,
+      "width": 1230.96875,
+      "modified": 745,
+      "hidden": false,
+      "focus": true
+    },
+    "collapsed": {
+      "left": 0,
+      "width": 1230.96875,
+      "modified": 1200,
+      "hidden": true,
+      "focus": true
+    },
+    "checks": "passed",
+    "searchGuard": true,
+    "windowResize": true,
+    "originalNavigation": true,
+    "unifiedMode": true,
+    "fileSwitch": true,
+    "help": true
+  }
+}
