@@ -225,7 +225,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
         if (e.nativeEvent.isComposing || e.keyCode === 229) return
         if ((e.ctrlKey || e.metaKey) && (e.key === 'Enter' || e.key.toLowerCase() === 's')) { e.preventDefault(); e.stopPropagation(); void save() }
       }} onSubmit={e => { e.preventDefault(); void save() }}>
-        <strong title="Only visible to you. Publish using Reply at the top of the review.">{composer.inReplyTo ? 'Draft reply' : 'Draft'}</strong>
+        {!(editingStart.current && composerPosition) && <strong title="Only visible to you. Publish using Reply at the top of the review.">{composer.inReplyTo ? 'Draft reply' : 'Draft'}</strong>}
         <textarea rows={3} aria-label="Draft comment" value={composer.message} onChange={e => { setError(''); setComposer({ ...composer, message: e.target.value }) }} placeholder="Write a comment…" />
         <button type="button" className="btn" onClick={() => setMarkdownPreview(value => !value)}>{markdownPreview ? 'Edit comment' : 'Preview formatting'}</button>{markdownPreview && <ReviewMarkdown message={composer.message} />}
         <label><input type="checkbox" checked={!composer.unresolved} disabled={blocked || busy} onChange={e => { setError(''); setComposer({ ...composer, unresolved: !e.target.checked }) }} />Resolved</label>
@@ -246,9 +246,9 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
   }
   function renderThread(thread: ReviewComment[], inline = false) {
     const root = thread[0]!, last = thread[thread.length - 1]!
-    if (thread.length === 1 && !composer?.inReplyTo && composer?.id === root.id) return null
+    if (!inline && thread.length === 1 && !composer?.inReplyTo && composer?.id === root.id) return null
     const replyingHere = inline && Boolean(composer?.inReplyTo && thread.some(c => c.id === composer.inReplyTo || c.id === composer.id))
-    const editingHere = inline && Boolean(composer?.id && thread.some(c => c.id === composer.id))
+    const editingHere = inline && Boolean(editingStart.current && composer?.id && thread.some(c => c.id === composer.id))
     function reply(message = '') {
       if (compose(anchor(last), last, message, true) && !inline) onReveal(last)
     }
@@ -258,9 +258,10 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     }
     return <section onMouseEnter={() => onHighlight(thread.find(comment => comment.range) ?? last)} onMouseLeave={() => onHighlight(null)} onFocusCapture={() => onHighlight(thread.find(comment => comment.range) ?? last)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) onHighlight(null) }} className="review-comment-thread" data-unresolved={replyingHere || editingHere ? composer!.unresolved : Boolean(last.unresolved)} data-review-thread-id={root.id} data-active={thread.some(c => c.id === activeId)} key={root.id}>
       {!inline && <button className="review-comment-location" onClick={() => { closeOverview(); onReveal(root) }}>{location(anchor(root))}</button>}
-      {thread.filter(c => c.id !== composer?.id).map(c => {
+      {thread.filter(c => editingHere || c.id !== composer?.id).map(c => {
         const draft = draftIds.has(c.id)
-        const expanded = expandedComments.get(c.id) ?? (draft || Boolean(last.unresolved))
+        const editing = editingHere && c.id === composer?.id
+        const expanded = editing || (expandedComments.get(c.id) ?? (draft || Boolean(last.unresolved)))
         const mapped = display(c)
         return <article data-review-comment-id={c.id} key={c.id} className={draft ? 'comment-draft' : ''}>
           <div className="review-comment-heading" onClick={event => { if (!(event.target as HTMLElement).closest('button, a')) setExpandedComments(current => new Map(current).set(c.id, !expanded)) }}>
@@ -269,10 +270,10 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
             {!expanded && <div className="review-comment-preview"><ReviewMarkdown message={c.message ?? ''} compact /></div>}
             {!draft && expanded && discussion?.canDeletePublished && <button className="review-comment-icon" aria-label="Delete published comment" title="Delete comment" disabled={blocked || busy} onClick={() => setRedact({ comment: c, reason: '' })}><DeleteIcon /></button>}
             {expanded && <time title={commentDate(c.updated).toLocaleString()} dateTime={Number.isFinite(commentDate(c.updated).getTime()) ? commentDate(c.updated).toISOString() : undefined}>{relativeCommentDate(c.updated)}</time>}
-            <button className="review-comment-toggle" aria-label={expanded ? 'Collapse comment' : 'Expand comment'} aria-expanded={expanded} onClick={() => setExpandedComments(current => new Map(current).set(c.id, !expanded))}>{expanded ? '▴' : '▾'}</button>
+            {!editing && <button className="review-comment-toggle" aria-label={expanded ? 'Collapse comment' : 'Expand comment'} aria-expanded={expanded} onClick={() => setExpandedComments(current => new Map(current).set(c.id, !expanded))}>{expanded ? '▴' : '▾'}</button>}
           </div>
           {expanded && <div className="review-comment-body">
-            <ReviewMarkdown message={c.message ?? ''} />
+            {editing ? composerForm : <><ReviewMarkdown message={c.message ?? ''} />
             {commentSuggestions(c).map((suggestion, index) => <details key={suggestion.fix_id ?? index}><summary>{suggestion.description}</summary>{suggestion.replacements.map((replacement, i) => <div key={i}><small>{replacement.path}:{replacement.range.start_line}–{replacement.range.end_line}</small><pre>{replacement.replacement}</pre></div>)}
               {!draft && <button className="btn" disabled={blocked || busy} onClick={() => void previewSuggestion(c, suggestion)}>Preview suggested fix</button>}
             </details>)}
@@ -281,7 +282,7 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
               <button className="btn" disabled={blocked || busy} onClick={() => compose(anchor(c), c)}>Edit</button>
               <button className="btn" disabled={blocked || busy} onClick={() => void write(() => api.deleteReviewDraft(link.id, c.patch_set, c.id, draftVersion(c)))}>Discard draft</button>
               {c.in_reply_to && <button className="review-comment-icon" aria-label="Copy link to this comment" title="Copy link to this comment" onClick={() => copyCommentLink(root)}><LinkIcon /></button>}
-            </div>}
+            </div>}</>}
           </div>}
         </article>
       })}
@@ -292,11 +293,11 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
         </>}
         <button className="review-comment-icon" aria-label="Copy link to this comment" title="Copy link to this comment" onClick={() => copyCommentLink(root)}><LinkIcon /></button>
       </div>}
-      {(replyingHere || editingHere) && composerForm}
+      {replyingHere && !editingHere && composerForm}
     </section>
   }
-  const inlineThreads = shown.filter(thread => thread.some(c => display(c)) && !(thread.length === 1 && !composer?.inReplyTo && composer?.id === thread[0]!.id))
-  const embeddedReply = Boolean(composer?.inReplyTo && inlineThreads.some(thread => thread.some(c => c.id === composer.inReplyTo || c.id === composer.id)))
+  const inlineThreads = shown.filter(thread => thread.some(c => display(c)) && !(thread.length === 1 && !editingStart.current && !composer?.inReplyTo && composer?.id === thread[0]!.id))
+  const embeddedComposer = Boolean((editingStart.current || composer?.inReplyTo) && inlineThreads.some(thread => thread.some(c => c.id === composer?.inReplyTo || c.id === composer?.id)))
   return <>
     {controls && createPortal(<div className="review-comments" aria-label="Review comments">
       <button className="btn primary" disabled={blocked || !discussion || discussion.readOnly || busy} onClick={review} title="Reply and vote (a)">Reply{discussion?.drafts.length ? ` (${discussion.drafts.length})` : ''}</button>
@@ -318,9 +319,9 @@ export function ReviewComments({ link, path, originalPath, visible, onOpen, onHi
     </div>}
     {visible && inlineThreads.map(thread => {
       const position = display(thread.find(c => display(c))!)!
-      return <InlineReviewComment key={thread[0]!.id} focus={Boolean(composer?.inReplyTo && thread.some(c => c.id === composer.inReplyTo || c.id === composer.id))} anchor={position} createHost={createInlineHost}>{renderThread(thread, true)}</InlineReviewComment>
+      return <InlineReviewComment key={thread[0]!.id} focus={Boolean(embeddedComposer && thread.some(c => c.id === composer?.inReplyTo || c.id === composer?.id))} preserveScroll={Boolean(editingStart.current)} anchor={position} createHost={createInlineHost}>{renderThread(thread, true)}</InlineReviewComment>
     })}
-    {composer && composerPosition && !embeddedReply && <InlineReviewComment focus preserveScroll={editingStart.current === null && !composer.inReplyTo} anchor={composerPosition!} createHost={createInlineHost}>{composerForm}</InlineReviewComment>}
+    {composer && composerPosition && !embeddedComposer && <InlineReviewComment focus preserveScroll={editingStart.current === null && !composer.inReplyTo} anchor={composerPosition!} createHost={createInlineHost}>{composerForm}</InlineReviewComment>}
     {composer && !composerPosition && !sendOpen && <SendReview onClose={() => { if (canClose()) setComposer(null) }}><h2>{location(composer.anchor)}</h2>{composerForm}</SendReview>}
     {allFiles && <CommentOverview dialog={overview} onClose={closeOverview} returnFocus={commentsMenu} filters={<div className="review-comment-filters"><label>Show<select aria-label="Filter comments" value={commentFilter} onChange={e => setCommentFilter(e.target.value)}><option value="all">All comments</option><option value="unresolved">Unresolved</option><option value="resolved">Resolved</option><option value="drafts">My drafts</option></select></label><label>Author<select aria-label="Filter comment author" value={authorFilter} onChange={e => setAuthorFilter(e.target.value)}><option value="all">Everyone</option>{[...new Map([...(discussion?.comments ?? []), ...(discussion?.drafts ?? [])].map(c => [c.author?._account_id ?? discussion?.self._account_id, c.author ?? discussion?.self])).values()].map(account => account && <option key={account._account_id} value={account._account_id}>{account.name ?? account.username}</option>)}</select></label></div>}>{threads.filter(thread => (commentFilter === 'all' || commentFilter === 'unresolved' && thread.at(-1)?.unresolved || commentFilter === 'resolved' && !thread.at(-1)?.unresolved || commentFilter === 'drafts' && thread.some(c => draftIds.has(c.id))) && (authorFilter === 'all' || thread.some(c => String(c.author?._account_id ?? discussion?.self._account_id) === authorFilter))).map(thread => <div key={thread[0]!.id}>{thread[0]!.context_lines?.length ? <pre className="review-comment-context">{thread[0]!.context_lines.map(line => `${line.line_number}: ${line.context_line}`).join('\n')}</pre> : null}{renderThread(thread)}</div>)}</CommentOverview>}
     {redact && <SendReview onClose={() => { if (!busy) setRedact(null) }}><form className="review-comment-compose" onSubmit={e => { e.preventDefault(); void write(async () => { await onMutate(async () => { await api.deleteReviewComment(link.id, redact.comment.patch_set, redact.comment.id, redact.reason) }); setRedact(null) }) }}>

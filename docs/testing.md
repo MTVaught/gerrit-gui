@@ -305,6 +305,39 @@ payload, with `--original-anchor` as its control. Its default deliberately
 sends the faulty mapped anchor. Use the renderer regression above to verify
 the application fix.
 
+## Inline draft edit position
+
+Click Edit on a visible saved draft. Its editor opens at the same comment
+position and receives focus. The diff keeps its scroll position. A tall thread
+can have its code anchor above the viewport while its draft remains visible.
+
+Build the app, then run the regression check with Xvfb and xdotool installed:
+
+```sh
+npm run build
+xvfb-run -a -s '-screen 0 1440x1060x24' node_modules/.bin/electron test/review-comment-edit-position-ui.cjs
+```
+
+The check covers revision and base-side drafts and a saved reply in a tall
+thread, in side-by-side and unified layouts and both themes. It checks comment
+coordinates, both pane scroll origins, text focus, Save, Cancel, draft identity,
+and saved anchors. Lines below a comment can move as the editor grows, so the
+scroll checks use the code content transforms as well as visible line positions
+above the comment. The fixture uses simulated Gerrit data and an isolated
+user-data directory in the real Linux Electron renderer.
+
+To record the same single-draft Edit, type, and Save workflow in both themes,
+with the pointer, hover pauses, and captions, run:
+
+```sh
+CAPTURE_COMMENT_EDIT=1 xvfb-run -a -s '-screen 0 1440x1060x24' node_modules/.bin/electron test/review-comment-edit-position-ui.cjs
+```
+
+Videos and measured results go to
+`openspec/changes/archive/2026-11-02-fix-comment-edit-scroll/evidence/`. Set
+`COMMENT_EDIT_EVIDENCE` to use another directory. Native Windows and macOS
+behavior is not covered by this Linux check.
+
 ## Dashboard icon tooltips
 
 Dashboard status icons and icon controls show help after a short hover delay,

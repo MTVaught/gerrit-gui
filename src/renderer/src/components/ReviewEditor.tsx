@@ -393,6 +393,11 @@ export default function ReviewEditor({ file, link, preferences, theme, commentsV
       const scrollTop = code.getScrollTop()
       if (preserveScroll && anchorTop >= scrollTop && lineTop < scrollTop + code.getLayoutInfo().height) return
       const active = content.contains(document.activeElement) ? document.activeElement as HTMLElement : null
+      // A visible draft can belong to a tall thread whose code anchor is above
+      // the viewport. Focusing that draft must not scroll back to the anchor.
+      const visible = (active ?? content).getBoundingClientRect()
+      const viewport = code.getDomNode()!.getBoundingClientRect()
+      if (preserveScroll && visible.height > 0 && visible.top < viewport.bottom && visible.bottom > viewport.top) return
       const offset = active ? Math.max(0, active.getBoundingClientRect().top - content.getBoundingClientRect().top) : 0
       code.setScrollTop(Math.max(0, anchorTop + offset - 50))
     }

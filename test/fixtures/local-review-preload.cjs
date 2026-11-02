@@ -57,6 +57,14 @@ const reviewedWrites = []
 const drafts = new Map()
 const draftDeletes = []
 const comments = process.env.REVIEW_COMMENTS_FIXTURE ? [{ id: 'published-1', patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', line: 2, side: 'REVISION', message: 'Please explain the unchanged setup.', updated: now, unresolved: true, author: owner }] : []
+if (process.env.REVIEW_EDIT_FIXTURE) {
+  settings.localReview = true
+  const anchor = { patch_set: 3, path: 'src/telemetry/batch-scheduler.ts', side: 'REVISION', updated: now, unresolved: true }
+  drafts.set('edit-single', { ...anchor, id: 'edit-single', line: 40, message: 'Check the delivery order before sending the batch.' })
+  drafts.set('edit-original', { ...anchor, id: 'edit-original', side: 'PARENT', line: 60, message: 'Keep this base-side draft at its saved location.' })
+  comments.push({ ...anchor, id: 'edit-parent', line: 80, author: owner, message: Array.from({ length: 30 }, (_, i) => `Review point ${i + 1}: retain the queued delivery order.`).join('\n\n') })
+  drafts.set('edit-reply', { ...anchor, id: 'edit-reply', line: 80, in_reply_to: 'edit-parent', message: 'I will add a test for the queued delivery order.' })
+}
 if (process.env.REVIEW_FILE_ACTIVITY_FIXTURE) {
   settings.localReview = true
   comments.push(
