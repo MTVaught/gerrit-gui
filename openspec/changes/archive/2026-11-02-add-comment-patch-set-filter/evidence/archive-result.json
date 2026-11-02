@@ -1,0 +1,25 @@
+{
+  "change": "add-comment-patch-set-filter",
+  "archive": "openspec/changes/archive/2026-11-02-add-comment-patch-set-filter",
+  "schema": "spec-driven",
+  "tasks_complete": 3,
+  "tasks_total": 3,
+  "active_change_absent": true,
+  "new_requirements": [
+    "Filter overview by patch set",
+    "Empty filtered overview"
+  ],
+  "main_requirements": 10,
+  "previous_requirements_unchanged": 8,
+  "purpose_unchanged": true,
+  "main_specs_validation": "16 passed, 0 failed",
+  "evidence_files_preserved": 6,
+  "evidence_sha256": {
+    "evidence/patch-set-filter-dark.mp4": "413be09f3ea2925be2e0f72239313618d43342a3503799339de44538f16bc36b",
+    "evidence/media.json": "f79f0ae045e128359ca5d061aa829526027d7aa88aea08481e016eb745a7dded",
+    "evidence/patch-set-filter-dark.png": "46a6845c4e543d35652c465eb1c41ae9988bac20f7a9fba5873f56ef03873f50",
+    "evidence/patch-set-filter-light.mp4": "952d64a40961bbb3059f6bad4c5798901f0cba5a835f946859869a2d017033b3",
+    "evidence/patch-set-filter-light.png": "dc4c3f713ed527cc52a824c25c1923c1f3f3176543d763e0bbee87f6529394c1",
+    "evidence/checks.json": "b46ee71854798898c23234c3fed3bd490f5bcc123d20601171f0d8decb154281"
+  }
+}
