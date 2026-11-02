@@ -82,6 +82,7 @@ let canDeletePublished = false
 const noOp = async () => undefined
 const subscribe = () => () => undefined
 contextBridge.exposeInMainWorld('api', {
+  ...(process.env.REVIEW_PANE_SEPARATE ? { getWindowContext: async () => ({ kind: 'review', link: { id: 2481, patchSet: 3 }, subject: change.subject }) } : {}),
   getSettings: async () => process.env.REVIEW_THEME_FIXTURE ? ipcRenderer.invoke('fixture:getSettings') : ({ ...settings }),
   saveSettings: async (s) => { if (process.env.REVIEW_THEME_FIXTURE) await ipcRenderer.invoke('fixture:saveSettings', s); else settings = { ...s } },
   fetchChange: async () => change,

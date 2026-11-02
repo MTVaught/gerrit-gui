@@ -1,0 +1,32 @@
+{
+  "light": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1440,
+        "height": 960,
+        "pix_fmt": "yuv420p"
+      }
+    ],
+    "format": {
+      "duration": "16.000000",
+      "size": "452824"
+    }
+  },
+  "dark": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1440,
+        "height": 960,
+        "pix_fmt": "yuv420p"
+      }
+    ],
+    "format": {
+      "duration": "16.480000",
+      "size": "385154"
+    }
+  }
+}
